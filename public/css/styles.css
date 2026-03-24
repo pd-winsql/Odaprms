@@ -1,0 +1,114 @@
+:root {
+    /* Primary Colors - Modern dental clinic palette */
+    --primary-blue: #1E5BA8;
+    --gold-accent: #FDB913;
+    --white-bg: #FFFFFF;
+    
+    /* Secondary Colors */
+    --light-blue: #E8F2F7;
+    --light-gray: #F7F7F7;
+    --dark-gray: #444444;
+    --border-gray: #E0E0E0;
+    
+    /* Semantic Color Tokens */
+    --primary-color: var(--primary-blue);
+    --accent-color: var(--gold-accent);
+    --background-color: var(--white-bg);
+    --text-color: var(--dark-gray);
+    --text-light: #666666;
+    --border-color: var(--border-gray);
+    
+    /* Functional Colors */
+    --success-color: #27AE60;
+    --warning-color: #F39C12;
+    --error-color: #E74C3C;
+    --info-color: var(--primary-blue);
+    
+    /* Hover & Interactive States */
+    --primary-hover: #154280;
+    --gold-hover: #E8A200;
+    --button-shadow: rgba(30, 91, 168, 0.1);
+    
+    /* Typography */
+    --font-primary: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-size-base: 16px;
+    --line-height-base: 1.6;
+    
+    /* Spacing - Padding & Margin */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-xxl: 48px;
+}
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    color: var(--text-color);
+    background-color: var(--background-color);
+    display: block;
+}
+
+.navbar {
+    background-color: var(--background-color);
+    padding: var(--spacing-md) var(--spacing-xxl);
+    box-shadow: 0 4px 10px var(--button-shadow);
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 var(--spacing-lg);
+}
+
+.logo {
+    height: 50px;
+}
+
+.nav-menu {
+    display: flex;
+    gap: var(--spacing-lg);
+}
+
+.nav-link {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.nav-item{
+    list-style: none;
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: background-color 0.4s ease-in-out, color 0.4s ease-in-out;
+    cursor: pointer;
+}
+
+.nav-item:hover {
+    background-color: var(--primary-color);
+}
+
+.nav-item:hover .nav-link {
+    color: var(--white-bg);
+}
+
+.nav-link:hover {
+    color: var(--white-bg);
+}
+
+.main-content {
+    padding: var(--spacing-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+}
