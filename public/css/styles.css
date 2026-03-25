@@ -68,7 +68,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 var(--spacing-lg);
+    padding: 0 var(--spacing-xxl);
 }
 
 .logo {
@@ -115,7 +115,7 @@ body {
 
 .main-content {
     padding: var(--spacing-lg);
-    max-width: 1200px;
+    max-width: 1300px;
     margin: 0 auto;
 }
 
@@ -137,4 +137,47 @@ body {
 .footer-container > p {
     color: var(--white-bg);
     font-size: 14px;
+}
+
+main {
+    display: block;
+}
+
+.hero-section {
+    padding: var(--spacing-xxl) 0;
+}
+
+.hero-container {
+    display: flex;
+    align-content: space-between;
+    align-items: center;
+    gap: var(--spacing-xxl);
+    padding: var(--spacing-lg) 0;
+}
+
+.highlight {
+    color: var(--gold-hover);
+}
+
+.hero-text, .hero-image {
+    flex: 1;
+    margin: var(--spacing-md);
+}
+
+.hero-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+}
+
+.hero-text h1 {
+    line-height: 1.2;
+    font-size: 2.75rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.hero-text p {
+    font-size: 1.15rem;
+    color: var(--text-light);
+    width: 90%;
 }
