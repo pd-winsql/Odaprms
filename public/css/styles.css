@@ -168,8 +168,8 @@ body {
     gap: var(--spacing-lg);
 
     background: rgba(255, 255, 255, 0.025);
-    backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(30,91,168,0.10);
 }
