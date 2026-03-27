@@ -17,18 +17,25 @@
             </ul>
         </div>
     </nav>
+    <div class="bg">
+        <main class="main-content">
+            <section id="hero-section">
+                <div class="hero-container">
+                    <div class="hero-text">
+                        <h1>Welcome to <span class="highlight">Dr. Aprille Ventura Clinica Dental</span></h1>
+                        <p>Your smile is our priority. We provide comprehensive dental care for the whole family.</p>
+                    </div>
+                    <div class="cta">
+                        <a href="" class="btn btn-primary">Book an Appointment</a>
+                    </div>
+                    <!-- <div class="hero-image">
+                        <img src="public/assets/hero-chair.jpg" alt="Smiling family at the dentist">
+                    </div>-->
+                </div>
+            </section>
+        </main>
+    </div>
     <main class="main-content">
-        <section id="hero-section">
-            <div class="hero-container">
-                <div class="hero-text">
-                    <h1>Welcome to <span class="highlight">Dr. Aprille Ventura Clinica Dental</span></h1>
-                    <p>Your smile is our priority. We provide comprehensive dental care for the whole family.</p>
-                </div>
-                <div class="hero-image">
-                    <img src="public/assets/fam-pic.png" alt="Smiling family at the dentist">
-                </div>
-            </div>
-        </section>
         <section id="services">
             <h2>Our Services</h2>
             <ul>
