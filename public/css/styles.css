@@ -238,3 +238,49 @@ body {
     justify-content: center;
 }
 
+#services > h2 {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-lg);
+    color: var(--primary-color);
+}
+
+.services-offer {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+    justify-content: center;
+    margin-top: var(--spacing-lg);
+}
+
+.service-item {
+    background-color: var(--light-blue);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--button-shadow);
+    width: 200px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.service-item > img {
+    width: 100%;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: var(--spacing-md);
+}
+
+.service-item > h3 {
+    font-size: 1.15rem;
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.2;
+}
+
+.service-item > p {
+    font-size: 0.95rem;
+    color: var(--text-light);
+    padding: 0 var(--spacing-md) var(--spacing-md);
+}
+
+.service-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 16px var(--button-shadow);
+}

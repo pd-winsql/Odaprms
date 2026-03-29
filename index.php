@@ -36,25 +36,30 @@
         <section id="services">
             <h2>Our Services</h2>
             <div class="services-offer">
-                <div>
+                <div class="service-item">
                     <img src="public/assets/services.png" alt="General Dentistry" class="services-image">
                     <h3>General Dentistry</h3>
+                    <p>Comprehensive dental care for all ages, including cleanings, exams, fillings, and more.</p>
                 </div>
-                <div>
+                <div class="service-item">
                     <img src="public/assets/services.png" alt="Cosmetic Dentistry" class="services-image">
                     <h3>Cosmetic Dentistry</h3>
+                    <p>Enhance your smile with our cosmetic dentistry services, including teeth whitening, veneers, and more.</p>
                 </div>
-                <div>
+                <div class="service-item">
                     <img src="public/assets/services.png" alt="Orthodontics" class="services-image">
                     <h3>Orthodontics</h3>
+                    <p>Straighten your teeth and improve your bite with our orthodontic treatments, including braces and Invisalign.</p>
                 </div>
-                <div>
+                <div class="service-item">
                     <img src="public/assets/services.png" alt="Dental Implants" class="services-image">
                     <h3>Pediatric Dentistry</h3>
+                    <p>Specialized dental care for children, including preventive care, fillings, and more.</p>
                 </div>
-                <div>
+                <div class="service-item">
                     <img src="public/assets/services.png" alt="Emergency Dental Care" class="services-image">
                     <h3>Emergency Dental Care</h3>
+                    <p>Prompt and effective treatment for dental emergencies, including toothaches, broken teeth, and more.</p>
                 </div>
             </div>
         </section>
