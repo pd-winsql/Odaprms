@@ -238,24 +238,3 @@ body {
     justify-content: center;
 }
 
-h2{
-    font-size: 2rem;
-    margin-bottom: var(--spacing-lg);
-}
-
-ul{
-    display: flex;
-    gap: var(--spacing-lg);
-}
-
-li {
-    list-style: none;
-    background-color: var(--light-gray);
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: 12px;
-}
-
-li:hover {
-    background-color: var(--light-blue);
-    box-shadow: 0 4px 12px var(--button-shadow);
-}

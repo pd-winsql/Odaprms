@@ -35,13 +35,28 @@
     <main class="main-content">
         <section id="services">
             <h2>Our Services</h2>
-            <ul>
-                <li>General Dentistry</li>
-                <li>Cosmetic Dentistry</li>
-                <li>Orthodontics</li>
-                <li>Pediatric Dentistry</li>
-                <li>Emergency Dental Care</li>
-            </ul>
+            <div class="services-offer">
+                <div>
+                    <img src="public/assets/services.png" alt="General Dentistry" class="services-image">
+                    <h3>General Dentistry</h3>
+                </div>
+                <div>
+                    <img src="public/assets/services.png" alt="Cosmetic Dentistry" class="services-image">
+                    <h3>Cosmetic Dentistry</h3>
+                </div>
+                <div>
+                    <img src="public/assets/services.png" alt="Orthodontics" class="services-image">
+                    <h3>Orthodontics</h3>
+                </div>
+                <div>
+                    <img src="public/assets/services.png" alt="Dental Implants" class="services-image">
+                    <h3>Pediatric Dentistry</h3>
+                </div>
+                <div>
+                    <img src="public/assets/services.png" alt="Emergency Dental Care" class="services-image">
+                    <h3>Emergency Dental Care</h3>
+                </div>
+            </div>
         </section>
         <section id="contact">
             <h2>Contact Us</h2>
