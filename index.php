@@ -13,6 +13,7 @@
             <ul class="nav-menu">
                 <li class="nav-item"><a href="/" class="nav-link">Home</a></li>
                 <li class="nav-item"><a href="/services" class="nav-link">Services</a></li>
+                <li class="nav-item"><a href="/about" class="nav-link">About Us</a></li>
                 <li class="nav-item"><a href="/contact" class="nav-link">Contact</a></li>
             </ul>
         </div>
@@ -60,6 +61,35 @@
                     <img src="public/assets/services.png" alt="Emergency Dental Care" class="services-image">
                     <h3>Emergency Dental Care</h3>
                     <p>Prompt and effective treatment for dental emergencies, including toothaches, broken teeth, and more.</p>
+                </div>
+            </div>
+        </section>
+        <section id="about">
+            <h2>About Us</h2>
+            <div class="about-container">
+                <img src="public/assets/team.png" alt="Dr. Aprille Ventura Clinica Dental Team" class="about-image">
+                <p>Dr. Aprille Ventura Clinica Dental is dedicated to providing 
+                    high-quality dental care in a comfortable and welcoming environment. 
+                    Our team of experienced dental professionals is committed to helping 
+                    you achieve and maintain a healthy, beautiful smile.</p>
+            </div>
+            <h2>Our Clinics</h2>
+            <div class="clinics-container">
+                <div class="clinic-card">
+                    <img src="public/assets/logo.png" alt="Clinic 1" class="clinic-image">
+                    <div class="clinic-info">
+                        <h3>Clinic 1</h3>
+                        <p>123 Smile Street, Dental City, DC 12345</p>
+                        <p>Phone: (123) 456-7890</p>
+                    </div>
+                </div>
+                <div class="clinic-card">
+                    <img src="public/assets/logo.png" alt="Clinic 2" class="clinic-image">
+                    <div class="clinic-info">
+                        <h3>Clinic 2</h3>
+                        <p>456 Tooth Avenue, Dental Town, DT 67890</p>
+                        <p>Phone: (987) 654-3210</p>
+                    </div>
                 </div>
             </div>
         </section>

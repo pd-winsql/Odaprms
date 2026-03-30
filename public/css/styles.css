@@ -62,6 +62,9 @@ body {
     background-color: var(--background-color);
     padding: var(--spacing-sm) var(--spacing-xxl);
     box-shadow: 0 4px 10px var(--button-shadow);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .nav-container {
@@ -147,7 +150,7 @@ body {
 }
 
 .main-content {
-    max-width: 1300px;
+    max-width: 1500px;
     margin: 0 auto;
     height: 100%;
 }
@@ -284,3 +287,87 @@ body {
     transform: translateY(-5px);
     box-shadow: 0 4px 16px var(--button-shadow);
 }
+
+#about {
+    padding: var(--spacing-xxl) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#about > h2 {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-xl);
+    color: var(--primary-color);
+}
+
+.about-container {
+    display: flex;
+    flex-direction: row;
+    gap: 100px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: var(--spacing-xxl);
+}
+
+.about-image {
+    width: 700px;
+}
+
+.about-container > p {
+    font-size: 1.3rem;
+    color: var(--text-light);
+    max-width: 500px;
+    line-height: 1.5;
+    text-align: center;
+    position: relative;
+    top: 50px;
+}
+
+.clinics-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 70px;
+    justify-content: center;
+    margin-top: var(--spacing-lg);
+}
+
+.clinic-card {
+    display: flex;
+    flex-direction: column;
+    height: 350px;
+    background-color: var(--light-blue);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--button-shadow);
+    width: 300px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.clinic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 16px var(--button-shadow);
+}
+
+.clinic-card > .clinic-image {
+    width: 100%;
+    margin-bottom: var(--spacing-md);
+}
+
+.clinic-card > h3 {
+    font-size: 1.15rem;
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.2;
+}
+
+.clinic-card > .clinic-info {
+    
+    font-size: 0.95rem;
+    color: var(--text-light);
+    background-color: var(--white-bg);
+    padding: 0 var(--spacing-md) var(--spacing-md);
+    flex:1;
+}
+
