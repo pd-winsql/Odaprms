@@ -1,14 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Account</title>
-    <link rel="stylesheet" href="../../public/css/login-reg.css">
-</head>
-<body>
+
     <div class="login-container">
         <form action="register.php" method="POST" class="login-form">
+            <img src="public/assets/logo.png" alt="Logo" class="logo">
             <h2>Create an Account</h2>
             <div class="form-group">
                 <label for="reg-username">Username</label>
@@ -25,9 +18,8 @@
             <button type="submit" class="btn-primary">Register</button>
             <div style="text-align:center; margin-top: 16px;">
                 <span>Already have an account? </span>
-                <a href="login.php" style="color: var(--primary-color); text-decoration: underline;">Login</a>
+                <a href="#" onclick="closeModal('registerModal'); openModal('myModal'); return false;">Login</a>
             </div>
         </form>
     </div>
-</body>
-</html>
+

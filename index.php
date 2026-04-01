@@ -17,7 +17,7 @@
                 <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
             </ul>
             <div class="nav-login">
-                <a href="login.php" class="btn-login">Login</a>
+                <a href="#" class="btn-login" onclick="openModal('myModal'); return false;">Login</a>
             </div>
         </div>
     </nav>
@@ -30,7 +30,7 @@
                         <p>Your smile is our priority. We provide comprehensive dental care for the whole family.</p>
                     </div>
                     <div class="cta">
-                        <a href="" class="btn btn-primary">Book an Appointment</a>
+                        <button class="btn btn-primary" onclick="openModal('myModal')">Book an Appointment</button>
                     </div>
                 </div>
             </section>
@@ -123,5 +123,31 @@
             <p>&copy; <script>document.write(new Date().getFullYear())</script> Dr. Aprille Ventura Clinica Dental. All rights reserved.</p>
         </div>
     </footer>
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('myModal')">&times;</span>
+            <?php include 'apps/views/login.php'; ?>
+        </div>
+    </div>
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <?php include 'apps/views/register.php'; ?>
+        </div>
+    </div>
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        // Close when clicking backdrop
+        document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this.id);
+        });
+        });
+    </script>
 </body>
 </html>

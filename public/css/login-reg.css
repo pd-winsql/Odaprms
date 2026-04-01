@@ -73,12 +73,20 @@ body {
     box-shadow: 0 4px 12px var(--button-shadow);
     width: 100%;
     max-width: 400px;
+    display: flex;
+    flex-direction: column;
 }
 
 .login-form h2 {
     margin-bottom: var(--spacing-lg);
-    color: var(--primary-color);
+    color: var(--dark-gray);
     text-align: center;
+}
+
+.logo {
+    width: 150px;
+    margin-bottom: var(--spacing-sm);
+    align-self: center;
 }
 
 .form-group {
