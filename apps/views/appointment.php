@@ -70,7 +70,7 @@
                     <label for="date">Preferred Date:</label>
                     <input type="date" id="date" name="date" required>
                 </div>
-                <button type="submit">Book Appointment</button>
+                <button type="submit" class="btn btn-primary">Book Appointment</button>
             </form>
         </section>
     </main>

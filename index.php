@@ -22,7 +22,7 @@
         </div>
     </nav>
     <div class="bg">
-        <main class="main-content">
+        <div class="main-content">
             <section id="hero-section">
                 <div class="hero-container">
                     <div class="hero-text">
@@ -34,7 +34,7 @@
                     </div>
                 </div>
             </section>
-        </main>
+        </div>
     </div>
     <main class="main-content">
         <section id="services">

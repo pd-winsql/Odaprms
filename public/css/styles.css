@@ -396,13 +396,15 @@ body {
 }
 
 .clinic-card > .clinic-info {
-    
     font-size: 0.95rem;
     color: var(--text-light);
     background-color: var(--white-bg);
     padding: 0 var(--spacing-md) var(--spacing-md);
     flex:1;
     border-radius: 0 0 12px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 #contact {
@@ -659,4 +661,21 @@ body {
     font-size: 0.95rem;
     color: var(--text-light);
     margin-top: 2px;
+}
+
+#service {
+        width: 100%;
+        padding: var(--spacing-sm);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 1rem;
+        font-family: var(--font-primary);
+}
+
+#date {
+        padding: var(--spacing-sm);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 1rem;
+        font-family: var(--font-primary);
 }
