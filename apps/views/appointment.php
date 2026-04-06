@@ -10,6 +10,7 @@
     <main class="main-content">
         <section id="appointment-section">
             <form action="submit_appointment.php" method="POST" class="appointment-form">
+                <img src="../../public/assets/logo.png" alt="Logo" class="logo">
                 <h2>Book an Appointment</h2>
             <div class="form-row">    
                 <div class="form-group">
@@ -57,14 +58,28 @@
                 </div>
             </div>
                 <div class="form-group">
+                    <label for="Clinic">Select Clinic:</label>
+                    <div class="select-wrapper">
+                        <select id="clinic" name="clinic" required>
+                            <option value="">--Please choose an option--</option>
+                            <option value="clinic1">Clinic 1</option>
+                            <option value="clinic2">Clinic 2</option>
+                        </select>
+                        <img class="select-caret" width="30" height="30" src="../../public/assets/dropdown.png" alt="down-squared"/>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="service">Select Service:</label>
-                    <select id="service" name="service" required>
-                        <option value="">--Please choose an option--</option>
-                        <option value="general_dentistry">General Dentistry</option>
-                        <option value="cosmetic_dentistry">Cosmetic Dentistry</option>
-                        <option value="orthodontics">Orthodontics</option>
-                        <option value="pediatric_dentistry">Pediatric Dentistry</option>
-                    </select>
+                    <div class="select-wrapper">
+                        <select id="service" name="service" required>
+                            <option value="">--Please choose an option--</option>
+                            <option value="general_dentistry">General Dentistry</option>
+                            <option value="cosmetic_dentistry">Cosmetic Dentistry</option>
+                            <option value="orthodontics">Orthodontics</option>
+                            <option value="pediatric_dentistry">Pediatric Dentistry</option>
+                        </select>
+                        <img class="select-caret" width="30" height="30" src="../../public/assets/dropdown.png" alt="down-squared"/>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="date">Preferred Date:</label>

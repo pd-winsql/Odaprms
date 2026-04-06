@@ -129,6 +129,7 @@
             <?php include 'apps/views/login.php'; ?>
         </div>
     </div>
+    <!-- register modal -- might remove -->
     <div id="registerModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('registerModal')">&times;</span>
