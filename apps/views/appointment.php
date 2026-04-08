@@ -32,18 +32,19 @@
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="age">Age:</label>
+                    <label class="age-label" for="age">Age:</label>
                     <input type="number" id="age" name="age" required>
                 </div>
                 <div class="form-group gender-group">
                     <label for="gender">Gender:</label>
-                    <div class="gender-options">
-                        <input type="radio" id="male" name="gender" value="male" required>
-                        <label for="male">Male</label>
-                        <input type="radio" id="female" name="gender" value="female" required>
-                        <label for="female">Female</label>
-                        <input type="radio" id="other" name="gender" value="other" required>
-                        <label for="other">Other</label>
+                    <div class="select-wrapper">
+                        <select id="gender" name="gender" required>
+                            <option value="">--Please choose an option--</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <img class="select-caret" width="30" height="30" src="../../public/assets/dropdown.png" alt="down-squared"/>
                     </div>
                 </div>
             </div>
