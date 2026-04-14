@@ -827,7 +827,16 @@ body {
     width: 180px;
     margin-bottom: 0;
     font-size: 1rem;
-    padding: 4px 8px;
+    padding: 4px 8px 2px 8px;
+    border: none;
+    border-bottom: 2px solid var(--primary-color);
+    background: transparent;
+    outline: none;
+    transition: border-color 0.2s;
+    box-shadow: none;
+}
+.specify-input input[type="text"]:focus {
+    border-bottom: 2px solid var(--gold-accent);
 }
 
 .q-label {
@@ -835,3 +844,4 @@ body {
     flex-direction: row;
     gap: 4px;
 }
+
