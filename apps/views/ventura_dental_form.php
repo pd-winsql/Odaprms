@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dr. Aprille Ventura – Clinica Dental | Patient Form</title>
-<link rel="stylesheet" href="../../public/css/form.css">
+<link rel="stylesheet" href="../../public/css/dental-form.css">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
