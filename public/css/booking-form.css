@@ -411,3 +411,103 @@
     .submit-row { flex-direction: column-reverse; }
     .btn-primary, .btn-secondary { width: 100%; text-align: center; }
   }
+
+  .modal {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(26, 22, 18, 0.18); /* var(--dark) with opacity */
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .modal-content {
+    background: var(--white-bg);
+    padding: 40px 32px 28px 32px;
+    border-radius: var(--radius);
+    box-shadow: 0 8px 48px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    max-width: 380px;
+    width: 94vw;
+    position: relative;
+    text-align: left;
+    border: 1px solid var(--border);
+    font-family: var(--font-primary);
+    color: var(--dark);
+    animation: modalPop 0.22s cubic-bezier(.4,1.6,.6,1) 1;
+  }
+  
+  @keyframes modalPop {
+    0% { transform: scale(0.92); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-content h2 {
+    margin-top: 0;
+    font-size: 1.25em;
+    font-family: var(--font-display);
+    color: var(--gold);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  .modal-content p {
+    font-size: 13px;
+    color: var(--mid);
+    margin-bottom: 18px;
+    line-height: 1.7;
+  }
+
+  .modal-content .close {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    font-size: 1.6em;
+    color: var(--gold);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .modal-content .close:hover {
+    color: var(--mid);
+  }
+
+  .modal-content button {
+    margin-left: 8px;
+    min-width: 120px;
+  }
+
+  .modal-content .btn-secondary {
+    border: 1px solid var(--border);
+    color: var(--mid);
+    background: var(--white-bg);
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .modal-content .btn-secondary:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .modal-content .btn-primary {
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    transition: background 0.2s, transform 0.15s;
+  }
+  
+  .modal-content .btn-primary:hover {
+    background: var(--mid);
+    transform: translateY(-1px);
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }

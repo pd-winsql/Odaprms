@@ -195,16 +195,55 @@
     </div>
   </div>
 
+    <!-- ACCOUNT CREATION MODAL -->
+    <div id="accountModal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Create an Account?</h2>
+        <p>Would you like to create an account to manage your appointments and view your booking history?</p>
+        <div class="modal-actions">
+          <button class="btn-secondary" onclick="skipAccount()">No, thanks</button>
+          <button class="btn-primary" onclick="proceedAccount()">Yes, create account</button>
+        </div>
+      </div>
+    </div>
+
 </div>
 
-<!-- TODO: add modal for confirmation and account creation -->
+
 <!-- TODO: add connection between booking and patient form -->
 <script>
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('prefDate').setAttribute('min', today);
 
+
   function handleSubmit(e) {
     e.preventDefault();
+    showModal();
+  }
+
+  function showModal() {
+    document.getElementById('accountModal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('accountModal').style.display = 'none';
+  }
+
+  function skipAccount() {
+    closeModal();
+    showSuccessScreen();
+  }
+
+  function proceedAccount() {
+    closeModal();
+    // Redirect to account creation page or show a message (customize as needed)
+    alert('Redirecting to account creation...');
+    showSuccessScreen();
+    window.location.href = 'ventura_dental_form.php';
+  }
+
+  function showSuccessScreen() {
     const ref = 'VCD-' + Math.floor(100000 + Math.random() * 900000);
     document.getElementById('refNumber').textContent = ref;
     document.getElementById('formView').style.display = 'none';
@@ -221,6 +260,10 @@
     document.getElementById('successView').style.display = 'none';
     document.getElementById('formView').style.display = 'block';
   }
+</script>
+
+<!-- Modal Styles -->
+
 </script>
 
 </body>
