@@ -197,6 +197,8 @@
 
 </div>
 
+<!-- TODO: add modal for confirmation and account creation -->
+<!-- TODO: add connection between booking and patient form -->
 <script>
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('prefDate').setAttribute('min', today);
