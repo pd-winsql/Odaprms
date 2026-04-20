@@ -13,6 +13,6 @@
         <button type="submit" class="btn-primary">Login</button>
         <div style="text-align:center; margin-top: 16px;">
         <span>Don't have an account? </span>
-        <a href="#" onclick="closeModal('myModal'); openModal('registerModal'); return false;">Register</a>
+        <a href="apps/views/ventura_dental_form.php" onclick="closeModal('myModal');">Register</a>
         </div>
     </form>

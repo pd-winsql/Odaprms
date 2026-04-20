@@ -35,7 +35,7 @@
                     <label class="age-label" for="age">Age:</label>
                     <input type="number" id="age" name="age" required>
                 </div>
-                //Fixme: select-caret overlap with the first value, need to adjust the CSS
+                <!--FIXME: select-caret overlap with the first value, need to adjust the CSS-->
                 <div class="form-group gender-group">
                     <label for="gender">Gender:</label>
                     <div class="select-wrapper">

@@ -297,8 +297,8 @@
                 </div>
             </div>
         </div>
-        <!--Todo: continue the form with the following conditions-->
-        <!--Todo: Create a digital contract form for the patient to sign before submitting the registration form-->
+        <!--TODO: continue the form with the following conditions-->
+        <!--TODO: Create a digital contract form for the patient to sign before submitting the registration form-->
     </section>
 </body>
 <script>

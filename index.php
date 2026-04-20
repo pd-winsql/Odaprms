@@ -30,7 +30,7 @@
                         <p>Your smile is our priority. We provide comprehensive dental care for the whole family.</p>
                     </div>
                     <div class="cta">
-                        <a href="apps/views/appointment.php" class="btn btn-primary" >Book an Appointment</a>
+                        <a href="apps/views/ventura_booking_form.php" class="btn btn-primary" >Book an Appointment</a>
                     </div>
                 </div>
             </section>
@@ -129,13 +129,6 @@
             <?php include 'apps/views/login.php'; ?>
         </div>
     </div>
-    <!-- register modal -- might remove -->
-    <div id="registerModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('registerModal')">&times;</span>
-            <?php include 'apps/views/register.php'; ?>
-        </div>
-    </div>
     <script>
         function openModal(id) {
             document.getElementById(id).classList.add('active');
@@ -145,9 +138,9 @@
         }
         // Close when clicking backdrop
         document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) closeModal(this.id);
-        });
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) closeModal(this.id);
+            });
         });
     </script>
 </body>
