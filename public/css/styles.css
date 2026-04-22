@@ -384,12 +384,13 @@ body {
     display: flex;
     flex-direction: column;
     height: 350px;
-    background-color: var(--light-blue);
+    background-color: var(--white-bg);
     border-radius: 12px;
     box-shadow: 0 2px 8px var(--button-shadow);
     width: 300px;
     text-align: center;
     transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid var(--border-color);
 }
 
 .clinic-card:hover {
@@ -543,329 +544,128 @@ body {
     z-index: 1000;
     align-items: center;
     justify-content: center;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 48px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
 }
+
 .modal.active {
     display: flex;
 }
-.modal-content {
-    background: #fff;
-    padding: 2rem;
+
+.modal-content,
+.page {
+    max-width: 400px;
+    width: 100%;
+    background: var(--white-bg);
     border-radius: 8px;
-    min-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
     position: relative;
-    box-shadow: 0 4px 12px var(--button-shadow);
 }
+
+.page {
+    margin: 0 auto;
+    padding: 45px 48px 54px;
+}
+
 .close {
     position: absolute;
     top: 1rem;
-    right: 1rem;
+    right: 1.6rem;
     cursor: pointer;
     font-size: 1.5rem;
+    z-index: 10;
 }
 
-/* Login & Register Forms */
-
-.login-form {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border-radius: 8px;
-    width: 100%;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
-}
-
-.login-form h2 {
-    margin-bottom: var(--spacing-lg);
-    color: var(--dark-gray);
-    text-align: center;
-}
-
-.login-form .logo {
+/* Login Styles */
+.logo-log {
     width: 150px;
-    margin-bottom: var(--spacing-sm);
-    align-self: center;
+    height: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.form-group {
-    margin-bottom: var(--spacing-md);
-}
-
-.form-group label {
-    margin-bottom: var(--spacing-sm);
-    color: var(--text-light);
-}
-
-.form-group input {
-    width: 100%;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: var(--font-size-base);
-}
-
-.login-form .btn-primary {
-    width: 100%;
-    padding: var(--spacing-sm);
-    background-color: var(--primary-color);
-    color: var(--white-bg);
-    border: none;
-    border-radius: 4px;
-    font-size: var(--font-size-base);
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.login-form .btn-primary:hover {
-    background-color: var(--primary-hover);
-}
-
-.modal-content .close {
-    position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    font-size: 1.5rem;
-    color: var(--text-light);
-    cursor: pointer;
-}
-
-/* Appointment Section */
-#appointment-section {
-    padding: var(--spacing-xxl) 0;
+.section-title {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin: 32px 0 18px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 14px;
 }
 
-
-.appointment-form {
-    background: var(--white-bg);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px var(--button-shadow);
-    padding: var(--spacing-xl) var(--spacing-lg);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    width: 100%;
-    max-width: 800px;
-    border: 1px solid var(--border-color);
-}
-
-.appointment-form .logo {
-    width: 150px;
-    margin-bottom: var(--spacing-sm);
-    align-self: center;
-}
-
-.appointment-form h2 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-lg);
-    text-align: center;
-}
-
-.appointment-form .form-row {
-    display: flex;
-    gap: var(--spacing-md);
-    width: auto;
-}
-
-.suffix {
-    max-width: 100px;
-}
-
-.form-group #age, .age-label {
-    max-width: 100px;
-}
-
-.gender-group .select-wrapper select {
-    width: 500px;
-}
-
-
-#clinic, #service, #civil-status, #gender, #guardian-relationship {
-        width: 100%;
-        padding: var(--spacing-sm);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        font-size: 1rem;
-        font-family: var(--font-primary);
-}
-
-#date {
-        padding: var(--spacing-sm);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        font-size: 1rem;
-        font-family: var(--font-primary);
-}
-
-.select-wrapper {
-    position: relative;
-}
-
-.select-wrapper select {
-    appearance: none;
-    padding-right: 2.5rem;
-}
-
-.select-caret {
-    position: absolute;
-    right: 10px;        
-    top: 50%;           
-    transform: translateY(-50%);
-    pointer-events: none;
-}
-
-.modal-content {
-    background: var(--white-bg);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px var(--button-shadow);
-    padding: var(--spacing-xl) var(--spacing-lg);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    max-width: 500px;
-}
-
-.modal-content h2 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-lg);
-    text-align: center;
-}
-
-.modal-content p {
-    font-size: 1.1rem;
-    color: var(--text-light);
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-}
-
-.modal-content .btn-secondary {
-    width: 100%;
-    padding: var(--spacing-sm);
-    background-color: var(--primary-color);
-    color: var(--white-bg);
-    border: none;
-    border-radius: 4px;
-    font-size: var(--font-size-base);
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.modal-content .btn-secondary:hover {
-    background-color: var(--primary-hover);
-}
-
-/* Registration Form */
-#registration {
-    padding: var(--spacing-xxl) 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-
-.registration-container {
-    background: var(--white-bg);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px var(--button-shadow);
-    padding: var(--spacing-xl) var(--spacing-lg);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    width: 100%;
-    max-width: 1300px;
-    margin-bottom: var(--spacing-xxl);
-    border: 1px solid var(--border-color);
-}
-
-.registration-container h2 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-lg);
-    text-align: center;
-}
-
-.registration-container .form-row {
-    display: flex;
-    gap: var(--spacing-xs);
-    width: auto;
-}
-
-#registration .form-group {
-    margin: auto var(--spacing-md);
+.section-title::after {
+    content: '';
     flex: 1;
+    height: 1px;
+    background: var(--border);
 }
 
-
-.address-fields {
-    display: flex;
-    gap: var(--spacing-sm);
-}
-
-
-.question-group {
-    display: flex;
-    gap: var(--spacing-md);
-    justify-content: space-between;
-    border-bottom: var(--border-color) 1px solid;
-}
-
-.radio {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-
-.radio input[type="radio"] {
-    margin-left: var(--spacing-lg);
-}
-
-.questionnaire {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
-    padding: var(--spacing-xl) 80px;
-}
-
-.radio label {
-    color: var(--text-light);
-    font-size: 1.1rem;
-}
-
-.specify-input {
-    display: flex;
-    flex-direction: row;        
-    align-items: center;
-    gap: 4px;
-    margin-left: 16px;
-}
-.specify-input label {
-    margin-bottom: 0;
-    margin-right: 4px;
-    color: var(--text-light);
-    font-size: 1.05rem;
-}
-.specify-input input[type="text"] {
-    width: 180px;
-    margin-bottom: 0;
-    font-size: 1rem;
-    padding: 4px 8px 2px 8px;
-    border: none;
-    border-bottom: 2px solid var(--primary-color);
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    font-family: 'Jost', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--dark);
     background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 6px 0 5px;
     outline: none;
+    width: 100%;
     transition: border-color 0.2s;
-    box-shadow: none;
-}
-.specify-input input[type="text"]:focus {
-    border-bottom: 2px solid var(--gold-accent);
 }
 
-.q-label {
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
+input[type="password"] {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
 }
 
+input:focus {
+    border-bottom-color: var(--gold);
+}
+
+label {
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dark);
+}
+
+.btn-primary, button[type="submit"] {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--gold);
+    border: none;
+    padding: 14px 48px;
+    cursor: pointer;
+    border-radius: var(--radius);
+    transition: background 0.2s, transform 0.15s;
+    justify-self: center;
+    display: block;
+    margin:  20px auto 0 auto;
+}
+
+.btn-primary:hover, button[type="submit"]:hover {
+    background: var(--dark);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+    .modal-content,
+    .page {
+        padding: 28px 20px 36px;
+    }
+}
