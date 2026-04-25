@@ -10,15 +10,15 @@
 <body>
 
 <div class="page">
-    <form action="registration-form.php" method="POST" class="login-form">
+    <form action="../controllers/users.php" method="POST" class="login-form">
         <img src="../../public/assets/logo.png" alt="Logo" class="logo">
         <h2 class="section-title">Account Registration</h2>
         <div class="form-group">
-            <label for="username">Email</label>
-            <input type="text" id="email" name="username" required>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
         </div>
         <div class="form-group">
-            <label for="username">Username</label>
+        <label for="username">Username</label>
             <input type="text" id="username" name="username" required>
         </div>
         <!-- TODO: add password strength indicator -->

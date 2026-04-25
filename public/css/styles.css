@@ -346,10 +346,11 @@ body {
     background: var(--gold-pale);
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    padding: auto 20px;
 }
 
 .about-image {
-    width: 700px;
+    width: 650px;
 }
 
 .about-container > p {
@@ -360,6 +361,7 @@ body {
     text-align: center;
     position: relative;
     top: 50px;
+    right: 20px;
 }
 
 .clinics-container {
