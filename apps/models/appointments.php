@@ -32,4 +32,7 @@ class Appointment {
         'time' => $time
     ]);
     }
+
+    public function seeAppointment($lastname, $firstname, $middlename, $age, $gender, 
+    $phone_number, $email, $clinic, $service, $date, $time)
 }
