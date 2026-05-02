@@ -29,10 +29,26 @@ class Appointment {
         ':clinic' => $clinic,
         ':service' => $service,
         ':date' => $date,
-        'time' => $time
+        ':time' => $time
     ]);
     }
 
     public function seeAppointment($lastname, $firstname, $middlename, $age, $gender, 
-    $phone_number, $email, $clinic, $service, $date, $time)
+    $phone_number, $email, $clinic, $service, $date, $time) {
+        $stmt = $this->conn->prepare("SELECT * FROM appointments WHERE date >= CURDATE();"); //FIXME: check if this query is correct
+        $stmt->execute([
+            ':lastname' => $lastname,
+            ':firstName' => $firstname,
+            ':middlename' => $middlename,
+            ':age' => $age,
+            ':gender' => $gender,
+            ':phone_number' => $phone_number,
+            ':email' => $email,
+            ':clinic' => $clinic,
+            ':service' => $service,
+            ':date' => $date,
+            ':time' => $time
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }
