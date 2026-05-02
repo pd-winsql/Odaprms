@@ -23,10 +23,12 @@ class User {
 
     public function addUser($email, $password, $username) {
         $stmt = $this->conn->prepare("INSERT INTO users (email, password, username) VALUES (:email, :password, :username)");
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $password);
-        $stmt->bindParam(':username', $username);
-        $stmt->execute();
+        
+        $stmt->execute([
+            ':email' => $email,
+            ':password' => $password,
+            ':username' => $username
+        ]);
     }
 }
 
