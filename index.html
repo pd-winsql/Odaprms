@@ -123,13 +123,23 @@
             <p>&copy; <script>document.write(new Date().getFullYear())</script> Dr. Aprille Ventura Clinica Dental. All rights reserved.</p>
         </div>
     </footer>
+
+
     <div id="myModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('myModal')">&times;</span>
-            <?php include 'apps/views/login.php'; ?>
+            <script src="apps/views/login.html"></script>
         </div>
     </div>
     <script>
+
+        fetch('apps/views/login.html')
+            .then(response => response.text())
+            .then(html => {
+                document.querySelector('.modal-content').innerHTML = html;
+            })
+            .catch(error => console.error('Error loading login form:', error));
+
         function openModal(id) {
             document.getElementById(id).classList.add('active');
             document.getElementById('email').focus();
@@ -143,6 +153,14 @@
                 if (e.target === this) closeModal(this.id);
             });
         });
+
+
+        window.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("openModal") === "true") {
+            openModal("myModal");}
+        });
+
     </script>
 </body>
 </html>

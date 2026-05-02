@@ -10,7 +10,7 @@
 <body>
 
 <div class="page">
-    <form action="../controllers/users.php" method="POST" class="login-form">
+    <form action="../controllers/users/addUsers.php" method="POST" class="login-form">
         <img src="../../public/assets/logo.png" alt="Logo" class="logo">
         <h2 class="section-title">Account Registration</h2>
         <div class="form-group">
@@ -34,10 +34,17 @@
         <button type="submit" class="btn-primary">Register</button>
         <div style="text-align:center; margin-top: 16px;">
         <span>Already have an account? </span>
-        <a href="apps/views/ventura_dental_form.php" onclick="closeModal('myModal');">Login</a>
+        <!--FIXEM: login modal not sure here. better go index then automatic show login modal or 
+        just create a separate login form instead of using modal-->
+        <a href="../../index.html" id="login-link">Login</a>
         </div>
     </form>
 </div>
 
+<script>
+    document.getElementById("login-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        window.location.href = "../../index.html?openModal=true"});
+</script>
 </body>
 </html>
