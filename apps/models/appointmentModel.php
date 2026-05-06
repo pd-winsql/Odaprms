@@ -11,7 +11,7 @@ class Appointment {
         $this->conn = $conn;
     }
 
-    public function addAppointment($lastname, $firstname, $middlename, $age, $gender, 
+    public function bookAppointment($lastname, $firstname, $middlename, $age, $gender, 
     $phone_number, $email, $clinic, $service, $date, $time, $status = 'pending') {
         try {    
             $stmt = $this->conn->prepare("INSERT INTO appointments (lastname, firstname, middlename, age, gender, 
@@ -44,7 +44,7 @@ class Appointment {
         try {
             $stmt = $this->conn->prepare("
                 SELECT * FROM appointments 
-                WHERE email = :email
+                WHERE email = :email or username = :email
                 AND date >= CURDATE()
                 ORDER BY date ASC, time ASC
             ");
@@ -111,18 +111,17 @@ class Appointment {
     }
 
     // Patient: view upcoming appointments with status
-    public function getUpcomingWithStatus($email) {
+    public function getUpcomingWithStatus() {
         try {
             $stmt = $this->conn->prepare("
                 SELECT lastname, firstname, middlename, age, gender,
                     phone_number, email, clinic, service,
                     date, time, status
                 FROM appointments 
-                WHERE email = :email
-                AND date >= CURDATE()
+                WHERE date >= CURDATE()
                 ORDER BY date ASC, time ASC
             ");
-            $stmt->execute([':email' => $email]);
+            $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } catch (PDOException $e) {
