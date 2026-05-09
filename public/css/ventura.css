@@ -1,0 +1,214 @@
+/* ── Ventura Dental – Bootstrap Override Theme ── */
+:root {
+    --gold: #b5924c;
+    --gold-light: #d4b483;
+    --gold-pale: #f5efe4;
+    --dark: #1a1612;
+    --mid: #4a3f30;
+    --border: #d9c9a8;
+    --white-bg: #fffdf9;
+    --bg: #e8e0d4;
+    --radius: 4px;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-primary: 'Jost', 'Segoe UI', Tahoma, sans-serif;
+
+  /* Bootstrap overrides */
+    --bs-primary: #b5924c;
+    --bs-primary-rgb: 181, 146, 76;
+    --bs-body-font-family: 'Jost', 'Segoe UI', Tahoma, sans-serif;
+    --bs-body-color: #1a1612;
+    --bs-border-color: #d9c9a8;
+    --bs-border-radius: 4px;
+}
+
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+body {
+    background-color: var(--bg);
+    background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(181,146,76,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(181,146,76,0.06) 0%, transparent 50%);
+    font-weight: 300;
+    overflow-x: hidden;
+}
+
+/* ── Navbar ── */
+.navbar { background-color: var(--white-bg) !important; border-bottom: 1px solid var(--border); }
+.navbar-brand img { height: 56px; }
+.nav-link { color: var(--dark) !important; font-weight: 500; letter-spacing: 0.06em; position: relative; transition: color 0.2s; }
+.nav-link::after { content: ''; display: block; position: absolute; left: 50%; bottom: -4px; width: 0; height: 2px; background: var(--gold); transition: width 0.3s, left 0.3s; transform: translateX(-50%); }
+.nav-link:hover, .nav-link:focus { color: var(--gold) !important; }
+.nav-link:hover::after { width: 100%; }
+.btn-login { background: var(--gold); color: #fff !important; padding: 8px 20px; border-radius: 6px; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.1em; text-decoration: none; transition: background 0.2s; }
+.btn-login:hover { background: var(--mid); color: #fff !important; }
+
+/* ── Hero ── */
+.hero-bg {
+    background-image: linear-gradient(rgba(181,146,76,0.08) 70%, rgba(255,253,249,0.8) 100%), url('../assets/hero-chair-fade.png');
+    background-size: cover; background-position: center;
+    min-height: 100vh;
+    display: flex; align-items: center;
+}
+.hero-card {
+    background: rgba(255,255,255,0.025);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(30,91,168,0.10);
+}
+.hero-card h1 { font-size: 2.75rem; line-height: 1.2; font-weight: 700; }
+.hero-card p { font-size: 1.15rem; color: var(--mid); }
+.highlight { color: var(--gold); }
+
+/* ── Buttons ── */
+.btn-gold { background: var(--gold); color: #fff; border: none; letter-spacing: 0.08em; font-weight: 500; transition: background 0.2s, transform 0.15s; }
+.btn-gold:hover { background: var(--mid); color: var(--gold-light); transform: translateY(-1px); }
+.btn-outline-gold { background: transparent; color: var(--gold); border: 1px solid var(--border); font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; transition: border-color 0.2s, color 0.2s; }
+.btn-outline-gold:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── Sections ── */
+#services { background-color: var(--white-bg); border-top: 1px solid var(--border); }
+#services h2, #about h2 { color: var(--gold); font-size: 2rem; }
+#about { border-top: 1px solid var(--border); }
+#contact { background-color: var(--gold-pale); border-top: 1px solid var(--border); }
+
+/* Service cards */
+.service-card { background: var(--gold-pale); border: 1px solid var(--border); border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s; }
+.service-card:hover { transform: translateY(-5px); box-shadow: 0 4px 16px rgba(181,146,76,0.18); }
+.service-card img { border-radius: 12px 12px 0 0; width: 100%; }
+
+/* About */
+.about-container { background: var(--gold-pale); border-radius: 12px; border: 1px solid var(--border); }
+.about-image { max-width: 100%; }
+
+/* Clinic cards */
+.clinic-card-item { background: var(--white-bg); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(181,146,76,0.08); transition: transform 0.2s, box-shadow 0.2s; overflow: hidden; }
+.clinic-card-item:hover { transform: translateY(-5px); box-shadow: 0 4px 16px rgba(181,146,76,0.18); }
+.clinic-card-item img { width: 100%; }
+
+/* Contact form */
+.contact-form { background: var(--white-bg); border: 1px solid var(--border); border-radius: 12px; }
+.contact-form label { font-weight: 600; color: var(--gold); font-size: 0.875rem; }
+.contact-form .form-control { border: 1px solid var(--border); border-radius: 6px; font-family: var(--font-primary); }
+.contact-form .form-control:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(181,146,76,0.15); }
+.contact-info h2 { font-size: 2.2rem; color: var(--gold); }
+
+/* ── Footer ── */
+.footer { background-color: var(--gold); }
+.footer p { color: var(--white-bg); font-size: 14px; margin: 0; }
+
+/* ── Modal ── */
+.modal-content { background: var(--white-bg); border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--font-primary); color: var(--dark); }
+.btn-close-gold { position: absolute; top: 14px; right: 18px; font-size: 1.4em; color: var(--gold); cursor: pointer; background: none; border: none; line-height: 1; }
+.btn-close-gold:hover { color: var(--mid); }
+
+/* ── Form Pages (booking / dental / registration / login) ── */
+.form-page {
+    max-width: 720px; margin: 0 auto;
+    background: var(--white-bg); border: 1px solid var(--border);
+    box-shadow: 0 8px 48px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    padding: 52px 56px 60px;
+}
+.form-page-wide { max-width: 860px; }
+
+.logo-block .logo-name { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.18em; color: var(--gold); font-style: italic; line-height: 1; }
+.logo-block .logo-ventura { font-family: var(--font-display); font-size: 38px; font-weight: 300; letter-spacing: 0.12em; color: var(--dark); line-height: 1; display: flex; align-items: center; }
+.logo-block .cross { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: var(--gold); color: #fff; font-size: 20px; font-weight: 600; margin: 0 1px; border-radius: 2px; position: relative; top: -1px; }
+.logo-block .logo-sub { font-size: 9px; letter-spacing: 0.28em; color: var(--gold); font-weight: 400; margin-top: 4px; }
+
+.clinic-header-info { text-align: right; font-size: 11px; line-height: 1.7; color: var(--mid); }
+.clinic-header-info strong { display: block; font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: 0.06em; color: var(--dark); margin-bottom: 4px; }
+
+.section-divider { font-size: 10px; font-weight: 500; letter-spacing: 0.22em; color: var(--gold); text-transform: uppercase; margin: 32px 0 18px; display: flex; align-items: center; gap: 14px; }
+.section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Underline inputs */
+.input-underline {
+    font-family: var(--font-primary); font-size: 13px; font-weight: 300; color: var(--dark);
+    background: transparent; border: none; border-bottom: 1px solid var(--border);
+    padding: 6px 0 5px; outline: none; width: 100%; transition: border-color 0.2s;
+    -webkit-appearance: none; appearance: none; border-radius: 0;
+}
+.input-underline:focus { border-bottom-color: var(--gold); box-shadow: none; }
+.input-underline::placeholder { color: #ccc; }
+.form-label-sm { font-size: 9.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); margin-bottom: 6px; }
+
+select.input-underline {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23b5924c'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 2px center; padding-right: 18px; cursor: pointer;
+}
+
+/* Clinic radio cards */
+.clinic-radio-card { position: relative; cursor: pointer; }
+.clinic-radio-card input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.clinic-radio-inner { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; transition: border-color 0.2s, background 0.2s; background: var(--white-bg); position: relative; }
+.clinic-radio-card input[type="radio"]:checked + .clinic-radio-inner { border-color: var(--gold); background: var(--gold-pale); }
+.clinic-radio-inner .clinic-tag { font-size: 9px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+.clinic-radio-inner .clinic-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--dark); letter-spacing: 0.04em; margin-bottom: 4px; }
+.clinic-radio-inner .clinic-address { font-size: 11px; color: var(--mid); line-height: 1.6; }
+.clinic-radio-card input[type="radio"]:checked + .clinic-radio-inner::after { content: '✓'; position: absolute; top: 10px; right: 12px; font-size: 12px; color: var(--gold); font-weight: 500; }
+
+/* Notice banner */
+.notice-banner { background: var(--gold-pale); border-left: 3px solid var(--gold-light); border-radius: var(--radius); padding: 14px 16px; font-size: 12px; line-height: 1.7; color: var(--mid); }
+.notice-banner .notice-icon { font-size: 14px; color: var(--gold); }
+
+/* Submit row */
+.form-submit-row { border-top: 1px solid var(--border); padding-top: 28px; margin-top: 40px; }
+.btn-form-primary { font-family: var(--font-primary); font-size: 10px; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase; color: #fff; background: var(--gold); border: none; padding: 14px 40px; cursor: pointer; border-radius: var(--radius); transition: background 0.2s, transform 0.15s; }
+.btn-form-primary:hover { background: var(--mid); color: #fff; transform: translateY(-1px); }
+.btn-form-secondary { font-family: var(--font-primary); font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mid); background: transparent; border: 1px solid var(--border); padding: 12px 28px; cursor: pointer; border-radius: var(--radius); transition: border-color 0.2s, color 0.2s; }
+.btn-form-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Health questionnaire table */
+.hq-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hq-table thead th { font-size: 9px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); padding: 0 0 8px; text-align: center; width: 60px; border-bottom: 1px solid var(--border); }
+.hq-table thead th:first-child { text-align: left; width: auto; }
+.hq-table tbody tr { border-bottom: 1px solid #f0e8d8; transition: background 0.15s; }
+.hq-table tbody tr:hover { background: #fdf8f0; }
+.hq-table td { padding: 10px 0; font-weight: 300; font-size: 13px; color: var(--dark); }
+.hq-table td:not(:first-child) { text-align: center; }
+.hq-table .sub-q td:first-child { padding-left: 28px; font-size: 12px; color: var(--mid); }
+.hq-table input[type="text"].follow-up { border-bottom: 1px solid var(--border); font-size: 12px; margin-top: 3px; padding: 2px 0; width: 100%; max-width: 320px; background: transparent; border-top: none; border-left: none; border-right: none; outline: none; }
+.yn-radio { display: flex; justify-content: center; }
+.yn-radio label { display: flex; align-items: center; gap: 4px; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--mid); cursor: pointer; padding: 2px 8px; transition: color 0.2s; font-weight: 300; }
+.yn-radio label:hover { color: var(--gold); }
+.yn-radio input[type="radio"] { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+
+/* Conditions checklist */
+.check-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 300; color: var(--dark); padding: 6px 0; border-bottom: 1px solid #f0e8d8; cursor: pointer; transition: color 0.15s; }
+.check-item:hover { color: var(--gold); }
+.check-item input[type="checkbox"] { accent-color: var(--gold); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+
+/* Minors box */
+.minors-box { background: var(--gold-pale); border-left: 3px solid var(--gold-light); border-radius: var(--radius); padding: 18px 20px 16px; }
+.minors-box .minors-label { font-family: var(--font-display); font-size: 12px; font-style: italic; color: var(--gold); letter-spacing: 0.08em; }
+
+/* Consent */
+.consent-box { background: var(--gold-pale); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px; font-size: 12.5px; line-height: 1.8; color: var(--mid); }
+.consent-box strong { color: var(--dark); }
+.consent-name { display: inline-block; border-bottom: 1px solid var(--dark); min-width: 240px; padding-bottom: 1px; background: transparent; border-top: none; border-left: none; border-right: none; outline: none; font-family: var(--font-primary); }
+.consent-checkboxes label { display: flex; align-items: center; gap: 6px; font-size: 12px; text-transform: none; letter-spacing: 0; color: var(--dark); cursor: pointer; font-weight: 300; }
+.consent-checkboxes input[type="checkbox"] { accent-color: var(--gold); width: 14px; height: 14px; }
+.sig-line { border-bottom: 1px solid var(--dark); height: 36px; width: 100%; }
+.sig-label { font-size: 9px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mid); text-align: center; margin-top: 4px; }
+
+/* Success screen */
+.success-screen { display: none; text-align: center; padding: 60px 40px; }
+.success-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--gold-pale); border: 1px solid var(--gold-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 22px; }
+.booking-ref { display: inline-block; background: var(--gold-pale); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 24px; font-family: var(--font-display); font-size: 20px; letter-spacing: 0.14em; color: var(--gold); }
+
+/* Login / Registration page */
+.auth-page { max-width: 480px; }
+.logo-auth { width: 120px; height: auto; display: block; margin: 0 auto 8px; }
+
+/* Navbar toggler gold */
+.navbar-toggler { border-color: var(--border); }
+.navbar-toggler-icon { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23b5924c' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e"); }
+
+@media (max-width: 768px) {
+    .form-page { padding: 28px 20px 36px; }
+    .hero-card h1 { font-size: 2rem; }
+    .clinic-header-info { text-align: left; }
+    .form-submit-row { flex-direction: column-reverse; }
+    .btn-form-primary, .btn-form-secondary { width: 100%; text-align: center; }
+}
