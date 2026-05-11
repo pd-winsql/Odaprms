@@ -15,7 +15,9 @@
       <div class="col-12 col-sm-10 col-md-8 col-lg-5">
 
         <div class="card vd-page-card border p-4 p-md-5">
-          <form action="../controllers/users/addUsers.php" method="POST">
+          <form id="registerForm" action="../controllers/userController.php">
+
+            <input type="hidden" name="action" value="register">
 
             <div class="text-center mb-4">
               <img src="../../public/assets/logo.png" alt="Logo" style="height:90px;">
@@ -45,6 +47,8 @@
               <input type="password" id="confirm-password" name="confirm-password" class="form-control vd-input" required>
             </div>
 
+            <div id="form-error" class="text-danger small mb-2 d-none"></div>
+
             <button type="submit" class="btn vd-btn-gold w-100 mt-3">Register</button>
 
             <p class="text-center mt-3 small">
@@ -64,6 +68,23 @@
     document.getElementById('login-link').addEventListener('click', (e) => {
       e.preventDefault();
       window.location.href = '../../index.html?openModal=true';
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const response = await fetch('../controllers/users/userController.php', {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
+      if (result.success) {
+        window.location.href = result.redirect;
+      } else {
+        const error = document.getElementById('form-error');
+        error.textContent = result.message;
+        error.classList.remove('d-none');
+      }
     });
   </script>
 </body>

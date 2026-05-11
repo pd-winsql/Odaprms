@@ -1,5 +1,6 @@
 <div class="p-4 p-md-5">
-  <form action="apps/controllers/users/checkUsers.php" method="POST">
+  <form id="loginForm" action="apps/controllers/userController.php">
+    <input type="hidden" name="action" value="login">
     <div class="text-center mb-4">
       <img src="public/assets/logo.png" alt="Logo" style="height:80px;">
     </div>
@@ -18,6 +19,8 @@
       <label for="password" class="vd-label form-label">Password</label>
       <input type="password" id="password" name="password" class="form-control vd-input" required>
     </div>
+
+    <div id="form-error" class="text-danger small mb-2 d-none"></div>
 
     <button type="submit" class="btn vd-btn-gold w-100 mt-3">Login</button>
 

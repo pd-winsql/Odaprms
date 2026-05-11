@@ -124,7 +124,7 @@
       <h2 class="text-center vd-section-heading mb-4">Our Clinics</h2>
       <div class="row justify-content-center g-4">
         <div class="col-12 col-sm-6 col-md-4">
-          <div class="card vd-clinic-card h-100 text-center border">
+          <div class="card vd-clinic-card-index h-100 text-center border">
             <img src="public/assets/logo.png" class="card-img-top p-3" alt="Clinic 1">
             <div class="card-body">
               <h5 class="card-title">Clinic 1</h5>
@@ -134,7 +134,7 @@
           </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4">
-          <div class="card vd-clinic-card h-100 text-center border">
+          <div class="card vd-clinic-card-index h-100 text-center border">
             <img src="public/assets/logo.png" class="card-img-top p-3" alt="Clinic 2">
             <div class="card-body">
               <h5 class="card-title">Clinic 2</h5>
@@ -208,6 +208,24 @@
         .then(html => {
           document.getElementById('loginModalBody').innerHTML = html;
           bsModal.show();
+
+          document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('apps/controllers/userController.php', {
+              method: 'POST',
+              body: formData
+            });
+            const result = await response.json();
+            if (result.success) {
+              window.location.href = result.redirect;
+            } else {
+              const error = document.getElementById('form-error');
+              error.textContent = result.message;
+              error.classList.remove('d-none');
+            }
+          });
+
         })
         .catch(err => console.error('Error loading login form:', err));
     }

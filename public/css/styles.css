@@ -307,7 +307,7 @@ body {
   min-height: 100vh;
   background-image:
     linear-gradient(rgba(181,146,76,0.08) 70%, rgba(255,253,249,0.8) 100%),
-    url('public/assets/hero-chair-fade.png');
+    url('../assets/hero-chair-fade.png');
   background-size: cover;
   background-position: center;
 }
@@ -337,6 +337,7 @@ body {
   border-color: var(--border) !important;
   border-radius: 12px !important;
   transition: transform 0.2s, box-shadow 0.2s;
+  padding-bottom: 8px;
 }
 .vd-clinic-card-index:hover { transform: translateY(-5px); box-shadow: 0 4px 16px rgba(181,146,76,0.2); }
 
