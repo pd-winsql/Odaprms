@@ -39,6 +39,8 @@ class Appointment {
         }
     }
 
+    // ===== PATIENT FUNCTIONS =====
+
     // Patient: view upcoming appointments
     public function getPatientUpcomingAppointments($email) {
         try {
@@ -75,6 +77,29 @@ class Appointment {
         }
     }
 
+    // Patient: view upcoming appointments with status
+    public function getUpcomingWithStatus($email) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT lastname, firstname, middlename, age, gender,
+                    phone_number, email, clinic, service,
+                    date, time, status
+                FROM appointments 
+                WHERE date >= CURDATE()
+                AND (email = :email or username = :email)
+                ORDER BY date ASC, time ASC
+            ");
+            $stmt->execute([':email' => $email]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("getUpcomingWithStatus error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // ===== ADMIN FUNCTIONS =====
+
     // Admin: view all past appointments
     public function getAdminPastAppointments() {
         try {
@@ -106,26 +131,6 @@ class Appointment {
 
         } catch (PDOException $e) {
             error_log("getAdminPastAppointmentsByClinic error: " . $e->getMessage());
-            return [];
-        }
-    }
-
-    // Patient: view upcoming appointments with status
-    public function getUpcomingWithStatus() {
-        try {
-            $stmt = $this->conn->prepare("
-                SELECT lastname, firstname, middlename, age, gender,
-                    phone_number, email, clinic, service,
-                    date, time, status
-                FROM appointments 
-                WHERE date >= CURDATE()
-                ORDER BY date ASC, time ASC
-            ");
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        } catch (PDOException $e) {
-            error_log("getUpcomingWithStatus error: " . $e->getMessage());
             return [];
         }
     }

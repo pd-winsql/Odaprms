@@ -27,7 +27,8 @@ class AppointmentController {
 
     //Admin: all upcoming appointments
     public function adminUpcoming() {
-        $data = $this->appointments->getUpcomingWithStatus();
+        $email = $_SESSION['email'];
+        $data = $this->appointments->getUpcomingWithStatus($email);
         require_once '../views/admin-upcoming-appointments.php';
     }
 
