@@ -1,3 +1,13 @@
+<?php
+  require_once 'config/conn.php';
+  require_once 'apps/models/clinicModel.php';
+
+  $db = new Database();
+  $conn = $db->connect();
+  $clinicModel = new Clinic($conn);
+  $clinics = $clinicModel->getAllClinics();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -123,26 +133,18 @@
 
       <h2 class="text-center vd-section-heading mb-4">Our Clinics</h2>
       <div class="row justify-content-center g-4">
+      <?php foreach ($clinics as $clinic): ?>
         <div class="col-12 col-sm-6 col-md-4">
           <div class="card vd-clinic-card-index h-100 text-center border">
-            <img src="public/assets/logo.png" class="card-img-top p-3" alt="Clinic 1">
+            <img src="public/assets/clinic-images/<?= htmlspecialchars($clinic['clinic_image']) ?>" class="card-img-top p-3" alt="<?= htmlspecialchars($clinic['clinic_name']) ?>">
             <div class="card-body">
-              <h5 class="card-title">Clinic 1</h5>
-              <p class="card-text small text-muted">Bartolome St, Tuguegarao City, Cagayan</p>
-              <p class="card-text small text-muted">Phone: 0912-345-6789</p>
+              <h5 class="card-title"><?= htmlspecialchars($clinic['clinic_name']) ?></h5>
+              <p class="card-text small text-muted"><?= htmlspecialchars($clinic['clinic_address']) ?></p>
+              <p class="card-text small text-muted">Phone: <?= htmlspecialchars($clinic['clinic_contact']) ?></p>
             </div>
           </div>
         </div>
-        <div class="col-12 col-sm-6 col-md-4">
-          <div class="card vd-clinic-card-index h-100 text-center border">
-            <img src="public/assets/logo.png" class="card-img-top p-3" alt="Clinic 2">
-            <div class="card-body">
-              <h5 class="card-title">Clinic 2</h5>
-              <p class="card-text small text-muted">WJ5R+997, Road, Alcala, Cagayan</p>
-              <p class="card-text small text-muted">Phone: 0912-345-6789</p>
-            </div>
-          </div>
-        </div>
+      <?php endforeach; ?>
       </div>
     </div>
   </section>

@@ -1,14 +1,10 @@
 <?php
-require_once '../../../config/conn.php';
-
-$db = new Database();
-$conn=$db->connect();
 
 class Clinic {
     private $conn;
     public function __construct($conn) 
     {
-        $this->conn = $conn;
+        $this->conn = $conn;        
     }
 
     public function getAllClinics() {
@@ -71,17 +67,6 @@ class Clinic {
         } catch (PDOException $e) {
             error_log("deleteClinic error: " . $e->getMessage());
             return false;
-        }
-    }
-
-    public function getClinicForBookings() {
-        try {
-            $stmt = $this->conn->prepare("SELECT id, name FROM clinics");
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("getClinicForBookings error: " . $e->getMessage());
-            return [];
         }
     }
 }

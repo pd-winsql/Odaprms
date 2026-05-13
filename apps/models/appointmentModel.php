@@ -1,8 +1,4 @@
 <?php
-require_once '../../../config/conn.php';
-
-$db = new Database();
-$conn=$db->connect();
 
 class Appointment {
     private $conn;
@@ -46,7 +42,7 @@ class Appointment {
         try {
             $stmt = $this->conn->prepare("
                 SELECT * FROM appointments 
-                WHERE email = :email or username = :email
+                WHERE (email = :email or username = :email)
                 AND date >= CURDATE()
                 ORDER BY date ASC, time ASC
             ");

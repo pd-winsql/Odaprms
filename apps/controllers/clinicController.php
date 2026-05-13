@@ -5,7 +5,7 @@ require_once '../models/clinicModel.php';
 class clinicController {
     private $clinics;
 
-    public function __construct($conn) {
+    public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->clinics = new Clinic($conn);
@@ -81,9 +81,5 @@ class clinicController {
             header("Location: ../views/admin/clinics.php?error=1");
         }
         exit;
-    }
-
-    public function getClinicForBookings() {
-        return $this->clinics->getClinicForBookings();
     }
 }

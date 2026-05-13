@@ -1,12 +1,9 @@
 <?php
-require_once '../../../config/conn.php';
-
-$db = new Database();
-$conn=$db->connect();
 
 class User {
     private $conn;
-    public function __construct($conn) {
+    public function __construct($conn) 
+    {
         $this->conn = $conn;
     }
 

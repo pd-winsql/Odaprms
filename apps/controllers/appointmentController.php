@@ -5,7 +5,7 @@ require_once '../../../config/conn.php';
 class AppointmentController {
     private $appointments;
 
-    public function __construct($conn) {
+    public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->appointments = new Appointment($conn);
@@ -28,7 +28,7 @@ class AppointmentController {
     //Admin: all upcoming appointments
     public function adminUpcoming() {
         $email = $_SESSION['email'];
-        $data = $this->appointments->getUpcomingWithStatus($email);
+        $data = $this->appointments->getAllUpcomingWithStatus();
         require_once '../views/admin-upcoming-appointments.php';
     }
 
