@@ -1,3 +1,13 @@
+<?php
+  require_once '../../config/conn.php';
+  require_once '../models/clinicModel.php';
+
+  $db = new Database();
+  $conn = $db->connect();
+  $clinicModel = new Clinic($conn);
+  $clinics = $clinicModel->getAllClinics();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,15 +52,15 @@
               <div class="row g-3 mb-3">
                 <div class="col-12 col-md-4">
                   <label class="vd-label form-label">Last Name</label>
-                  <input type="text" name="lastName" class="form-control vd-input" placeholder="Dela Cruz" required>
+                  <input type="text" name="lastname" class="form-control vd-input" placeholder="Dela Cruz" required>
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="vd-label form-label">First Name</label>
-                  <input type="text" name="firstName" class="form-control vd-input" placeholder="Juan" required>
+                  <input type="text" name="firstname" class="form-control vd-input" placeholder="Juan" required>
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="vd-label form-label">Middle Name</label>
-                  <input type="text" name="middleName" class="form-control vd-input" placeholder="Santos">
+                  <input type="text" name="middlename" class="form-control vd-input" placeholder="Santos">
                 </div>
                 <div class="col-6 col-md-4">
                   <label class="vd-label form-label">Age</label>
@@ -67,7 +77,7 @@
                 </div>
                 <div class="col-12 col-md-6">
                   <label class="vd-label form-label">Phone Number</label>
-                  <input type="tel" name="phone" class="form-control vd-input" placeholder="09XX XXX XXXX" required>
+                  <input type="tel" name="phone_number" class="form-control vd-input" placeholder="09XX XXX XXXX" required>
                 </div>
                 <div class="col-12 col-md-6">
                   <label class="vd-label form-label">Email Address</label>
@@ -78,26 +88,18 @@
               <!-- SELECT CLINIC -->
               <p class="vd-section-label">Select Clinic</p>
               <div class="row g-3 mb-3">
-                <div class="col-12 col-sm-6">
-                  <label class="vd-clinic-card w-100">
-                    <input type="radio" name="clinic" value="alcala" class="d-none vd-clinic-radio" required>
-                    <div class="vd-clinic-card-inner p-3 rounded">
-                      <div class="vd-clinic-tag">Branch 1</div>
-                      <div class="vd-clinic-name">Alcala Branch</div>
-                      <div class="vd-clinic-address">Zone 4, Tupang<br>Alcala, Cagayan</div>
-                    </div>
-                  </label>
-                </div>
-                <div class="col-12 col-sm-6">
-                  <label class="vd-clinic-card w-100">
-                    <input type="radio" name="clinic" value="tuguegarao" class="d-none vd-clinic-radio">
-                    <div class="vd-clinic-card-inner p-3 rounded">
-                      <div class="vd-clinic-tag">Branch 2</div>
-                      <div class="vd-clinic-name">Tuguegarao Branch</div>
-                      <div class="vd-clinic-address">Bartolome St., Caggay<br>Tuguegarao City, Cagayan</div>
-                    </div>
-                  </label>
-                </div>
+                <?php foreach ($clinics as $clinic): ?>
+                  <div class="col-12 col-sm-6">
+                    <label class="vd-clinic-card w-100">
+                      <input type="radio" name="clinic" value="<?= htmlspecialchars($clinic['clinic_id']) ?>" class="d-none vd-clinic-radio" required>
+                      <div class="vd-clinic-card-inner p-3 rounded">
+                        <div class="vd-clinic-tag"><?= htmlspecialchars($clinic['clinic_name']) ?></div>
+                        <div class="vd-clinic-address"><?= htmlspecialchars($clinic['clinic_address']) ?></div>
+                        <div class="vd-clinic-address">📞 <?= htmlspecialchars($clinic['clinic_contact']) ?></div>
+                      </div>
+                    </label>
+                  </div>
+                <?php endforeach; ?>
               </div>
 
               <!-- SELECT SERVICE -->
@@ -141,11 +143,11 @@
               <div class="row g-3 mb-3">
                 <div class="col-12 col-sm-6">
                   <label class="vd-label form-label">Preferred Date</label>
-                  <input type="date" id="prefDate" name="prefDate" class="form-control vd-input" required>
+                  <input type="date" id="prefDate" name="date" class="form-control vd-input" required>
                 </div>
                 <div class="col-12 col-sm-6">
                   <label class="vd-label form-label">Preferred Time Slot</label>
-                  <select name="prefTime" class="form-select vd-input" required>
+                  <select name="time" class="form-select vd-input" required>
                     <option value="" disabled selected>— Select time —</option>
                     <option value="10:00">10:00 AM</option>
                     <option value="10:30">10:30 AM</option>
@@ -167,6 +169,8 @@
                 <span class="vd-notice-icon">ℹ</span>
                 <span class="small">All appointments are <strong>strictly by appointment only</strong> and subject to confirmation. A member of our team will reach out via email within 24 hours to confirm your slot.</span>
               </div>
+
+              <input type="hidden" name="action" value="book">
 
               <!-- ACTIONS -->
               <div class="d-flex justify-content-end gap-2 pt-4" style="border-top:1px solid #d9c9a8;">
@@ -211,47 +215,51 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const accountModal = new bootstrap.Modal(document.getElementById('accountModal'));
 
-    document.getElementById('prefDate').setAttribute('min', new Date().toISOString().split('T')[0]);
-
-    document.getElementById('bookingForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      accountModal.show();
-    });
-
-    // Clinic card radio highlight
     document.querySelectorAll('.vd-clinic-radio').forEach(radio => {
       radio.addEventListener('change', function() {
         document.querySelectorAll('.vd-clinic-card-inner').forEach(c => c.classList.remove('selected'));
         this.closest('.vd-clinic-card').querySelector('.vd-clinic-card-inner').classList.add('selected');
       });
     });
+    
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      accountModal.show();
+    });
 
     function skipAccount() {
       accountModal.hide();
-      showSuccess();
+      submitBooking();
     }
 
     function proceedAccount() {
       accountModal.hide();
-      showSuccess();
-      window.location.href = 'ventura_dental_form.php';
+      submitBooking(true);
     }
 
-    function showSuccess() {
-      const ref = 'VCD-' + Math.floor(100000 + Math.random() * 900000);
-      document.getElementById('refNumber').textContent = ref;
-      document.getElementById('formView').classList.add('d-none');
-      document.getElementById('successView').classList.remove('d-none');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    async function submitBooking(redirect = false) {
+      const formData = new FormData(document.getElementById('bookingForm'));
 
-    function resetForm() {
-      document.getElementById('bookingForm').reset();
-      document.querySelectorAll('.vd-clinic-card-inner').forEach(c => c.classList.remove('selected'));
-      document.getElementById('successView').classList.add('d-none');
-      document.getElementById('formView').classList.remove('d-none');
+      const response = await fetch('../../apps/controllers/appointmentController.php', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        document.getElementById('refNumber').textContent = 'VCD-' + result.appointment_id;
+        document.getElementById('formView').classList.add('d-none');
+        document.getElementById('successView').classList.remove('d-none');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (redirect) {
+          window.location.href = 'ventura_dental_form.php';
+        }
+      } else {
+        alert(result.message);
+      }
     }
   </script>
 </body>

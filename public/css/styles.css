@@ -194,7 +194,7 @@ body {
   color: var(--gold);
 }
 .vd-clinic-tag {
-  font-size: 9px; font-weight: 500;
+  font-size: 16px; font-weight: 500;
   letter-spacing: 0.18em; text-transform: uppercase;
   color: var(--gold); margin-bottom: 4px;
 }
@@ -203,7 +203,7 @@ body {
   font-size: 15px; font-weight: 600;
   color: var(--dark); letter-spacing: 0.04em; margin-bottom: 4px;
 }
-.vd-clinic-address { font-size: 11px; color: var(--mid); line-height: 1.6; }
+.vd-clinic-address { font-size: 13px; color: var(--mid); line-height: 1.6; }
 
 /* Notice */
 .vd-notice { background: var(--gold-pale); border-left: 3px solid var(--gold-light); }

@@ -57,7 +57,7 @@ class AppointmentController {
 
     //Patient: book appointment
     public function bookAppointment() {
-        if($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $this->appointments->bookAppointment(
                 $_POST['lastname'],
                 $_POST['firstname'],
@@ -73,11 +73,21 @@ class AppointmentController {
             );
 
             if ($result) {
-                header("Location: ../views/patient/upcoming.php?success=1");
+                $id = $this->appointments->getLastInsertedId();
+                echo json_encode(['success' => true, 'appointment_id' => $id]);
             } else {
-                header("Location: ../views/patient/book.php?error=1");
+                echo json_encode(['success' => false, 'message' => 'Booking failed. Please try again.']);
             }
             exit;
         }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $controller = new AppointmentController();
+
+    if ($action === 'book') {
+        $controller->bookAppointment();
     }
 }

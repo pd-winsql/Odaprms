@@ -175,4 +175,8 @@ class Appointment {
             return false;
         }
     }
+
+        public function getLastInsertedId() {
+        return $this->conn->lastInsertId();
+    }
 }
