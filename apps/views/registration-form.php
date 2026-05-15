@@ -73,7 +73,7 @@
     document.getElementById('registerForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const formData = new FormData(this);
-      const response = await fetch('../controllers/users/userController.php', {
+      const response = await fetch('../controllers/userController.php', {
         method: 'POST',
         body: formData
       });

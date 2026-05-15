@@ -20,7 +20,7 @@ class Clinic {
 
     public function getClinicById($id) {
         try {
-            $stmt = $this->conn->prepare("SELECT * FROM clinics WHERE id = :id");
+            $stmt = $this->conn->prepare("SELECT * FROM clinics WHERE clinic_id = :id");
             $stmt->execute([':id' => $id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -31,7 +31,7 @@ class Clinic {
 
     public function addClinic($name, $address, $phone, $image) {
         try {
-            $stmt = $this->conn->prepare("INSERT INTO clinics (name, address, phone, image) VALUES (:name, :address, :phone, :image)");
+            $stmt = $this->conn->prepare("INSERT INTO clinics (clinic_name, clinic_address, clinic_contact, clinic_image) VALUES (:name, :address, :phone, :image)");
             return $stmt->execute([
                 ':name' => $name,
                 ':address' => $address,
@@ -46,7 +46,7 @@ class Clinic {
 
     public function updateClinic($id, $name, $address, $phone, $image) {
         try {
-            $stmt = $this->conn->prepare("UPDATE clinics SET name = :name, address = :address, phone = :phone, image = :image WHERE id = :id");
+            $stmt = $this->conn->prepare("UPDATE clinics SET clinic_name = :name, clinic_address = :address, clinic_contact = :phone, clinic_image = :image WHERE clinic_id = :id");
             return $stmt->execute([
                 ':id' => $id,
                 ':name' => $name,
@@ -62,7 +62,7 @@ class Clinic {
 
     public function deleteClinic($id) {
         try {
-            $stmt = $this->conn->prepare("DELETE FROM clinics WHERE id = :id");
+            $stmt = $this->conn->prepare("DELETE FROM clinics WHERE clinic_id = :id");
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
             error_log("deleteClinic error: " . $e->getMessage());

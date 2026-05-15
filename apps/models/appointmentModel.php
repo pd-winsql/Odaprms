@@ -42,7 +42,7 @@ class Appointment {
         try {
             $stmt = $this->conn->prepare("
                 SELECT * FROM appointments 
-                WHERE (email = :email or username = :email)
+                WHERE email = :email
                 AND date >= CURDATE()
                 ORDER BY date ASC, time ASC
             ");
@@ -82,7 +82,7 @@ class Appointment {
                     date, time, status
                 FROM appointments 
                 WHERE date >= CURDATE()
-                AND (email = :email or username = :email)
+                AND email = :email
                 ORDER BY date ASC, time ASC
             ");
             $stmt->execute([':email' => $email]);
@@ -153,7 +153,7 @@ class Appointment {
 
     // Admin: update appointment status
     public function updateAppointmentStatus($appointment_id, $status) {
-        $allowed = ['pending', 'confirmed', 'cancelled', 'completed'];
+        $allowed = ['Pending', 'Confirmed', 'Cancelled', 'Completed'];
 
         if (!in_array($status, $allowed)) {
             return false;
@@ -163,7 +163,7 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 UPDATE appointments 
                 SET status = :status 
-                WHERE id = :id
+                WHERE appointment_id = :id
             ");
             return $stmt->execute([
                 ':status' => $status,

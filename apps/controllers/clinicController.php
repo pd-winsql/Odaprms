@@ -83,3 +83,22 @@ class clinicController {
         exit;
     }
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $controller = new clinicController();
+
+    if ($action === 'add') {
+        $controller->addClinic();
+    } elseif ($action === 'update') {
+        $controller->updateClinic();
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = $_GET['action'] ?? '';
+    $controller = new clinicController();
+
+    if ($action === 'delete') {
+        $id = $_GET['id'] ?? null;
+        if ($id) $controller->deleteClinic($id);
+    }
+}

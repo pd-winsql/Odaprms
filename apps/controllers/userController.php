@@ -40,7 +40,8 @@ function loginUser($userModel) {
     $user = $userModel->checkUser($email, $password);
     if ($user) {
         $_SESSION['user_id']  = $user['id'];
-        $_SESSION['username'] = $user['username'] ?? $user['email'];
+        $_SESSION['email']    = $user['email'];
+        $_SESSION['username'] = $user['username'];
         echo json_encode(['success' => true, 'redirect' => '../../views/dashboard.html']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid email or password.']);

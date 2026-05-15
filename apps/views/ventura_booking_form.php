@@ -91,7 +91,7 @@
                 <?php foreach ($clinics as $clinic): ?>
                   <div class="col-12 col-sm-6">
                     <label class="vd-clinic-card w-100">
-                      <input type="radio" name="clinic" value="<?= htmlspecialchars($clinic['clinic_id']) ?>" class="d-none vd-clinic-radio" required>
+                      <input type="radio" name="clinic" value="<?= htmlspecialchars($clinic['clinic_name']) ?>" class="d-none vd-clinic-radio" required>
                       <div class="vd-clinic-card-inner p-3 rounded">
                         <div class="vd-clinic-tag"><?= htmlspecialchars($clinic['clinic_name']) ?></div>
                         <div class="vd-clinic-address"><?= htmlspecialchars($clinic['clinic_address']) ?></div>
