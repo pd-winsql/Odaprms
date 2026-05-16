@@ -42,7 +42,15 @@ function loginUser($userModel) {
         $_SESSION['user_id']  = $user['id'];
         $_SESSION['email']    = $user['email'];
         $_SESSION['username'] = $user['username'];
-        echo json_encode(['success' => true, 'redirect' => '../../views/dashboard.html']);
+        $_SESSION['user_role'] = $user['user_role'];
+
+        if ($user['user_role'] === 'Patient') {
+            echo json_encode(['success' => true, 'redirect' => '../../views/patient/dashboard.php']);
+        } else if ($user['user_role'] === 'Admin') {
+            echo json_encode(['success' => true, 'redirect' => '../../views/admin/dashboard.php']);
+        } else {
+            echo json_encode(['success' => true, 'redirect' => '../../views/dental_asst/dashboard.php']);
+        }
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid email or password.']);
     }

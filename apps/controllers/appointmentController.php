@@ -2,6 +2,8 @@
 require_once '../models/appointmentModel.php';
 require_once '../../../config/conn.php';
 
+session_start();
+
 class AppointmentController {
     private $appointments;
 
@@ -13,6 +15,16 @@ class AppointmentController {
 
     //Patient: upcoming appointments
     public function upcomingAppointments() {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ../../../index.php?openModal=true');
+            exit;
+        }
+
+        if ($_SESSION['user_role'] !== 'Patient') {
+            header('Location: ../admin/dashboard.php');
+            exit;
+        }
+
         $email = $_SESSION['email'];
         $data = $this->appointments->getPatientUpcomingAppointments($email);
         require_once '../views/patient-upcoming-appointments.php';
@@ -20,6 +32,16 @@ class AppointmentController {
 
     //Patient: past appointments
     public function pastAppointments() {
+            if (!isset($_SESSION['user_id'])) {
+                header('Location: ../../../index.php?openModal=true');
+                exit;
+            }
+
+        if ($_SESSION['user_role'] !== 'Patient') {
+            header('Location: ../admin/dashboard.php');
+            exit;
+        }
+
         $email = $_SESSION['email'];
         $data = $this->appointments->getPatientPastAppointments($email);
         require_once '../views/patient-past-appointments.php';
@@ -27,19 +49,47 @@ class AppointmentController {
 
     //Admin: all upcoming appointments
     public function adminUpcoming() {
-        $email = $_SESSION['email'];
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ../../../index.php?openModal=true');
+            exit;
+        }
+
+        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+            header('Location: ../patient/dashboard.php');
+            exit;
+        }
+
         $data = $this->appointments->getAllUpcomingWithStatus();
         require_once '../views/admin-upcoming-appointments.php';
     }
 
     //Admin: all past appointments
     public function adminPast() {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ../../../index.php?openModal=true');
+            exit;
+        }
+
+        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+            header('Location: ../patient/dashboard.php');
+            exit;
+        }
         $data = $this->appointments->getAdminPastAppointments();
         require_once '../views/admin-past-appointments.php';
     }
 
     //Update appointment status
     public function updateStatus() {
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ../../../index.php?openModal=true');
+            exit;
+        }
+
+        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+            header('Location: ../patient/dashboard.php');
+            exit;
+        }
+
         if($_SERVER['REQUEST_METHOD'] === 'POST') {
             $appointment_id = $_POST['appointment_id'];
             $status = $_POST['status'];
@@ -57,6 +107,7 @@ class AppointmentController {
 
     //Patient: book appointment
     public function bookAppointment() {
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $this->appointments->bookAppointment(
                 $_POST['lastname'],
