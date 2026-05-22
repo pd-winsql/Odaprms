@@ -1,0 +1,717 @@
+/* ============================================================
+   Ventura Dental — Dashboard styles
+   Load AFTER bootstrap.min.css AND styles.css
+   ============================================================ */
+
+/* ============================================================
+   SHARED — used by Admin, Dental Assistant, and Patient
+   ============================================================ */
+
+/* Reset dashboard body */
+.vd-dash-body {
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(181,146,76,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(181,146,76,0.04) 0%, transparent 50%);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+  color: var(--dark);
+  display: flex;
+}
+
+/* ── Sidebar ── */
+.vd-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--white-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+  z-index: 300;
+}
+
+.vd-sidebar-brand {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.vd-sidebar-nav {
+  flex: 1;
+  padding: 10px 0;
+  overflow-y: auto;
+}
+
+.vd-sidebar-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Sidebar nav sections */
+.vd-nav-section {
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 14px 20px 6px;
+}
+
+.vd-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  color: var(--mid);
+  font-size: 13px;
+  font-weight: 300;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  cursor: pointer;
+}
+.vd-nav-item:hover {
+  background: var(--gold-pale);
+  color: var(--dark);
+  text-decoration: none;
+}
+.vd-nav-item.active {
+  background: var(--gold-pale);
+  border-left-color: var(--gold);
+  color: var(--gold);
+  font-weight: 500;
+}
+.vd-nav-item i {
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+/* User chip in sidebar footer */
+.vd-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vd-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--gold-pale);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gold);
+  flex-shrink: 0;
+  font-family: 'Cormorant Garamond', serif;
+  letter-spacing: 0.04em;
+}
+.vd-user-name {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dark);
+  line-height: 1.2;
+}
+.vd-user-role {
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+
+/* ── Main content area ── */
+.vd-dash-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Topbar ── */
+.vd-dash-topbar {
+  background: var(--white-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  gap: 12px;
+}
+.vd-dash-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.vd-dash-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: var(--dark);
+}
+.vd-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.vd-topbar-date {
+  font-size: 11px;
+  color: var(--mid);
+  letter-spacing: 0.04em;
+}
+.vd-role-badge {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: var(--gold);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 2px;
+}
+
+/* Mobile menu toggle — hidden on desktop */
+.vd-menu-toggle {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: var(--mid);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Sidebar overlay for mobile */
+.vd-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,22,18,0.4);
+  z-index: 250;
+}
+.vd-sidebar-overlay.active { display: block; }
+
+/* ── Dashboard content wrapper ── */
+.vd-dash-content {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+/* ── Stat cards ── */
+.vd-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.vd-stat-card {
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 20px;
+}
+.vd-stat-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.vd-stat-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 34px;
+  font-weight: 300;
+  color: var(--dark);
+  line-height: 1;
+}
+.vd-stat-sub {
+  font-size: 11px;
+  color: var(--mid);
+  margin-top: 5px;
+}
+
+/* ── Two-column card grid ── */
+.vd-dash-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Dashboard cards ── */
+.vd-dash-card {
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.vd-dash-card-header {
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vd-dash-card-title {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.vd-dash-card-link {
+  font-size: 11px;
+  color: var(--gold);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+  transition: color 0.15s;
+}
+.vd-dash-card-link:hover { color: var(--mid); }
+.vd-dash-card-body { padding: 4px 0; }
+
+/* ── Appointment rows ── */
+.vd-appt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f0e8d8;
+  transition: background 0.15s;
+}
+.vd-appt-row:last-child { border-bottom: none; }
+.vd-appt-row:hover { background: var(--gold-pale); }
+
+.vd-appt-date-box {
+  width: 40px;
+  height: 40px;
+  background: var(--gold-pale);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.vd-appt-day {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--gold);
+  line-height: 1;
+}
+.vd-appt-mon {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+.vd-appt-info { flex: 1; min-width: 0; }
+.vd-appt-name {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vd-appt-meta {
+  font-size: 11px;
+  color: var(--mid);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Status pills ── */
+.vd-status {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.vd-status-pending   { background: #faeeda; color: #854f0b; }
+.vd-status-confirmed { background: #eaf3de; color: #3b6d11; }
+.vd-status-cancelled { background: #fcebeb; color: #a32d2d; }
+.vd-status-completed { background: var(--gold-pale); color: var(--mid); }
+
+/* ── Clinic rows ── */
+.vd-clinic-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0e8d8;
+}
+.vd-clinic-row:last-child { border-bottom: none; }
+.vd-clinic-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--gold-pale);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  flex-shrink: 0;
+  font-size: 17px;
+}
+.vd-clinic-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+/* ── Quick action buttons inside cards ── */
+.vd-quick-actions {
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── Empty state ── */
+.vd-empty-state {
+  padding: 28px 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mid);
+  letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   PATIENT DASHBOARD — mobile-first
+   ============================================================ */
+
+/* Patient body — no sidebar by default on mobile */
+.vd-patient-body {
+  min-height: 100vh;
+  background-color: var(--gold-pale);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(181,146,76,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(181,146,76,0.06) 0%, transparent 50%);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+  color: var(--dark);
+}
+
+/* Patient topbar */
+.vd-patient-topbar {
+  background: var(--white-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.vd-patient-brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--dark);
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.vd-patient-brand .vd-cross {
+  width: 15px;
+  height: 15px;
+  font-size: 10px;
+}
+
+/* Scrollable content — padding-bottom clears the bottom nav */
+.vd-patient-content {
+  padding: 18px 16px 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Welcome block */
+.vd-welcome-greet {
+  font-size: 12px;
+  color: var(--mid);
+  letter-spacing: 0.06em;
+}
+.vd-welcome-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--dark);
+  line-height: 1.1;
+}
+
+/* Next appointment highlight card */
+.vd-next-card {
+  background: var(--gold);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.vd-next-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 6px;
+}
+.vd-next-service {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 300;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+.vd-next-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.vd-next-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+}
+.vd-next-chip i { font-size: 13px; }
+.vd-next-status {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+
+/* No upcoming appointment fallback */
+.vd-next-empty {
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 18px;
+  text-align: center;
+  color: var(--mid);
+  font-size: 13px;
+}
+
+/* Book shortcut button */
+.vd-book-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 13px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.vd-book-shortcut:hover {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.vd-book-shortcut i { font-size: 18px; }
+
+/* Patient section label (reuses .vd-section-label from styles.css) */
+
+/* Patient appointment card wrapper */
+.vd-patient-card {
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Patient appointment rows — compact version */
+.vd-patient-appt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0e8d8;
+  transition: background 0.15s;
+}
+.vd-patient-appt-row:last-child { border-bottom: none; }
+.vd-patient-appt-row:hover { background: var(--gold-pale); }
+
+/* Patient empty state */
+.vd-patient-empty {
+  padding: 22px 14px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mid);
+  letter-spacing: 0.04em;
+}
+
+/* ── Bottom navigation bar ── */
+.vd-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white-bg);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  height: 64px;
+  z-index: 300;
+  box-shadow: 0 -2px 12px rgba(181,146,76,0.08);
+}
+.vd-bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+  text-decoration: none;
+  padding: 6px 0;
+  transition: color 0.15s;
+  cursor: pointer;
+}
+.vd-bottom-nav-item i { font-size: 21px; }
+.vd-bottom-nav-item.active { color: var(--gold); }
+.vd-bottom-nav-item:hover { color: var(--gold); text-decoration: none; }
+
+/* FAB — center book button */
+.vd-bottom-nav-fab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vd-fab {
+  width: 52px;
+  height: 52px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  box-shadow: 0 3px 14px rgba(181,146,76,0.4);
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+}
+.vd-fab:hover { background: var(--mid); transform: translateY(-2px); }
+.vd-fab i { font-size: 23px; color: #fff; }
+
+/* ── Patient sidebar — hidden on mobile, shown on desktop ── */
+.vd-patient-sidebar {
+  display: none;
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* Tablet and below — collapse admin sidebar */
+@media (max-width: 991px) {
+  /* Admin/Staff: sidebar slides off-screen, toggled by JS */
+  .vd-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    z-index: 300;
+    height: 100vh;
+  }
+  .vd-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(26,22,18,0.15);
+  }
+  .vd-menu-toggle { display: flex; align-items: center; }
+  .vd-dash-topbar { padding: 12px 18px; }
+  .vd-dash-content { padding: 16px 18px; }
+  .vd-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .vd-dash-grid2 { grid-template-columns: 1fr; }
+}
+
+/* Mobile — further compact admin layout */
+@media (max-width: 575px) {
+    .vd-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .vd-dash-content { padding: 14px; gap: 14px; }
+    .vd-stat-value { font-size: 28px; }
+    .vd-dash-topbar { padding: 10px 14px; }
+    .vd-dash-title { font-size: 18px; }
+    .vd-topbar-date { display: none; }
+}
+
+/* Desktop — patient gets a sidebar, bottom nav hidden */
+@media (min-width: 768px) {
+    .vd-patient-body {
+    display: flex;
+}
+    .vd-patient-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--white-bg);
+    border-right: 1px solid var(--border);
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    }
+    .vd-bottom-nav { display: none; }
+    .vd-patient-content {
+    padding: 24px 28px 28px;
+    flex: 1;
+    }
+    .vd-patient-topbar { display: none; }
+}
+
+/* Large desktop — admin stat grid full 4 columns */
+@media (min-width: 992px) {
+    .vd-stat-grid { grid-template-columns: repeat(4, 1fr); }
+    .vd-dash-grid2 { grid-template-columns: 1fr 1fr; }
+}

@@ -136,6 +136,20 @@ body {
   display: flex;
   align-items: center;
 }
+.vd-logo-ventura .vd-cross {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  background: var(--gold);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 1px;
+  border-radius: 2px;
+  position: relative;
+  top: -1px;
+}
 .vd-cross {
   display: inline-flex;
   align-items: center;
@@ -349,40 +363,69 @@ body {
 
 .vd-footer { background-color: var(--gold); }
 
-/* Dashboard - Shared */
+/* Dashboard Styles */
 
-/* Sidebar */
-  .vd-sidebar { width: 210px; flex-shrink: 0; background: #fffdf9; border-right: 1px solid #d9c9a8; display: flex; flex-direction: column; }
-  .vd-sidebar-brand { padding: 20px 18px 16px; border-bottom: 1px solid #d9c9a8; }
-  .vd-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 10px; font-style: italic; color: #b5924c; letter-spacing: 0.16em; }
-  .vd-brand-ventura { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300; color: #1a1612; letter-spacing: 0.1em; display: flex; align-items: center; line-height: 1; }
-  .vd-cross { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; background: #b5924c; color: #fff; font-size: 11px; margin: 0 1px; border-radius: 2px; }
-  .vd-brand-sub { font-size: 8px; letter-spacing: 0.26em; color: #b5924c; margin-top: 3px; }
+.vd-dash * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Jost', sans-serif; font-weight: 300; }
+.vd-dash { display: flex; height: 560px; background: #e8e0d4; border-radius: 12px; overflow: hidden; font-size: 13px; color: #1a1612; }
 
-/* Topbar */
+.vd-dash .vd-cross { width: 17px; height: 17px; font-size: 11px; }
+
+.vd-sidebar { width: 210px; flex-shrink: 0; background: #fffdf9; border-right: 1px solid #d9c9a8; display: flex; flex-direction: column; }
+.vd-sidebar-brand { padding: 20px 18px 16px; border-bottom: 1px solid #d9c9a8; }
+.vd-brand-name { font-family: 'Cormorant Garamond', serif; font-size: 10px; font-style: italic; color: #b5924c; letter-spacing: 0.16em; }
+.vd-brand-ventura { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300; color: #1a1612; letter-spacing: 0.1em; display: flex; align-items: center; line-height: 1; }
+.vd-brand-sub { font-size: 8px; letter-spacing: 0.26em; color: #b5924c; margin-top: 3px; }
+
+.vd-nav { flex: 1; padding: 12px 0; }
+.vd-nav-section { font-size: 8.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #b5924c; padding: 12px 18px 6px; }
+.vd-nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 18px; color: #4a3f30; font-size: 12px; font-weight: 400; cursor: pointer; transition: background 0.15s; border-left: 2px solid transparent; }
+.vd-nav-item:hover { background: #f5efe4; }
+.vd-nav-item.active { background: #f5efe4; border-left-color: #b5924c; color: #b5924c; font-weight: 500; }
+.vd-nav-item i { font-size: 15px; }
+
+.vd-sidebar-footer { padding: 14px 18px; border-top: 1px solid #d9c9a8; }
+.vd-user-chip { display: flex; align-items: center; gap: 9px; }
+.vd-avatar { width: 30px; height: 30px; border-radius: 50%; background: #f5efe4; border: 1px solid #d9c9a8; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: #b5924c; flex-shrink: 0; }
+.vd-user-name { font-size: 12px; font-weight: 400; color: #1a1612; }
+.vd-user-role { font-size: 10px; color: #b5924c; letter-spacing: 0.08em; }
+
 .vd-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .vd-topbar { background: #fffdf9; border-bottom: 1px solid #d9c9a8; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .vd-page-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; color: #1a1612; letter-spacing: 0.04em; }
 .vd-topbar-right { display: flex; align-items: center; gap: 10px; }
 .vd-badge { background: #b5924c; color: #fff; font-size: 9px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; }
 
-/* Appointment rows */
-  .vd-appt-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0e8d8; }
-  .vd-appt-row:last-child { border-bottom: none; }
-  .vd-appt-date { width: 36px; height: 36px; background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
-  .vd-appt-day { font-size: 14px; font-weight: 500; color: #b5924c; line-height: 1; font-family: 'Cormorant Garamond', serif; }
-  .vd-appt-mon { font-size: 8px; letter-spacing: 0.1em; color: #4a3f30; text-transform: uppercase; }
-  .vd-appt-info { flex: 1; min-width: 0; }
-  .vd-appt-name { font-size: 12px; font-weight: 400; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .vd-appt-meta { font-size: 10px; color: #4a3f30; }
-  .vd-pill { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 7px; border-radius: 2px; flex-shrink: 0; }
-  .vd-pill-pending  { background: #faeeda; color: #854f0b; }
-  .vd-pill-confirmed { background: #eaf3de; color: #3b6d11; }
-  .vd-pill-cancelled { background: #fcebeb; color: #a32d2d; }
+.vd-content { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
 
-/* Stat cards */
-  .vd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .vd-stat { background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px; padding: 14px 16px; }
-  .vd-stat-label { font-size: 9px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #b5924c; margin-bottom: 6px; }
-  .vd-stat-value { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: #1a1612; line-height: 1; }
-  .vd-stat-sub { font-size: 10px; color: #4a3f30; margin-top: 4px; }
+.vd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.vd-stat { background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px; padding: 14px 16px; }
+.vd-stat-label { font-size: 9px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #b5924c; margin-bottom: 6px; }
+.vd-stat-value { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; color: #1a1612; line-height: 1; }
+.vd-stat-sub { font-size: 10px; color: #4a3f30; margin-top: 4px; }
+
+.vd-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.vd-card { background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px; }
+.vd-card-header { padding: 12px 16px; border-bottom: 1px solid #d9c9a8; display: flex; align-items: center; justify-content: space-between; }
+.vd-card-title { font-size: 9.5px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #b5924c; }
+.vd-card-link { font-size: 10px; color: #b5924c; letter-spacing: 0.08em; cursor: pointer; }
+.vd-card-body { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+.vd-appt-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0e8d8; }
+.vd-appt-row:last-child { border-bottom: none; }
+.vd-appt-date { width: 36px; height: 36px; background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+.vd-appt-day { font-size: 14px; font-weight: 500; color: #b5924c; line-height: 1; font-family: 'Cormorant Garamond', serif; }
+.vd-appt-mon { font-size: 8px; letter-spacing: 0.1em; color: #4a3f30; text-transform: uppercase; }
+.vd-appt-info { flex: 1; min-width: 0; }
+.vd-appt-name { font-size: 12px; font-weight: 400; color: #1a1612; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vd-appt-meta { font-size: 10px; color: #4a3f30; }
+.vd-pill { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 7px; border-radius: 2px; flex-shrink: 0; }
+.vd-pill-pending  { background: #faeeda; color: #854f0b; }
+.vd-pill-confirmed { background: #eaf3de; color: #3b6d11; }
+.vd-pill-cancelled { background: #fcebeb; color: #a32d2d; }
+
+.vd-clinic-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0e8d8; }
+.vd-clinic-row:last-child { border-bottom: none; }
+.vd-clinic-icon { width: 32px; height: 32px; background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #b5924c; flex-shrink: 0; }
+.vd-clinic-name { font-size: 12px; font-weight: 400; color: #1a1612; }
+.vd-clinic-addr { font-size: 10px; color: #4a3f30; }
+.vd-dot { width: 7px; height: 7px; border-radius: 50%; background: #b5924c; flex-shrink: 0; }
