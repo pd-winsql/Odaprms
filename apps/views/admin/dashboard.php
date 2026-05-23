@@ -59,26 +59,26 @@ $today = date('l, F j Y');
 
     <nav class="vd-sidebar-nav">
       <div class="vd-nav-section">Main</div>
-      <a href="dashboard.php" class="vd-nav-item active">
+      <a href="#" class="vd-nav-item active" data-page="dashboard-content.php">
         <i class="ti ti-layout-dashboard"></i> Dashboard
       </a>
-      <a href="appointments.php" class="vd-nav-item">
+      <a href="#" class="vd-nav-item" data-page="appointment-content.php">
         <i class="ti ti-calendar"></i> Appointments
       </a>
-      <a href="patients.php" class="vd-nav-item">
+      <a href="#" class="vd-nav-item" data-page="patient-content.php">
         <i class="ti ti-users"></i> Patients
       </a>
 
       <div class="vd-nav-section">Manage</div>
-      <a href="clinics.php" class="vd-nav-item">
+      <a href="#" class="vd-nav-item" data-page="clinic-content.php">
         <i class="ti ti-building"></i> Clinics
       </a>
-      <a href="schedules.php" class="vd-nav-item">
+      <a href="#" class="vd-nav-item" data-page="schedule-content.php">
         <i class="ti ti-clock"></i> Schedules
       </a>
 
       <div class="vd-nav-section">Account</div>
-      <a href="settings.php" class="vd-nav-item">
+      <a href="#" class="vd-nav-item" data-page="settings-content.php">
         <i class="ti ti-settings"></i> Settings
       </a>
       <a href="../../../apps/controllers/userController.php?action=logout" class="vd-nav-item">
@@ -117,119 +117,7 @@ $today = date('l, F j Y');
 
     <!-- Content -->
     <div class="vd-dash-content">
-
-      <!-- STAT CARDS -->
-      <div class="vd-stat-grid">
-        <?php
-          $todayCount    = count(array_filter($upcoming, fn($a) => $a['date'] === date('Y-m-d')));
-          $pendingCount  = count(array_filter($upcoming, fn($a) => $a['status'] === 'Pending'));
-          $totalUpcoming = count($upcoming);
-          $clinicCount   = count($clinics);
-        ?>
-        <div class="vd-stat-card">
-          <div class="vd-stat-label">Today's Appointments</div>
-          <div class="vd-stat-value"><?= $todayCount ?></div>
-          <div class="vd-stat-sub">Across <?= $clinicCount ?> clinics</div>
-        </div>
-        <div class="vd-stat-card">
-          <div class="vd-stat-label">Pending</div>
-          <div class="vd-stat-value"><?= $pendingCount ?></div>
-          <div class="vd-stat-sub">Awaiting confirmation</div>
-        </div>
-        <div class="vd-stat-card">
-          <div class="vd-stat-label">Upcoming</div>
-          <div class="vd-stat-value"><?= $totalUpcoming ?></div>
-          <div class="vd-stat-sub">Total scheduled</div>
-        </div>
-        <div class="vd-stat-card">
-          <div class="vd-stat-label">Clinics</div>
-          <div class="vd-stat-value"><?= $clinicCount ?></div>
-          <div class="vd-stat-sub">Active locations</div>
-        </div>
-      </div>
-
-      <!-- CARDS ROW -->
-      <div class="vd-dash-grid2">
-
-        <!-- Upcoming appointments -->
-        <div class="vd-dash-card">
-          <div class="vd-dash-card-header">
-            <span class="vd-dash-card-title">Upcoming Appointments</span>
-            <a href="appointments.php" class="vd-dash-card-link">View all →</a>
-          </div>
-          <div class="vd-dash-card-body">
-            <?php if (empty($upcoming)): ?>
-              <div class="vd-empty-state">No upcoming appointments.</div>
-            <?php else: ?>
-              <?php foreach (array_slice($upcoming, 0, 5) as $appt): ?>
-                <?php
-                  $d      = new DateTime($appt['date']);
-                  $day    = $d->format('d');
-                  $mon    = $d->format('M');
-                  $time   = date('g:i A', strtotime($appt['time']));
-                  $status = strtolower($appt['status']);
-                ?>
-                <div class="vd-appt-row">
-                  <div class="vd-appt-date-box">
-                    <div class="vd-appt-day"><?= $day ?></div>
-                    <div class="vd-appt-mon"><?= $mon ?></div>
-                  </div>
-                  <div class="vd-appt-info">
-                    <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
-                    <div class="vd-appt-meta"><?= $time ?> · <?= htmlspecialchars($appt['service']) ?> · <?= htmlspecialchars($appt['clinic']) ?></div>
-                  </div>
-                  <span class="vd-status vd-status-<?= $status ?>"><?= htmlspecialchars($appt['status']) ?></span>
-                </div>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </div>
-        </div>
-
-        <!-- Clinics + Quick actions -->
-        <div class="d-flex flex-column gap-3">
-
-          <div class="vd-dash-card">
-            <div class="vd-dash-card-header">
-              <span class="vd-dash-card-title">Clinic Locations</span>
-              <a href="clinics.php" class="vd-dash-card-link">Manage →</a>
-            </div>
-            <div class="vd-dash-card-body">
-              <?php if (empty($clinics)): ?>
-                <div class="vd-empty-state">No clinics found.</div>
-              <?php else: ?>
-                <?php foreach ($clinics as $clinic): ?>
-                  <div class="vd-clinic-row">
-                    <div class="vd-clinic-icon"><i class="ti ti-building"></i></div>
-                    <div class="flex-1" style="flex:1; min-width:0;">
-                      <div class="vd-appt-name"><?= htmlspecialchars($clinic['clinic_name']) ?></div>
-                      <div class="vd-appt-meta"><?= htmlspecialchars($clinic['clinic_address']) ?></div>
-                    </div>
-                    <div class="vd-clinic-dot"></div>
-                  </div>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </div>
-          </div>
-
-          <div class="vd-dash-card">
-            <div class="vd-dash-card-header">
-              <span class="vd-dash-card-title">Quick Actions</span>
-            </div>
-            <div class="vd-quick-actions">
-              <a href="appointments.php" class="btn vd-btn-outline btn-sm">
-                <i class="ti ti-calendar me-1"></i> Manage Appointments
-              </a>
-              <a href="clinics.php" class="btn vd-btn-outline btn-sm">
-                <i class="ti ti-building me-1"></i> Manage Clinics
-              </a>
-              <a href="schedules.php" class="btn vd-btn-outline btn-sm">
-                <i class="ti ti-clock me-1"></i> Set Schedules
-              </a>
-            </div>
-          </div>
-
-        </div>
-      </div>
+      <?php include 'partials/dashboard-content.php'; ?>
     </div><!-- /vd-dash-content -->
   </main>
 
@@ -252,6 +140,35 @@ $today = date('l, F j Y');
       sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
     });
     overlay.addEventListener('click', closeSidebar);
+
+    const navItems = document.querySelectorAll('.vd-nav-item');
+    const dashContent = document.querySelector('.vd-dash-content');
+
+    navItems.forEach(item => {
+      item.addEventListener('click', async (e) =>{
+        e.preventDefault();
+
+        const page = item.getAttribute('data-page') || item.getAttribute('href');
+        
+        if (!page) return;
+
+        // Update active state
+        navItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+
+        // Load content via AJAX
+        try {
+          const response = await fetch(`partials/${page}`);
+          if (!response.ok) throw new Error('Network response was not ok');
+          const html = await response.text();
+          dashContent.innerHTML = html;
+          closeSidebar(); // Close sidebar on mobile after navigation
+        } catch (error) {
+          dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
+          console.error('Error fetching page:', error);
+        }
+      });
+    });
   </script>
 </body>
 </html>

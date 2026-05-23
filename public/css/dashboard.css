@@ -22,7 +22,7 @@
 
 /* ── Sidebar ── */
 .vd-sidebar {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   background: var(--white-bg);
   border-right: 1px solid var(--border);
