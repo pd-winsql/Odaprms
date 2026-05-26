@@ -223,17 +223,22 @@
       });
     });
     
+    const accountModalEl = document.getElementById('accountModal');
+    const accountModal = new bootstrap.Modal(accountModalEl);
+
     document.getElementById('bookingForm').addEventListener('submit', function(e) {
       e.preventDefault();
       accountModal.show();
     });
 
     function skipAccount() {
+      document.activeElement.blur();
       accountModal.hide();
       submitBooking();
     }
 
     function proceedAccount() {
+      document.activeElement.blur();
       accountModal.hide();
       submitBooking(true);
     }
@@ -246,7 +251,11 @@
         body: formData
       });
 
-      const result = await response.json();
+      const text = await response.text();
+
+console.log(text);
+
+const result = JSON.parse(text);
 
       if (result.success) {
         document.getElementById('refNumber').textContent = 'VCD-' + result.appointment_id;
