@@ -29,7 +29,7 @@ class Schedule {
                 AND a.status IN ('Pending', 'Confirmed')
                 WHERE s.clinic_id = :clinic_id 
                 AND CURDATE() <= s.sched_date
-                GROUP BY s.schedule_id
+                GROUP BY s.schedule_id, s.clinic_id, s.sched_date, s.max_appointments
                 HAVING total_appointments < s.max_appointments
                 ORDER BY s.sched_date ASC
             ");
