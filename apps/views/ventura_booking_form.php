@@ -91,7 +91,7 @@
                 <?php foreach ($clinics as $clinic): ?>
                   <div class="col-12 col-sm-6">
                     <label class="vd-clinic-card w-100">
-                      <input type="radio" name="clinic" value="<?= htmlspecialchars($clinic['clinic_name']) ?>" class="d-none vd-clinic-radio" required>
+                      <input type="radio" name="clinic_id" value="<?= $clinic['clinic_id'] ?>" class="d-none vd-clinic-radio" required>
                       <div class="vd-clinic-card-inner p-3 rounded">
                         <div class="vd-clinic-tag"><?= htmlspecialchars($clinic['clinic_name']) ?></div>
                         <div class="vd-clinic-address"><?= htmlspecialchars($clinic['clinic_address']) ?></div>
@@ -140,29 +140,29 @@
 
               <!-- DATE & TIME -->
               <p class="vd-section-label">Preferred Schedule</p>
-              <div class="row g-3 mb-3">
-                <div class="col-12 col-sm-6">
-                  <label class="vd-label form-label">Preferred Date</label>
-                  <input type="date" id="prefDate" name="date" class="form-control vd-input" required>
-                </div>
-                <div class="col-12 col-sm-6">
-                  <label class="vd-label form-label">Preferred Time Slot</label>
-                  <select name="time" class="form-select vd-input" required>
-                    <option value="" disabled selected>— Select time —</option>
-                    <option value="10:00">10:00 AM</option>
-                    <option value="10:30">10:30 AM</option>
-                    <option value="11:00">11:00 AM</option>
-                    <option value="11:30">11:30 AM</option>
-                    <option value="12:00">12:00 PM</option>
-                    <option value="13:00">1:00 PM</option>
-                    <option value="13:30">1:30 PM</option>
-                    <option value="14:00">2:00 PM</option>
-                    <option value="14:30">2:30 PM</option>
-                    <option value="15:00">3:00 PM</option>
-                    <option value="15:30">3:30 PM</option>
-                  </select>
-                </div>
+
+              <!-- Prompt: shown before clinic is selected -->
+              <div id="schedulePrompt" class="vd-schedule-prompt">
+                <span>📅</span>
+                <span>Select a clinic above to view available dates.</span>
               </div>
+
+              <!-- Loading -->
+              <div id="scheduleLoading" class="vd-schedule-loading d-none">
+                <span class="vd-schedule-spinner"></span>
+                Loading available dates&hellip;
+              </div>
+
+              <!-- Empty -->
+              <div id="scheduleEmpty" class="vd-schedule-empty d-none">
+                No available schedules for this clinic at the moment. Please check back later.
+              </div>
+
+              <!-- Schedule cards rendered by JS -->
+              <div id="scheduleGrid" class="vd-schedule-grid d-none"></div>
+
+              <!-- Hidden field carries selected schedule_id -->
+              <input type="hidden" id="scheduleInput" name="schedule_id">
 
               <!-- NOTICE -->
               <div class="vd-notice d-flex gap-2 p-3 mb-4 rounded">
@@ -270,6 +270,87 @@ const result = JSON.parse(text);
         alert(result.message);
       }
     }
+
+    const clinicRadios   = document.querySelectorAll('.vd-clinic-radio');
+    const scheduleGrid   = document.getElementById('scheduleGrid');
+    const scheduleInput  = document.getElementById('scheduleInput');
+    const schedulePrompt = document.getElementById('schedulePrompt');
+    const scheduleLoad   = document.getElementById('scheduleLoading');
+    const scheduleEmpty  = document.getElementById('scheduleEmpty');
+
+    function showScheduleState(state) {
+      schedulePrompt.classList.add('d-none');
+      scheduleLoad.classList.add('d-none');
+      scheduleEmpty.classList.add('d-none');
+      scheduleGrid.classList.add('d-none');
+      if (state === 'prompt')  schedulePrompt.classList.remove('d-none');
+      if (state === 'loading') scheduleLoad.classList.remove('d-none');
+      if (state === 'empty')   scheduleEmpty.classList.remove('d-none');
+      if (state === 'grid')    scheduleGrid.classList.remove('d-none');
+    }
+
+    function selectScheduleCard(card, scheduleId) {
+      document.querySelectorAll('.vd-schedule-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      scheduleInput.value = scheduleId;
+    }
+
+    function renderScheduleCards(schedules) {
+      scheduleGrid.innerHTML = '';
+      scheduleInput.value = '';
+
+      schedules.forEach(schedule => {
+        const remaining = schedule.max_appointments - schedule.total_appointments;
+        const isFull    = remaining <= 0;
+        const date      = new Date(schedule.sched_date);
+        const day       = date.toLocaleDateString('en-PH', { weekday: 'short' });
+        const dayNum    = date.getDate().toString().padStart(2, '0');
+        const month     = date.toLocaleDateString('en-PH', { month: 'short' });
+        const year      = date.getFullYear();
+
+        const card = document.createElement('div');
+        card.className = 'vd-schedule-card' + (isFull ? ' full' : '');
+        card.innerHTML = `
+          <div class="vd-schedule-date">
+            <span class="vd-schedule-dayname">${day}</span>
+            <span class="vd-schedule-daynum">${dayNum}</span>
+            <span class="vd-schedule-month">${month} ${year}</span>
+          </div>
+          <div class="vd-schedule-slots ${isFull ? 'full' : remaining <= 3 ? 'low' : ''}">
+            ${isFull ? 'Fully booked' : remaining + ' slot' + (remaining === 1 ? '' : 's') + ' left'}
+          </div>`;
+
+        if (!isFull) {
+          card.addEventListener('click', () => selectScheduleCard(card, schedule.schedule_id));
+        }
+
+        scheduleGrid.appendChild(card);
+      });
+
+      showScheduleState('grid');
+    }
+
+    clinicRadios.forEach(radio => {
+      radio.addEventListener('change', async function () {
+        const clinicId = this.value;
+        scheduleInput.value = '';
+        showScheduleState('loading');
+
+        try {
+          const response  = await fetch(`../../apps/controllers/scheduleController.php?action=available&clinic_id=${clinicId}`);
+          const schedules = await response.json();
+
+          if (!schedules.length) {
+            showScheduleState('empty');
+          } else {
+            renderScheduleCards(schedules);
+          }
+        } catch (error) {
+          console.error('Error fetching schedules:', error);
+          showScheduleState('empty');
+        }
+      });
+    });
   </script>
 </body>
 </html>

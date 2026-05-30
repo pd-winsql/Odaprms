@@ -22,12 +22,12 @@ class Schedule {
         try {
             $stmt = $this->conn->prepare("
                 SELECT 
-                    s.schedule_id, s.clinic_id, s.sched_date, s.max_appointments,
+                    s.schedule_id, s.clinic_id, DATE_FORMAT(s.sched_date, '%M %d') AS sched_date, s.max_appointments,
                     COUNT(a.appointment_id) AS total_appointments
                 FROM schedules s
                 LEFT JOIN appointments a ON s.schedule_id = a.schedule_id
                 AND a.status IN ('Pending', 'Confirmed')
-                WHERE s.clinic_id = :clinic_id 
+                WHERE s.clinic_id = :clinic_id
                 AND CURDATE() <= s.sched_date
                 GROUP BY s.schedule_id, s.clinic_id, s.sched_date, s.max_appointments
                 HAVING total_appointments < s.max_appointments

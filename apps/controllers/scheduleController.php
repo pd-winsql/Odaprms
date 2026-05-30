@@ -70,3 +70,22 @@ class ScheduleController {
         }
     }
 }
+
+$controller = new ScheduleController();
+
+$action = $_GET['action'] ?? '';
+
+switch ($action) {
+
+    case 'available':
+
+        $clinic_id = $_GET['clinic_id'] ?? 0;
+
+        $controller->available($clinic_id);
+
+        break;
+
+    default:
+        echo json_encode([]);
+        break;
+}
