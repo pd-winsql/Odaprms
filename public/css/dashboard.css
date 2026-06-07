@@ -22,7 +22,7 @@
 
 /* ── Sidebar ── */
 .vd-sidebar {
-  width: 240px;
+  width: 220px;
   flex-shrink: 0;
   background: var(--white-bg);
   border-right: 1px solid var(--border);
@@ -676,20 +676,20 @@
 
 /* Mobile — further compact admin layout */
 @media (max-width: 575px) {
-    .vd-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .vd-dash-content { padding: 14px; gap: 14px; }
-    .vd-stat-value { font-size: 28px; }
-    .vd-dash-topbar { padding: 10px 14px; }
-    .vd-dash-title { font-size: 18px; }
-    .vd-topbar-date { display: none; }
+  .vd-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .vd-dash-content { padding: 14px; gap: 14px; }
+  .vd-stat-value { font-size: 28px; }
+  .vd-dash-topbar { padding: 10px 14px; }
+  .vd-dash-title { font-size: 18px; }
+  .vd-topbar-date { display: none; }
 }
 
 /* Desktop — patient gets a sidebar, bottom nav hidden */
 @media (min-width: 768px) {
-    .vd-patient-body {
+  .vd-patient-body {
     display: flex;
-}
-    .vd-patient-sidebar {
+  }
+  .vd-patient-sidebar {
     display: flex;
     flex-direction: column;
     width: 220px;
@@ -701,17 +701,98 @@
     top: 0;
     height: 100vh;
     overflow-y: auto;
-    }
-    .vd-bottom-nav { display: none; }
-    .vd-patient-content {
+  }
+  .vd-bottom-nav { display: none; }
+  .vd-patient-content {
     padding: 24px 28px 28px;
     flex: 1;
-    }
-    .vd-patient-topbar { display: none; }
+  }
+  .vd-patient-topbar { display: none; }
 }
 
 /* Large desktop — admin stat grid full 4 columns */
 @media (min-width: 992px) {
-    .vd-stat-grid { grid-template-columns: repeat(4, 1fr); }
-    .vd-dash-grid2 { grid-template-columns: 1fr 1fr; }
+  .vd-stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .vd-dash-grid2 { grid-template-columns: 1fr 1fr; }
 }
+
+/* ============================================================
+   Appointments table — appointment-content.php
+   ============================================================ */
+
+.vd-appt-table-wrap {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.vd-appt-table {
+  border-collapse: collapse;
+  font-size: 13px;
+  font-weight: 300;
+  min-width: 700px;
+}
+
+.vd-appt-table thead tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.vd-appt-table thead th {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 10px 16px;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.vd-appt-table tbody tr {
+  border-bottom: 1px solid #f0e8d8;
+  transition: background 0.15s;
+}
+.vd-appt-table tbody tr:last-child { border-bottom: none; }
+.vd-appt-table tbody tr:hover { background: var(--gold-pale); }
+
+.vd-appt-table td {
+  padding: 10px 16px;
+  vertical-align: middle;
+  color: var(--dark);
+}
+
+/* Status change dropdown */
+.vd-status-select {
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--mid);
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  width: 100%;
+  max-width: 130px;
+}
+.vd-status-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* Toast notification */
+.vd-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transition: opacity 0.3s;
+}
+.vd-toast-success { background: #eaf3de; color: #3b6d11; border: 1px solid #c3e0a0; }
+.vd-toast-error   { background: #fcebeb; color: #a32d2d; border: 1px solid #f0b8b8; }

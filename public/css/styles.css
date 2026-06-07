@@ -501,6 +501,7 @@ body {
   transition: border-color 0.2s, background 0.2s, transform 0.15s;
   position: relative;
   text-align: center;
+  -webkit-user-select: none;
   user-select: none;
 }
 .vd-schedule-card:hover:not(.full) {
