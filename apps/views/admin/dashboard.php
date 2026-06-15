@@ -141,42 +141,58 @@ $today = date('l, F j Y');
     });
     overlay.addEventListener('click', closeSidebar);
 
+    /* Navigation */
     const navItems = document.querySelectorAll('.vd-nav-item');
     const dashContent = document.querySelector('.vd-dash-content');
+    
+    async function loadpage(page) {
+      try {
+        const response = await fetch(`partials/${page}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const html = await response.text();
+        dashContent.innerHTML = html;
 
-    navItems.forEach(item => {
-      item.addEventListener('click', async (e) =>{
-        e.preventDefault();
-
-        const page = item.getAttribute('data-page') || item.getAttribute('href');
-        
-        if (!page) return;
-
-        // Update active state
-        navItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-
-        // Load content via AJAX
-        try {
-          const response = await fetch(`partials/${page}`);
-          if (!response.ok) throw new Error('Network response was not ok');
-          const html = await response.text();
-          dashContent.innerHTML = html;
-
-          dashContent.querySelectorAll('script').forEach(oldScript => {
-            const newScript = document.createElement('script');
-            newScript.textContent = oldScript.textContent;
-            document.body.appendChild(newScript);
-            oldScript.remove();
-          })
-
+        dashContent.querySelectorAll('script').forEach(oldScript => {
+          const newScript = document.createElement('script');
+          newScript.textContent = oldScript.textContent;
+          document.body.appendChild(newScript);
+          oldScript.remove();
+        });
+      
           closeSidebar();
         } catch (error) {
           dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
           console.error('Error fetching page:', error);
         }
+      }
+    
+      navItems.forEach(item => {
+        item.addEventListener('click', async (e) => {
+          e.preventDefault();
+
+          const page = item.getAttribute('data-page') || item.getAttribute('href');
+          if (!page) return;
+
+          navItems.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+
+          window.location.hash = page;
+
+          await loadpage(page);
+        });
       });
-    });
+
+        window.addEventListener('DOMContentLoaded', async () => {
+          const hash = window.location.hash.replace('#', '');
+          if (hash) {
+            const matchingNav = document.querySelector(`[data-page="${hash}"]`);
+            if(matchingNav) {
+              navItems.forEach(i => i.classList.remove('active'));
+              matchingNav.classList.add('active');
+              await loadpage(hash);
+            }
+          }
+        });
   </script>
 </body>
 </html>

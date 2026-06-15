@@ -47,7 +47,8 @@ $clinics = $clinicModel->getAllClinics();
                             $d      = new DateTime($sched['sched_date']);
                             $isPast = $d < new DateTime('today');
                         ?>
-                        <div class="vd-sched-card <?= $isPast ? 'past' : '' ?>">
+                        <div class="vd-sched-card <?= $isPast ? 'past' : '' ?>" 
+                        id="schedCard-<?= $sched['schedule_id'] ?>">
                             <div class="vd-sched-date">
                                 <span class="vd-sched-dayname"><?= $d->format('D') ?></span>
                                 <span class="vd-sched-daynum"><?= $d->format('d') ?></span>
