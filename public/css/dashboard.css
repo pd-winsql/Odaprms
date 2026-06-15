@@ -287,6 +287,38 @@
 .vd-dash-card-link:hover { color: var(--mid); }
 .vd-dash-card-body { padding: 4px 0; }
 
+/* ── Button styles ── */
+.btn {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--gold);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--gold-dark);
+}
+
+.btn-secondary {
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  color: var(--mid);
+}
+
+.btn-secondary:hover {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
 /* ── Appointment rows ── */
 .vd-appt-row {
   display: flex;
@@ -340,6 +372,106 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ── Schedule cards ── */
+.vd-sched-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+.vd-sched-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--white-bg);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.vd-sched-card:hover {
+  border-color: var(--gold);
+  background: var(--gold-pale);
+}
+
+.vd-sched-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.vd-sched-dayname {
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.vd-sched-daynum {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 34px;
+  font-weight: 300;
+  color: var(--dark);
+  line-height: 1;
+}
+.vd-sched-month {
+  font-size: 10px;
+  color: var(--mid);
+  letter-spacing: 0.06em;
+}
+
+.vd-sched-slots {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 2px;
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.vd-sched-actions {
+  display: flex;
+  gap: 5px;
+  padding-top: 6px;
+  border-top: 1px solid #f0e8d8;
+  width: 100%;
+  justify-content: center;
+}
+
+.vd-sched-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--mid);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.vd-sched-btn:hover {
+  background: #fcebeb;
+  color: #a32d2d;
+  border-color: #f0b8b8;
+}
+
+@media (max-width: 575px) {
+  .vd-sched-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+  .vd-sched-daynum { font-size: 28px; }
 }
 
 /* ── Status pills ── */
@@ -717,7 +849,7 @@
 }
 
 /* ============================================================
-   Appointments table — appointment-content.php
+    Appointments table — appointment-content.php
    ============================================================ */
 
 .vd-appt-table-wrap {

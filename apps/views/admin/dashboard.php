@@ -162,7 +162,15 @@ $today = date('l, F j Y');
           if (!response.ok) throw new Error('Network response was not ok');
           const html = await response.text();
           dashContent.innerHTML = html;
-          closeSidebar(); // Close sidebar on mobile after navigation
+
+          dashContent.querySelectorAll('script').forEach(oldScript => {
+            const newScript = document.createElement('script');
+            newScript.textContent = oldScript.textContent;
+            document.body.appendChild(newScript);
+            oldScript.remove();
+          })
+
+          closeSidebar();
         } catch (error) {
           dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
           console.error('Error fetching page:', error);

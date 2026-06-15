@@ -18,6 +18,28 @@ class Schedule {
         }
     }
 
+    public function getAllSchedules() {
+        try {
+            $stmt = $this->conn->prepare("SELECT s.*, c.clinic_name FROM schedules s JOIN clinics c ON s.clinic_id = c.clinic_id ORDER BY s.sched_date ASC");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("getAllSchedules error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getUpcomingSchedulesByClinic($clinic_id) {
+        $stmt = $this->conn->prepare("
+            SELECT * FROM schedules
+            WHERE clinic_id = :clinic_id 
+            AND sched_date >= CURDATE()
+            ORDER BY sched_date ASC
+        ");
+        $stmt->execute([':clinic_id' => $clinic_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getAvailableSchedulesByClinic($clinic_id) {
         try {
             $stmt = $this->conn->prepare("

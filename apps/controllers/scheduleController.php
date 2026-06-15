@@ -11,10 +11,6 @@ class ScheduleController {
         $this->schedules = new Schedule($conn);
     }
 
-    public function index($clinic_id) {
-        $data = $this->schedules->getSchedulesByClinic($clinic_id);
-        require_once '../views/schedule-index.php';
-    }
 
     public function available($clinic_id) {
         header('Content-Type: application/json');
@@ -23,21 +19,44 @@ class ScheduleController {
     }
 
     public function addSchedule() {
-        if($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $clinic_id = $_POST['clinic_id'];
-            $sched_date = $_POST['sched_date'];
-            $max_appointments = $_POST['max_appointments'];
+        header('Content-Type: application/json');
+        $clinic_id = $_POST['clinic_id'] ?? '';
+        $sched_date = $_POST['sched_date'] ?? '';
+        $max_appointments = $_POST['max_appointments'] ?? 8;
 
-            $result = $this->schedules->addSchedule($clinic_id, $sched_date, $max_appointments);
-
-            if ($result) {
-                header("Location: ../views/admin/schedules.php?added=1");
-            } else {
-                header("Location: ../views/admin/schedules.php?error=1");
-            }
+        if(!$clinic_id || !$sched_date) {
+            echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
             exit;
         }
+        $result = $this->schedules->addSchedule($clinic_id, $sched_date, $max_appointments);
+
+        if ($result) {
+            echo 'success';
+        } else {
+            echo 'error';
+        }
+        exit;
     }
+
+    public function deleteSchedule() {
+        header('Content-Type: application/json');
+        $schedule_id = $_POST['schedule_id'] ?? '';
+
+        if (!$schedule_id) {
+            echo json_encode(['success' => false, 'message' => 'Missing schedule ID.']);
+            exit;
+        }
+
+        $result = $this->schedules->deleteSchedule($schedule_id);
+
+        if ($result) {
+            echo 'success';
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to delete schedule.']);
+        }
+        exit;
+    }
+    
 
     public function updateSchedule() {
         if($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -57,35 +76,28 @@ class ScheduleController {
         }
     }
 
-    public function deleteSchedule() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $schedule_id = $_POST['schedule_id'];
-            $result = $this->schedules->deleteSchedule($schedule_id);
-            if ($result) {
-                header("Location: ../views/admin/schedules.php?deleted=1");
-            } else {
-                header("Location: ../views/admin/schedules.php?error=1");
-            }
-            exit;
-        }
-    }
+    
 }
 
 $controller = new ScheduleController();
 
-$action = $_GET['action'] ?? '';
+if($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = $_GET['action'] ?? '';
+    $clinic_id = $_GET['clinic_id'] ?? 0;
 
-switch ($action) {
-
-    case 'available':
-
-        $clinic_id = $_GET['clinic_id'] ?? 0;
-
+    if ($action === 'available' && $clinic_id) {
         $controller->available($clinic_id);
+    }
 
-        break;
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
 
-    default:
-        echo json_encode([]);
-        break;
+    if ($action === 'add_schedule') {
+        $controller->addSchedule();
+    } elseif ($action === 'delete_schedule') {
+        $controller->deleteSchedule();
+    } else {
+    echo json_encode(['success' => false, 'message' => 'Invalid action.']);
+    exit;
+    }
 }
