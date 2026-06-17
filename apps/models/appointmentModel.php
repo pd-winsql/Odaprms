@@ -8,12 +8,12 @@ class Appointment {
     }
 
     public function bookAppointment($lastname, $firstname, $middlename, $age, $gender, 
-    $phone_number, $email, $clinic, $service, $date, $time, $status = 'pending') {
+    $phone_number, $email, $clinic_id, $service, $date, $schedule_id, $status = 'Pending') {
         try {    
             $stmt = $this->conn->prepare("INSERT INTO appointments (lastname, firstname, middlename, age, gender, 
-            phone_number, email, clinic, service, date, time, status) 
+            phone_number, email, clinic_id, service, date, schedule_id, status) 
             VALUES (:lastname, :firstname, :middlename, :age, :gender, 
-            :phone_number, :email, :clinic, :service, :date, :time, :status)");
+            :phone_number, :email, :clinic_id, :service, :date, :schedule_id, :status)");
 
             return $stmt->execute([
                 ':lastname' => $lastname,
@@ -23,10 +23,10 @@ class Appointment {
                 ':gender' => $gender,
                 ':phone_number' => $phone_number,
                 ':email' => $email,
-                ':clinic' => $clinic,
+                ':clinic_id' => $clinic_id,
                 ':service' => $service,
                 ':date' => $date,
-                ':time' => $time,
+                ':schedule_id' => $schedule_id,
                 ':status' => $status
             ]);
         } catch (PDOException $e) {
@@ -44,7 +44,7 @@ class Appointment {
                 SELECT * FROM appointments 
                 WHERE email = :email
                 AND date >= CURDATE()
-                ORDER BY date ASC, time ASC
+                ORDER BY date ASC
             ");
             $stmt->execute([':email' => $email]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -62,7 +62,7 @@ class Appointment {
                 SELECT * FROM appointments 
                 WHERE email = :email
                 AND date < CURDATE()
-                ORDER BY date DESC, time DESC
+                ORDER BY date DESC
             ");
             $stmt->execute([':email' => $email]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -78,12 +78,12 @@ class Appointment {
         try {
             $stmt = $this->conn->prepare("
                 SELECT lastname, firstname, middlename, age, gender,
-                    phone_number, email, clinic, service,
-                    date, time, status
+                    phone_number, email, clinic_id, service,
+                    date, status
                 FROM appointments 
                 WHERE date >= CURDATE()
                 AND email = :email
-                ORDER BY date ASC, time ASC
+                ORDER BY date ASC
             ");
             $stmt->execute([':email' => $email]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -100,9 +100,13 @@ class Appointment {
     public function getAdminPastAppointments() {
         try {
             $stmt = $this->conn->prepare("
-                SELECT * FROM appointments 
+                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
+                    a.phone_number, a.email, c.clinic_name, a.service,
+                    a.date, a.status
+                FROM appointments a
+                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id 
                 WHERE date < CURDATE()
-                ORDER BY date DESC, time DESC
+                ORDER BY date DESC
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -120,7 +124,7 @@ class Appointment {
                 SELECT * FROM appointments 
                 WHERE date < CURDATE()
                 AND clinic = :clinic
-                ORDER BY date DESC, time DESC
+                ORDER BY date DESC
             ");
             $stmt->execute([':clinic' => $clinic]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -135,12 +139,13 @@ class Appointment {
     public function getAllUpcomingWithStatus() {
         try {
             $stmt = $this->conn->prepare("
-                SELECT lastname, firstname, middlename, age, gender,
-                    phone_number, email, clinic, service,
-                    date, time, status
-                FROM appointments 
+                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
+                    a.phone_number, a.email, c.clinic_name, a.service,
+                    a.date, a.status
+                FROM appointments a
+                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
                 WHERE date >= CURDATE()
-                ORDER BY date ASC, time ASC
+                ORDER BY date ASC
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -2,10 +2,19 @@
     <!-- STAT CARDS -->
     <div class="vd-stat-grid">
         <?php
-        // Ensure variables are defined
-        $upcoming = $upcoming ?? [];
-        $clinics = $clinics ?? [];
-        
+        require_once '../../../../config/conn.php';
+        require_once '../../../models/appointmentModel.php';
+        require_once '../../../models/clinicModel.php';
+
+        $db = new Database();
+        $conn = $db->connect();
+
+        $appointmentModel = new Appointment($conn);
+        $clinicModel = new Clinic($conn);
+
+        $upcoming = $appointmentModel->getAllUpcomingWithStatus();
+        $clinics = $clinicModel->getAllClinics();
+
         $todayCount    = count(array_filter($upcoming, fn($a) => $a['date'] === date('Y-m-d')));
         $pendingCount  = count(array_filter($upcoming, fn($a) => $a['status'] === 'Pending'));
         $totalUpcoming = count($upcoming);
@@ -51,7 +60,6 @@
                 $d      = new DateTime($appt['date']);
                 $day    = $d->format('d');
                 $mon    = $d->format('M');
-                $time   = date('g:i A', strtotime($appt['time']));
                 $status = strtolower($appt['status']);
                 ?>
                 <div class="vd-appt-row">
@@ -61,7 +69,7 @@
                 </div>
                 <div class="vd-appt-info">
                     <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
-                    <div class="vd-appt-meta"><?= $time ?> · <?= htmlspecialchars($appt['service']) ?> · <?= htmlspecialchars($appt['clinic']) ?></div>
+                    <div class="vd-appt-meta"><?= htmlspecialchars($appt['service']) ?> · <?= htmlspecialchars($appt['clinic_name']) ?></div>
                 </div>
                 <span class="vd-status vd-status-<?= $status ?>"><?= htmlspecialchars($appt['status']) ?></span>
                 </div>

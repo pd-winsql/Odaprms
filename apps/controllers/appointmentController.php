@@ -80,26 +80,33 @@ class AppointmentController {
 
     //Update appointment status
     public function updateStatus() {
+        header('Content-Type: application/json');
+
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ../../../index.php?openModal=true');
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
             exit;
         }
 
         if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
-            header('Location: ../patient/dashboard.php');
+            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
             exit;
         }
 
-        if($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $appointment_id = $_POST['appointment_id'];
-            $status = $_POST['status'];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $appointment_id = $_POST['appointment_id'] ?? '';
+            $status         = $_POST['status'] ?? '';
+
+            if (!$appointment_id || !$status) {
+                echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+                exit;
+            }
 
             $result = $this->appointments->updateAppointmentStatus($appointment_id, $status);
 
             if ($result) {
-                header ("Location: ../views/admin/upcoming.php?updated=1");
+                echo json_encode(['success' => true, 'message' => 'Status updated successfully.']);
             } else {
-                header("Location: ../views/admin/upcoming.php?error=1");
+                echo json_encode(['success' => false, 'message' => 'Failed to update status.']);
             }
             exit;
         }
@@ -109,6 +116,32 @@ class AppointmentController {
     public function bookAppointment() {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+            require_once '../models/clinicModel.php';
+            require_once '../models/scheduleModel.php';
+
+            $db = new Database();
+            $conn = $db->connect();
+
+            $clinicModel = new Clinic($conn);
+            $scheduleModel = new Schedule($conn);
+
+            $clinic_id = $_POST['clinic_id'] ?? '';
+            $schedule_id = $_POST['schedule_id'] ?? '';
+
+            if (!$clinic_id || !$schedule_id) {
+                echo json_encode(['success' => false, 'message' => 'Please select a clinic and a schedule.']);
+                exit;
+            }
+            
+            $clinic   = $clinicModel->getClinicById($clinic_id);
+            $schedule = $scheduleModel->getScheduleById($schedule_id);
+            
+            if (!$clinic || !$schedule) {
+                echo json_encode(['success' => false, 'message' => 'Invalid clinic or schedule selected.']);
+                exit;
+            }   
+
             $result = $this->appointments->bookAppointment(
                 $_POST['lastname'],
                 $_POST['firstname'],
@@ -117,10 +150,10 @@ class AppointmentController {
                 $_POST['gender'],
                 $_POST['phone_number'],
                 $_POST['email'],
-                $_POST['clinic'],
+                $clinic_id,
                 $_POST['service'],
-                $_POST['date'],
-                $_POST['time']
+                $schedule['sched_date'],
+                $schedule_id
             );
 
             if ($result) {
@@ -140,5 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'book') {
         $controller->bookAppointment();
+    } elseif ($action === 'updateStatus') {
+        $controller->updateStatus();
     }
 }

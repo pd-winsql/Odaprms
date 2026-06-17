@@ -46,7 +46,6 @@ function statusClass($status) {
                 <th>Service</th>
                 <th>Clinic</th>
                 <th>Date</th>
-                <th>Time</th>
                 <th>Status</th>
                 <th>Action</th>
             </tr>
@@ -59,9 +58,8 @@ function statusClass($status) {
                     <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                 </td>
                 <td class="vd-appt-meta"><?= htmlspecialchars($appt['service']) ?></td>
-                <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic']) ?></td>
+                <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
                 <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
-                <td class="vd-appt-meta"><?= date('g:i A', strtotime($appt['time'])) ?></td>
                 <td><span class="<?= statusClass($appt['status']) ?>"><?= htmlspecialchars($appt['status']) ?></span></td>
                 <td>
                     <select class="vd-status-select" data-id="<?= $appt['appointment_id'] ?>">
@@ -97,7 +95,6 @@ function statusClass($status) {
                 <th>Service</th>
                 <th>Clinic</th>
                 <th>Date</th>
-                <th>Time</th>
                 <th>Status</th>
                 <th>Action</th>
             </tr>
@@ -110,9 +107,8 @@ function statusClass($status) {
                     <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                 </td>
                 <td class="vd-appt-meta"><?= htmlspecialchars($appt['service']) ?></td>
-                <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic']) ?></td>
+                <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
                 <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
-                <td class="vd-appt-meta"><?= date('g:i A', strtotime($appt['time'])) ?></td>
                 <td><span class="<?= statusClass($appt['status']) ?>"><?= htmlspecialchars($appt['status']) ?></span></td>
                 <td>
                     <select class="vd-status-select" data-id="<?= $appt['appointment_id'] ?>">

@@ -186,7 +186,6 @@
             <div class="vd-success-icon mx-auto mb-4">✓</div>
             <h2 class="vd-page-title mb-2">Appointment Requested</h2>
             <p class="text-muted small mb-4">Thank you! Your request has been submitted. We'll confirm your schedule within 24 hours.</p>
-            <div class="vd-booking-ref d-inline-block mb-4" id="refNumber">VCD-000000</div>
             <br>
             <button class="btn vd-btn-gold px-4" onclick="resetForm()">Book Another</button>
           </div>
@@ -253,18 +252,13 @@
 
       const text = await response.text();
 
-console.log(text);
-
-const result = JSON.parse(text);
+      const result = JSON.parse(text);
 
       if (result.success) {
-        document.getElementById('refNumber').textContent = 'VCD-' + result.appointment_id;
-        document.getElementById('formView').classList.add('d-none');
-        document.getElementById('successView').classList.remove('d-none');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
         if (redirect) {
           window.location.href = 'ventura_dental_form.php';
+        } else {
+          window.location.href = '../../index.php';
         }
       } else {
         alert(result.message);
