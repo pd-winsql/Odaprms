@@ -1,10 +1,17 @@
-
-    <!-- STAT CARDS -->
+<!-- STAT CARDS -->
     <div class="vd-stat-grid">
         <?php
-        require_once '../../../../config/conn.php';
-        require_once '../../../models/appointmentModel.php';
-        require_once '../../../models/clinicModel.php';
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        // Auth guard
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+            echo '<div class="vd-empty-state">Unauthorized.</div>';
+            exit;
+        }
+
+        require_once __DIR__ . '/../../../../config/conn.php';
+        require_once __DIR__ . '/../../../models/appointmentModel.php';
+        require_once __DIR__ . '/../../../models/clinicModel.php';
 
         $db = new Database();
         $conn = $db->connect();
