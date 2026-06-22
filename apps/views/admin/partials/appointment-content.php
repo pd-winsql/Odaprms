@@ -96,7 +96,6 @@ function statusClass($status) {
                 <th>Clinic</th>
                 <th>Date</th>
                 <th>Status</th>
-                <th>Action</th>
             </tr>
             </thead>
             <tbody>
@@ -110,13 +109,6 @@ function statusClass($status) {
                 <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
                 <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
                 <td><span class="<?= statusClass($appt['status']) ?>"><?= htmlspecialchars($appt['status']) ?></span></td>
-                <td>
-                    <select class="vd-status-select" data-id="<?= $appt['appointment_id'] ?>">
-                    <?php foreach ($statuses as $s): ?>
-                        <option value="<?= $s ?>" <?= $appt['status'] === $s ? 'selected' : '' ?>><?= $s ?></option>
-                    <?php endforeach; ?>
-                    </select>
-                </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

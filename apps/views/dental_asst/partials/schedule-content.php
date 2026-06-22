@@ -6,9 +6,9 @@ if(!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['Admin', '
     exit;
 }
 
-require_once __DIR__ . '/../../../../config/conn.php';
-require_once __DIR__ . '/../../../models/scheduleModel.php';
-require_once __DIR__ . '/../../../models/clinicModel.php';
+require_once '../../../../config/conn.php';
+require_once '../../../models/scheduleModel.php';
+require_once '../../../models/clinicModel.php';
 
 $db = new Database();
 $conn = $db->connect();
@@ -74,12 +74,7 @@ $clinics = $clinicModel->getAllClinics();
         </div>
 </div>
 
-<!-- Modal included from separate partial file -->
-<?php include '_add-schedule-modal.php'; ?>
-
-<!-- 
-ORIGINAL MODAL CODE - COMMENTED OUT (Moved to _add-schedule-modal.php)
-
+<!-- Add Schedule Modal -->
 <div class="modal fade" id="addScheduleModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content vd-modal-content p-4">
@@ -157,4 +152,3 @@ ORIGINAL MODAL CODE - COMMENTED OUT (Moved to _add-schedule-modal.php)
     });
 })();
 </script>
--->

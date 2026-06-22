@@ -96,9 +96,38 @@ class Appointment {
 
     // ===== ADMIN FUNCTIONS =====
 
+    // Auto-update statuses for past appointments
+    public function autoUpdatePastAppointmentStatuses() {
+        try {
+            // Update Confirmed appointments to Completed if date is in the past
+            $stmt = $this->conn->prepare("
+                UPDATE appointments 
+                SET status = 'Completed'
+                WHERE date < CURDATE() 
+                AND status = 'Confirmed'
+            ");
+            $stmt->execute();
+
+            // Update Pending appointments to Cancelled if date is in the past
+            $stmt = $this->conn->prepare("
+                UPDATE appointments 
+                SET status = 'Cancelled'
+                WHERE date < CURDATE() 
+                AND status = 'Pending'
+            ");
+            $stmt->execute();
+
+        } catch (PDOException $e) {
+            error_log("autoUpdatePastAppointmentStatuses error: " . $e->getMessage());
+        }
+    }
+
     // Admin: view all past appointments
     public function getAdminPastAppointments() {
         try {
+            // Auto-update statuses before fetching
+            $this->autoUpdatePastAppointmentStatuses();
+
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
                     a.phone_number, a.email, c.clinic_name, a.service,

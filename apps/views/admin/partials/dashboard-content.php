@@ -122,11 +122,18 @@
             <a href="clinics.php" class="btn vd-btn-outline btn-sm">
                 <i class="ti ti-building me-1"></i> Manage Clinics
             </a>
-            <a href="schedules.php" class="btn vd-btn-outline btn-sm">
+            <button type="button" class="btn vd-btn-outline btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#addScheduleModal"
+                data-clinic-id="<?= isset($clinics[0]['clinic_id']) ? $clinics[0]['clinic_id'] : '' ?>"
+                data-clinic-name="<?= isset($clinics[0]['clinic_name']) ? htmlspecialchars($clinics[0]['clinic_name']) : 'Select Clinic' ?>">
                 <i class="ti ti-clock me-1"></i> Set Schedules
-            </a>
+            </button>
         </div>
         </div>
         </div>
     </div>
     </div>
+
+<!-- Modal for adding schedules from dashboard -->
+<?php include '_add-schedule-modal.php'; ?>
