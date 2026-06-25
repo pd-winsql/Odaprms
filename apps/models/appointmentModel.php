@@ -7,30 +7,38 @@ class Appointment {
         $this->conn = $conn;
     }
 
-    public function bookAppointment($lastname, $firstname, $middlename, $age, $gender, 
-    $phone_number, $email, $clinic_id, $service, $date, $schedule_id, $status = 'Pending') {
-        try {    
-            $stmt = $this->conn->prepare("INSERT INTO appointments (lastname, firstname, middlename, age, gender, 
-            phone_number, email, clinic_id, service, date, schedule_id, status) 
-            VALUES (:lastname, :firstname, :middlename, :age, :gender, 
-            :phone_number, :email, :clinic_id, :service, :date, :schedule_id, :status)");
-
+    public function bookAppointment($patient_id, $clinic_id, $service, $date, $schedule_id, $status = 'Pending') {
+        try {
+            $stmt = $this->conn->prepare("
+                INSERT INTO appointments
+                (
+                    patient_id,
+                    clinic_id,
+                    service,
+                    date,
+                    schedule_id,
+                    status
+                )
+                VALUES
+                (
+                    :patient_id,
+                    :clinic_id,
+                    :service,
+                    :date,
+                    :schedule_id,
+                    :status
+                )
+            ");
             return $stmt->execute([
-                ':lastname' => $lastname,
-                ':firstname' => $firstname,
-                ':middlename' => $middlename,
-                ':age' => $age,
-                ':gender' => $gender,
-                ':phone_number' => $phone_number,
-                ':email' => $email,
+                ':patient_id' => $patient_id,
                 ':clinic_id' => $clinic_id,
                 ':service' => $service,
                 ':date' => $date,
                 ':schedule_id' => $schedule_id,
                 ':status' => $status
             ]);
-        } catch (PDOException $e) {
-            error_log("addAppointment error: " . $e->getMessage());
+        } catch(PDOException $e){
+            error_log("bookAppointment error: ".$e->getMessage());
             return false;
         }
     }
@@ -129,10 +137,11 @@ class Appointment {
             $this->autoUpdatePastAppointmentStatuses();
 
             $stmt = $this->conn->prepare("
-                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
-                    a.phone_number, a.email, c.clinic_name, a.service,
+                SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
+                    p.phone_number, p.email, c.clinic_name, a.service,
                     a.date, a.status
                 FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id 
                 WHERE date < CURDATE()
                 ORDER BY date DESC
@@ -150,10 +159,13 @@ class Appointment {
     public function getAdminPastAppointmentsByClinic($clinic) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT * FROM appointments 
-                WHERE date < CURDATE()
-                AND clinic = :clinic
-                ORDER BY date DESC
+                SELECT a.*, p.lastname, p.firstname, p.middlename, p.age, p.gender, p.phone_number, p.email, c.clinic_name
+                FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.patient_id
+                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                WHERE a.date < CURDATE()
+                AND c.clinic_name = :clinic
+                ORDER BY a.date DESC
             ");
             $stmt->execute([':clinic' => $clinic]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -168,10 +180,11 @@ class Appointment {
     public function getAllUpcomingWithStatus() {
         try {
             $stmt = $this->conn->prepare("
-                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
-                    a.phone_number, a.email, c.clinic_name, a.service,
+                SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
+                    p.phone_number, p.email, c.clinic_name, a.service,
                     a.date, a.status
                 FROM appointments a
+                LEFT JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
                 WHERE date >= CURDATE()
                 ORDER BY date ASC

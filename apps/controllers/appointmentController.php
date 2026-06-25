@@ -116,55 +116,85 @@ class AppointmentController {
     public function bookAppointment() {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
             require_once '../models/clinicModel.php';
             require_once '../models/scheduleModel.php';
+            require_once '../models/patientModel.php';
 
             $db = new Database();
             $conn = $db->connect();
 
+            $patientModel = new Patient($conn);
             $clinicModel = new Clinic($conn);
             $scheduleModel = new Schedule($conn);
 
+            // GET SELECTED CLINIC + SCHEDULE
             $clinic_id = $_POST['clinic_id'] ?? '';
             $schedule_id = $_POST['schedule_id'] ?? '';
 
             if (!$clinic_id || !$schedule_id) {
-                echo json_encode(['success' => false, 'message' => 'Please select a clinic and a schedule.']);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Please select a clinic and schedule.'
+                ]);
                 exit;
             }
-            
-            $clinic   = $clinicModel->getClinicById($clinic_id);
-            $schedule = $scheduleModel->getScheduleById($schedule_id);
-            
-            if (!$clinic || !$schedule) {
-                echo json_encode(['success' => false, 'message' => 'Invalid clinic or schedule selected.']);
-                exit;
-            }   
 
-            $result = $this->appointments->bookAppointment(
-                $_POST['lastname'],
+            $clinic = $clinicModel->getClinicById($clinic_id);
+            $schedule = $scheduleModel->getScheduleById($schedule_id);
+            if (!$clinic || !$schedule) {
+                echo json_encode([
+                    'success'=>false,
+                    'message'=>'Invalid clinic or schedule.'
+                ]);
+                exit;
+            }
+
+            // 1. CREATE PATIENT FIRST
+            $patient_id = $patientModel->createPatient(
                 $_POST['firstname'],
+                $_POST['lastname'],
                 $_POST['middlename'],
                 $_POST['age'],
                 $_POST['gender'],
                 $_POST['phone_number'],
-                $_POST['email'],
+                $_POST['email']
+            );
+
+            if (!$patient_id) {
+                echo json_encode([
+                    'success'=>false,
+                    'message'=>'Failed creating patient record.'
+                ]);
+                exit;
+            }
+
+            // 2. CREATE APPOINTMENT USING patient_id
+            $result = $this->appointments->bookAppointment(
+                $patient_id,
                 $clinic_id,
                 $_POST['service'],
                 $schedule['sched_date'],
                 $schedule_id
             );
 
+
+
             if ($result) {
                 $id = $this->appointments->getLastInsertedId();
-                echo json_encode(['success' => true, 'appointment_id' => $id]);
+                echo json_encode([
+                    'success'=>true,
+                    'appointment_id'=>$id
+                ]);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Booking failed. Please try again.']);
+                echo json_encode([
+                    'success'=>false,
+                    'message'=>'Booking failed. Please try again.'
+                ]);
             }
             exit;
         }
     }
+
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -42,12 +42,30 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function addPatient($lastname, $firstname, $middlename, $age, $gender, $phone_number, $email) {
+    public function createPatient($firstname, $lastname, $middlename, $age, $gender, $phone_number, $email) {
+
         try {
-            $stmt = $this->conn->prepare("INSERT INTO patients (lastname, firstname, middlename, age, gender, phone_number, email) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            return $stmt->execute([$lastname, $firstname, $middlename, $age, $gender, $phone_number, $email]);
-        } catch (PDOException $e) {
-            error_log("addPatient error: " . $e->getMessage());
+
+            $stmt = $this->conn->prepare("
+                INSERT INTO patients
+                (firstname, lastname, middlename, age, gender, phone_number, email)
+                VALUES
+                (:firstname, :lastname, :middlename, :age, :gender, :phone_number, :email)
+            ");
+
+            $stmt->execute([
+                ':firstname' => $firstname,
+                ':lastname' => $lastname,
+                ':middlename' => $middlename,
+                ':age' => $age,
+                ':gender' => $gender,
+                ':phone_number' => $phone_number,
+                ':email' => $email
+            ]);
+            return $this->conn->lastInsertId();
+        } catch(PDOException $e){
+            error_log("createPatient error: ".$e->getMessage());
             return false;
         }
+    }
 }

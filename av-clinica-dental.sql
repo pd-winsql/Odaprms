@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 15, 2026 at 02:05 PM
+-- Generation Time: Jun 25, 2026 at 05:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Database: `av-clinica-dental`
 --
+CREATE DATABASE IF NOT EXISTS `av-clinica-dental` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `av-clinica-dental`;
 
 -- --------------------------------------------------------
 
@@ -29,17 +31,11 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `appointments` (
   `appointment_id` int(11) NOT NULL,
-  `lastname` varchar(100) NOT NULL,
-  `firstname` varchar(100) NOT NULL,
-  `middlename` varchar(100) DEFAULT NULL,
-  `age` tinyint(3) UNSIGNED NOT NULL,
-  `gender` enum('Male','Female','Prefer not to say') NOT NULL,
-  `phone_number` varchar(11) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `clinic` enum('Alcala Clinic','Tuguegarao Clinic') NOT NULL,
+  `patient_id` int(11) DEFAULT NULL,
+  `schedule_id` int(11) NOT NULL,
+  `clinic_id` int(11) NOT NULL,
   `service` varchar(100) NOT NULL,
   `date` date NOT NULL,
-  `time` time NOT NULL,
   `status` enum('Pending','Confirmed','Cancelled','Completed') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -58,24 +54,36 @@ CREATE TABLE `clinics` (
   `clinic_image` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `clinics`
+-- Table structure for table `patients`
 --
 
-INSERT INTO `clinics` (`clinic_id`, `clinic_name`, `clinic_address`, `clinic_contact`, `clinic_image`) VALUES
-(1, 'Alcala Branch', 'Zone 4, Tupang, Alcala, Cagayan', '0912-345-6789', NULL),
-(2, 'Tuguegarao Branch', 'Bartolome St., Caggay, Tuguegarao City, Cagayan', '0912-345-6789', NULL);
+CREATE TABLE `patients` (
+  `patient_id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `firstname` varchar(100) NOT NULL,
+  `lastname` varchar(100) NOT NULL,
+  `middlename` varchar(100) DEFAULT NULL,
+  `age` int(11) DEFAULT NULL,
+  `gender` varchar(50) DEFAULT NULL,
+  `phone_number` varchar(20) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `schedule`
+-- Table structure for table `schedules`
 --
 
-CREATE TABLE `schedule` (
+CREATE TABLE `schedules` (
   `schedule_id` int(11) NOT NULL,
   `clinic_id` int(11) NOT NULL,
-  `date` date NOT NULL
+  `sched_date` date NOT NULL,
+  `max_appointments` smallint(6) NOT NULL DEFAULT 8
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -88,16 +96,9 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `email` varchar(255) NOT NULL,
   `username` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL
+  `password` varchar(255) NOT NULL,
+  `user_role` enum('Patient','Admin','Dental Assistant') NOT NULL DEFAULT 'Patient'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `email`, `username`, `password`) VALUES
-(4, 'e@gmail.com', 'test', '$2y$10$teQbwME4SpYXK81FOA6i3.ljEz/tNajs.st/0mHCGOGwnOzMoGtMG'),
-(6, 'test1@gmail.com', 'test2', '$2y$10$F4/Rozsj2sLqEMNK8DshzOewNtgICvfP7RwxRLdjtOisRNgmmvm9S');
 
 --
 -- Indexes for dumped tables
@@ -107,7 +108,9 @@ INSERT INTO `users` (`id`, `email`, `username`, `password`) VALUES
 -- Indexes for table `appointments`
 --
 ALTER TABLE `appointments`
-  ADD PRIMARY KEY (`appointment_id`);
+  ADD PRIMARY KEY (`appointment_id`),
+  ADD KEY `clinic_id` (`clinic_id`),
+  ADD KEY `fk_appointments_schedule` (`schedule_id`);
 
 --
 -- Indexes for table `clinics`
@@ -116,9 +119,16 @@ ALTER TABLE `clinics`
   ADD PRIMARY KEY (`clinic_id`);
 
 --
--- Indexes for table `schedule`
+-- Indexes for table `patients`
 --
-ALTER TABLE `schedule`
+ALTER TABLE `patients`
+  ADD PRIMARY KEY (`patient_id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `schedules`
+--
+ALTER TABLE `schedules`
   ADD PRIMARY KEY (`schedule_id`),
   ADD KEY `fkclinic_id` (`clinic_id`);
 
@@ -144,28 +154,47 @@ ALTER TABLE `appointments`
 -- AUTO_INCREMENT for table `clinics`
 --
 ALTER TABLE `clinics`
-  MODIFY `clinic_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `clinic_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `schedule`
+-- AUTO_INCREMENT for table `patients`
 --
-ALTER TABLE `schedule`
+ALTER TABLE `patients`
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `schedules`
+--
+ALTER TABLE `schedules`
   MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
 --
 
 --
--- Constraints for table `schedule`
+-- Constraints for table `appointments`
 --
-ALTER TABLE `schedule`
+ALTER TABLE `appointments`
+  ADD CONSTRAINT `fk_appointment` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_appointments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`);
+
+--
+-- Constraints for table `patients`
+--
+ALTER TABLE `patients`
+  ADD CONSTRAINT `patients_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `schedules`
+--
+ALTER TABLE `schedules`
   ADD CONSTRAINT `fkclinic_id` FOREIGN KEY (`clinic_id`) REFERENCES `clinics` (`clinic_id`);
 COMMIT;
 
