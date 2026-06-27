@@ -35,6 +35,34 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function filterPatients($from = null, $to = null, $clinic_id = null, $query = null) {
+        $sql = "SELECT DISTINCT p.* FROM patients p LEFT JOIN appointments a ON p.patient_id = a.patient_id WHERE 1=1";
+        $params = [];
+
+        if (!empty($from)) {
+            $sql .= " AND DATE(p.created_at) >= :from";
+            $params[':from'] = $from;
+        }
+        if (!empty($to)) {
+            $sql .= " AND DATE(p.created_at) <= :to";
+            $params[':to'] = $to;
+        }
+        if (!empty($clinic_id)) {
+            $sql .= " AND a.clinic_id = :clinic_id";
+            $params[':clinic_id'] = $clinic_id;
+        }
+        if (!empty($query)) {
+            $sql .= " AND (p.lastname LIKE :q OR p.firstname LIKE :q)";
+            $params[':q'] = '%' . $query . '%';
+        }
+
+        $sql .= " ORDER BY p.created_at DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function searchPatients($query) {
         $stmt = $this->conn->prepare("SELECT * FROM patients WHERE lastname LIKE ? OR firstname LIKE ?");
         $likeQuery = '%' . $query . '%';

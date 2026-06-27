@@ -285,7 +285,7 @@
   transition: color 0.15s;
 }
 .vd-dash-card-link:hover { color: var(--mid); }
-.vd-dash-card-body { padding: 4px 0; }
+.vd-dash-card-body { padding: 16px 20; }
 
 /* ── Button styles ── */
 .btn {
@@ -928,3 +928,93 @@
 }
 .vd-toast-success { background: #eaf3de; color: #3b6d11; border: 1px solid #c3e0a0; }
 .vd-toast-error   { background: #fcebeb; color: #a32d2d; border: 1px solid #f0b8b8; }
+
+/* ============================================================
+   Patient filter bar — patient-content.php
+   ============================================================ */
+ 
+.vd-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--gold-pale);
+}
+ 
+.vd-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+ 
+.vd-filter-clear {
+  justify-content: flex-end;
+  padding-bottom: 1px;
+}
+ 
+.vd-filter-select {
+  min-width: 130px;
+  height: 34px;
+  font-size: 12px;
+}
+ 
+.vd-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+ 
+.vd-search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 13px;
+  color: var(--gold);
+  pointer-events: none;
+}
+ 
+.vd-search-input {
+  padding-left: 30px;
+  min-width: 200px;
+  height: 34px;
+  font-size: 12px;
+}
+ 
+@media (max-width: 575px) {
+  .vd-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .vd-filter-select,
+  .vd-search-input {
+    width: 100%;
+  }
+}
+
+/* Override the mockup sidebar styles from styles.css */
+.vd-dash-body .vd-sidebar {
+  width: 220px;
+}
+.vd-dash-body .vd-nav-item {
+  font-size: 13px;
+  padding: 10px 20px;
+}
+
+/* Add schedule inline form */
+.vd-add-form {
+  padding: 14px 20px;
+  background: var(--gold-pale);
+  border-bottom: 1px solid var(--border);
+}
+.vd-add-form-error {
+  color: #a32d2d;
+  font-size: 12px;
+  padding: 6px 0;
+}
+
+/* Fix btn-gold on anchor tags */
+.vd-dash-body .vd-btn-gold {
+  color: #fff !important;
+  text-decoration: none;
+}

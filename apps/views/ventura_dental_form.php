@@ -396,6 +396,30 @@
 
     document.getElementById('birthdate').addEventListener('change', showMinorBoxAndAge);
     document.getElementById('birthdate').addEventListener('input', showMinorBoxAndAge);
+    // Prefill from query params (when opened from admin profile)
+    (function prefillFromQuery(){
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const mapping = {
+          lastName: 'lastName',
+          firstName: 'firstName',
+          middleName: 'middleName',
+          birthdate: 'birthdate',
+          age: 'age',
+          sex: 'sex',
+          mobile: 'mobile',
+          email: 'email'
+        };
+        for (const [key, id] of Object.entries(mapping)) {
+          if (params.has(key)) {
+            const el = document.getElementById(id);
+            if (el) el.value = params.get(key);
+          }
+        }
+        // toggle minor box visibility if birthdate present
+        if (params.has('birthdate')) showMinorBoxAndAge();
+      } catch (e) { console.error('prefill error', e); }
+    })();
   </script>
 </body>
 </html>
