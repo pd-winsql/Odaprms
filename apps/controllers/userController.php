@@ -17,10 +17,15 @@ if (!$conn) {
 
 $userModel = new User($conn);
 
-$action = $_POST['action'] ?? '';
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 try {
-    if ($action === 'register') {
+    if ($action === 'logout') {
+        session_unset();
+        session_destroy();
+        header('Location: ../../index.php');
+        exit;
+    } elseif ($action === 'register') {
         registerUser($userModel);
     } elseif ($action === 'login') {
         loginUser($userModel);
