@@ -70,6 +70,9 @@ $today = date('l, F j Y');
         </a>
 
         <div class="vd-nav-section">Manage</div>
+        <a href="#" class="vd-nav-item" data-page="den-assist-content.php">
+            <i class="ti ti-nurse"></i> Dental Assistants
+        </a>
         <a href="#" class="vd-nav-item" data-page="clinic-content.php">
             <i class="ti ti-building"></i> Clinics
         </a>
