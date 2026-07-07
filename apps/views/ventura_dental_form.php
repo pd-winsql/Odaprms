@@ -31,7 +31,8 @@
                 </div>
             </div>
 
-            <form id="patientForm" novalidate>
+            <form id="patientForm" method="POST" novalidate>
+                <input type="hidden" name="action" value="saveDentalForm">
 
                 <!-- PATIENT INFORMATION -->
                 <p class="vd-section-label">Patient Information</p>
@@ -164,6 +165,28 @@
                 <!-- HEALTH QUESTIONNAIRE -->
                 <p class="vd-section-label">Health Questionnaire</p>
                 <p class="text-muted small mb-3">Please select your answer for each question.</p>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-md-6">
+                        <label class="vd-label form-label">Blood Type</label>
+                        <select id="bloodType" name="bloodType" class="form-select vd-input">
+                            <option value="" disabled selected>— Select —</option>
+                            <option value="Don't know">Don't know</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="vd-label form-label">Blood Pressure</label>
+                        <input type="text" id="bloodPressure" name="bloodPressure" class="form-control vd-input" placeholder="e.g. 120/80">
+                    </div>
+                </div>
 
                 <div class="table-responsive mb-4">
                 <table class="table vd-hq-table">
@@ -330,12 +353,71 @@
         </div>
     </div>
 
+    <div id="vdToast" class="vd-toast" role="status" aria-live="polite" aria-atomic="true">
+        <div class="vd-toast-icon" id="vdToastIcon">✦</div>
+        <div class="vd-toast-body">
+            <strong class="vd-toast-title" id="vdToastTitle">Success</strong>
+            <div class="vd-toast-message" id="vdToastMessage">Form submitted successfully.</div>
+        </div>
+        <button type="button" class="vd-toast-close" id="vdToastClose" aria-label="Close">×</button>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('patientForm').addEventListener('submit', function(e) {
+        const toast = document.getElementById('vdToast');
+        const toastIcon = document.getElementById('vdToastIcon');
+        const toastTitle = document.getElementById('vdToastTitle');
+        const toastMessage = document.getElementById('vdToastMessage');
+        const toastClose = document.getElementById('vdToastClose');
+
+        function showToast(message, type = 'success') {
+            toast.classList.remove('show', 'error');
+            toast.classList.add('show', type);
+            toastMessage.textContent = message;
+            toastTitle.textContent = type === 'error' ? 'Notice' : 'Success';
+            toastIcon.textContent = type === 'error' ? '!' : '✦';
+
+            clearTimeout(showToast.timeoutId);
+            showToast.timeoutId = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3200);
+        }
+
+        toastClose.addEventListener('click', () => toast.classList.remove('show'));
+
+        document.getElementById('patientForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        alert('Form submitted successfully!');
-        window.location.href = 'registration-form.php';
+
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+
+        const formData = new FormData(this);
+
+        try {
+            const response = await fetch('../controllers/patientController.php', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                showToast(result.message || 'Form submitted successfully!');
+                setTimeout(() => {
+                    window.location.href = 'registration-form.php';
+                }, 1400);
+            } else {
+                showToast(result.message || 'Unable to submit the form.', 'error');
+            }
+        } catch (error) {
+            console.error('Form submission error:', error);
+            showToast('Unable to submit the form right now.', 'error');
+        } finally {
+            if (!toast.classList.contains('show') || toast.classList.contains('error')) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Patient Form';
+            }
+        }
         });
 
         function showMinorBoxAndAge() {

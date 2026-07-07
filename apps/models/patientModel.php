@@ -13,6 +13,20 @@ class Patient {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getPatientFull($patient_id) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT * FROM vw_patient_information 
+                WHERE patient_id = :patient_id
+            ");
+            $stmt->execute([':patient_id' => $patient_id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("getPatientFull error: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function updatePatient($patient_id, $data) {
         $fields = [];
         foreach ($data as $key => $value) {
@@ -93,6 +107,99 @@ class Patient {
             return $this->conn->lastInsertId();
         } catch(PDOException $e){
             error_log("createPatient error: ".$e->getMessage());
+            return false;
+        }
+    }
+
+    public function savePatientForm($data) {
+        try {
+            $this->conn->beginTransaction();
+
+            $stmt = $this->conn->prepare("\n                INSERT INTO patients\n                (user_id, firstname, lastname, middlename, age, gender, phone_number, email, birthdate, civil_status, home_address, work_address, fb_account, occupation, office_contact, guardian_name, guardian_contact, physician_name, physician_contact, physician_address)\n                VALUES\n                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :email, :birthdate, :civil_status, :home_address, :work_address, :fb_account, :occupation, :office_contact, :guardian_name, :guardian_contact, :physician_name, :physician_contact, :physician_address)\n            ");
+
+            $stmt->execute([
+                ':user_id' => null,
+                ':firstname' => $data['firstname'],
+                ':lastname' => $data['lastname'],
+                ':middlename' => $data['middlename'],
+                ':age' => $data['age'],
+                ':gender' => $data['gender'],
+                ':phone_number' => $data['phone_number'],
+                ':email' => $data['email'],
+                ':birthdate' => $data['birthdate'],
+                ':civil_status' => $data['civil_status'],
+                ':home_address' => $data['home_address'],
+                ':work_address' => $data['work_address'],
+                ':fb_account' => $data['fb_account'],
+                ':occupation' => $data['occupation'],
+                ':office_contact' => $data['office_contact'],
+                ':guardian_name' => $data['guardian_name'],
+                ':guardian_contact' => $data['guardian_contact'],
+                ':physician_name' => $data['physician_name'],
+                ':physician_contact' => $data['physician_contact'],
+                ':physician_address' => $data['physician_address']
+            ]);
+
+            $patient_id = $this->conn->lastInsertId();
+
+            $stmt = $this->conn->prepare("\n                INSERT INTO patient_dental_history\n                (patient_id, previous_dentist, last_dental_visit, treatment_done, reason_for_visit, referred_by)\n                VALUES\n                (:patient_id, :previous_dentist, :last_dental_visit, :treatment_done, :reason_for_visit, :referred_by)\n            ");
+            $stmt->execute([
+                ':patient_id' => $patient_id,
+                ':previous_dentist' => $data['previous_dentist'],
+                ':last_dental_visit' => $data['last_dental_visit'],
+                ':treatment_done' => $data['treatment_done'],
+                ':reason_for_visit' => $data['reason_for_visit'],
+                ':referred_by' => $data['referred_by']
+            ]);
+
+            $stmt = $this->conn->prepare("\n                INSERT INTO patient_medical_history\n                (patient_id, good_health, medical_condition, medical_condition_detail, serious_illness, serious_illness_detail, hospitalized, hospitalized_detail, medication, medication_detail, smoke, alcohol, drugs, allergy, allergy_detail, pregnant, nursing, birth_control, cond_others)\n                VALUES\n                (:patient_id, :good_health, :medical_condition, :medical_condition_detail, :serious_illness, :serious_illness_detail, :hospitalized, :hospitalized_detail, :medication, :medication_detail, :smoke, :alcohol, :drugs, :allergy, :allergy_detail, :pregnant, :nursing, :birth_control, :cond_others)\n            ");
+            $stmt->execute([
+                ':patient_id' => $patient_id,
+                ':good_health' => $data['good_health'],
+                ':medical_condition' => $data['medical_condition'],
+                ':medical_condition_detail' => $data['medical_condition_detail'],
+                ':serious_illness' => $data['serious_illness'],
+                ':serious_illness_detail' => $data['serious_illness_detail'],
+                ':hospitalized' => $data['hospitalized'],
+                ':hospitalized_detail' => $data['hospitalized_detail'],
+                ':medication' => $data['medication'],
+                ':medication_detail' => $data['medication_detail'],
+                ':smoke' => $data['smoke'],
+                ':alcohol' => $data['alcohol'],
+                ':drugs' => $data['drugs'],
+                ':allergy' => $data['allergy'],
+                ':allergy_detail' => $data['allergy_detail'],
+                ':pregnant' => $data['pregnant'],
+                ':nursing' => $data['nursing'],
+                ':birth_control' => $data['birth_control'],
+                ':cond_others' => $data['cond_others']
+            ]);
+
+            if (!empty($data['conditions'])) {
+                foreach ($data['conditions'] as $condition) {
+                    $stmt = $this->conn->prepare("INSERT INTO patient_conditions (patient_id, `condition`) VALUES (:patient_id, :condition)");
+                    $stmt->execute([
+                        ':patient_id' => $patient_id,
+                        ':condition' => $condition
+                    ]);
+                }
+            }
+
+            if (!empty($data['consent_name']) || !empty($data['consent_for'])) {
+                $stmt = $this->conn->prepare("\n                    INSERT INTO patient_consent\n                    (patient_id, consent_name, consent_for, consent_date)\n                    VALUES\n                    (:patient_id, :consent_name, :consent_for, :consent_date)\n                ");
+                $stmt->execute([
+                    ':patient_id' => $patient_id,
+                    ':consent_name' => $data['consent_name'],
+                    ':consent_for' => $data['consent_for'],
+                    ':consent_date' => $data['consent_date']
+                ]);
+            }
+
+            $this->conn->commit();
+            return $patient_id;
+        } catch(PDOException $e) {
+            $this->conn->rollBack();
+            error_log("savePatientForm error: " . $e->getMessage());
             return false;
         }
     }

@@ -122,11 +122,10 @@ krsort($months); // latest first
 					<?php endif; ?>
 					</td>
 					<td>
-					<a href="#" 
-						class="btn btn-sm vd-btn-outline"
-						data-page="<?= htmlspecialchars($profilePage) ?>">
-						View Profile
-					</a>
+						<button class="btn btn-sm vd-btn-outline vd-view-profile-btn"
+							data-id="<?= $p['patient_id'] ?>">
+							View Profile
+						</button>
 					</td>
 				</tr>
 				<?php endforeach; ?>
@@ -198,9 +197,36 @@ krsort($months); // latest first
 		filterTable();
 	});
 
+	document.querySelectorAll('.vd-view-profile-btn').forEach(btn => {
+		btn.addEventListener('click', async function () {
+			const patientId = this.dataset.id;
+			const dashContent = document.querySelector('.vd-dash-content');
+
+			try {
+const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
+			if (!response.ok) throw new Error('Failed to load profile');
+			const html = await response.text();
+			dashContent.innerHTML = html;
+
+			// Re-execute scripts in the loaded partial
+			dashContent.querySelectorAll('script').forEach(oldScript => {
+				const newScript = document.createElement('script');
+				newScript.textContent = oldScript.textContent;
+				document.body.appendChild(newScript);
+				oldScript.remove();
+			});
+
+			} catch (err) {
+			dashContent.innerHTML = '<div class="vd-empty-state">Error loading patient profile.</div>';
+			console.error(err);
+			}
+		});
+});
+
 })();
 
     async function loadpage(page) {
+        const dashContent = document.querySelector('.vd-dash-content');
         try {
             const response = await fetch(`partials/${page}`);
             if (!response.ok) throw new Error('Network response was not ok');
@@ -216,7 +242,9 @@ krsort($months); // latest first
         
             closeSidebar();
             } catch (error) {
-            dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
+            if (dashContent) {
+                dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
+            }
             console.error('Error fetching page:', error);
             }
         }

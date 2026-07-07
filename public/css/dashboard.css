@@ -1018,3 +1018,186 @@
   color: #fff !important;
   text-decoration: none;
 }
+
+/* ============================================================
+   Patient profile — patient-profile.php
+   ============================================================ */
+
+.vd-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.vd-profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--gold-pale);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--gold);
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.vd-profile-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--dark);
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.vd-profile-sub {
+  font-size: 11px;
+  color: var(--mid);
+  margin-top: 3px;
+  letter-spacing: 0.04em;
+}
+
+.vd-profile-body {
+  padding: 20px;
+}
+
+.vd-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 20px;
+}
+
+.vd-profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vd-profile-field-full {
+  grid-column: 1 / -1;
+}
+
+.vd-profile-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.vd-profile-value {
+  font-size: 13px;
+  color: var(--dark);
+  font-weight: 300;
+  border-bottom: 1px solid #f0e8d8;
+  padding-bottom: 6px;
+  min-height: 24px;
+}
+
+.vd-profile-na {
+  font-size: 12px;
+  color: var(--mid);
+  font-style: italic;
+}
+
+.vd-yn-yes {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 2px;
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.vd-yn-no {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 2px;
+  background: #fcebeb;
+  color: #a32d2d;
+}
+
+.vd-profile-hq-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  font-weight: 300;
+}
+
+.vd-profile-hq-table thead th {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.vd-profile-hq-table tbody tr {
+  border-bottom: 1px solid #f0e8d8;
+}
+
+.vd-profile-hq-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.vd-profile-hq-table td {
+  padding: 9px 12px;
+  color: var(--dark);
+  vertical-align: middle;
+}
+
+.vd-hq-section-row td {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: var(--gold-pale);
+  padding: 7px 12px !important;
+}
+
+.vd-conditions-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vd-condition-tag {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 2px;
+  background: var(--gold-pale);
+  border: 1px solid var(--border);
+  color: var(--mid);
+}
+
+.vd-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 767px) {
+  .vd-profile-grid { grid-template-columns: repeat(2, 1fr); }
+  .vd-profile-header { flex-wrap: wrap; }
+}
+
+@media (max-width: 575px) {
+  .vd-profile-grid { grid-template-columns: 1fr; }
+}

@@ -191,6 +191,105 @@ body {
   color: var(--dark);
 }
 
+/* Toast notification */
+.vd-toast {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: min(92vw, 360px);
+  max-width: min(92vw, 420px);
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold);
+  background: var(--white-bg);
+  color: var(--dark);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.vd-toast.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.vd-toast.error {
+  border-left-color: #8a3d3d;
+}
+.vd-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gold-pale);
+  color: var(--gold);
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.vd-toast.error .vd-toast-icon {
+  background: #f7e6e6;
+  color: #8a3d3d;
+}
+.vd-toast-body {
+  flex: 1;
+}
+.vd-toast-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.vd-toast.error .vd-toast-title {
+  color: #8a3d3d;
+}
+.vd-toast-message {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--mid);
+}
+.vd-toast-close {
+  border: none;
+  background: transparent;
+  color: var(--mid);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+.vd-toast-close:hover {
+  color: var(--gold);
+}
+
+@media (min-width: 992px) {
+  .vd-toast {
+    right: 24px;
+    bottom: 24px;
+    left: auto;
+    transform: translateY(20px);
+  }
+}
+
+@media (max-width: 991px) {
+  .vd-toast {
+    left: 50%;
+    bottom: 16px;
+    transform: translate(-50%, 20px);
+  }
+  .vd-toast.show {
+    transform: translate(-50%, 0);
+  }
+}
+
 /* Clinic radio cards */
 .vd-clinic-card { cursor: pointer; }
 .vd-clinic-card-inner {
