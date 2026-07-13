@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 07, 2026 at 05:07 AM
+-- Generation Time: Jul 13, 2026 at 03:56 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,7 +44,9 @@ CREATE TABLE `appointments` (
 
 INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clinic_id`, `service`, `date`, `status`, `created_at`) VALUES
 (10, 1, 14, 1, 'cleaning', '2026-06-26', 'Cancelled', '2026-06-25 15:05:28'),
-(11, 4, 15, 1, 'fluoride', '2026-07-02', 'Completed', '2026-07-01 15:12:50');
+(11, 4, 15, 1, 'fluoride', '2026-07-02', 'Completed', '2026-07-01 15:12:50'),
+(12, 7, 16, 1, 'whitening', '2026-07-10', 'Confirmed', '2026-07-09 10:22:47'),
+(13, 8, 16, 1, 'pediatric', '2026-07-10', 'Confirmed', '2026-07-09 10:40:51');
 
 -- --------------------------------------------------------
 
@@ -107,7 +109,10 @@ INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middl
 (1, NULL, 'sheesshh', 'palo', 'santossss', 23, 'Female', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-25 15:05:28'),
 (2, NULL, 'Angelo', 'Cabulay', '', 24, 'Male', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-01 15:12:20'),
 (3, NULL, 'Angelo', 'Cabulay', '', 24, 'Male', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-01 15:12:37'),
-(4, NULL, 'Angelo', 'Cabulay', 'boi', 24, 'Male', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-01 15:12:50');
+(4, NULL, 'Angelo', 'Cabulay', 'boi', 24, 'Male', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-01 15:12:50'),
+(6, NULL, 'Test', 'User', 'CLI', 30, 'Female', '09170000000', 'testcli@example.com', '1995-01-10', 'Single', 'Test Address', 'Work Address', 'testfb', 'Tester', '09170000001', '', '', '', '', '', '2026-07-07 03:31:41'),
+(7, NULL, 'Stephanie', 'Unista', 'Dikoalam', 21, 'Female', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-09 10:22:47'),
+(8, NULL, 'Michelle', 'Llanto', 'Dikoalam', 21, 'Female', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-09 10:40:51');
 
 -- --------------------------------------------------------
 
@@ -120,6 +125,13 @@ CREATE TABLE `patient_conditions` (
   `patient_id` int(11) NOT NULL,
   `condition` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patient_conditions`
+--
+
+INSERT INTO `patient_conditions` (`condition_id`, `patient_id`, `condition`) VALUES
+(1, 6, 'Heart Disease');
 
 -- --------------------------------------------------------
 
@@ -135,6 +147,13 @@ CREATE TABLE `patient_consent` (
   `consent_date` date DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patient_consent`
+--
+
+INSERT INTO `patient_consent` (`consent_id`, `patient_id`, `consent_name`, `consent_for`, `consent_date`, `created_at`) VALUES
+(1, 6, 'Test User', 'myself', '2026-07-07', '2026-07-07 03:31:41');
 
 -- --------------------------------------------------------
 
@@ -152,6 +171,13 @@ CREATE TABLE `patient_dental_history` (
   `referred_by` varchar(100) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patient_dental_history`
+--
+
+INSERT INTO `patient_dental_history` (`dental_history_id`, `patient_id`, `previous_dentist`, `last_dental_visit`, `treatment_done`, `reason_for_visit`, `referred_by`, `created_at`) VALUES
+(2, 6, 'Dr. Test', '2024-01-01', 'Cleaning', 'Checkup', 'Friend', '2026-07-07 03:31:41');
 
 -- --------------------------------------------------------
 
@@ -180,8 +206,17 @@ CREATE TABLE `patient_medical_history` (
   `nursing` tinyint(1) DEFAULT NULL,
   `birth_control` tinyint(1) DEFAULT NULL,
   `cond_others` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `blood_type` varchar(10) DEFAULT NULL,
+  `blood_pressure` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `patient_medical_history`
+--
+
+INSERT INTO `patient_medical_history` (`medical_history_id`, `patient_id`, `good_health`, `medical_condition`, `medical_condition_detail`, `serious_illness`, `serious_illness_detail`, `hospitalized`, `hospitalized_detail`, `medication`, `medication_detail`, `smoke`, `alcohol`, `drugs`, `allergy`, `allergy_detail`, `pregnant`, `nursing`, `birth_control`, `cond_others`, `created_at`, `blood_type`, `blood_pressure`) VALUES
+(2, 6, 1, 0, '', 0, '', 0, '', 0, '', 0, 0, 0, 0, '', 0, 0, 0, '', '2026-07-07 03:31:41', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -204,6 +239,25 @@ INSERT INTO `schedules` (`schedule_id`, `clinic_id`, `sched_date`, `max_appointm
 (14, 1, '2026-06-26', 8),
 (15, 1, '2026-07-02', 8),
 (16, 1, '2026-07-10', 8);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `staffs`
+--
+
+CREATE TABLE `staffs` (
+  `staff_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `firstname` varchar(100) NOT NULL,
+  `lastname` varchar(100) NOT NULL,
+  `middlename` varchar(100) DEFAULT NULL,
+  `gender` enum('Male','Female','Prefer not to say') DEFAULT NULL,
+  `phone_number` varchar(20) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `employment_status` enum('Active','Inactive') DEFAULT 'Active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -279,6 +333,8 @@ CREATE TABLE `vw_patient_information` (
 ,`pregnant` tinyint(1)
 ,`nursing` tinyint(1)
 ,`birth_control` tinyint(1)
+,`blood_type` varchar(10)
+,`blood_pressure` varchar(20)
 ,`patient_conditions` mediumtext
 ,`consent_name` varchar(100)
 ,`consent_for` varchar(20)
@@ -293,7 +349,7 @@ CREATE TABLE `vw_patient_information` (
 --
 DROP TABLE IF EXISTS `vw_patient_information`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_patient_information`  AS SELECT `p`.`patient_id` AS `patient_id`, `p`.`user_id` AS `user_id`, `p`.`firstname` AS `firstname`, `p`.`middlename` AS `middlename`, `p`.`lastname` AS `lastname`, concat(`p`.`firstname`,' ',coalesce(`p`.`middlename`,''),' ',`p`.`lastname`) AS `full_name`, `p`.`age` AS `age`, `p`.`gender` AS `gender`, `p`.`birthdate` AS `birthdate`, `p`.`civil_status` AS `civil_status`, `p`.`phone_number` AS `phone_number`, `p`.`email` AS `email`, `p`.`home_address` AS `home_address`, `p`.`work_address` AS `work_address`, `p`.`occupation` AS `occupation`, `p`.`office_contact` AS `office_contact`, `p`.`fb_account` AS `fb_account`, `p`.`guardian_name` AS `guardian_name`, `p`.`guardian_contact` AS `guardian_contact`, `p`.`physician_name` AS `physician_name`, `p`.`physician_contact` AS `physician_contact`, `p`.`physician_address` AS `physician_address`, `dh`.`previous_dentist` AS `previous_dentist`, `dh`.`last_dental_visit` AS `last_dental_visit`, `dh`.`treatment_done` AS `treatment_done`, `dh`.`reason_for_visit` AS `reason_for_visit`, `dh`.`referred_by` AS `referred_by`, `mh`.`good_health` AS `good_health`, `mh`.`medical_condition` AS `medical_condition`, `mh`.`medical_condition_detail` AS `medical_condition_detail`, `mh`.`serious_illness` AS `serious_illness`, `mh`.`serious_illness_detail` AS `serious_illness_detail`, `mh`.`hospitalized` AS `hospitalized`, `mh`.`hospitalized_detail` AS `hospitalized_detail`, `mh`.`medication` AS `medication`, `mh`.`medication_detail` AS `medication_detail`, `mh`.`smoke` AS `smoke`, `mh`.`alcohol` AS `alcohol`, `mh`.`drugs` AS `drugs`, `mh`.`allergy` AS `allergy`, `mh`.`allergy_detail` AS `allergy_detail`, `mh`.`pregnant` AS `pregnant`, `mh`.`nursing` AS `nursing`, `mh`.`birth_control` AS `birth_control`, group_concat(distinct `pc`.`condition` order by `pc`.`condition` ASC separator ', ') AS `patient_conditions`, `c`.`consent_name` AS `consent_name`, `c`.`consent_for` AS `consent_for`, `c`.`consent_date` AS `consent_date`, `p`.`created_at` AS `created_at` FROM ((((`patients` `p` left join `patient_dental_history` `dh` on(`p`.`patient_id` = `dh`.`patient_id`)) left join `patient_medical_history` `mh` on(`p`.`patient_id` = `mh`.`patient_id`)) left join `patient_consent` `c` on(`p`.`patient_id` = `c`.`patient_id`)) left join `patient_conditions` `pc` on(`p`.`patient_id` = `pc`.`patient_id`)) GROUP BY `p`.`patient_id`, `p`.`user_id`, `p`.`firstname`, `p`.`middlename`, `p`.`lastname`, `p`.`age`, `p`.`gender`, `p`.`birthdate`, `p`.`civil_status`, `p`.`phone_number`, `p`.`email`, `p`.`home_address`, `p`.`work_address`, `p`.`occupation`, `p`.`office_contact`, `p`.`fb_account`, `p`.`guardian_name`, `p`.`guardian_contact`, `p`.`physician_name`, `p`.`physician_contact`, `p`.`physician_address`, `dh`.`previous_dentist`, `dh`.`last_dental_visit`, `dh`.`treatment_done`, `dh`.`reason_for_visit`, `dh`.`referred_by`, `mh`.`good_health`, `mh`.`medical_condition`, `mh`.`medical_condition_detail`, `mh`.`serious_illness`, `mh`.`serious_illness_detail`, `mh`.`hospitalized`, `mh`.`hospitalized_detail`, `mh`.`medication`, `mh`.`medication_detail`, `mh`.`smoke`, `mh`.`alcohol`, `mh`.`drugs`, `mh`.`allergy`, `mh`.`allergy_detail`, `mh`.`pregnant`, `mh`.`nursing`, `mh`.`birth_control`, `c`.`consent_name`, `c`.`consent_for`, `c`.`consent_date`, `p`.`created_at` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_patient_information`  AS SELECT `p`.`patient_id` AS `patient_id`, `p`.`user_id` AS `user_id`, `p`.`firstname` AS `firstname`, `p`.`middlename` AS `middlename`, `p`.`lastname` AS `lastname`, concat(`p`.`firstname`,' ',coalesce(`p`.`middlename`,''),' ',`p`.`lastname`) AS `full_name`, `p`.`age` AS `age`, `p`.`gender` AS `gender`, `p`.`birthdate` AS `birthdate`, `p`.`civil_status` AS `civil_status`, `p`.`phone_number` AS `phone_number`, `p`.`email` AS `email`, `p`.`home_address` AS `home_address`, `p`.`work_address` AS `work_address`, `p`.`occupation` AS `occupation`, `p`.`office_contact` AS `office_contact`, `p`.`fb_account` AS `fb_account`, `p`.`guardian_name` AS `guardian_name`, `p`.`guardian_contact` AS `guardian_contact`, `p`.`physician_name` AS `physician_name`, `p`.`physician_contact` AS `physician_contact`, `p`.`physician_address` AS `physician_address`, `dh`.`previous_dentist` AS `previous_dentist`, `dh`.`last_dental_visit` AS `last_dental_visit`, `dh`.`treatment_done` AS `treatment_done`, `dh`.`reason_for_visit` AS `reason_for_visit`, `dh`.`referred_by` AS `referred_by`, `mh`.`good_health` AS `good_health`, `mh`.`medical_condition` AS `medical_condition`, `mh`.`medical_condition_detail` AS `medical_condition_detail`, `mh`.`serious_illness` AS `serious_illness`, `mh`.`serious_illness_detail` AS `serious_illness_detail`, `mh`.`hospitalized` AS `hospitalized`, `mh`.`hospitalized_detail` AS `hospitalized_detail`, `mh`.`medication` AS `medication`, `mh`.`medication_detail` AS `medication_detail`, `mh`.`smoke` AS `smoke`, `mh`.`alcohol` AS `alcohol`, `mh`.`drugs` AS `drugs`, `mh`.`allergy` AS `allergy`, `mh`.`allergy_detail` AS `allergy_detail`, `mh`.`pregnant` AS `pregnant`, `mh`.`nursing` AS `nursing`, `mh`.`birth_control` AS `birth_control`, `mh`.`blood_type` AS `blood_type`, `mh`.`blood_pressure` AS `blood_pressure`, group_concat(distinct `pc`.`condition` order by `pc`.`condition` ASC separator ', ') AS `patient_conditions`, `c`.`consent_name` AS `consent_name`, `c`.`consent_for` AS `consent_for`, `c`.`consent_date` AS `consent_date`, `p`.`created_at` AS `created_at` FROM ((((`patients` `p` left join `patient_dental_history` `dh` on(`p`.`patient_id` = `dh`.`patient_id`)) left join `patient_medical_history` `mh` on(`p`.`patient_id` = `mh`.`patient_id`)) left join `patient_consent` `c` on(`p`.`patient_id` = `c`.`patient_id`)) left join `patient_conditions` `pc` on(`p`.`patient_id` = `pc`.`patient_id`)) GROUP BY `p`.`patient_id`, `p`.`user_id`, `p`.`firstname`, `p`.`middlename`, `p`.`lastname`, `p`.`age`, `p`.`gender`, `p`.`birthdate`, `p`.`civil_status`, `p`.`phone_number`, `p`.`email`, `p`.`home_address`, `p`.`work_address`, `p`.`occupation`, `p`.`office_contact`, `p`.`fb_account`, `p`.`guardian_name`, `p`.`guardian_contact`, `p`.`physician_name`, `p`.`physician_contact`, `p`.`physician_address`, `dh`.`previous_dentist`, `dh`.`last_dental_visit`, `dh`.`treatment_done`, `dh`.`reason_for_visit`, `dh`.`referred_by`, `mh`.`good_health`, `mh`.`medical_condition`, `mh`.`medical_condition_detail`, `mh`.`serious_illness`, `mh`.`serious_illness_detail`, `mh`.`hospitalized`, `mh`.`hospitalized_detail`, `mh`.`medication`, `mh`.`medication_detail`, `mh`.`smoke`, `mh`.`alcohol`, `mh`.`drugs`, `mh`.`allergy`, `mh`.`allergy_detail`, `mh`.`pregnant`, `mh`.`nursing`, `mh`.`birth_control`, `mh`.`blood_type`, `mh`.`blood_pressure`, `c`.`consent_name`, `c`.`consent_for`, `c`.`consent_date`, `p`.`created_at` ;
 
 --
 -- Indexes for dumped tables
@@ -356,6 +412,13 @@ ALTER TABLE `schedules`
   ADD KEY `fkclinic_id` (`clinic_id`);
 
 --
+-- Indexes for table `staffs`
+--
+ALTER TABLE `staffs`
+  ADD PRIMARY KEY (`staff_id`),
+  ADD UNIQUE KEY `user_id` (`user_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -371,7 +434,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `clinics`
@@ -383,31 +446,31 @@ ALTER TABLE `clinics`
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `patient_conditions`
 --
 ALTER TABLE `patient_conditions`
-  MODIFY `condition_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `condition_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `patient_consent`
 --
 ALTER TABLE `patient_consent`
-  MODIFY `consent_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `consent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `patient_dental_history`
 --
 ALTER TABLE `patient_dental_history`
-  MODIFY `dental_history_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `dental_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `patient_medical_history`
 --
 ALTER TABLE `patient_medical_history`
-  MODIFY `medical_history_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `medical_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `schedules`
@@ -416,10 +479,16 @@ ALTER TABLE `schedules`
   MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
+-- AUTO_INCREMENT for table `staffs`
+--
+ALTER TABLE `staffs`
+  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- Constraints for dumped tables
@@ -467,6 +536,12 @@ ALTER TABLE `patient_medical_history`
 --
 ALTER TABLE `schedules`
   ADD CONSTRAINT `fkclinic_id` FOREIGN KEY (`clinic_id`) REFERENCES `clinics` (`clinic_id`);
+
+--
+-- Constraints for table `staffs`
+--
+ALTER TABLE `staffs`
+  ADD CONSTRAINT `fk_staff_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

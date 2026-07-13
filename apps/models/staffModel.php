@@ -11,7 +11,7 @@ class Staff {
         try {
             $stmt = $this->conn->prepare("
                 SELECT s.*, u.username, u.email AS user_email
-                FROM staff s
+                FROM staffs s
                 JOIN users u ON s.user_id = u.id
                 ORDER BY s.created_at DESC
             ");
@@ -55,9 +55,9 @@ class Staff {
             ]);
             $userId = $this->conn->lastInsertId();
 
-            // Insert into staff
+            // Insert into staffs
             $stmt = $this->conn->prepare("
-                INSERT INTO staff (user_id, firstname, lastname, middlename, gender, phone_number, email)
+                INSERT INTO staffs (user_id, firstname, lastname, middlename, gender, phone_number, email)
                 VALUES (:user_id, :firstname, :lastname, :middlename, :gender, :phone, :email)
             ");
             $stmt->execute([
@@ -84,9 +84,9 @@ class Staff {
         try {
             $this->conn->beginTransaction();
 
-            // Update staff table
+            // Update staffs table
             $stmt = $this->conn->prepare("
-                UPDATE staff SET phone_number = :phone, email = :email
+                UPDATE staffs SET phone_number = :phone, email = :email
                 WHERE staff_id = :staff_id
             ");
             $stmt->execute([
@@ -98,7 +98,7 @@ class Staff {
             // Also update users table email
             $stmt = $this->conn->prepare("
                 UPDATE users u
-                JOIN staff s ON u.id = s.user_id
+                JOIN staffs s ON u.id = s.user_id
                 SET u.email = :email
                 WHERE s.staff_id = :staff_id
             ");
@@ -119,7 +119,7 @@ class Staff {
     public function toggleStatus($staff_id) {
         try {
             $stmt = $this->conn->prepare("
-                UPDATE staff
+                UPDATE staffs
                 SET employment_status = CASE
                     WHEN employment_status = 'Active' THEN 'Inactive'
                     ELSE 'Active'
