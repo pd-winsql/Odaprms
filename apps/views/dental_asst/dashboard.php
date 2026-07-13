@@ -39,6 +39,7 @@ $today = date('l, F j Y');
     <title>Dashboard | Dr. Aprille Ventura Clinica Dental</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css">
     <link rel="stylesheet" href="../../../public/css/dashboard.css">
 </head>
@@ -69,12 +70,14 @@ $today = date('l, F j Y');
         </a>
 
         <div class="vd-nav-section">Manage</div>
-        
         <a href="#" class="vd-nav-item" data-page="schedule-content.php">
             <i class="ti ti-clock"></i> Schedules
         </a>
 
         <div class="vd-nav-section">Account</div>
+        <a href="#" class="vd-nav-item" data-page="settings-content.php">
+            <i class="ti ti-settings"></i> Settings
+        </a>
         <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
             <i class="ti ti-logout"></i> Logout
         </a>

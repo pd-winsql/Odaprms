@@ -3,6 +3,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalElement = document.getElementById('logoutModal');
     const confirmButton = document.getElementById('confirmLogoutBtn');
 
+    const resetModals = () => {
+        document.querySelectorAll('.modal').forEach((modal) => {
+            const instance = bootstrap.Modal.getInstance(modal);
+            if (instance) {
+                instance.hide();
+            }
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        });
+
+        document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+        document.body.classList.remove('modal-open');
+    };
+
+    resetModals();
+
     if (!modalElement || !confirmButton) {
         return;
     }
@@ -14,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('click', (event) => {
             event.preventDefault();
             logoutUrl = link.getAttribute('data-logout-confirm') || '';
+            resetModals();
             logoutModal.show();
         });
     });
@@ -23,4 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = logoutUrl;
         }
     });
+
+    window.resetDentalAssistantModals = resetModals;
 });

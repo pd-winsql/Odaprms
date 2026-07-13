@@ -30,6 +30,15 @@
 
 <script>
 (function() {
+    const modalElement = document.getElementById('addScheduleModal');
+    const formElement = document.getElementById('add-schedule-form');
+
+    if (!modalElement || modalElement.dataset.bound === 'true') {
+        return;
+    }
+
+    modalElement.dataset.bound = 'true';
+
     function showToast(msg, success) {
         const toast = document.getElementById('scheduleToast');
         const msgEl = document.getElementById('scheduleToastMsg');
@@ -39,32 +48,45 @@
         setTimeout(() => toast.classList.add('d-none'), 3000);
     }
 
-    document.getElementById('addScheduleModal').addEventListener('show.bs.modal', function(e) {
-        const btn = e.relatedTarget; // the button that triggered the modal
+    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modalInstance.hide();
+    modalElement.classList.remove('show');
+    modalElement.style.display = 'none';
+    modalElement.setAttribute('aria-hidden', 'true');
+    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+    document.body.classList.remove('modal-open');
+
+    modalElement.addEventListener('show.bs.modal', function(e) {
+        const btn = e.relatedTarget;
+        if (!btn) return;
         document.getElementById('modalClinicName').textContent = btn.dataset.clinicName;
         document.getElementById('modalClinicId').value = btn.dataset.clinicId;
     });
 
-    document.getElementById('add-schedule-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        formData.append('action', 'add_schedule');
+    if (formElement) {
+        formElement.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('action', 'add_schedule');
 
-        fetch('../../controllers/scheduleController.php', {
-        method: 'POST',
-        body: formData
-        })        
-        .then(response => response.text())
-        .then(text => {
-            if (text.trim() === 'success') {
-                bootstrap.Modal.getInstance(document.getElementById('addScheduleModal')).hide();
-                showToast('Schedule added successfully!', true);
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                document.getElementById('addError').textContent = text;
-                document.getElementById('addError').classList.remove('d-none');            }
-        })
-    });
+            fetch('../../controllers/scheduleController.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(text => {
+                if (text.trim() === 'success') {
+                    modalInstance.hide();
+                    showToast('Schedule added successfully!', true);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    const addError = document.getElementById('addError');
+                    addError.textContent = text;
+                    addError.classList.remove('d-none');
+                }
+            });
+        });
+    }
 
     document.querySelectorAll('.vd-delete-btn').forEach(btn => {
         btn.addEventListener('click', () => {
