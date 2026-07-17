@@ -1,0 +1,197 @@
+/* ── Body & layout ── */
+.vd-pat-body {
+    min-height: 100vh;
+    background-color: var(--bg);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    color: var(--dark);
+    display: flex;
+}
+
+.vd-pat-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--white-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 300;
+}
+
+.vd-pat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* ── Welcome block ── */
+.vd-pat-welcome {
+    padding: 4px 0 8px;
+}
+
+.vd-welcome-greet {
+    font-size: 12px;
+    color: var(--mid);
+    letter-spacing: 0.08em;
+}
+
+.vd-welcome-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--dark);
+    line-height: 1.1;
+}
+
+/* ── Next appointment card ── */
+.vd-next-appt-card {
+    background: var(--gold);
+    border-radius: 10px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.vd-next-appt-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+}
+
+.vd-next-appt-service {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 300;
+    color: #fff;
+    line-height: 1.2;
+}
+
+.vd-next-appt-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.vd-next-appt-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+}
+
+.vd-next-appt-meta i { font-size: 14px; }
+
+.vd-next-appt-card .vd-status {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    border: none;
+}
+
+/* No next appointment */
+.vd-next-appt-empty {
+    background: var(--white-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 20px;
+    text-align: center;
+    color: var(--mid);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ── Quick action cards ── */
+.vd-pat-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.vd-pat-quick-card {
+    background: var(--white-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mid);
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    text-align: center;
+}
+
+.vd-pat-quick-card i {
+    font-size: 24px;
+    color: var(--gold);
+}
+
+.vd-pat-quick-card:hover {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+    color: var(--gold);
+    text-decoration: none;
+}
+
+/* ── Patient appointment row ── */
+.vd-pat-appt-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f0e8d8;
+    transition: background 0.15s;
+}
+
+.vd-pat-appt-row:last-child { border-bottom: none; }
+.vd-pat-appt-row:hover { background: var(--gold-pale); }
+
+/* ── Mobile — sidebar collapses ── */
+@media (max-width: 991px) {
+    .vd-pat-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: translateX(-100%);
+        height: 100vh;
+    }
+    .vd-pat-sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 24px rgba(26,22,18,0.15);
+    }
+    .vd-menu-toggle { display: flex !important; align-items: center; }
+    }
+
+@media (max-width: 575px) {
+    .vd-pat-quick-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    .vd-pat-quick-card {
+        padding: 14px 8px;
+        font-size: 9px;
+    }
+    .vd-pat-quick-card i { font-size: 20px; }
+    .vd-welcome-name { font-size: 26px; }
+    .vd-next-appt-service { font-size: 20px; }
+    .vd-dash-content { padding: 16px 14px; }
+}

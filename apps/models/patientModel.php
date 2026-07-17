@@ -203,4 +203,41 @@ class Patient {
             return false;
         }
     }
+
+    public function getPatientByUserId($user_id) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT * FROM patients WHERE user_id = :user_id LIMIT 1
+            ");
+            $stmt->execute([':user_id' => $user_id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("getPatientByUserId error: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    // Create a basic patient record from a users account
+    public function createPatientFromUser($user_id, $username, $email) {
+        try {
+            // Try to split username into firstname/lastname
+            $parts     = explode('.', $username);
+            $firstname = ucfirst($parts[0] ?? $username);
+            $lastname  = ucfirst($parts[1] ?? '');
+    
+            $stmt = $this->conn->prepare("
+                INSERT INTO patients (user_id, firstname, lastname, email)
+                VALUES (:user_id, :firstname, :lastname, :email)
+            ");
+            return $stmt->execute([
+                ':user_id'   => $user_id,
+                ':firstname' => $firstname,
+                ':lastname'  => $lastname,
+                ':email'     => $email,
+            ]);
+        } catch (PDOException $e) {
+            error_log("createPatientFromUser error: " . $e->getMessage());
+            return false;
+        }
+    }
 }
