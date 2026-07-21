@@ -17,7 +17,12 @@
 
         <div class="mb-3">
         <label for="password" class="vd-label form-label">Password</label>
-        <input type="password" id="password" name="password" class="form-control vd-input" required>
+        <div class="position-relative">
+            <input type="password" id="password" name="password" class="form-control vd-input pe-5" required>
+            <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y border-0 px-2" id="toggle-password" style="color: #b5924c; z-index: 5; background: transparent;" aria-label="Show password">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
         </div>
 
         <div id="form-error" class="text-danger small mb-2 d-none"></div>
@@ -30,3 +35,4 @@
         </p>
     </form>
 </div>
+

@@ -256,7 +256,7 @@
 
         if (result.success) {
             if (redirect) {
-            window.location.href = 'ventura_dental_form.php';
+            window.location.href = 'registration-form.php';
             } else {
             window.location.href = '../../index.php';
             }

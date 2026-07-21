@@ -16,6 +16,7 @@
   <title>Dr. Aprille Ventura Clinica Dental</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="public/css/styles.css">
 </head>
 <body>
@@ -210,6 +211,26 @@
         .then(html => {
           document.getElementById('loginModalBody').innerHTML = html;
           bsModal.show();
+
+          const togglePassword = document.getElementById('toggle-password');
+          const passwordField = document.getElementById('password');
+
+          if (togglePassword && passwordField) {
+            togglePassword.addEventListener('click', function(e) {
+              e.preventDefault();
+              const isPassword = passwordField.type === 'password';
+              passwordField.type = isPassword ? 'text' : 'password';
+              const icon = togglePassword.querySelector('i');
+              const label = togglePassword.querySelector('span');
+              if (icon) {
+                icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+              }
+              if (label) {
+                label.textContent = isPassword ? 'Hide' : 'Show';
+              }
+              togglePassword.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+          }
 
           document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();

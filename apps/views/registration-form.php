@@ -61,7 +61,7 @@
 
                 <p class="text-center mt-3 small">
                 Already have an account?
-                <a href="../../index.html" id="login-link" style="color:#b5924c;">Login</a>
+                <a href="../../index.php?openModal=true" id="login-link" style="color:#b5924c;">Login</a>
                 </p>
 
             </form>
@@ -97,7 +97,7 @@
 
         document.getElementById('login-link').addEventListener('click', (e) => {
         e.preventDefault();
-        window.location.href = '../../index.html?openModal=true';
+        window.location.href = '../../index.php?openModal=true';
         });
 
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
