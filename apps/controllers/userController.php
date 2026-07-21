@@ -1,97 +1,122 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-header('Content-Type: application/json');
-session_start();
-require_once '../models/userController.php';
+require_once '../models/userModel.php';
 require_once '../../config/conn.php';
 
-$db = new Database();
-$conn = $db->connect();
+session_start();
 
-if (!$conn) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
-    exit();
-}
+class UserController {
+    private $userModel;
 
-$userModel = new User($conn);
+    public function __construct() {
+        $db   = new Database();
+        $conn = $db->connect();
+        $this->userModel = new User($conn);
+    }
 
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+    public function login() {
+        header('Content-Type: application/json');
 
-try {
-    if ($action === 'logout') {
-        session_unset();
-        session_destroy();
-        header('Location: ../../index.php');
+        $identity = trim($_POST['identity'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+
+        if (!$identity || !$password) {
+            echo json_encode(['success' => false, 'message' => 'Please fill in all fields.']);
+            exit;
+        }
+
+        // Find user by email or username
+        $user = $this->userModel->findByEmailOrUsername($identity);
+
+        if (!$user || !password_verify($password, $user['password'])) {
+            echo json_encode(['success' => false, 'message' => 'Invalid credentials. Please try again.']);
+            exit;
+        }
+
+        // Set session
+        $_SESSION['user_id']   = $user['id'];
+        $_SESSION['email']     = $user['email'];
+        $_SESSION['username']  = $user['username'];
+        $_SESSION['user_role'] = $user['user_role'];
+
+        // Role-based redirect
+        $redirect = match($user['user_role']) {
+            'Admin'           => 'admin/dashboard.php',
+            'Dental Assistant'=> 'dental_asst/dashboard.php',
+            'Patient'         => 'patient/dashboard.php',
+            default           => '../../index.php',
+        };
+
+        echo json_encode(['success' => true, 'redirect' => $redirect]);
         exit;
-    } elseif ($action === 'register') {
-        registerUser($userModel);
-    } elseif ($action === 'login') {
-        loginUser($userModel);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid action.']);
-    }
-} catch (Exception $e) {
-    error_log("Controller Error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'An error occurred. Please try again.']);
-}
-
-function registerUser($userModel) {
-    $email           = $_POST['email'] ?? '';
-    $username        = $_POST['username'] ?? '';
-    $password        = $_POST['password'] ?? '';
-    $confirmPassword = $_POST['confirm-password'] ?? '';
-
-    // Validate input
-    if (empty($email) || empty($username) || empty($password)) {
-        echo json_encode(['success' => false, 'message' => 'All fields are required.']);
-        return;
     }
 
-    if ($password !== $confirmPassword) {
-        echo json_encode(['success' => false, 'message' => 'Passwords do not match.']);
-        return;
+    private function isStrongPassword($password) {
+        return preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $password) === 1;
     }
 
-    if (strlen($password) < 6) {
-        echo json_encode(['success' => false, 'message' => 'Password must be at least 6 characters.']);
-        return;
-    }
+    public function register() {
+        header('Content-Type: application/json');
 
-    try {
+        $email    = trim($_POST['email']    ?? '');
+        $username = trim($_POST['username'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+
+        if (!$email || !$username || !$password) {
+            echo json_encode(['success' => false, 'message' => 'Please fill in all fields.']);
+            exit;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid email address.']);
+            exit;
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+            echo json_encode(['success' => false, 'message' => 'Username can only contain letters, numbers, and underscores.']);
+            exit;
+        }
+
+        if (!$this->isStrongPassword($password)) {
+            echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include both letters and numbers.']);
+            exit;
+        }
+
+        // Check if email or username already exists
+        if ($this->userModel->emailExists($email)) {
+            echo json_encode(['success' => false, 'message' => 'Email is already registered.']);
+            exit;
+        }
+
+        if ($this->userModel->usernameExists($username)) {
+            echo json_encode(['success' => false, 'message' => 'Username is already taken.']);
+            exit;
+        }
+
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $result = $userModel->addUser($email, $hashedPassword, $username);
-        
+        $result = $this->userModel->register($email, $username, $hashedPassword);
+
         if ($result) {
-            echo json_encode(['success' => true, 'redirect' => '../../index.php?openModal=true']);
+            echo json_encode(['success' => true, 'message' => 'Account created successfully.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Registration failed. Please try again.']);
         }
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+        exit;
+    }
+
+    public function logout() {
+        session_destroy();
+        header('Location: ../../login.php');
+        exit;
     }
 }
 
-function loginUser($userModel) {
-    $email    = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
+$controller = new UserController();
+$action     = $_POST['action'] ?? $_GET['action'] ?? '';
 
-    $user = $userModel->checkUser($email, $password);
-    if ($user) {
-        $_SESSION['user_id']  = $user['id'];
-        $_SESSION['email']    = $user['email'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['user_role'] = $user['user_role'];
-
-        if ($user['user_role'] === 'Patient') {
-            echo json_encode(['success' => true, 'redirect' => 'apps/views/patient/dashboard.php']);
-        } else if ($user['user_role'] === 'Admin') {
-            echo json_encode(['success' => true, 'redirect' => 'apps/views/admin/dashboard.php']);
-        } else {
-            echo json_encode(['success' => true, 'redirect' => 'apps/views/dental_asst/dashboard.php']);
-        }
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid email or password.']);
-    }
+if ($action === 'login') {
+    $controller->login();
+} elseif ($action === 'register') {
+    $controller->register();
+} elseif ($action === 'logout') {
+    $controller->logout();
 }

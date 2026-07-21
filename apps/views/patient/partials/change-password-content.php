@@ -21,6 +21,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Patient') {
             <div>
             <label class="vd-label form-label">New Password</label>
             <input type="password" name="new_password" class="form-control vd-input" required>
+            <div class="small text-muted">Use at least 8 characters with both letters and numbers.</div>
             </div>
             <div>
             <label class="vd-label form-label">Confirm New Password</label>
@@ -57,14 +58,15 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Patient') {
             return;
         }
 
-        if (newPw.length < 6) {
-            errEl.textContent = 'Password must be at least 6 characters.';
+        const strongPassword = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+        if (!strongPassword.test(newPw)) {
+            errEl.textContent = 'Password must be at least 8 characters and include both letters and numbers.';
             errEl.classList.remove('d-none');
             return;
         }
 
         try {
-            const res    = await fetch('../../../../apps/controllers/patientController.php', {
+            const res    = await fetch('../../controllers/patientController.php', {
                 method: 'POST', body: formData
             });
             const result = await res.json();

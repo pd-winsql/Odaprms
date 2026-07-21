@@ -1,38 +1,133 @@
-<div class="p-4 p-md-5">
-    <form id="loginForm" action="apps/controllers/userController.php">
-        <input type="hidden" name="action" value="login">
-        <div class="text-center mb-4">
-        <img src="public/assets/logo.png" alt="Logo" style="height:80px;">
+<?php
+session_start();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | Dr. Aprille Ventura Clinica Dental</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../../public/css/styles.css">
+  <link rel="stylesheet" href="../../public/css/auth.css">
+</head>
+<body class="vd-auth-body">
+
+  <div class="vd-auth-split">
+
+    <!-- LEFT — Branding -->
+    <div class="vd-auth-left">
+      <div class="vd-auth-geo vd-geo-1"></div>
+      <div class="vd-auth-geo vd-geo-2"></div>
+      <div class="vd-auth-geo vd-geo-3"></div>
+      <div class="vd-auth-sq vd-sq-1"></div>
+      <div class="vd-auth-sq vd-sq-2"></div>
+
+      <div class="vd-auth-brand">
+        <div class="vd-logo-name">Dr. Aprille</div>
+        <div class="vd-logo-ventura vd-auth-ventura">
+          VEN<span class="vd-cross vd-auth-cross">✚</span>URA
+        </div>
+        <div class="vd-logo-sub">Clinica Dental</div>
+        <div class="vd-auth-tagline">
+          Your smile is our<br>greatest achievement.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT — Form -->
+    <div class="vd-auth-right">
+      <div class="vd-auth-form-wrap">
+
+        <div class="vd-auth-heading">
+          <div class="vd-auth-title">Welcome back</div>
+          <div class="vd-auth-sub">Sign in to your account to continue.</div>
         </div>
 
-        <p class="text-uppercase text-center mb-4" style="font-size:10px; letter-spacing:0.22em; color:#b5924c; font-weight:500;">
-        Login
-        <span class="d-block mt-1" style="border-bottom:1px solid #d9c9a8;"></span>
-        </p>
+        <!-- Error message -->
+        <div id="loginError" class="vd-auth-error d-none"></div>
 
-        <div class="mb-3">
-        <label for="email" class="vd-label form-label">Email or Username</label>
-        <input type="text" id="email" name="email" class="form-control vd-input" required>
+        <form id="loginForm" class="vd-auth-form" novalidate>
+          <div class="vd-auth-group">
+            <label class="vd-label">Email or Username</label>
+            <input type="text" name="identity" class="vd-auth-input"
+              placeholder="Enter email or username" required autocomplete="username">
+          </div>
+          <div class="vd-auth-group">
+            <label class="vd-label">Password</label>
+            <div class="vd-auth-input-wrap">
+              <input type="password" name="password" id="loginPassword" class="vd-auth-input"
+                placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" class="vd-pw-toggle" id="toggleLoginPw" aria-label="Show password">
+                <i class="ti ti-eye" id="loginEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="vd-auth-btn" id="loginBtn">
+            Sign In
+          </button>
+        </form>
+
+        <div class="vd-auth-footer">
+          Don't have an account? <a href="registration.php">Register</a>
         </div>
 
-        <div class="mb-3">
-        <label for="password" class="vd-label form-label">Password</label>
-        <div class="position-relative">
-            <input type="password" id="password" name="password" class="form-control vd-input pe-5" required>
-            <button type="button" class="btn btn-sm position-absolute end-0 top-50 translate-middle-y border-0 px-2" id="toggle-password" style="color: #b5924c; z-index: 5; background: transparent;" aria-label="Show password">
-                <i class="fas fa-eye"></i>
-            </button>
-        </div>
+        <div class="vd-auth-footer mt-2">
+          <a href="../../index.php">← Back to home</a>
         </div>
 
-        <div id="form-error" class="text-danger small mb-2 d-none"></div>
+      </div>
+    </div>
 
-        <button type="submit" class="btn vd-btn-gold w-100 mt-3">Login</button>
+  </div>
 
-        <p class="text-center mt-3 small">
-        Don't have an account?
-        <a href="apps/views/registration-form.php" onclick="closeModal('myModal');" style="color:#b5924c;">Register</a>
-        </p>
-    </form>
-</div>
+  <script>
+    document.getElementById('toggleLoginPw').addEventListener('click', function () {
+      const input = document.getElementById('loginPassword');
+      const icon  = document.getElementById('loginEyeIcon');
+      const isHidden = input.type === 'password';
+      input.type     = isHidden ? 'text' : 'password';
+      icon.className = isHidden ? 'ti ti-eye-off' : 'ti ti-eye';
+    });
 
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const btn    = document.getElementById('loginBtn');
+      const errEl  = document.getElementById('loginError');
+      errEl.classList.add('d-none');
+      btn.textContent = 'Signing in…';
+      btn.disabled    = true;
+
+      const formData = new FormData(this);
+      formData.append('action', 'login');
+
+      try {
+        const res    = await fetch('../controllers/userController.php', {
+          method: 'POST', body: formData
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          const targetUrl = new URL(result.redirect, window.location.href);
+          window.location.href = targetUrl.toString();
+        } else {
+          errEl.textContent = result.message;
+          errEl.classList.remove('d-none');
+          btn.textContent = 'Sign In';
+          btn.disabled    = false;
+        }
+      } catch (err) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.classList.remove('d-none');
+        btn.textContent = 'Sign In';
+        btn.disabled    = false;
+      }
+    });
+  </script>
+
+</body>
+</html>

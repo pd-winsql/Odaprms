@@ -1,16 +1,19 @@
 <?php
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
+require_once '../models/userModel.php';
 
 session_start();
 
 class PatientController {
     private $patients;
+    private $userModel;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->patients = new Patient($conn);
+        $this->userModel = new User($conn);
     }
 
     //Admin: all patients
@@ -104,6 +107,54 @@ class PatientController {
         exit;
     }
 
+    private function isStrongPassword($password) {
+        return preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $password) === 1;
+    }
+
+    public function changePassword() {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'You must be logged in to change your password.']);
+            exit;
+        }
+
+        $currentPassword = trim($_POST['current_password'] ?? '');
+        $newPassword = trim($_POST['new_password'] ?? '');
+        $confirmPassword = trim($_POST['confirm_password'] ?? '');
+
+        if (!$currentPassword || !$newPassword || !$confirmPassword) {
+            echo json_encode(['success' => false, 'message' => 'Please fill in all password fields.']);
+            exit;
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            echo json_encode(['success' => false, 'message' => 'New passwords do not match.']);
+            exit;
+        }
+
+        if (!$this->isStrongPassword($newPassword)) {
+            echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include both letters and numbers.']);
+            exit;
+        }
+
+        $user = $this->userModel->getUserById($_SESSION['user_id']);
+        if (!$user || !password_verify($currentPassword, $user['password'])) {
+            echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
+            exit;
+        }
+
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+        $result = $this->userModel->changePassword($_SESSION['user_id'], $hashedPassword);
+
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Password changed successfully.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Unable to change password. Please try again.']);
+        }
+        exit;
+    }
+
     private function toBool($value) {
         if ($value === 'yes') {
             return 1;
@@ -115,7 +166,7 @@ class PatientController {
 
         return null;
     }
-}    
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -123,5 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'saveDentalForm') {
         $controller->saveDentalForm();
+    } elseif ($action === 'changePassword') {
+        $controller->changePassword();
     }
 }

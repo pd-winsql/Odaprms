@@ -38,7 +38,7 @@
           <li class="nav-item"><a href="#contact" class="nav-link vd-nav-link">Contact</a></li>
         </ul>
         <div>
-          <a href="#" class="btn vd-btn-gold" onclick="openModal('myModal'); return false;">Login</a>
+          <a href="apps/views/registration.php" class="btn vd-btn-gold">Register</a>
         </div>
       </div>
     </div>
@@ -50,7 +50,7 @@
       <div class="row justify-content-center">
         <div class="col-12 col-md-10 col-lg-8 text-center">
           <div class="vd-hero-card p-4 p-lg-5 rounded-3">
-            <h1 class="vd-hero-title mb-3">Welcome to <span class="vd-highlight">Dr. Aprille Ventura Clinica Dental</span></h1>
+            <h1 class="vd-hero-title mb-3">Welcome to <span class="vd-highlight">Online Dental Appointment with Patient Records Management System of Dr. Aprille Ventura Clinica Dental</span></h1>
             <p class="vd-hero-sub mb-4">Your smile is our priority. We provide comprehensive dental care for the whole family.</p>
             <a href="apps/views/ventura_booking_form.php" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
           </div>
@@ -192,75 +192,6 @@
     </div>
   </footer>
 
-  <!-- LOGIN MODAL -->
-  <div id="myModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content vd-modal-content" id="loginModalBody">
-        <!-- Loaded dynamically -->
-      </div>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    const bsModal = new bootstrap.Modal(document.getElementById('myModal'));
-
-    function openModal(id) {
-      fetch('apps/views/login.php')
-        .then(r => r.text())
-        .then(html => {
-          document.getElementById('loginModalBody').innerHTML = html;
-          bsModal.show();
-
-          const togglePassword = document.getElementById('toggle-password');
-          const passwordField = document.getElementById('password');
-
-          if (togglePassword && passwordField) {
-            togglePassword.addEventListener('click', function(e) {
-              e.preventDefault();
-              const isPassword = passwordField.type === 'password';
-              passwordField.type = isPassword ? 'text' : 'password';
-              const icon = togglePassword.querySelector('i');
-              const label = togglePassword.querySelector('span');
-              if (icon) {
-                icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
-              }
-              if (label) {
-                label.textContent = isPassword ? 'Hide' : 'Show';
-              }
-              togglePassword.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-            });
-          }
-
-          document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const response = await fetch('apps/controllers/userController.php', {
-              method: 'POST',
-              body: formData
-            });
-            const result = await response.json();
-            if (result.success) {
-              window.location.href = result.redirect;
-            } else {
-              const error = document.getElementById('form-error');
-              error.textContent = result.message;
-              error.classList.remove('d-none');
-            }
-          });
-
-        })
-        .catch(err => console.error('Error loading login form:', err));
-    }
-
-    function closeModal(id) {
-      bsModal.hide();
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('openModal') === 'true') openModal('myModal');
-    });
-  </script>
 </body>
 </html>

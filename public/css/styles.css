@@ -424,10 +424,24 @@ body {
   background-size: cover;
   background-position: center;
 }
-.vd-hero-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
-.vd-hero-title { font-size: clamp(1.75rem, 4vw, 2.75rem); line-height: 1.2; }
+.vd-hero-card {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(181, 146, 76, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.5rem 1.75rem;
+}
+.vd-hero-title {
+  font-size: clamp(1.35rem, 2.8vw, 2.1rem);
+  line-height: 1.25;
+  margin-bottom: 1rem;
+}
 .vd-highlight  { color: var(--gold-light); }
-.vd-hero-sub   { font-size: 1.1rem; color: var(--mid); max-width: 500px; margin: 0 auto; }
+.vd-hero-sub   { font-size: 1rem; color: var(--mid); max-width: 560px; margin: 0 auto; }
 
 /* Index sections */
 .vd-section-heading { font-size: 2rem; color: var(--gold); }

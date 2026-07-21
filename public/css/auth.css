@@ -1,0 +1,296 @@
+/* ============================================================
+   Ventura Dental — Auth Pages (login.php, register.php)
+   ============================================================ */
+
+.vd-auth-body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(181,146,76,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(181,146,76,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(181,146,76,0.08) 0%, transparent 40%);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+}
+
+.vd-auth-split {
+  display: flex;
+  width: 100%;
+  max-width: 820px;
+  min-height: auto;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 80px rgba(26,22,18,0.18),
+    0 4px 16px rgba(26,22,18,0.08);
+}
+
+/* ── Left — branding panel ── */
+.vd-auth-left {
+  width: 42%;
+  flex-shrink: 0;
+  background: var(--gold);
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(255,255,255,0.10) 0%, transparent 55%),
+    radial-gradient(circle at 85% 85%, rgba(26,22,18,0.15) 0%, transparent 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Geometric decorations */
+.vd-auth-geo {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+}
+.vd-geo-1 { width: 280px; height: 280px; top: -80px; left: -80px; }
+.vd-geo-2 { width: 160px; height: 160px; bottom: 30px; right: -40px; }
+.vd-geo-3 { width: 70px;  height: 70px;  top: 45%;   right: 50px; background: rgba(255,255,255,0.05); }
+
+.vd-auth-sq {
+  position: absolute;
+  background: rgba(255,255,255,0.05);
+  transform: rotate(45deg);
+}
+.vd-sq-1 { width: 100px; height: 100px; bottom: 100px; left: 40px; }
+.vd-sq-2 { width: 50px;  height: 50px;  top: 90px;    right: 70px; }
+
+/* Brand block */
+.vd-auth-brand {
+  text-align: center;
+  z-index: 1;
+  position: relative;
+}
+
+.vd-auth-brand .vd-logo-name {
+  color: rgba(255,255,255,0.65);
+  font-size: 12px;
+}
+
+.vd-auth-ventura {
+  color: #fff !important;
+  font-size: 52px !important;
+  justify-content: center;
+}
+
+.vd-auth-cross {
+  background: rgba(255,255,255,0.22) !important;
+  width: 38px !important;
+  height: 38px !important;
+  font-size: 22px !important;
+}
+
+.vd-auth-brand .vd-logo-sub {
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.32em;
+  margin-top: 6px;
+}
+
+.vd-auth-tagline {
+  margin-top: 24px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.7;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+/* ── Right — form panel ── */
+.vd-auth-right {
+  flex: 1;
+  background: var(--white-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+}
+
+.vd-auth-form-wrap {
+  width: 100%;
+  max-width: 340px;
+}
+
+/* Heading */
+.vd-auth-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px;
+  font-weight: 300;
+  color: var(--dark);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.vd-auth-sub {
+  font-size: 12px;
+  color: var(--mid);
+  font-weight: 300;
+  margin-bottom: 32px;
+}
+
+/* Form */
+.vd-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.vd-auth-group {
+  margin-bottom: 22px;
+}
+
+.vd-auth-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 9px 0;
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--dark);
+  outline: none;
+  transition: border-color 0.2s;
+  display: block;
+}
+.vd-auth-input:focus {
+  border-bottom-color: var(--gold);
+}
+.vd-auth-input::placeholder {
+  color: #ccc;
+  font-weight: 300;
+}
+
+.vd-auth-hint {
+  font-size: 10px;
+  color: var(--mid);
+  margin-top: 5px;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+/* Submit button */
+.vd-auth-btn {
+  width: 100%;
+  background: var(--gold);
+  color: #fff;
+  border: none;
+  padding: 14px;
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, transform 0.15s;
+}
+.vd-auth-btn:hover:not(:disabled) {
+  background: var(--mid);
+  transform: translateY(-1px);
+}
+.vd-auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Error / success */
+.vd-auth-error {
+  background: #fcebeb;
+  border: 1px solid #f0b8b8;
+  color: #a32d2d;
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 3px;
+  margin-bottom: 18px;
+}
+
+.vd-auth-success {
+  background: #eaf3de;
+  border: 1px solid #c3e0a0;
+  color: #3b6d11;
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 3px;
+  margin-bottom: 18px;
+}
+
+/* Footer links */
+.vd-auth-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--mid);
+}
+.vd-auth-footer a {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.vd-auth-footer a:hover { color: var(--mid); }
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .vd-auth-split { flex-direction: column; }
+
+  .vd-auth-left {
+    width: 100%;
+    padding: 36px 24px;
+    min-height: 220px;
+  }
+
+  .vd-auth-ventura { font-size: 38px !important; }
+  .vd-auth-tagline { display: none; }
+  .vd-geo-1 { width: 180px; height: 180px; }
+  .vd-geo-2 { width: 100px; height: 100px; }
+
+  .vd-auth-right {
+    padding: 36px 24px;
+    align-items: flex-start;
+  }
+
+  .vd-auth-form-wrap { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .vd-auth-right { padding: 28px 20px; }
+  .vd-auth-title { font-size: 26px; }
+}
+
+/* Password field with eye toggle */
+.vd-auth-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.vd-auth-input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.vd-pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--mid);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.vd-pw-toggle:hover { color: var(--gold); }
