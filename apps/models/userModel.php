@@ -93,4 +93,9 @@ class User {
             return null;
         }
     }
+
+    public function getLastInsertedId()
+    {
+        return $this->conn->lastInsertId();
+    }
 }

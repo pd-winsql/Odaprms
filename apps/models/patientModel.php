@@ -8,9 +8,32 @@ class Patient {
     }
 
     public function getPatient($patient_id) {
-        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE patient_id = ?");
-        $stmt->execute([$patient_id]);
+        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE patient_id = :patient_id");
+        $stmt->execute([
+            ':patient_id' => $patient_id
+        ]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getPatientByEmail($email) {
+        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE email = :email");
+        $stmt->execute([
+            ':email' => $email
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function getPatientByUserId($user_id) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT * FROM patients WHERE user_id = :user_id
+            ");
+            $stmt->execute([':user_id' => $user_id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("getPatientByUserId error: " . $e->getMessage());
+            return null;
+        }
     }
 
     public function getPatientFull($patient_id) {
@@ -84,18 +107,19 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function createPatient($firstname, $lastname, $middlename, $age, $gender, $phone_number, $email) {
+    public function createPatient($user_id, $firstname, $lastname, $middlename, $age, $gender, $phone_number, $email) {
 
         try {
 
             $stmt = $this->conn->prepare("
                 INSERT INTO patients
-                (firstname, lastname, middlename, age, gender, phone_number, email)
+                (user_id, firstname, lastname, middlename, age, gender, phone_number, email)
                 VALUES
-                (:firstname, :lastname, :middlename, :age, :gender, :phone_number, :email)
+                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :email)
             ");
 
             $stmt->execute([
+                ':user_id' => $user_id,
                 ':firstname' => $firstname,
                 ':lastname' => $lastname,
                 ':middlename' => $middlename,
@@ -204,18 +228,7 @@ class Patient {
         }
     }
 
-    public function getPatientByUserId($user_id) {
-        try {
-            $stmt = $this->conn->prepare("
-                SELECT * FROM patients WHERE user_id = :user_id LIMIT 1
-            ");
-            $stmt->execute([':user_id' => $user_id]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("getPatientByUserId error: " . $e->getMessage());
-            return null;
-        }
-    }
+    
     
     // Create a basic patient record from a users account
     public function createPatientFromUser($user_id, $username, $email) {
@@ -239,5 +252,36 @@ class Patient {
             error_log("createPatientFromUser error: " . $e->getMessage());
             return false;
         }
+    }
+
+    public function linkUser($patient_id, $user_id) {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE patients
+                SET user_id = :user_id
+                WHERE patient_id = :patient_id
+            ");
+            return $stmt->execute([
+                ':user_id' => $user_id,
+                ':patient_id' => $patient_id
+            ]);
+        } catch (PDOException $e) {
+            error_log("linkUser error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function isLinked($email) {
+        $stmt = $this->conn->prepare("
+            SELECT user_id
+            FROM patients
+            WHERE email = :email
+        ");
+
+        $stmt->execute([
+            ':email' => $email
+        ]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }

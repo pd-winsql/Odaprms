@@ -1,16 +1,19 @@
 <?php
 require_once '../models/appointmentModel.php';
 require_once '../../config/conn.php';
+require_once '../models/patientModel.php';
 
 session_start();
 
 class AppointmentController {
-    private $appointments;
+    private $appointmentModel;
+    private $patientModel;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
-        $this->appointments = new Appointment($conn);
+        $this->appointmentModel = new Appointment($conn);
+        $this->patientModel = new Patient($conn);
     }
 
     //Patient: upcoming appointments
@@ -25,8 +28,15 @@ class AppointmentController {
             exit;
         }
 
-        $email = $_SESSION['email'];
-        $data = $this->appointments->getPatientUpcomingAppointments($email);
+        $user_id = $_SESSION['user_id'];
+
+        $patient = $this->patientModel->getPatientByUserId($user_id);
+
+        if (!$patient) {
+            die("Patient record not found.");
+        }
+
+        $data = $this->appointmentModel->getPatientUpcomingAppointments($user_id);
         require_once '../views/patient-upcoming-appointments.php';
     }
 
@@ -42,9 +52,16 @@ class AppointmentController {
             exit;
         }
 
-        $email = $_SESSION['email'];
-        $data = $this->appointments->getPatientPastAppointments($email);
-        require_once '../views/patient-past-appointments.php';
+        $user_id = $_SESSION['user_id'];
+
+        $patient = $this->patientModel->getPatientByUserId($user_id);
+
+        if (!$patient) {
+            die("Patient record not found.");
+        }
+
+        $data = $this->appointmentModel->getPatientUpcomingAppointments($user_id);
+        require_once '../views/patient-upcoming-appointments.php';
     }
 
     //Admin: all upcoming appointments
@@ -59,7 +76,7 @@ class AppointmentController {
             exit;
         }
 
-        $data = $this->appointments->getAllUpcomingWithStatus();
+        $data = $this->appointmentModel->getAllUpcomingWithStatus();
         require_once '../views/admin-upcoming-appointments.php';
     }
 
@@ -74,7 +91,7 @@ class AppointmentController {
             header('Location: ../patient/dashboard.php');
             exit;
         }
-        $data = $this->appointments->getAdminPastAppointments();
+        $data = $this->appointmentModel->getAdminPastAppointments();
         require_once '../views/admin-past-appointments.php';
     }
 
@@ -101,7 +118,7 @@ class AppointmentController {
                 exit;
             }
 
-            $result = $this->appointments->updateAppointmentStatus($appointment_id, $status);
+            $result = $this->appointmentModel->updateAppointmentStatus($appointment_id, $status);
 
             if ($result) {
                 echo json_encode(['success' => true, 'message' => 'Status updated successfully.']);
@@ -151,6 +168,7 @@ class AppointmentController {
 
             // 1. CREATE PATIENT FIRST
             $patient_id = $patientModel->createPatient(
+                null,
                 $_POST['firstname'],
                 $_POST['lastname'],
                 $_POST['middlename'],
@@ -168,8 +186,33 @@ class AppointmentController {
                 exit;
             }
 
+            $patient = $patientModel->getPatientByEmail($_POST['email']);
+
+            if($patient) {
+                $patient_id = $patient['patient_id'];
+            } else {
+
+                $patient_id = $patientModel->createPatient(
+                    null,
+                    $_POST['firstname'],
+                    $_POST['lastname'],
+                    $_POST['middlename'],
+                    $_POST['age'],
+                    $_POST['gender'],
+                    $_POST['phone_number'],
+                    $_POST['email']
+                );
+
+                if (!$patient_id) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to create patient.'
+                    ]);
+                    exit;
+                }
+            }
             // 2. CREATE APPOINTMENT USING patient_id
-            $result = $this->appointments->bookAppointment(
+            $result = $this->appointmentModel->bookAppointment(
                 $patient_id,
                 $clinic_id,
                 $_POST['service'],
@@ -180,7 +223,7 @@ class AppointmentController {
 
 
             if ($result) {
-                $id = $this->appointments->getLastInsertedId();
+                $id = $this->appointmentModel->getLastInsertedId();
                 echo json_encode([
                     'success'=>true,
                     'appointment_id'=>$id

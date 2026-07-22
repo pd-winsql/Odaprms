@@ -64,6 +64,7 @@ session_start();
                 <i class="ti ti-eye" id="loginEyeIcon"></i>
               </button>
             </div>
+            <a>Forgot Password?</a>
           </div>
 
           <button type="submit" class="vd-auth-btn" id="loginBtn">

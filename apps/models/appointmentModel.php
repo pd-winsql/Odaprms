@@ -46,15 +46,22 @@ class Appointment {
     // ===== PATIENT FUNCTIONS =====
 
     // Patient: view upcoming appointments
-    public function getPatientUpcomingAppointments($email) {
+    public function getPatientUpcomingAppointments($patient_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT * FROM appointments 
-                WHERE email = :email
-                AND date >= CURDATE()
-                ORDER BY date ASC
+                SELECT
+                a.*,
+                c.clinic_name
+                FROM appointments a
+                LEFT JOIN clinics c
+                ON a.clinic_id = c.clinic_id
+
+                WHERE a.patient_id = :patient_id
+                AND a.date >= CURDATE()
+
+                ORDER BY a.date ASC
             ");
-            $stmt->execute([':email' => $email]);
+            $stmt->execute([':patient_id' => $patient_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } catch (PDOException $e) {
@@ -64,15 +71,22 @@ class Appointment {
     }
 
     // Patient: view past appointments
-    public function getPatientPastAppointments($email) {
+    public function getPatientPastAppointments($patient_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT * FROM appointments 
-                WHERE email = :email
-                AND date < CURDATE()
-                ORDER BY date DESC
+                SELECT
+                a.*,
+                c.clinic_name
+                FROM appointments a
+                LEFT JOIN clinics c
+                ON a.clinic_id = c.clinic_id
+
+                WHERE a.patient_id = :patient_id
+                AND a.date < CURDATE()
+
+                ORDER BY a.date ASC
             ");
-            $stmt->execute([':email' => $email]);
+            $stmt->execute([':patient_id' => $patient_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } catch (PDOException $e) {
@@ -85,13 +99,19 @@ class Appointment {
     public function getUpcomingWithStatus($email) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT lastname, firstname, middlename, age, gender,
-                    phone_number, email, clinic_id, service,
-                    date, status
-                FROM appointments 
-                WHERE date >= CURDATE()
-                AND email = :email
-                ORDER BY date ASC
+                SELECT
+                    p.lastname,
+                    p.firstname,
+                    p.email,
+                    c.clinic_name,
+                    a.service,
+                    a.date,
+                    a.status
+                FROM appointments a
+                LEFT JOIN patients p
+                ON a.patient_id = p.patient_id
+                LEFT JOIN clinics c
+                ON a.clinic_id = c.clinic_id
             ");
             $stmt->execute([':email' => $email]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -111,7 +131,7 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 UPDATE appointments 
                 SET status = 'Completed'
-                WHERE date < CURDATE() 
+                WHERE a.date < CURDATE() 
                 AND status = 'Confirmed'
             ");
             $stmt->execute();
@@ -120,7 +140,7 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 UPDATE appointments 
                 SET status = 'Cancelled'
-                WHERE date < CURDATE() 
+                WHERE a.date < CURDATE() 
                 AND status = 'Pending'
             ");
             $stmt->execute();
@@ -141,10 +161,10 @@ class Appointment {
                     p.phone_number, p.email, c.clinic_name, a.service,
                     a.date, a.status
                 FROM appointments a
-                LEFT JOIN patients p ON a.patient_id = p.patient_id
+                JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id 
-                WHERE date < CURDATE()
-                ORDER BY date DESC
+                WHERE a.date < CURDATE()
+                ORDER BY a.date DESC
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -161,7 +181,7 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT a.*, p.lastname, p.firstname, p.middlename, p.age, p.gender, p.phone_number, p.email, c.clinic_name
                 FROM appointments a
-                LEFT JOIN patients p ON a.patient_id = p.patient_id
+                JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
                 WHERE a.date < CURDATE()
                 AND c.clinic_name = :clinic
@@ -184,10 +204,10 @@ class Appointment {
                     p.phone_number, p.email, c.clinic_name, a.service,
                     a.date, a.status
                 FROM appointments a
-                LEFT JOIN patients p ON a.patient_id = p.patient_id
+                JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
-                WHERE date >= CURDATE()
-                ORDER BY date ASC
+                WHERE a.date >= CURDATE()
+                ORDER BY a.date ASC
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

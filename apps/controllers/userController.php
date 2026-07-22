@@ -1,16 +1,19 @@
 <?php
 require_once '../models/userModel.php';
 require_once '../../config/conn.php';
+require_once '../models/patientModel.php';
 
 session_start();
 
 class UserController {
     private $userModel;
+    private $patientModel;
 
     public function __construct() {
         $db   = new Database();
         $conn = $db->connect();
         $this->userModel = new User($conn);
+        $this->patientModel = new Patient($conn);
     }
 
     public function login() {
@@ -95,12 +98,39 @@ class UserController {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $result = $this->userModel->register($email, $username, $hashedPassword);
 
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Account created successfully.']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Registration failed. Please try again.']);
+        if (!$result) {
+
+            echo json_encode([
+                'success' => false,
+                'message' => 'Registration failed.'
+            ]);
+            exit;
+            
         }
-        exit;
+        
+        $user_id = $this->userModel->getLastInsertedId();
+        $patient = $this->patientModel->getPatientByEmail($email);
+
+        if($patient) {
+            $this->patientModel->linkUser(
+                $patient['patient_id'],
+                $user_id
+            );
+        }
+
+        else {
+            $this->patientModel->createPatient(
+                $user_id,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                $email
+            );
+        }
+
     }
 
     public function logout() {
