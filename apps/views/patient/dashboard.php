@@ -3,6 +3,11 @@ session_start();
 require_once '../../../config/conn.php';
 require_once '../../models/patientModel.php';
 
+// Prevent browser from caching protected pages
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+
 // Auth guard
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../../index.php?openModal=true');
@@ -165,7 +170,11 @@ $today    = date('l, F j Y');
         item.addEventListener('click', async (e) => {
             e.preventDefault();
 
-            if (item.hasAttribute('data-logout-confirm')) return;
+            if (item.hasAttribute('data-logout-confirm')) {
+                const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                modal.show();
+                return;
+            }
 
             const page = item.getAttribute('data-page');
             if (!page) return;
@@ -189,6 +198,13 @@ $today    = date('l, F j Y');
             await loadPage(hash);
             }
         }
+        });
+
+        // Prevent back button after logout
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
         });
     </script>
 

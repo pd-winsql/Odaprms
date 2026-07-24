@@ -40,7 +40,7 @@ class Appointment {
         } catch(PDOException $e){
             error_log("bookAppointment error: ".$e->getMessage());
             return false;
-        }
+        } 
     }
 
     // ===== PATIENT FUNCTIONS =====

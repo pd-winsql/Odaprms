@@ -4,6 +4,11 @@ require_once '../../../config/conn.php';
 require_once '../../models/appointmentModel.php';
 require_once '../../models/clinicModel.php';
 
+// Prevent browser from caching protected pages
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+
 // Auth guard
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../../index.php?openModal=true');
@@ -202,6 +207,13 @@ $today = date('l, F j Y');
                 }
             }
             });
+        
+        // Prevent back button after logout
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                window.location.reload();
+            }
+        });
     </script>
 
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">

@@ -38,7 +38,7 @@
           <li class="nav-item"><a href="#contact" class="nav-link vd-nav-link">Contact</a></li>
         </ul>
         <div>
-          <a href="apps/views/registration.php" class="btn vd-btn-gold">Register</a>
+          <a href="apps/views/register.php" class="btn vd-btn-gold">Register</a>
         </div>
       </div>
     </div>

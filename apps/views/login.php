@@ -1,5 +1,17 @@
 <?php
 session_start();
+
+// If already logged in, redirect to appropriate dashboard
+if (isset($_SESSION['user_id'])) {
+    if ($_SESSION['user_role'] === 'Patient') {
+        header('Location: apps/views/patient/dashboard.php');
+    } else if ($_SESSION['user_role'] === 'Admin') {
+        header('Location: apps/views/admin/dashboard.php');
+    } else if ($_SESSION['user_role'] === 'Dentist') {
+        header('Location: apps/views/dentist/dashboard.php');
+    }
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -8,7 +20,6 @@ session_start();
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In | Dr. Aprille Ventura Clinica Dental</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
   <link rel="stylesheet" href="../../public/css/auth.css">
@@ -57,14 +68,12 @@ session_start();
           </div>
           <div class="vd-auth-group">
             <label class="vd-label">Password</label>
-            <div class="vd-auth-input-wrap">
-              <input type="password" name="password" id="loginPassword" class="vd-auth-input"
-                placeholder="••••••••" required autocomplete="current-password">
-              <button type="button" class="vd-pw-toggle" id="toggleLoginPw" aria-label="Show password">
-                <i class="ti ti-eye" id="loginEyeIcon"></i>
-              </button>
-            </div>
-            <a>Forgot Password?</a>
+            <input type="password" name="password" class="vd-auth-input"
+              placeholder="••••••••" required autocomplete="current-password">
+          </div>
+
+          <div class="vd-auth-forgot">
+            <a href="../../forgot-pass.php">Forgot password?</a>
           </div>
 
           <button type="submit" class="vd-auth-btn" id="loginBtn">
@@ -73,11 +82,11 @@ session_start();
         </form>
 
         <div class="vd-auth-footer">
-          Don't have an account? <a href="registration.php">Register</a>
+          Don't have an account? <a href="register.php">Register</a>
         </div>
 
         <div class="vd-auth-footer mt-2">
-          <a href="../../index.php">← Back to home</a>
+          <a href="index.php">← Back to home</a>
         </div>
 
       </div>
@@ -86,14 +95,6 @@ session_start();
   </div>
 
   <script>
-    document.getElementById('toggleLoginPw').addEventListener('click', function () {
-      const input = document.getElementById('loginPassword');
-      const icon  = document.getElementById('loginEyeIcon');
-      const isHidden = input.type === 'password';
-      input.type     = isHidden ? 'text' : 'password';
-      icon.className = isHidden ? 'ti ti-eye-off' : 'ti ti-eye';
-    });
-
     document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
@@ -113,8 +114,7 @@ session_start();
         const result = await res.json();
 
         if (result.success) {
-          const targetUrl = new URL(result.redirect, window.location.href);
-          window.location.href = targetUrl.toString();
+          window.location.href = result.redirect;
         } else {
           errEl.textContent = result.message;
           errEl.classList.remove('d-none');

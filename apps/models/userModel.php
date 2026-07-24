@@ -23,6 +23,15 @@ class User {
         }
     }
 
+    public function getLastInsertedId() {
+        try {
+            return $this->conn->lastInsertId();
+        } catch (PDOException $e) {
+            error_log("getLastInsertedId error: " . $e->getMessage());
+            return null;
+        }
+    }
+
     // Register new user
     public function register($email, $username, $hashedPassword, $role = 'Patient') {
         try {
@@ -93,9 +102,18 @@ class User {
             return null;
         }
     }
-
-    public function getLastInsertedId()
-    {
-        return $this->conn->lastInsertId();
+        // Find user by email only (for password reset)
+    public function findByEmail($email) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT * FROM users WHERE email = :email LIMIT 1
+            ");
+            $stmt->execute([':email' => $email]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("findByEmail error: " . $e->getMessage());
+            return null;
+        }
     }
 }
+
