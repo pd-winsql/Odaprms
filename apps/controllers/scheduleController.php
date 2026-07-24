@@ -76,7 +76,26 @@ class ScheduleController {
         }
     }
 
-    
+    public function updateMaxAppointments()
+    {
+        header('Content-Type: text/plain');
+
+        $schedule_id = $_POST['schedule_id'] ?? '';
+        $max_appointments = $_POST['max_appointments'] ?? '';
+
+        if (!$schedule_id || $max_appointments === '') {
+            echo 'error';
+            exit;
+        }
+
+        $result = $this->schedules->updateMaxAppointments(
+            $schedule_id,
+            $max_appointments
+        );
+
+        echo $result ? 'success' : 'error';
+        exit;
+    }
 }
 
 $controller = new ScheduleController();
@@ -96,8 +115,11 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
         $controller->addSchedule();
     } elseif ($action === 'delete_schedule') {
         $controller->deleteSchedule();
+    } elseif ($action === 'edit_schedule') {
+        $controller->updateMaxAppointments();
     } else {
-    echo json_encode(['success' => false, 'message' => 'Invalid action.']);
-    exit;
+        echo json_encode(['success' => false, 'message' => 'Invalid action.']);
+        exit;
+        }
     }
-}
+

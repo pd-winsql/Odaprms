@@ -1265,3 +1265,19 @@
   text-transform: uppercase;
   margin-bottom: 4px;
 }
+
+.vd-sched-card-view,
+.vd-sched-card-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.vd-sched-card-edit .vd-input {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  padding: 6px 0;
+}

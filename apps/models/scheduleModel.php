@@ -9,9 +9,17 @@ class Schedule {
 
     public function getSchedulesByClinic($clinic_id) {
         try {
-            $stmt = $this->conn->prepare("SELECT * FROM schedules WHERE clinic_id = :clinic_id ORDER BY sched_date ASC");
-            $stmt->execute([':clinic_id' => $clinic_id]);
+            $stmt = $this->conn->prepare("
+                SELECT * FROM schedules
+                WHERE clinic_id = :clinic_id
+            ");
+
+            $stmt->execute([
+                ':clinic_id' => $clinic_id
+            ]);
+
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         } catch (PDOException $e) {
             error_log("getSchedulesByClinic error: " . $e->getMessage());
             return [];
@@ -43,16 +51,30 @@ class Schedule {
     public function getAvailableSchedulesByClinic($clinic_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT 
-                    s.schedule_id, s.clinic_id, DATE_FORMAT(s.sched_date, '%M %d') AS sched_date, s.max_appointments,
-                    COUNT(a.appointment_id) AS total_appointments
+                SELECT
+                    s.schedule_id,
+                    s.clinic_id,
+                    s.sched_date,
+                    s.max_appointments,
+
+                    COUNT(a.appointment_id) AS total_appointments,
+
+                    (s.max_appointments - COUNT(a.appointment_id)) AS available_slots
+
                 FROM schedules s
-                LEFT JOIN appointments a ON s.schedule_id = a.schedule_id
-                AND a.status IN ('Pending', 'Confirmed')
+
+                LEFT JOIN appointments a
+                    ON s.schedule_id = a.schedule_id
+                    AND a.status IN ('Pending', 'Confirmed', 'Completed')
+
                 WHERE s.clinic_id = :clinic_id
-                AND CURDATE() <= s.sched_date
-                GROUP BY s.schedule_id, s.clinic_id, s.sched_date, s.max_appointments
-                HAVING total_appointments < s.max_appointments
+
+                GROUP BY
+                    s.schedule_id,
+                    s.clinic_id,
+                    s.sched_date,
+                    s.max_appointments
+
                 ORDER BY s.sched_date ASC
             ");
             $stmt->execute([':clinic_id' => $clinic_id]);
@@ -98,6 +120,22 @@ class Schedule {
             return $stmt->execute([':schedule_id' => $schedule_id]);
         } catch (PDOException $e) {
             error_log("deleteSchedule error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateMaxAppointments($schedule_id, $max_appointments) {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE schedules SET max_appointments = :max
+                WHERE schedule_id = :id
+            ");
+            return $stmt->execute([
+                ':max' => $max_appointments,
+                ':id'  => $schedule_id,
+            ]);
+        } catch (PDOException $e) {
+            error_log("updateMaxAppointments error: " . $e->getMessage());
             return false;
         }
     }

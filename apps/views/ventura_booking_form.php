@@ -294,7 +294,7 @@
         scheduleInput.value = '';
 
         schedules.forEach(schedule => {
-            const remaining = schedule.max_appointments - schedule.total_appointments;
+            const remaining = schedule.available_slots;
             const isFull    = remaining <= 0;
             const date      = new Date(schedule.sched_date);
             const day       = date.toLocaleDateString('en-PH', { weekday: 'short' });
