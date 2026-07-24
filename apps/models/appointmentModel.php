@@ -246,4 +246,21 @@ class Appointment {
         public function getLastInsertedId() {
         return $this->conn->lastInsertId();
     }
+
+    public function countAppointmentsBySchedule($schedule_id)
+    {
+        $stmt = $this->conn->prepare("
+            SELECT COUNT(*) AS total
+            FROM appointments
+            WHERE schedule_id = :schedule_id
+            AND status != 'Cancelled'
+        ");
+
+        $stmt->execute([
+            ':schedule_id' => $schedule_id
+        ]);
+
+        return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    }
+
 }

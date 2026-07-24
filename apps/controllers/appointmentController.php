@@ -61,7 +61,6 @@ class AppointmentController {
         }
 
         $data = $this->appointmentModel->getPatientUpcomingAppointments($patient['patient_id']);
-        require_once '../views/patient-upcoming-appointments.php';
     }
 
     //Admin: all upcoming appointments
@@ -166,24 +165,35 @@ class AppointmentController {
                 exit;
             }
 
-            // 1. CREATE PATIENT FIRST
-            $patient_id = $patientModel->createPatient(
-                null,
-                $_POST['firstname'],
-                $_POST['lastname'],
-                $_POST['middlename'],
-                $_POST['age'],
-                $_POST['gender'],
-                $_POST['phone_number'],
-                $_POST['email']
-            );
+            // 1. CHECK IF PATIENT ALREADY EXISTS
+            $patient = $patientModel->getPatientByEmail($_POST['email']);
 
-            if (!$patient_id) {
-                echo json_encode([
-                    'success'=>false,
-                    'message'=>'Failed creating patient record.'
-                ]);
-                exit;
+            if ($patient) {
+
+                // Existing patient
+                $patient_id = $patient['patient_id'];
+
+            } else {
+
+                // First-time patient
+                $patient_id = $patientModel->createPatient(
+                    null,
+                    $_POST['firstname'],
+                    $_POST['lastname'],
+                    $_POST['middlename'],
+                    $_POST['age'],
+                    $_POST['gender'],
+                    $_POST['phone_number'],
+                    $_POST['email']
+                );
+
+                if (!$patient_id) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to create patient.'
+                    ]);
+                    exit;
+                }
             }
 
             $patient = $patientModel->getPatientByEmail($_POST['email']);
@@ -211,6 +221,18 @@ class AppointmentController {
                     exit;
                 }
             }
+
+            $totalAppointments = $this->appointmentModel
+                ->countAppointmentsBySchedule($schedule_id);
+
+            if ($totalAppointments >= $schedule['max_appointments']) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'No available slots for this schedule.'
+                ]);
+                exit;
+            }
+
             // 2. CREATE APPOINTMENT USING patient_id
             $result = $this->appointmentModel->bookAppointment(
                 $patient_id,

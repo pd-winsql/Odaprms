@@ -86,7 +86,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
 
         <div class="vd-auth-footer mt-2">
-          <a href="index.php">← Back to home</a>
+          <a href="../../index.php">← Back to home</a>
         </div>
 
       </div>
