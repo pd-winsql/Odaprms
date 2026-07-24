@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (isset($_SESSION['user_id'])) {
+    header('Location: /Capstone System/index.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -17,14 +21,13 @@ session_start();
 
   <div class="vd-auth-split">
 
-    <!-- LEFT — Branding -->
+    <!-- LEFT -->
     <div class="vd-auth-left">
       <div class="vd-auth-geo vd-geo-1"></div>
       <div class="vd-auth-geo vd-geo-2"></div>
       <div class="vd-auth-geo vd-geo-3"></div>
       <div class="vd-auth-sq vd-sq-1"></div>
       <div class="vd-auth-sq vd-sq-2"></div>
-
       <div class="vd-auth-brand">
         <div class="vd-logo-name">Dr. Aprille</div>
         <div class="vd-logo-ventura vd-auth-ventura">
@@ -37,7 +40,7 @@ session_start();
       </div>
     </div>
 
-    <!-- RIGHT — Form -->
+    <!-- RIGHT -->
     <div class="vd-auth-right">
       <div class="vd-auth-form-wrap">
 
@@ -46,10 +49,8 @@ session_start();
           <div class="vd-auth-sub">Fill in your details to get started.</div>
         </div>
 
-        <div id="registerError" class="vd-auth-error d-none"></div>
-        <div id="registerSuccess" class="vd-auth-success d-none">
-          Account created successfully! Redirecting to login…
-        </div>
+        <div id="registerError"   class="vd-auth-error   d-none"></div>
+        <div id="registerSuccess" class="vd-auth-success d-none"></div>
 
         <form id="registerForm" class="vd-auth-form" novalidate>
           <div class="vd-auth-group">
@@ -111,31 +112,29 @@ session_start();
     document.getElementById('toggleRegPw').addEventListener('click', function () {
       togglePassword('regPassword', 'regEyeIcon');
     });
-
     document.getElementById('toggleRegConfirmPw').addEventListener('click', function () {
       togglePassword('regConfirmPassword', 'regConfirmEyeIcon');
     });
-    
+
     document.getElementById('registerForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      const btn    = document.getElementById('registerBtn');
-      const errEl  = document.getElementById('registerError');
-      const sucEl  = document.getElementById('registerSuccess');
+      const btn   = document.getElementById('registerBtn');
+      const errEl = document.getElementById('registerError');
+      const sucEl = document.getElementById('registerSuccess');
       errEl.classList.add('d-none');
       sucEl.classList.add('d-none');
 
       const formData = new FormData(this);
-
-      // Client-side validation
-      const pw  = formData.get('password');
-      const cpw = formData.get('confirm_password');
+      const pw       = formData.get('password');
+      const cpw      = formData.get('confirm_password');
 
       if (pw !== cpw) {
         errEl.textContent = 'Passwords do not match.';
         errEl.classList.remove('d-none');
         return;
       }
+
       const strongPassword = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
       if (!strongPassword.test(pw)) {
         errEl.textContent = 'Password must be at least 8 characters and include both letters and numbers.';
@@ -143,22 +142,23 @@ session_start();
         return;
       }
 
-      formData.append('action', 'register');
-      btn.textContent = 'Creating account…';
+      formData.append('action', 'sendRegisterOTP');
+      btn.textContent = 'Sending verification code…';
       btn.disabled    = true;
 
       try {
-        const res    = await fetch('../controllers/userController.php', {
+        const res    = await fetch('/Capstone System/apps/controllers/userController.php', {
           method: 'POST', body: formData
         });
         const result = await res.json();
 
         if (result.success) {
+          sucEl.textContent = result.message + ' Redirecting…';
           sucEl.classList.remove('d-none');
-          this.reset();
+          const email = formData.get('email');
           setTimeout(() => {
-            window.location.href = 'login.php';
-          }, 2000);
+            window.location.href = '/Capstone System/verify-register.php?email=' + encodeURIComponent(email);
+          }, 1500);
         } else {
           errEl.textContent = result.message;
           errEl.classList.remove('d-none');
