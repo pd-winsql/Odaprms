@@ -18,8 +18,8 @@ $appointmentModel = new Appointment($conn);
 
 $patient  = $patientModel->getPatientByUserId($_SESSION['user_id']);
 $email    = $patient['email'] ?? '';
-$upcoming = $appointmentModel->getPatientUpcomingAppointments($email);
-$past     = $appointmentModel->getPatientPastAppointments($email);
+$upcoming = $appointmentModel->getPatientUpcomingAppointments($patient['patient_id']);
+$past     = $appointmentModel->getPatientPastAppointments($patient['patient_id']);
 
 function statusClass($s) {
     return 'vd-status vd-status-' . strtolower($s);

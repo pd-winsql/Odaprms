@@ -256,7 +256,7 @@
 
         if (result.success) {
             if (redirect) {
-            window.location.href = 'registration-form.php';
+            window.location.href = 'register.php';
             } else {
             window.location.href = '../../index.php';
             }

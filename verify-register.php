@@ -185,7 +185,7 @@ if (!$email) {
             sucEl.textContent = 'Account created! Redirecting to login…';
             sucEl.classList.remove('d-none');
             setTimeout(() => {
-                window.location.href = '/Capstone System/login.php';
+                window.location.href = '/Capstone System/apps/views/login.php';
             }, 1500);
             } else {
             errEl.textContent = result.message;

@@ -17,7 +17,7 @@ $patientModel     = new Patient($conn);
 $appointmentModel = new Appointment($conn);
 
 $patient  = $patientModel->getPatientByUserId($_SESSION['user_id']);
-$upcoming = $appointmentModel->getPatientUpcomingAppointments($patient['email'] ?? '');
+$upcoming = $appointmentModel->getPatientUpcomingAppointments($patient['patient_id'] ?? '');
 $next     = $upcoming[0] ?? null;
 
 $hour     = (int) date('H');

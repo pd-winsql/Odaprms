@@ -36,7 +36,7 @@ class AppointmentController {
             die("Patient record not found.");
         }
 
-        $data = $this->appointmentModel->getPatientUpcomingAppointments($user_id);
+        $data = $this->appointmentModel->getPatientUpcomingAppointments($patient['patient_id']);
         require_once '../views/patient-upcoming-appointments.php';
     }
 
@@ -60,7 +60,7 @@ class AppointmentController {
             die("Patient record not found.");
         }
 
-        $data = $this->appointmentModel->getPatientUpcomingAppointments($user_id);
+        $data = $this->appointmentModel->getPatientUpcomingAppointments($patient['patient_id']);
         require_once '../views/patient-upcoming-appointments.php';
     }
 
