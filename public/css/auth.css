@@ -143,7 +143,11 @@
 }
 
 .vd-auth-group {
-  margin-bottom: 22px;
+  margin-bottom: 20px;
+}
+
+.vd-auth-group.vd-pass-group {
+  margin-bottom: 5px !important;
 }
 
 .vd-auth-input {
@@ -314,7 +318,7 @@
 /* ── Forgot password link ── */
 .vd-auth-forgot {
   text-align: right;
-  margin-top: 6px;
+  margin-top: 0px;
 }
 .vd-auth-forgot a {
   font-size: 11px;

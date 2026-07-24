@@ -66,7 +66,7 @@ if (isset($_SESSION['user_id'])) {
             <input type="text" name="identity" class="vd-auth-input"
               placeholder="Enter email or username" required autocomplete="username">
           </div>
-          <div class="vd-auth-group">
+          <div class="vd-auth-group vd-pass-group">
             <label class="vd-label">Password</label>
             <input type="password" name="password" class="vd-auth-input"
               placeholder="••••••••" required autocomplete="current-password">
