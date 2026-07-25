@@ -10,13 +10,13 @@ function sendOTPEmail($toEmail, $toName, $otp, $type = 'register') {
     $mail = new PHPMailer(true);
 
     try {
-        // SMTP Configuration — replace with your Gmail credentials
+        // SMTP Configuration — Gmail credentials
         $mail->isSMTP();
 
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'ronjcorpuz11@gmail.com';   // ← replace
-        $mail->Password   = 'svsgizzxzefyowgf';       // ← replace with Gmail App Password
+        $mail->Username   = 'noreply.draprilleclinic@gmail.com';   // ← gmail
+        $mail->Password   = 'vvlgsozjjpwlivsf';       // ← Gmail App Password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 

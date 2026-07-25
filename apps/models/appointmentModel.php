@@ -263,4 +263,28 @@ class Appointment {
         return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     }
 
+    public function getAppointmentsByStatus($status) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
+                    p.phone_number, p.email, c.clinic_name, a.service, a.date, a.status
+                FROM appointments a
+                JOIN patients p ON a.patient_id = p.patient_id
+                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                WHERE a.date >= CURDATE()
+                AND a.status = :status
+                ORDER BY a.date ASC
+            ");
+
+            $stmt->execute([
+                ':status' => $status
+            ]);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("getAppointmentsByStatus error: " . $e->getMessage());
+            return [];
+        }
+    }
 }

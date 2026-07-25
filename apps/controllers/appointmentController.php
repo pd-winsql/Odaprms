@@ -260,6 +260,39 @@ class AppointmentController {
         }
     }
 
+    public function filterByStatus() {
+        header('Content-Type: application/json');
+
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+
+        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+            exit;
+        }
+
+        $status = trim($_POST['status'] ?? '');
+
+        if ($status === '') {
+            echo json_encode(['success' => false, 'message' => 'Missing status.']);
+            exit;
+        }
+
+        $data = $this->appointmentModel->getAppointmentsByStatus($status);
+
+        echo json_encode([
+            'success' => true,
+            'data' => $data
+        ]);
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -270,5 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->bookAppointment();
     } elseif ($action === 'updateStatus') {
         $controller->updateStatus();
+    } elseif ($action === 'filterByStatus') {
+        $controller->filterByStatus();
     }
 }
