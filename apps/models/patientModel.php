@@ -284,4 +284,221 @@ class Patient {
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
+    public function updatePersonal($patient_id, $data) {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE patients SET
+                    firstname      = :firstname,
+                    middlename     = :middlename,
+                    lastname       = :lastname,
+                    birthdate      = :birthdate,
+                    age            = :age,
+                    gender         = :gender,
+                    civil_status   = :civil_status,
+                    phone_number   = :phone_number,
+                    email          = :email,
+                    home_address   = :home_address,
+                    work_address   = :work_address,
+                    occupation     = :occupation,
+                    office_contact = :office_contact,
+                    fb_account     = :fb_account
+                WHERE patient_id = :patient_id
+            ");
+            return $stmt->execute([
+                ':firstname'      => $data['firstname'],
+                ':middlename'     => $data['middlename'] ?: null,
+                ':lastname'       => $data['lastname'],
+                ':birthdate'      => $data['birthdate'] ?: null,
+                ':age'            => $data['age'] ?: null,
+                ':gender'         => $data['gender'] ?: null,
+                ':civil_status'   => $data['civil_status'] ?: null,
+                ':phone_number'   => $data['phone_number'] ?: null,
+                ':email'          => $data['email'],
+                ':home_address'   => $data['home_address'] ?: null,
+                ':work_address'   => $data['work_address'] ?: null,
+                ':occupation'     => $data['occupation'] ?: null,
+                ':office_contact' => $data['office_contact'] ?: null,
+                ':fb_account'     => $data['fb_account'] ?: null,
+                ':patient_id'     => $patient_id,
+            ]);
+        } catch (PDOException $e) {
+            error_log("updatePersonal error: " . $e->getMessage());
+            return false;
+        }
+    }
+ 
+    public function updateMinors($patient_id, $data) {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE patients SET
+                    guardian_name     = :guardian_name,
+                    guardian_contact  = :guardian_contact,
+                    physician_name    = :physician_name,
+                    physician_contact = :physician_contact,
+                    physician_address = :physician_address
+                WHERE patient_id = :patient_id
+            ");
+            return $stmt->execute([
+                ':guardian_name'     => $data['guardian_name']     ?: null,
+                ':guardian_contact'  => $data['guardian_contact']  ?: null,
+                ':physician_name'    => $data['physician_name']    ?: null,
+                ':physician_contact' => $data['physician_contact'] ?: null,
+                ':physician_address' => $data['physician_address'] ?: null,
+                ':patient_id'        => $patient_id,
+            ]);
+        } catch (PDOException $e) {
+            error_log("updateMinors error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateDentalHistory($patient_id, $data) {
+        try {
+            // Check if record exists
+            $stmt = $this->conn->prepare("SELECT dental_history_id FROM patient_dental_history WHERE patient_id = :pid");
+            $stmt->execute([':pid' => $patient_id]);
+            $exists = $stmt->fetch();
+    
+            if ($exists) {
+                $stmt = $this->conn->prepare("
+                    UPDATE patient_dental_history SET
+                        previous_dentist  = :previous_dentist,
+                        last_dental_visit = :last_dental_visit,
+                        treatment_done    = :treatment_done,
+                        reason_for_visit  = :reason_for_visit,
+                        referred_by       = :referred_by,
+                        last_updated_by   = :last_updated_by,
+                        last_updated_at   = NOW()
+                    WHERE patient_id = :patient_id
+                ");
+            } else {
+                $stmt = $this->conn->prepare("
+                    INSERT INTO patient_dental_history
+                        (patient_id, previous_dentist, last_dental_visit, treatment_done, reason_for_visit, referred_by, last_updated_by, last_updated_at)
+                    VALUES
+                        (:patient_id, :previous_dentist, :last_dental_visit, :treatment_done, :reason_for_visit, :referred_by, :last_updated_by, NOW())
+                ");
+            }
+    
+            return $stmt->execute([
+                ':previous_dentist'  => $data['previous_dentist']  ?: null,
+                ':last_dental_visit' => $data['last_dental_visit'] ?: null,
+                ':treatment_done'    => $data['treatment_done']    ?: null,
+                ':reason_for_visit'  => $data['reason_for_visit']  ?: null,
+                ':referred_by'       => $data['referred_by']       ?: null,
+                ':last_updated_by'   => $data['last_updated_by'],
+                ':patient_id'        => $patient_id,
+            ]);
+        } catch (PDOException $e) {
+            error_log("updateDentalHistory error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateMedicalHistory($patient_id, $data) {
+        try {
+            $stmt = $this->conn->prepare("SELECT medical_history_id FROM patient_medical_history WHERE patient_id = :pid");
+            $stmt->execute([':pid' => $patient_id]);
+            $exists = $stmt->fetch();
+    
+            $fields = [
+                'good_health','medical_condition','medical_condition_detail',
+                'serious_illness','serious_illness_detail','hospitalized','hospitalized_detail',
+                'medication','medication_detail','smoke','alcohol','drugs',
+                'allergy','allergy_detail','pregnant','nursing','birth_control',
+                'blood_type','blood_pressure','last_updated_by',
+            ];
+    
+            if ($exists) {
+                $sets = implode(', ', array_map(fn($f) => "$f = :$f", $fields));
+                $sql  = "UPDATE patient_medical_history SET $sets, last_updated_at = NOW() WHERE patient_id = :patient_id";
+            } else {
+                $cols = implode(', ', $fields) . ', patient_id';
+                $vals = implode(', ', array_map(fn($f) => ":$f", $fields)) . ', :patient_id';
+                $sql  = "INSERT INTO patient_medical_history ($cols) VALUES ($vals)";
+            }
+    
+            $params = [':patient_id' => $patient_id];
+            foreach ($fields as $f) {
+                $val = $data[$f] ?? null;
+                $params[":$f"] = ($val === '' || $val === null) ? null : $val;
+            }
+    
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute($params);
+    
+        } catch (PDOException $e) {
+            error_log("updateMedicalHistory error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateConditions($patient_id, $conditions, $cond_others = '') {
+        try {
+            $this->conn->beginTransaction();
+    
+            // Delete existing conditions
+            $stmt = $this->conn->prepare("DELETE FROM patient_conditions WHERE patient_id = :pid");
+            $stmt->execute([':pid' => $patient_id]);
+    
+            // Insert new ones
+            if (!empty($conditions)) {
+                $stmt = $this->conn->prepare("
+                    INSERT INTO patient_conditions (patient_id, condition)
+                    VALUES (:patient_id, :condition)
+                ");
+                foreach ($conditions as $cond) {
+                    $stmt->execute([':patient_id' => $patient_id, ':condition' => $cond]);
+                }
+            }
+    
+            // Save cond_others to medical history
+            $stmt = $this->conn->prepare("
+                UPDATE patient_medical_history SET cond_others = :cond_others WHERE patient_id = :pid
+            ");
+            $stmt->execute([':cond_others' => $cond_others ?: null, ':pid' => $patient_id]);
+    
+            $this->conn->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->conn->rollBack();
+            error_log("updateConditions error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function updateConsent($patient_id, $data) {
+        try {
+            $stmt = $this->conn->prepare("SELECT consent_id FROM patient_consent WHERE patient_id = :pid");
+            $stmt->execute([':pid' => $patient_id]);
+            $exists = $stmt->fetch();
+    
+            if ($exists) {
+                $stmt = $this->conn->prepare("
+                    UPDATE patient_consent SET
+                        consent_name = :consent_name,
+                        consent_for  = :consent_for,
+                        consent_date = :consent_date
+                    WHERE patient_id = :patient_id
+                ");
+            } else {
+                $stmt = $this->conn->prepare("
+                    INSERT INTO patient_consent (patient_id, consent_name, consent_for, consent_date)
+                    VALUES (:patient_id, :consent_name, :consent_for, :consent_date)
+                ");
+            }
+    
+            return $stmt->execute([
+                ':consent_name' => $data['consent_name'] ?: null,
+                ':consent_for'  => $data['consent_for']  ?: null,
+                ':consent_date' => $data['consent_date'] ?: null,
+                ':patient_id'   => $patient_id,
+            ]);
+        } catch (PDOException $e) {
+            error_log("updateConsent error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
 }
