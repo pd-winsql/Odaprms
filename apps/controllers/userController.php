@@ -118,7 +118,7 @@ class UserController {
         ");
         $stmt->execute([':email' => $email, ':otp' => $otp]);
 
-        $result = sendOTPEmail($email, $username, $otp);
+        $result = sendOTPEmail($email, $username, $otp, 'register');
 
         if ($result['success']) {
             echo json_encode(['success' => true, 'message' => 'Verification code sent to your email.']);
@@ -154,7 +154,7 @@ class UserController {
         ");
         $stmt->execute([':email' => $email, ':otp' => $otp, ':expires_at' => $expiresAt]);
 
-        $result = sendOTPEmail($email, $username, $otp);
+        $result = sendOTPEmail($email, $username, $otp, 'register');
 
         if ($result['success']) {
             echo json_encode(['success' => true, 'message' => 'New verification code sent.']);

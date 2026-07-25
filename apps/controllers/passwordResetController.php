@@ -53,7 +53,7 @@ if ($action === 'sendOTP') {
 
     // Send email
     $name   = $user['username'] ?? $email;
-    $result = sendOTPEmail($email, $name, $otp);
+    $result = sendOTPEmail($email, $name, $otp, 'forgot_password');
 
     if ($result['success']) {
         echo json_encode(['success' => true, 'message' => 'Reset code sent! Check your email.']);
