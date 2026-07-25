@@ -6,12 +6,13 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
 
-function sendOTPEmail($toEmail, $toName, $otp) {
+function sendOTPEmail($toEmail, $toName, $otp, $type = 'register') {
     $mail = new PHPMailer(true);
 
     try {
         // SMTP Configuration — replace with your Gmail credentials
         $mail->isSMTP();
+
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
         $mail->Username   = 'ronjcorpuz11@gmail.com';   // ← replace
@@ -19,13 +20,26 @@ function sendOTPEmail($toEmail, $toName, $otp) {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
+        if ($type === 'register') {
+            $subject = 'Verify Your Email Address';
+            $intro = 'Thank you for creating an account with Dr. Aprille Ventura Clinica Dental.';
+            $message = 'Use the verification code below to verify your email address. This code expires in <strong>10 minutes</strong>.';
+            $buttonTitle = 'Email Verification Code';
+        } else {
+            $subject = 'Password Reset OTP';
+            $intro = 'We received a request to reset your password.';
+            $message = 'Use the OTP below to reset your password. This code expires in <strong>10 minutes</strong>.';
+            $buttonTitle = 'Password Reset Code';
+        }
+
         // Sender and recipient
         $mail->setFrom('ronjcorpuz11@gmail.com', 'Dr. Aprille Ventura Clinica Dental');
+
         $mail->addAddress($toEmail, $toName);
 
         // Email content
         $mail->isHTML(true);
-        $mail->Subject = 'Password Reset OTP — Dr. Aprille Ventura Clinica Dental';
+        $mail->Subject = $subject . ' — Dr. Aprille Ventura Clinica Dental';
         $mail->Body    = '
         <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
           <div style="text-align: center; margin-bottom: 24px;">
@@ -38,11 +52,12 @@ function sendOTPEmail($toEmail, $toName, $otp) {
 
           <p style="font-size: 14px; color: #4a3f30; margin-bottom: 8px;">Hello, <strong>' . htmlspecialchars($toName) . '</strong></p>
           <p style="font-size: 13px; color: #4a3f30; line-height: 1.6; margin-bottom: 24px;">
-            We received a request to reset your password. Use the OTP below to proceed. This code expires in <strong>10 minutes</strong>.
+            ' . $intro . '<br><br>
+            ' . $message . '
           </p>
 
           <div style="text-align: center; background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 6px; padding: 24px; margin-bottom: 24px;">
-            <div style="font-size: 11px; letter-spacing: 0.2em; color: #b5924c; text-transform: uppercase; margin-bottom: 10px;">Your OTP Code</div>
+            <div style="font-size: 11px; letter-spacing: 0.2em; color: #b5924c; text-transform: uppercase; margin-bottom: 10px;">' . $buttonTitle . '</div>
             <div style="font-size: 38px; font-weight: 600; letter-spacing: 0.3em; color: #1a1612;">' . $otp . '</div>
           </div>
 
@@ -56,7 +71,24 @@ function sendOTPEmail($toEmail, $toName, $otp) {
           </p>
         </div>';
 
-        $mail->AltBody = "Your OTP code is: $otp — This expires in 10 minutes.";
+        $mail->AltBody =
+        "Dr. Aprille Ventura Clinica Dental
+
+        Hello $toName,
+
+        $intro
+
+        $buttonTitle:
+        $otp
+
+        This code expires in 10 minutes.
+
+        If you did not request this, you may safely ignore this email.";
+
+        error_log("===== PHPMailer Recipients =====");
+        foreach ($mail->getToAddresses() as $recipient) {
+            error_log("Recipient: " . $recipient[0]);
+        }
 
         $mail->send();
         return ['success' => true];

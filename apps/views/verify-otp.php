@@ -83,7 +83,7 @@ if (!$email) {
         </div>
 
         <div class="vd-auth-footer mt-2">
-          <a href="forgot-password.php">← Back</a>
+          <a href="forgot-pass.php">← Back</a>
         </div>
 
       </div>

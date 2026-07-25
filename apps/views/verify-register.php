@@ -89,7 +89,7 @@ if (!$email) {
             </div>
 
             <div class="vd-auth-footer mt-2">
-            <a href="/Capstone System/register.php">← Back to Register</a>
+            <a href="register.php">← Back to Register</a>
             </div>
 
         </div>
