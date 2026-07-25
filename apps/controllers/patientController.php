@@ -155,6 +155,198 @@ class PatientController {
         exit;
     }
 
+     private function requirePatient(): int {
+        if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Patient') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+
+        $patient = $this->patients->getPatientByUserId($_SESSION['user_id']);
+
+        if (!$patient) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Patient record not found.']);
+            exit;
+        }
+
+        return (int) $patient['patient_id'];
+    }
+
+    public function updatePersonal() {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+            exit;
+        }
+
+        $patient_id = $this->requirePatient();
+
+        $result = $this->patients->updatePersonal($patient_id, [
+            'firstname'      => $_POST['firstname'] ?? '',
+            'middlename'     => $_POST['middlename'] ?? '',
+            'lastname'       => $_POST['lastname'] ?? '',
+            'birthdate'      => $_POST['birthdate'] ?? null,
+            'age'            => $_POST['age'] ?? null,
+            'gender'         => $_POST['gender'] ?? '',
+            'civil_status'   => $_POST['civil_status'] ?? '',
+            'phone_number'   => $_POST['phone_number'] ?? '',
+            'email'          => $_POST['email'] ?? '',
+            'home_address'   => $_POST['home_address'] ?? '',
+            'work_address'   => $_POST['work_address'] ?? '',
+            'occupation'     => $_POST['occupation'] ?? '',
+            'office_contact' => $_POST['office_contact'] ?? '',
+            'fb_account'     => $_POST['fb_account'] ?? '',
+        ]);
+
+        echo json_encode([
+            'success' => (bool) $result,
+            'message' => $result ? 'Personal information updated.' : 'Failed to update.',
+        ]);
+        exit;
+    }
+
+    public function updateMinors() {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+            exit;
+        }
+
+        $patient_id = $this->requirePatient();
+
+        $result = $this->patients->updateMinors($patient_id, [
+            'guardian_name'     => $_POST['guardian_name'] ?? '',
+            'guardian_contact'  => $_POST['guardian_contact'] ?? '',
+            'physician_name'    => $_POST['physician_name'] ?? '',
+            'physician_contact' => $_POST['physician_contact'] ?? '',
+            'physician_address' => $_POST['physician_address'] ?? '',
+        ]);
+
+        echo json_encode([
+            'success' => (bool) $result,
+            'message' => $result ? 'Guardian information updated.' : 'Failed to update.',
+        ]);
+        exit;
+    }
+
+    public function updateDental() {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+            exit;
+        }
+
+        $patient_id = $this->requirePatient();
+
+        $result = $this->patients->updateDentalHistory($patient_id, [
+            'previous_dentist'  => $_POST['previous_dentist'] ?? '',
+            'last_dental_visit'  => $_POST['last_dental_visit'] ?? null,
+            'treatment_done'     => $_POST['treatment_done'] ?? '',
+            'reason_for_visit'   => $_POST['reason_for_visit'] ?? '',
+            'referred_by'        => $_POST['referred_by'] ?? '',
+            'last_updated_by'    => 'patient',
+        ]);
+
+        echo json_encode([
+            'success' => (bool) $result,
+            'message' => $result ? 'Dental history updated.' : 'Failed to update.',
+        ]);
+        exit;
+    }
+
+    public function updateHealth() {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+            exit;
+        }
+
+        $patient_id = $this->requirePatient();
+
+        $result = $this->patients->updateMedicalHistory($patient_id, [
+            'good_health'              => $_POST['good_health'] ?? null,
+            'medical_condition'        => $_POST['medical_condition'] ?? null,
+            'medical_condition_detail' => $_POST['medical_condition_detail'] ?? '',
+            'serious_illness'          => $_POST['serious_illness'] ?? null,
+            'serious_illness_detail'   => $_POST['serious_illness_detail'] ?? '',
+            'hospitalized'             => $_POST['hospitalized'] ?? null,
+            'hospitalized_detail'      => $_POST['hospitalized_detail'] ?? '',
+            'medication'               => $_POST['medication'] ?? null,
+            'medication_detail'        => $_POST['medication_detail'] ?? '',
+            'smoke'                    => $_POST['smoke'] ?? null,
+            'alcohol'                  => $_POST['alcohol'] ?? null,
+            'drugs'                    => $_POST['drugs'] ?? null,
+            'allergy'                  => $_POST['allergy'] ?? null,
+            'allergy_detail'           => $_POST['allergy_detail'] ?? '',
+            'pregnant'                 => $_POST['pregnant'] ?? null,
+            'nursing'                  => $_POST['nursing'] ?? null,
+            'birth_control'            => $_POST['birth_control'] ?? null,
+            'blood_type'               => $_POST['blood_type'] ?? '',
+            'blood_pressure'           => $_POST['blood_pressure'] ?? '',
+            'last_updated_by'          => 'patient',
+        ]);
+
+        echo json_encode([
+            'success' => (bool) $result,
+            'message' => $result ? 'Health questionnaire updated.' : 'Failed to update.',
+        ]);
+        exit;
+    }
+
+    public function updateConditions() {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+            exit;
+        }
+
+        $patient_id = $this->requirePatient();
+
+        $conditions = $_POST['conditions'] ?? [];
+        if (!is_array($conditions)) {
+            $conditions = [];
+        }
+
+        $cond_others = $_POST['cond_others'] ?? '';
+
+        $result = $this->patients->updateConditions($patient_id, $conditions, $cond_others);
+
+        echo json_encode([
+            'success' => (bool) $result,
+            'message' => $result ? 'Conditions updated.' : 'Failed to update.',
+        ]);
+        exit;
+    }
+
+    public function updateConsent() {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+            exit;
+        }
+
+        $patient_id = $this->requirePatient();
+
+        $result = $this->patients->updateConsent($patient_id, [
+            'consent_name' => $_POST['consent_name'] ?? '',
+            'consent_for'  => $_POST['consent_for'] ?? '',
+            'consent_date' => $_POST['consent_date'] ?? null,
+        ]);
+
+        echo json_encode([
+            'success' => (bool) $result,
+            'message' => $result ? 'Consent updated.' : 'Failed to update.',
+        ]);
+        exit;
+    }
+
     private function toBool($value) {
         if ($value === 'yes') {
             return 1;
