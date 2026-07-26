@@ -20,6 +20,7 @@ if (isset($_SESSION['user_id'])) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In | Dr. Aprille Ventura Clinica Dental</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
   <link rel="stylesheet" href="../../public/css/auth.css">
@@ -66,10 +67,15 @@ if (isset($_SESSION['user_id'])) {
             <input type="text" name="identity" class="vd-auth-input"
               placeholder="Enter email or username" required autocomplete="username">
           </div>
-          <div class="vd-auth-group vd-pass-group">
+          <div class="vd-auth-group">
             <label class="vd-label">Password</label>
-            <input type="password" name="password" class="vd-auth-input"
-              placeholder="••••••••" required autocomplete="current-password">
+            <div class="vd-auth-input-wrap">
+              <input type="password" name="password" id="logPassword" class="vd-auth-input"
+                placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" class="vd-pw-toggle" id="toggleRegPw" aria-label="Show password">
+                <i class="ti ti-eye" id="regEyeIcon"></i>
+              </button>
+            </div>
           </div>
 
           <div class="vd-auth-forgot">
@@ -82,7 +88,7 @@ if (isset($_SESSION['user_id'])) {
         </form>
 
         <div class="vd-auth-footer">
-          Don't have an account? <a href="register.php">Register</a>
+          Don't have an account? <a href="register.php">Sign up</a>
         </div>
 
         <div class="vd-auth-footer mt-2">
@@ -95,6 +101,18 @@ if (isset($_SESSION['user_id'])) {
   </div>
 
   <script>
+    function togglePassword(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      const isHidden = input.type === 'password';
+      input.type     = isHidden ? 'text' : 'password';
+      icon.className = isHidden ? 'ti ti-eye-off' : 'ti ti-eye';
+    }
+
+    document.getElementById('toggleRegPw').addEventListener('click', function () {
+      togglePassword('logPassword', 'regEyeIcon');
+    });
+    
     document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 

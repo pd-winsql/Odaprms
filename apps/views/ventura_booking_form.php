@@ -20,11 +20,19 @@
 </head>
 <body class="vd-form-page py-5">
 
+
+
     <div class="container">
         <div class="row justify-content-center">
         <div class="col-12 col-lg-8">
             <div class="card vd-page-card border p-4 p-md-5">
 
+            <div class="mb-3">
+                <a href="../../index.php" class="btn vd-btn-outline btn-sm">
+                    &larr; Back to Home
+                </a>
+            </div>
+            
             <!-- HEADER -->
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-3 pb-4 mb-4" style="border-bottom:1px solid #d9c9a8;">
                 <div>

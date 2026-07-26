@@ -10,8 +10,10 @@ require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/patientModel.php';
 require_once __DIR__ . '/../../../models/appointmentModel.php';
 
+date_default_timezone_set('Asia/Manila');
+
 $db   = new Database();
-$conn = $db->connect();
+$conn = $db->connect(); 
 
 $patientModel     = new Patient($conn);
 $appointmentModel = new Appointment($conn);
