@@ -96,7 +96,6 @@ class AppointmentController {
     }
 
     //Update appointment status
-    //Update appointment status
     public function updateStatus() {
         header('Content-Type: application/json');
 
@@ -130,8 +129,7 @@ class AppointmentController {
                 if ($email && $name) {
                     $emailResult = sendAppointmentStatusEmail($email, $name, $status);
                     if (!$emailResult['success']) {
-                        // TEMP DEBUG: remove the emailResult['message'] part once mail sends fine
-                        $message = 'Status updated, but the notification email failed to send. DEBUG: ' . ($emailResult['message'] ?? 'unknown error');
+                        $message = 'Status updated, but the notification email failed to send.';
                     }
                 }
 
