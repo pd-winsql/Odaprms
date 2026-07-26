@@ -38,7 +38,7 @@ function val($v, $fallback = '—') {
     <button class="btn vd-btn-outline vd-back-btn" id="backToPatients">
         <i class="ti ti-arrow-left me-1"></i> Back to Patients
     </button>
-    </div>
+</div>
 
     <div class="d-flex flex-column gap-4">
 

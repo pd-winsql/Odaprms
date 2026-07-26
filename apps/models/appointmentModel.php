@@ -287,4 +287,27 @@ class Appointment {
             return [];
         }
     }
+
+    public function getPatientTransactionHistory($patient_id) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT
+                    a.appointment_id,
+                    a.service,
+                    a.date,
+                    a.status,
+                    c.clinic_name
+                FROM appointments a
+                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                WHERE a.patient_id = :patient_id
+                ORDER BY a.date DESC
+            ");
+            $stmt->execute([':patient_id' => $patient_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("getPatientTransactionHistory error: " . $e->getMessage());
+            return [];
+        }
+    }
 }
