@@ -1,0 +1,211 @@
+/* ============================================================
+    index.css — Landing page (index.php) specific styles
+    Uses the site-wide gold/cream tokens defined in styles.css:
+    --gold #b5924c · --gold-light #d4b483 · --gold-pale #f5efe4
+    --dark #1a1612 · --mid #4a3f30 · --border #d9c9a8
+    --white-bg #fffdf9 · --bg #e8e0d4
+   ============================================================ */
+
+/* ── Shared section eyebrow (small tracked label above a heading) ── */
+.vd-eyebrow {
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+
+/* ── Section heading gets the display serif treatment here ── */
+.vd-section-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+}
+
+.vd-section-intro {
+    max-width: 620px;
+    margin: 0.5rem auto 0;
+    color: var(--mid);
+    font-size: 0.98rem;
+    line-height: 1.7;
+}
+
+/* ── Hero ── */
+.vd-hero {
+    min-height: auto;
+    padding: 6.5rem 0 8rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.vd-hero-eyebrow {
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+}
+
+.vd-hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: clamp(2rem, 4vw, 3.1rem);
+    line-height: 1.15;
+    color: var(--dark);
+    margin-bottom: 1.1rem;
+}
+
+.vd-hero-sub {
+    max-width: 480px;
+    margin: 0 0 1.75rem;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.vd-hero-card {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    box-shadow: none;
+    text-align: left;
+}
+
+/* Framed placeholder photo — swap the <img src> later, no markup changes needed */
+.vd-hero-photo-frame {
+    position: relative;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.vd-hero-photo-frame::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    right: -18px;
+    bottom: -18px;
+    border: 1.5px solid var(--gold);
+    border-radius: 16px;
+    z-index: 0;
+}
+
+.vd-hero-photo {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    box-shadow: 0 12px 32px rgba(26, 22, 18, 0.12);
+    display: block;
+    background: var(--white-bg);
+}
+
+/* ── Signature element: smile-curve divider between sections ── */
+.vd-arc-divider {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    line-height: 0;
+    z-index: 2;
+}
+
+.vd-arc-divider svg {
+    display: block;
+    width: 100%;
+    height: 70px;
+}
+
+.vd-arc-fill-white { fill: var(--white-bg); }
+
+/* ── Services ── */
+.vd-services-section { background-color: var(--white-bg); }
+
+.vd-service-category { margin-bottom: 3rem; }
+.vd-service-category:last-child { margin-bottom: 0; }
+
+.vd-service-category-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.vd-service-category-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 1.55rem;
+    color: var(--dark);
+    margin-bottom: 4px;
+}
+
+.vd-service-category-desc {
+    font-size: 0.92rem;
+    color: var(--mid);
+    margin-bottom: 0;
+    max-width: 640px;
+}
+
+.vd-service-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--gold-pale);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.vd-service-item:hover {
+    transform: translateY(-3px);
+    border-color: var(--gold);
+    box-shadow: 0 6px 18px rgba(181, 146, 76, 0.18);
+}
+
+.vd-service-icon {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--white-bg);
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 1px solid var(--border);
+}
+
+.vd-service-name {
+    font-family: 'Jost', sans-serif;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--dark);
+    margin-bottom: 2px;
+}
+
+.vd-service-desc {
+    font-size: 0.82rem;
+    color: var(--mid);
+    line-height: 1.5;
+}
+
+/* ── Mobile tweaks ── */
+@media (max-width: 991px) {
+    .vd-hero { padding: 4.5rem 0 6rem; text-align: center; }
+    .vd-hero-sub { margin-left: auto; margin-right: auto; }
+    .vd-hero-photo-frame { margin-top: 2.5rem; }
+}
+
+@media (max-width: 575px) {
+    .vd-hero-title { font-size: 1.9rem; }
+    .vd-service-category-title { font-size: 1.3rem; }
+}

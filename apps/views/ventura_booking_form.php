@@ -116,32 +116,26 @@
                     <label class="vd-label form-label">Dental Service</label>
                     <select name="service" class="form-select vd-input" required>
                     <option value="" disabled selected>— Choose a service —</option>
-                    <optgroup label="Preventive">
-                        <option value="checkup">Dental Check-up / Consultation</option>
-                        <option value="cleaning">Teeth Cleaning (Prophylaxis)</option>
-                        <option value="fluoride">Fluoride Treatment</option>
-                        <option value="xray">Dental X-Ray</option>
+                    <optgroup label="Preventive & Diagnostic Care">
+                        <option value="checkup">Cleaning (Prophylaxis)</option>
+                        <option value="cleaning">Scaling</option>
+                        <option value="fluoride">Periapical X-ray</option>
                     </optgroup>
                     <optgroup label="Restorative">
                         <option value="filling">Tooth Filling (Composite / Amalgam)</option>
-                        <option value="crown">Dental Crown</option>
+                        <option value="crown">Crown / Jackets</option>
                         <option value="rct">Root Canal Treatment</option>
                         <option value="denture">Dentures</option>
+                        <option value="denture">Bridge</option>
                     </optgroup>
-                    <optgroup label="Surgical">
+                    <optgroup label="Oral Surgery">
                         <option value="extraction">Tooth Extraction</option>
-                        <option value="surgical-extraction">Surgical Extraction</option>
-                        <option value="implant">Dental Implant</option>
+                        <option value="surgical-extraction">Wisdom Tooth Removal</option>
                     </optgroup>
-                    <optgroup label="Cosmetic">
+                    <optgroup label="Cosmetic & Orthodontic">
                         <option value="whitening">Teeth Whitening</option>
                         <option value="veneer">Dental Veneers</option>
                         <option value="braces">Orthodontic Braces / Retainer</option>
-                    </optgroup>
-                    <optgroup label="Other">
-                        <option value="pediatric">Pediatric Dentistry</option>
-                        <option value="emergency">Emergency / Pain Relief</option>
-                        <option value="other">Other (Please specify at your visit)</option>
                     </optgroup>
                     </select>
                 </div>
