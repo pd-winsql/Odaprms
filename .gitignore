@@ -1,0 +1,19 @@
+# Environment variables (contains real credentials — never commit this)
+.env
+
+# Composer dependencies (regenerated via `composer install`)
+/vendor/
+
+# IDE / editor files
+.vscode/
+.idea/
+*.suo
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+error_log

@@ -2,6 +2,7 @@
 require_once '../models/appointmentModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
+require_once '../../config/mailer.php';
 
 session_start();
 
@@ -95,6 +96,7 @@ class AppointmentController {
     }
 
     //Update appointment status
+    //Update appointment status
     public function updateStatus() {
         header('Content-Type: application/json');
 
@@ -111,6 +113,8 @@ class AppointmentController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $appointment_id = $_POST['appointment_id'] ?? '';
             $status         = $_POST['status'] ?? '';
+            $email          = trim($_POST['email'] ?? '');
+            $name           = trim($_POST['name'] ?? '');
 
             if (!$appointment_id || !$status) {
                 echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
@@ -120,7 +124,18 @@ class AppointmentController {
             $result = $this->appointmentModel->updateAppointmentStatus($appointment_id, $status);
 
             if ($result) {
-                echo json_encode(['success' => true, 'message' => 'Status updated successfully.']);
+                $message = 'Status updated successfully.';
+
+                // Notify the patient of their new status, if we have their email on hand
+                if ($email && $name) {
+                    $emailResult = sendAppointmentStatusEmail($email, $name, $status);
+                    if (!$emailResult['success']) {
+                        // TEMP DEBUG: remove the emailResult['message'] part once mail sends fine
+                        $message = 'Status updated, but the notification email failed to send. DEBUG: ' . ($emailResult['message'] ?? 'unknown error');
+                    }
+                }
+
+                echo json_encode(['success' => true, 'message' => $message]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update status.']);
             }
