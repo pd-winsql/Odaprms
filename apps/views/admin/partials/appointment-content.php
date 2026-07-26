@@ -18,6 +18,28 @@ $past     = $appointmentModel->getAdminPastAppointments();
 
 $statuses = ['Pending', 'Confirmed', 'Cancelled'];
 
+// Build status + month option lists for each table independently
+function buildFilterOptions($rows) {
+    $statusesFound = [];
+    $months        = [];
+
+    foreach ($rows as $r) {
+        $statusesFound[$r['status']] = $r['status'];
+
+        $key   = date('Y-m', strtotime($r['date']));
+        $label = date('F Y', strtotime($r['date']));
+        $months[$key] = $label;
+    }
+
+    ksort($statusesFound);
+    ksort($months); // chronological order, for From/To range selects
+
+    return ['statuses' => $statusesFound, 'months' => $months];
+}
+
+$upcomingFilters = buildFilterOptions($upcoming);
+$pastFilters     = buildFilterOptions($past);
+
 function statusClass($status) {
     return 'vd-status vd-status-' . strtolower($status);
 }
@@ -29,14 +51,49 @@ function statusClass($status) {
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Upcoming Appointments</span>
-        <span class="vd-topbar-date"><?= count($upcoming) ?> total</span>
+        <span class="vd-topbar-date" id="upcomingCountLabel"><?= count($upcoming) ?> of <?= count($upcoming) ?> total</span>
         </div>
+
+        <!-- Filter bar -->
+        <div class="vd-filter-bar">
+        <div class="vd-filter-group">
+            <label class="vd-label form-label">Status</label>
+            <select id="filterStatusUpcoming" class="form-select vd-input vd-filter-select">
+            <option value="">All Statuses</option>
+            <?php foreach ($upcomingFilters['statuses'] as $s): ?>
+                <option value="<?= htmlspecialchars($s) ?>"><?= htmlspecialchars($s) ?></option>
+            <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="vd-filter-group">
+            <label class="vd-label form-label">From Month</label>
+            <select id="filterMonthFromUpcoming" class="form-select vd-input vd-filter-select">
+            <option value="">Any</option>
+            <?php foreach ($upcomingFilters['months'] as $key => $label): ?>
+                <option value="<?= $key ?>"><?= $label ?></option>
+            <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="vd-filter-group">
+            <label class="vd-label form-label">To Month</label>
+            <select id="filterMonthToUpcoming" class="form-select vd-input vd-filter-select">
+            <option value="">Any</option>
+            <?php foreach ($upcomingFilters['months'] as $key => $label): ?>
+                <option value="<?= $key ?>"><?= $label ?></option>
+            <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="vd-filter-group vd-filter-clear">
+            <button id="clearUpcomingFilters" class="btn vd-btn-outline">Clear</button>
+        </div>
+        </div>
+
         <div class="vd-dash-card-body">
         <?php if (empty($upcoming)): ?>
             <div class="vd-empty-state">No upcoming appointments found.</div>
         <?php else: ?>
             <div class="vd-appt-table-wrap">
-            <table class="vd-appt-table w-100">
+            <table class="vd-appt-table w-100" id="upcomingApptTable">
                 <thead>
                 <tr>
                     <th>Patient</th>
@@ -49,7 +106,9 @@ function statusClass($status) {
                 </thead>
                 <tbody>
                 <?php foreach ($upcoming as $appt): ?>
-                    <tr data-id="<?= $appt['appointment_id'] ?>">
+                    <tr data-id="<?= $appt['appointment_id'] ?>"
+                        data-status="<?= htmlspecialchars($appt['status']) ?>"
+                        data-month="<?= date('Y-m', strtotime($appt['date'])) ?>">
                     <td>
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
@@ -95,14 +154,49 @@ function statusClass($status) {
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Past Appointments</span>
-        <span class="vd-topbar-date"><?= count($past) ?> total</span>
+        <span class="vd-topbar-date" id="pastCountLabel"><?= count($past) ?> of <?= count($past) ?> total</span>
         </div>
+
+        <!-- Filter bar -->
+        <div class="vd-filter-bar">
+        <div class="vd-filter-group">
+            <label class="vd-label form-label">Status</label>
+            <select id="filterStatusPast" class="form-select vd-input vd-filter-select">
+            <option value="">All Statuses</option>
+            <?php foreach ($pastFilters['statuses'] as $s): ?>
+                <option value="<?= htmlspecialchars($s) ?>"><?= htmlspecialchars($s) ?></option>
+            <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="vd-filter-group">
+            <label class="vd-label form-label">From Month</label>
+            <select id="filterMonthFromPast" class="form-select vd-input vd-filter-select">
+            <option value="">Any</option>
+            <?php foreach ($pastFilters['months'] as $key => $label): ?>
+                <option value="<?= $key ?>"><?= $label ?></option>
+            <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="vd-filter-group">
+            <label class="vd-label form-label">To Month</label>
+            <select id="filterMonthToPast" class="form-select vd-input vd-filter-select">
+            <option value="">Any</option>
+            <?php foreach ($pastFilters['months'] as $key => $label): ?>
+                <option value="<?= $key ?>"><?= $label ?></option>
+            <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="vd-filter-group vd-filter-clear">
+            <button id="clearPastFilters" class="btn vd-btn-outline">Clear</button>
+        </div>
+        </div>
+
         <div class="vd-dash-card-body">
         <?php if (empty($past)): ?>
             <div class="vd-empty-state">No past appointments found.</div>
         <?php else: ?>
             <div class="vd-appt-table-wrap">
-            <table class="vd-appt-table w-100">
+            <table class="vd-appt-table w-100" id="pastApptTable">
                 <thead>
                 <tr>
                     <th>Patient</th>
@@ -114,7 +208,9 @@ function statusClass($status) {
                 </thead>
                 <tbody>
                 <?php foreach ($past as $appt): ?>
-                    <tr data-id="<?= $appt['appointment_id'] ?>">
+                    <tr data-id="<?= $appt['appointment_id'] ?>"
+                        data-status="<?= htmlspecialchars($appt['status']) ?>"
+                        data-month="<?= date('Y-m', strtotime($appt['date'])) ?>">
                     <td>
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
@@ -163,6 +259,63 @@ function statusClass($status) {
         pill.textContent = newStatus;
     }
 
+    // ── Generic status + month-range filter, reused for Upcoming and Past tables ──
+    // Month keys are 'YYYY-MM' strings, which compare correctly with <= and >= directly.
+    function setupTableFilter(tableId, statusSelectId, monthFromId, monthToId, clearBtnId, countLabelId) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        const statusSelect = document.getElementById(statusSelectId);
+        const monthFrom     = document.getElementById(monthFromId);
+        const monthTo       = document.getElementById(monthToId);
+        const clearBtn       = document.getElementById(clearBtnId);
+        const countLabel     = document.getElementById(countLabelId);
+        const rows            = table.querySelectorAll('tbody tr');
+        const totalCount       = rows.length;
+
+        function applyFilter() {
+            const status = statusSelect.value;
+            const from   = monthFrom.value;
+            const to     = monthTo.value;
+            let visible  = 0;
+
+            rows.forEach(row => {
+                const rowMonth = row.dataset.month;
+
+                const matchStatus = !status || row.dataset.status === status;
+                const matchFrom   = !from   || rowMonth >= from;
+                const matchTo     = !to     || rowMonth <= to;
+
+                if (matchStatus && matchFrom && matchTo) {
+                    row.style.display = '';
+                    visible++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (countLabel) {
+                countLabel.textContent = `${visible} of ${totalCount} total`;
+            }
+        }
+
+        statusSelect.addEventListener('change', applyFilter);
+        monthFrom.addEventListener('change', applyFilter);
+        monthTo.addEventListener('change', applyFilter);
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                statusSelect.value = '';
+                monthFrom.value    = '';
+                monthTo.value      = '';
+                applyFilter();
+            });
+        }
+    }
+
+    setupTableFilter('upcomingApptTable', 'filterStatusUpcoming', 'filterMonthFromUpcoming', 'filterMonthToUpcoming', 'clearUpcomingFilters', 'upcomingCountLabel');
+    setupTableFilter('pastApptTable', 'filterStatusPast', 'filterMonthFromPast', 'filterMonthToPast', 'clearPastFilters', 'pastCountLabel');
+
     // Enable/disable Save & Notify button based on whether status changed
     document.querySelectorAll('.vd-status-select').forEach(select => {
         select.addEventListener('change', function () {
@@ -198,6 +351,7 @@ function statusClass($status) {
 
             if (result.success) {
             updateStatusPill(id, newStatus);
+            row.dataset.status = newStatus;
             select.dataset.original = newStatus;
             btn.textContent = 'Save & Notify';
             showToast('Status updated to ' + newStatus, true);

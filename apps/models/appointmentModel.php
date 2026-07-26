@@ -207,7 +207,7 @@ class Appointment {
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
                 WHERE a.date >= CURDATE()
-                ORDER BY a.date ASC
+                ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
