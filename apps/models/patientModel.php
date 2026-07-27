@@ -445,7 +445,7 @@ class Patient {
             // Insert new ones
             if (!empty($conditions)) {
                 $stmt = $this->conn->prepare("
-                    INSERT INTO patient_conditions (patient_id, condition)
+                    INSERT INTO patient_conditions (patient_id, `condition`)
                     VALUES (:patient_id, :condition)
                 ");
                 foreach ($conditions as $cond) {
@@ -500,5 +500,4 @@ class Patient {
             return false;
         }
     }
-    
 }

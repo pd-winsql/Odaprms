@@ -398,7 +398,7 @@ $allConditions = [
 
 <script>
 (function () {
-    const CONTROLLER = '../../../../apps/controllers/patientController.php';
+    const CONTROLLER = '../../controllers/patientController.php';
 
     function showToast(msg, success) {
         const toast = document.getElementById('profileToast');

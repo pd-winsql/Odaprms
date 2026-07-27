@@ -368,5 +368,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->saveDentalForm();
     } elseif ($action === 'changePassword') {
         $controller->changePassword();
+    } elseif ($action === 'updatePersonal') {
+        $controller->updatePersonal();
+    } elseif ($action === 'updateMinors') {
+        $controller->updateMinors();
+    } elseif ($action === 'updateDental') {
+        $controller->updateDental();
+    } elseif ($action === 'updateHealth') {
+        $controller->updateHealth();
+    } elseif ($action === 'updateConditions') {
+        $controller->updateConditions();
+    } elseif ($action === 'updateConsent') {
+        $controller->updateConsent();
     }
 }

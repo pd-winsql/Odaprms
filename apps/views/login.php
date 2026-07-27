@@ -79,7 +79,7 @@ if (isset($_SESSION['user_id'])) {
           </div>
 
           <div class="vd-auth-forgot">
-            <a href="../../forgot-pass.php">Forgot password?</a>
+            <a href="forgot-pass.php">Forgot password?</a>
           </div>
 
           <button type="submit" class="vd-auth-btn" id="loginBtn">

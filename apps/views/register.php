@@ -157,7 +157,7 @@ if (isset($_SESSION['user_id'])) {
           sucEl.classList.remove('d-none');
           const email = formData.get('email');
           setTimeout(() => {
-            window.location.href = '/Capstone System/verify-register.php?email=' + encodeURIComponent(email);
+            window.location.href = '/Capstone System/apps/views/verify-register.php?email=' + encodeURIComponent(email);
           }, 1500);
         } else {
           errEl.textContent = result.message;

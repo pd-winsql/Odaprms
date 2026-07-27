@@ -1,4 +1,6 @@
 <?php
+  if (session_status() === PHP_SESSION_NONE) session_start();
+
   require_once 'config/conn.php';
   require_once 'apps/models/clinicModel.php';
 
@@ -6,6 +8,15 @@
   $conn = $db->connect();
   $clinicModel = new Clinic($conn);
   $clinics = $clinicModel->getAllClinics();
+
+  $isLoggedIn = isset($_SESSION['user_id']);
+
+  $dashboardUrl = match($_SESSION['user_role'] ?? '') {
+      'Admin'            => 'apps/views/admin/dashboard.php',
+      'Dental Assistant' => 'apps/views/dental_asst/dashboard.php',
+      'Patient'          => 'apps/views/patient/dashboard.php',
+      default            => 'index.php',
+  };
 
   // Services grouped to match the categories already used in the booking form
   // (Preventive, Restorative, Surgical, Cosmetic). Descriptions are placeholder
@@ -81,8 +92,13 @@
           <li class="nav-item"><a href="#about" class="nav-link vd-nav-link">About Us</a></li>
           <li class="nav-item"><a href="#contact" class="nav-link vd-nav-link">Contact</a></li>
         </ul>
-        <div>
-          <a href="apps/views/register.php" class="btn vd-btn-gold">Register</a>
+        <div class="d-flex gap-2">
+          <?php if ($isLoggedIn): ?>
+            <a href="<?= htmlspecialchars($dashboardUrl) ?>" class="btn vd-btn-gold">Go to Dashboard</a>
+            <a href="apps/controllers/userController.php?action=logout" class="btn vd-btn-outline">Logout</a>
+          <?php else: ?>
+            <a href="apps/views/register.php" class="btn vd-btn-gold">Register</a>
+          <?php endif; ?>
         </div>
       </div>
     </div>
