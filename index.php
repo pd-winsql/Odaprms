@@ -6,6 +6,49 @@
   $conn = $db->connect();
   $clinicModel = new Clinic($conn);
   $clinics = $clinicModel->getAllClinics();
+
+  // Services grouped to match the categories already used in the booking form
+  // (Preventive, Restorative, Surgical, Cosmetic). Descriptions are placeholder
+  // copy — feel free to refine the wording once you finalize official text.
+  $serviceCategories = [
+    [
+      'title' => 'Preventive & Diagnostic Care',
+      'description' => 'Routine visits that catch problems early and keep your smile healthy in between appointments.',
+      'services' => [
+        ['name' => 'Cleaning (Prophylaxis)', 'icon' => 'fa-solid fa-broom', 'desc' => 'Professional plaque and tartar removal for a fresher, healthier smile.'],
+        ['name' => 'Scaling', 'icon' => 'fa-solid fa-teeth', 'desc' => 'Deep cleaning below the gumline to treat and help prevent gum disease.'],
+        ['name' => 'Periapical X-ray', 'icon' => 'fa-solid fa-x-ray', 'desc' => 'Detailed imaging of a tooth\'s root and the surrounding bone.'],
+      ],
+    ],
+    [
+      'title' => 'Restorative Treatments',
+      'description' => 'Repairing damaged, decayed, or missing teeth so you can bite, chew, and smile with confidence.',
+      'services' => [
+        ['name' => 'Restoration (Fillings)', 'icon' => 'fa-solid fa-tooth', 'desc' => 'Composite or amalgam fillings that repair cavities and minor damage.'],
+        ['name' => 'Crown / Jackets', 'icon' => 'fa-solid fa-crown', 'desc' => 'A custom cap that protects and rebuilds a weakened or broken tooth.'],
+        ['name' => 'Bridge', 'icon' => 'fa-solid fa-link', 'desc' => 'A fixed replacement that closes the gap left by a missing tooth.'],
+        ['name' => 'Root Canal', 'icon' => 'fa-solid fa-syringe', 'desc' => 'Treats infected or damaged tooth pulp to help save the natural tooth.'],
+        ['name' => 'Dentures', 'icon' => 'fa-solid fa-teeth', 'desc' => 'Removable replacements for some or all missing teeth.'],
+      ],
+    ],
+    [
+      'title' => 'Oral Surgery',
+      'description' => 'Extractions and surgical procedures performed with care, plus clear aftercare guidance.',
+      'services' => [
+        ['name' => 'Extraction', 'icon' => 'fa-solid fa-tooth', 'desc' => 'Safe removal of a damaged, decayed, or problematic tooth.'],
+        ['name' => 'Wisdom Tooth Removal', 'icon' => 'fa-solid fa-tooth', 'desc' => 'Removal of impacted or emerging third molars.'],
+      ],
+    ],
+    [
+      'title' => 'Cosmetic & Orthodontic',
+      'description' => 'Options to align, brighten, and refine the appearance of your smile.',
+      'services' => [
+        ['name' => 'Braces', 'icon' => 'fa-solid fa-teeth-open', 'desc' => 'Gradually aligns crowded, gapped, or misaligned teeth over time.'],
+        ['name' => 'Whitening', 'icon' => 'fa-solid fa-star', 'desc' => 'A professional treatment to brighten stained or discolored teeth.'],
+        ['name' => 'Veneer', 'icon' => 'fa-solid fa-gem', 'desc' => 'Thin custom shells that reshape and brighten the front of a tooth.'],
+      ],
+    ],
+  ];
 ?>
 
 <!DOCTYPE html>
@@ -18,6 +61,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="public/css/styles.css">
+  <link rel="stylesheet" href="public/css/index.css">
 </head>
 <body>
 
@@ -47,92 +91,87 @@
   <!-- HERO -->
   <section id="hero-section" class="vd-hero d-flex align-items-center">
     <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-12 col-md-10 col-lg-8 text-center">
-          <div class="vd-hero-card p-4 p-lg-5 rounded-3">
-            <h1 class="vd-hero-title mb-3">Welcome to <span class="vd-highlight">Online Dental Appointment with Patient Records Management System of Dr. Aprille Ventura Clinica Dental</span></h1>
-            <p class="vd-hero-sub mb-4">Your smile is our priority. We provide comprehensive dental care for the whole family.</p>
-            <a href="apps/views/ventura_booking_form.php" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
+      <div class="row align-items-center g-5">
+        <div class="col-12 col-lg-6">
+          <div class="vd-hero-card">
+            <div class="vd-hero-eyebrow">Two Clinics in Cagayan · Alcala &amp; Tuguegarao</div>
+            <h1 class="vd-hero-title">Dental care for Alcala and Tuguegarao families.</h1>
+            <p class="vd-hero-sub">From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.</p>
+            <div class="d-flex flex-wrap gap-3">
+              <a href="apps/views/ventura_booking_form.php" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
+              <a href="#services" class="btn vd-btn-outline px-4 py-2">View Services</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="vd-hero-photo-frame">
+            <img src="public/assets/team.png" alt="Dr. Aprille Ventura Clinica Dental team" class="vd-hero-photo">
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Signature smile-curve divider into the next section -->
+    <div class="vd-arc-divider">
+      <svg viewBox="0 0 1440 100" preserveAspectRatio="none">
+        <path class="vd-arc-fill-white" d="M0,0 C360,100 1080,100 1440,0 L1440,100 L0,100 Z"></path>
+      </svg>
+    </div>
   </section>
 
   <!-- SERVICES -->
-  <section id="services" class="py-5 vd-section-white border-top">
+  <section id="services" class="py-5 vd-services-section">
     <div class="container">
-      <h2 class="text-center vd-section-heading mb-4">Our Services</h2>
-      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4 justify-content-center">
-
-        <div class="col">
-          <div class="card vd-service-card h-100 text-center border">
-            <img src="public/assets/services.png" class="card-img-top" alt="General Dentistry">
-            <div class="card-body">
-              <h5 class="card-title">General Dentistry</h5>
-              <p class="card-text small">Comprehensive dental care for all ages, including cleanings, exams, fillings, and more.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col">
-          <div class="card vd-service-card h-100 text-center border">
-            <img src="public/assets/services.png" class="card-img-top" alt="Cosmetic Dentistry">
-            <div class="card-body">
-              <h5 class="card-title">Cosmetic Dentistry</h5>
-              <p class="card-text small">Enhance your smile with teeth whitening, veneers, and more.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col">
-          <div class="card vd-service-card h-100 text-center border">
-            <img src="public/assets/services.png" class="card-img-top" alt="Orthodontics">
-            <div class="card-body">
-              <h5 class="card-title">Orthodontics</h5>
-              <p class="card-text small">Straighten your teeth with braces and Invisalign treatments.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col">
-          <div class="card vd-service-card h-100 text-center border">
-            <img src="public/assets/services.png" class="card-img-top" alt="Pediatric Dentistry">
-            <div class="card-body">
-              <h5 class="card-title">Pediatric Dentistry</h5>
-              <p class="card-text small">Specialized dental care for children, including preventive care and fillings.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col">
-          <div class="card vd-service-card h-100 text-center border">
-            <img src="public/assets/services.png" class="card-img-top" alt="Emergency Dental Care">
-            <div class="card-body">
-              <h5 class="card-title">Emergency Care</h5>
-              <p class="card-text small">Prompt treatment for dental emergencies including toothaches and broken teeth.</p>
-            </div>
-          </div>
-        </div>
-
+      <div class="text-center mb-5">
+        <div class="vd-eyebrow">What We Offer</div>
+        <h2 class="vd-section-heading mb-2">Our Services</h2>
+        <p class="vd-section-intro">Care organized by category, from everyday prevention to more involved restorative, surgical, and cosmetic treatment.</p>
       </div>
+
+      <?php foreach ($serviceCategories as $category): ?>
+      <div class="vd-service-category">
+        <div class="vd-service-category-header">
+          <h3 class="vd-service-category-title"><?= htmlspecialchars($category['title']) ?></h3>
+          <p class="vd-service-category-desc"><?= htmlspecialchars($category['description']) ?></p>
+        </div>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+          <?php foreach ($category['services'] as $service): ?>
+          <div class="col">
+            <div class="vd-service-item h-100">
+              <div class="vd-service-icon"><i class="<?= htmlspecialchars($service['icon']) ?>"></i></div>
+              <div>
+                <div class="vd-service-name"><?= htmlspecialchars($service['name']) ?></div>
+                <div class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></div>
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endforeach; ?>
     </div>
   </section>
 
   <!-- ABOUT -->
   <section id="about" class="py-5 border-top">
     <div class="container">
-      <h2 class="text-center vd-section-heading mb-4">About Us</h2>
+      <div class="text-center mb-4">
+        <div class="vd-eyebrow">Who We Are</div>
+        <h2 class="vd-section-heading mb-2">About Us</h2>
+      </div>
       <div class="row align-items-center justify-content-center g-4 mb-5 vd-about-card rounded-3 p-3 p-md-4 mx-0">
         <div class="col-12 col-md-6">
           <img src="public/assets/team.png" alt="Our Team" class="img-fluid rounded">
         </div>
         <div class="col-12 col-md-6">
-          <p class="vd-about-text">Dr. Aprille Ventura Clinica Dental is dedicated to providing high-quality dental care in a comfortable and welcoming environment. Our team of experienced dental professionals is committed to helping you achieve and maintain a healthy, beautiful smile.</p>
+          <p class="vd-about-text">Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.</p>
         </div>
       </div>
 
-      <h2 class="text-center vd-section-heading mb-4">Our Clinics</h2>
+      <div class="text-center mb-4">
+        <div class="vd-eyebrow">Visit Us</div>
+        <h2 class="vd-section-heading mb-2">Our Clinics</h2>
+      </div>
       <div class="row justify-content-center g-4">
       <?php foreach ($clinics as $clinic): ?>
         <div class="col-12 col-sm-6 col-md-4">
@@ -155,10 +194,11 @@
     <div class="container">
       <div class="row justify-content-center g-5 align-items-center">
         <div class="col-12 col-md-5">
-          <h2 class="vd-contact-heading mb-3">Get in Touch with Us</h2>
-          <p class="text-muted">Address: </p>
-          <p class="text-muted">Phone: 0912-345-6789</p>
-          <p class="text-muted">Email: <a href="mailto:walapa@gmail.com" class="vd-link">walapa@gmail.com</a></p>
+          <div class="vd-eyebrow mb-2">Get In Touch</div>
+          <h2 class="vd-contact-heading mb-3">We'd Love to Hear From You</h2>
+          <p class="text-muted mb-1">Address: Alcala &amp; Tuguegarao, Cagayan</p>
+          <p class="text-muted mb-1">Phone: 0912-345-6789</p>
+          <p class="text-muted">Email: <a href="mailto:info@draprilleventura.com" class="vd-link">info@draprilleventura.com</a></p>
         </div>
         <div class="col-12 col-md-5">
           <div class="card vd-form-card p-4 border">
