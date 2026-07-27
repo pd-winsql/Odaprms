@@ -124,7 +124,7 @@ if (!$email) {
       formData.append('email', '<?= htmlspecialchars($email) ?>');
 
       try {
-        const res    = await fetch('apps/controllers/passwordResetController.php', {
+        const res    = await fetch('../controllers/passwordResetController.php', {
           method: 'POST', body: formData
         });
         const result = await res.json();

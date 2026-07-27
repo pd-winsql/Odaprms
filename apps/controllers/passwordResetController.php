@@ -35,7 +35,6 @@ if ($action === 'sendOTP') {
 
     // Generate 6-digit OTP
     $otp       = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-    $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
     // Delete any existing OTPs for this email
     $stmt = $conn->prepare("DELETE FROM password_resets WHERE email = :email");
@@ -165,7 +164,7 @@ if ($action === 'resetPassword') {
         exit;
     }
 
-    if (strlen($newPassword) <= 8) {
+    if (strlen($newPassword) < 8) {
         echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters.']);
         exit;
     }

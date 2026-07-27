@@ -52,6 +52,7 @@ $today    = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/styles.css">
     <link rel="stylesheet" href="../../../public/css/dashboard.css">
     <link rel="stylesheet" href="../../../public/css/patient-dashboard.css">
+    <link rel="stylesheet" href="../../../public/css/auth.css">
 </head>
 <body class="vd-pat-body">
 

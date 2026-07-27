@@ -78,8 +78,8 @@ class UserController {
             exit;
         }
 
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
-            echo json_encode(['success' => false, 'message' => 'Username can only contain letters, numbers, and underscores.']);
+        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $username)) {
+            echo json_encode(['success' => false, 'message' => 'Username can only contain letters, numbers, underscores, and periods.']);
             exit;
         }
 
@@ -107,7 +107,6 @@ class UserController {
 
         // Generate and store OTP
         $otp       = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
         $stmt = $this->conn->prepare("DELETE FROM email_verifications WHERE email = :email");
         $stmt->execute([':email' => $email]);
@@ -143,16 +142,15 @@ class UserController {
         $username = $pending['username'];
 
         $otp       = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
         $stmt = $this->conn->prepare("DELETE FROM email_verifications WHERE email = :email");
         $stmt->execute([':email' => $email]);
 
         $stmt = $this->conn->prepare("
             INSERT INTO email_verifications (email, otp, expires_at)
-            VALUES (:email, :otp, :expires_at)
+            VALUES (:email, :otp, NOW() + INTERVAL 10 MINUTE)
         ");
-        $stmt->execute([':email' => $email, ':otp' => $otp, ':expires_at' => $expiresAt]);
+        $stmt->execute([':email' => $email, ':otp' => $otp]);
 
         $result = sendOTPEmail($email, $username, $otp, 'register');
 
@@ -229,84 +227,6 @@ class UserController {
         exit;
     }
 
-    /*
-    public function register() {
-        header('Content-Type: application/json');
-
-        $email    = trim($_POST['email']    ?? '');
-        $username = trim($_POST['username'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-
-        if (!$email || !$username || !$password) {
-            echo json_encode(['success' => false, 'message' => 'Please fill in all fields.']);
-            exit;
-        }
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(['success' => false, 'message' => 'Invalid email address.']);
-            exit;
-        }
-
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
-            echo json_encode(['success' => false, 'message' => 'Username can only contain letters, numbers, and underscores.']);
-            exit;
-        }
-
-        if (!$this->isStrongPassword($password)) {
-            echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include both letters and numbers.']);
-            exit;
-        }
-
-        // Check if email or username already exists
-        if ($this->userModel->emailExists($email)) {
-            echo json_encode(['success' => false, 'message' => 'Email is already registered.']);
-            exit;
-        }
-
-        if ($this->userModel->usernameExists($username)) {
-            echo json_encode(['success' => false, 'message' => 'Username is already taken.']);
-            exit;
-        }
-
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $result = $this->userModel->register($email, $username, $hashedPassword);
-
-        if (!$result) {
-
-            echo json_encode([
-                'success' => false,
-                'message' => 'Registration failed.'
-            ]);
-            exit;
-            
-        }
-        
-        $user_id = $this->userModel->getLastInsertedId();
-        $patient = $this->patientModel->getPatientByEmail($email);
-
-        if($patient) {
-            $this->patientModel->linkUser(
-                $patient['patient_id'],
-                $user_id
-            );
-        }
-
-        else {
-            $this->patientModel->createPatient(
-                $user_id,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                $email
-            );
-        }
-
-    }
-
-*/
 
     public function logout() {
         session_destroy();

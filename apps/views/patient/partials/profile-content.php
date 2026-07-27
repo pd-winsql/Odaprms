@@ -76,7 +76,7 @@ $allConditions = [
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Age</label>
                 <input type="number" name="age" class="form-control vd-input"
-                value="<?= htmlspecialchars($patient['age'] ?? '') ?>" min="0" max="120">
+                value="<?= htmlspecialchars($patient['age'] ?? '') ?>" min="0" max="120" readonly>
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Gender</label>
@@ -98,8 +98,8 @@ $allConditions = [
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Phone Number</label>
-                <input type="tel" name="phone_number" class="form-control vd-input"
-                value="<?= htmlspecialchars($patient['phone_number'] ?? '') ?>">
+                <input type="tel" name="phone_number" class="form-control vd-input" id="phoneNumber" inputmode="numeric" 
+                maxlength="11" value="<?= htmlspecialchars($patient['phone_number'] ?? '') ?>">
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Email Address</label>
@@ -496,6 +496,25 @@ $allConditions = [
         }
         });
     });
+
+    const phoneInput = document.getElementById('phoneNumber'); // match the id you used above
+
+        if (phoneInput) {
+            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+                'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+
+            phoneInput.addEventListener('keydown', function (e) {
+                if (e.ctrlKey || e.metaKey) return;           // allow copy/paste/select-all
+                if (allowedKeys.includes(e.key)) return;       // allow navigation keys
+                if (!/^[0-9]$/.test(e.key)) {
+                    e.preventDefault();                        // block anything that isn't a digit
+                }
+            });
+
+            phoneInput.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 11); // cleanup fallback (e.g. pasted text)
+            });
+        }
 
 })();
 </script>

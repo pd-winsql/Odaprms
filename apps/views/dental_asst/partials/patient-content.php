@@ -30,7 +30,7 @@ krsort($months); // latest first
 	<div class="vd-dash-card">
 		<div class="vd-dash-card-header">
 		<span class="vd-dash-card-title">Patients</span>
-		<span class="vd-topbar-date"><?= count($patients) ?> total</span>
+		<span class="vd-topbar-date" id="patientCountLabel"><?= count($patients) ?> of <?= count($patients) ?> total</span>
 		</div>
 
 		<!-- Filter bar -->
@@ -122,10 +122,16 @@ krsort($months); // latest first
 					<?php endif; ?>
 					</td>
 					<td>
+						<div class="vd-action-group">
 						<button class="btn btn-sm vd-btn-outline vd-view-profile-btn"
 							data-id="<?= $p['patient_id'] ?>">
 							View Profile
 						</button>
+						<button class="btn btn-sm vd-btn-outline vd-view-transactions-btn"
+							data-id="<?= $p['patient_id'] ?>">
+							Transaction History
+						</button>
+						</div>
 					</td>
 				</tr>
 				<?php endforeach; ?>
@@ -151,6 +157,8 @@ krsort($months); // latest first
 	const clearBtn     = document.getElementById('clearFilters');
 	const rows         = document.querySelectorAll('#patientsTable tbody tr');
 	const noResults    = document.getElementById('noResults');
+	const countLabel   = document.getElementById('patientCountLabel');
+	const totalCount   = rows.length;
 
 	function filterTable() {
 		const search = searchInput.value.toLowerCase().trim();
@@ -174,6 +182,9 @@ krsort($months); // latest first
 		});
 
 		noResults.classList.toggle('d-none', visible > 0);
+		if (countLabel) {
+			countLabel.textContent = `${visible} of ${totalCount} total`;
+		}
 	}
 
 	searchInput.addEventListener('input', filterTable);
@@ -222,6 +233,32 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 			}
 		});
 });
+
+	document.querySelectorAll('.vd-view-transactions-btn').forEach(btn => {
+		btn.addEventListener('click', async function () {
+			const patientId = this.dataset.id;
+			const dashContent = document.querySelector('.vd-dash-content');
+
+			try {
+				const response = await fetch(`partials/_patient-transactions.php?id=${patientId}`);
+				if (!response.ok) throw new Error('Failed to load transaction history');
+				const html = await response.text();
+				dashContent.innerHTML = html;
+
+				// Re-execute scripts in the loaded partial
+				dashContent.querySelectorAll('script').forEach(oldScript => {
+					const newScript = document.createElement('script');
+					newScript.textContent = oldScript.textContent;
+					document.body.appendChild(newScript);
+					oldScript.remove();
+				});
+
+			} catch (err) {
+				dashContent.innerHTML = '<div class="vd-empty-state">Error loading transaction history.</div>';
+				console.error(err);
+			}
+		});
+	});
 
 })();
 

@@ -62,7 +62,7 @@ if (isset($_SESSION['user_id'])) {
             <label class="vd-label">Username</label>
             <input type="text" name="username" class="vd-auth-input"
               placeholder="Choose a username" required autocomplete="username">
-            <div class="vd-auth-hint">Letters, numbers, and underscores only.</div>
+            <div class="vd-auth-hint">Letters, numbers, underscores, and periods only.</div>
           </div>
           <div class="vd-auth-group">
             <label class="vd-label">Password</label>

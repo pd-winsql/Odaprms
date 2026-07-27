@@ -55,6 +55,8 @@
 
                 <form id="bookingForm" novalidate>
 
+                <div id="bookingFormError" class="alert alert-danger d-none" role="alert"></div>
+
                 <!-- PATIENT DETAILS -->
                 <p class="vd-section-label">Patient Details</p>
                 <div class="row g-3 mb-3">
@@ -85,7 +87,8 @@
                     </div>
                     <div class="col-12 col-md-6">
                     <label class="vd-label form-label">Phone Number</label>
-                    <input type="tel" name="phone_number" class="form-control vd-input" placeholder="09XX XXX XXXX" required>
+                    <input type="tel" name="phone_number" id="phoneNumber" class="form-control vd-input" placeholder="09XX XXX XXXX" 
+                    inputmode="numeric" maxlength="11" title="Please enter your 11-digit phone number, dashes, space, or none are allowed" required>
                     </div>
                     <div class="col-12 col-md-6">
                     <label class="vd-label form-label">Email Address</label>
@@ -226,9 +229,52 @@
         
         const accountModalEl = document.getElementById('accountModal');
         const accountModal = new bootstrap.Modal(accountModalEl);
+        const bookingForm   = document.getElementById('bookingForm');
+        const bookingError  = document.getElementById('bookingFormError');
 
-        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        function validateBookingForm() {
+        const missing = [];
+
+        const requiredFields = [
+            { name: 'lastname',     label: 'Last Name' },
+            { name: 'firstname',    label: 'First Name' },
+            { name: 'age',          label: 'Age' },
+            { name: 'gender',       label: 'Gender' },
+            { name: 'phone_number', label: 'Phone Number' },
+            { name: 'service',      label: 'Dental Service' },
+        ];
+
+        requiredFields.forEach(field => {
+            const el = bookingForm.elements[field.name];
+            if (!el || !el.value || !el.value.trim()) {
+            missing.push(field.label);
+            }
+        });
+
+        if (!document.querySelector('input[name="clinic_id"]:checked')) {
+            missing.push('Clinic');
+        }
+
+        if (!scheduleInput.value) {
+            missing.push('Preferred Schedule');
+        }
+
+        return missing;
+        }
+
+        bookingForm.addEventListener('submit', function(e) {
         e.preventDefault();
+
+        const missing = validateBookingForm();
+
+        if (missing.length > 0) {
+            bookingError.textContent = 'Please complete the following before booking: ' + missing.join(', ') + '.';
+            bookingError.classList.remove('d-none');
+            bookingError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        bookingError.classList.add('d-none');
         accountModal.show();
         });
 
@@ -347,6 +393,25 @@
             }
         });
         });
+
+        const phoneInput = document.getElementById('phoneNumber'); // match the id you used above
+
+        if (phoneInput) {
+            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+                'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+
+            phoneInput.addEventListener('keydown', function (e) {
+                if (e.ctrlKey || e.metaKey) return;           // allow copy/paste/select-all
+                if (allowedKeys.includes(e.key)) return;       // allow navigation keys
+                if (!/^[0-9]$/.test(e.key)) {
+                    e.preventDefault();                        // block anything that isn't a digit
+                }
+            });
+
+            phoneInput.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 11); // cleanup fallback (e.g. pasted text)
+            });
+        }
     </script>
 </body>
 </html>
