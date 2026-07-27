@@ -18,9 +18,10 @@ if (!$token) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password | Dr. Aprille Ventura Clinica Dental</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="public/css/bootstrap.min.css">
-    <link rel="stylesheet" href="public/css/styles.css">
-    <link rel="stylesheet" href="public/css/auth.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../public/css/styles.css">
+    <link rel="stylesheet" href="../../public/css/auth.css">
 </head>
 <body class="vd-auth-body">
 
@@ -65,7 +66,7 @@ if (!$token) {
                 <div class="vd-auth-input-wrap">
                 <input type="password" name="new_password" id="newPw"
                     class="vd-auth-input" placeholder="Min. 8 characters" required>
-                <button type="button" class="vd-pw-toggle" id="toggleNewPw">
+                <button type="button" class="vd-pw-toggle" id="toggleNewPw" aria-label="Show password">
                     <i class="ti ti-eye" id="newPwIcon"></i>
                 </button>
                 </div>
@@ -76,7 +77,7 @@ if (!$token) {
                 <div class="vd-auth-input-wrap">
                 <input type="password" name="confirm_password" id="confirmPw"
                     class="vd-auth-input" placeholder="Re-enter password" required>
-                <button type="button" class="vd-pw-toggle" id="toggleConfirmPw">
+                <button type="button" class="vd-pw-toggle" id="toggleConfirmPw" aria-label="Show password">
                     <i class="ti ti-eye" id="confirmPwIcon"></i>
                 </button>
                 </div>
@@ -133,7 +134,7 @@ if (!$token) {
         formData.append('action', 'resetPassword');
 
         try {
-            const res    = await fetch('apps/controllers/passwordResetController.php', {
+            const res    = await fetch('../controllers/passwordResetController.php', {
             method: 'POST', body: formData
             });
             const result = await res.json();

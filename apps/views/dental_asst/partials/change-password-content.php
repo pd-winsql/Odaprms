@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Patient') {
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Dental Assistant') {
     echo '<div class="vd-empty-state">Unauthorized.</div>';
     exit;
 }

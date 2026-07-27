@@ -18,9 +18,9 @@ if (!$email) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verify OTP | Dr. Aprille Ventura Clinica Dental</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="public/css/bootstrap.min.css">
-  <link rel="stylesheet" href="public/css/styles.css">
-  <link rel="stylesheet" href="public/css/auth.css">
+  <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../../public/css/styles.css">
+  <link rel="stylesheet" href="../../public/css/auth.css">
 </head>
 <body class="vd-auth-body">
 
@@ -124,7 +124,7 @@ if (!$email) {
       formData.append('email', '<?= htmlspecialchars($email) ?>');
 
       try {
-        const res    = await fetch('apps/controllers/passwordResetController.php', {
+        const res    = await fetch('../controllers/passwordResetController.php', {
           method: 'POST', body: formData
         });
         const result = await res.json();
@@ -161,7 +161,7 @@ if (!$email) {
       formData.append('action', 'verifyOTP');
 
       try {
-        const res    = await fetch('apps/controllers/passwordResetController.php', {
+        const res    = await fetch('../controllers/passwordResetController.php', {
           method: 'POST', body: formData
         });
         const result = await res.json();

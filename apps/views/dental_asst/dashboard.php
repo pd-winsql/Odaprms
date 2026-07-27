@@ -47,6 +47,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css">
     <link rel="stylesheet" href="../../../public/css/dashboard.css">
+    <link rel="stylesheet" href="../../../public/css/auth.css"
 </head>
 <body class="vd-dash-body">
 
@@ -80,8 +81,8 @@ $today = date('l, F j Y');
         </a>
 
         <div class="vd-nav-section">Account</div>
-        <a href="#" class="vd-nav-item" data-page="settings-content.php">
-            <i class="ti ti-settings"></i> Settings
+        <a href="#" class="vd-nav-item" data-page="change-password-content.php">
+            <i class="ti ti-lock"></i> Change Password
         </a>
         <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
             <i class="ti ti-logout"></i> Logout
