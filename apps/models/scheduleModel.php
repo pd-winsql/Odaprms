@@ -68,6 +68,7 @@ class Schedule {
                     AND a.status IN ('Pending', 'Confirmed', 'Completed')
 
                 WHERE s.clinic_id = :clinic_id
+                    AND s.sched_date >= CURDATE()
 
                 GROUP BY
                     s.schedule_id,

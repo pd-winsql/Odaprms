@@ -79,8 +79,9 @@
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg vd-navbar sticky-top">
     <div class="container-fluid px-4 px-lg-5">
-      <a class="navbar-brand" href="#hero-section">
-        <img src="public/assets/logo.png" alt="Dr. Aprille Ventura Clinica Dental Logo" class="vd-logo">
+      <a class="navbar-brand vd-navbar-brand-wrap" href="#hero-section">
+        <div class="vd-logo-name">Dr. Aprille</div>
+        <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
         <span class="navbar-toggler-icon"></span>
@@ -110,6 +111,7 @@
       <div class="row align-items-center g-5">
         <div class="col-12 col-lg-6">
           <div class="vd-hero-card">
+            <div class="vd-hero-system-tag">Online Dental Appointment &amp; Patient Records Management System</div>
             <div class="vd-hero-eyebrow">Two Clinics in Cagayan · Alcala &amp; Tuguegarao</div>
             <h1 class="vd-hero-title">Dental care for Alcala and Tuguegarao families.</h1>
             <p class="vd-hero-sub">From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.</p>
@@ -120,8 +122,23 @@
           </div>
         </div>
         <div class="col-12 col-lg-6">
-          <div class="vd-hero-photo-frame">
-            <img src="public/assets/team.png" alt="Dr. Aprille Ventura Clinica Dental team" class="vd-hero-photo">
+          <div class="vd-hero-feature-grid">
+            <div class="vd-feature-tile">
+              <div class="vd-feature-icon"><i class="fa-solid fa-tooth"></i></div>
+              <div class="vd-feature-label">13 Dental Services</div>
+            </div>
+            <div class="vd-feature-tile">
+              <div class="vd-feature-icon"><i class="fa-solid fa-location-dot"></i></div>
+              <div class="vd-feature-label">2 Branches in Cagayan</div>
+            </div>
+            <div class="vd-feature-tile">
+              <div class="vd-feature-icon"><i class="fa-solid fa-calendar-check"></i></div>
+              <div class="vd-feature-label">Easy Online Booking</div>
+            </div>
+            <div class="vd-feature-tile">
+              <div class="vd-feature-icon"><i class="fa-solid fa-hand-holding-medical"></i></div>
+              <div class="vd-feature-label">Patient-Centered Care</div>
+            </div>
           </div>
         </div>
       </div>
@@ -174,13 +191,30 @@
       <div class="text-center mb-4">
         <div class="vd-eyebrow">Who We Are</div>
         <h2 class="vd-section-heading mb-2">About Us</h2>
+        <p class="vd-section-intro">Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.</p>
       </div>
-      <div class="row align-items-center justify-content-center g-4 mb-5 vd-about-card rounded-3 p-3 p-md-4 mx-0">
-        <div class="col-12 col-md-6">
-          <img src="public/assets/team.png" alt="Our Team" class="img-fluid rounded">
+
+      <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+        <div class="col">
+          <div class="vd-pillar text-center h-100">
+            <div class="vd-pillar-icon"><i class="fa-solid fa-heart"></i></div>
+            <div class="vd-pillar-title">Patient-Centered Care</div>
+            <p class="vd-pillar-desc">Every visit is explained clearly, so you always know what to expect.</p>
+          </div>
         </div>
-        <div class="col-12 col-md-6">
-          <p class="vd-about-text">Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.</p>
+        <div class="col">
+          <div class="vd-pillar text-center h-100">
+            <div class="vd-pillar-icon"><i class="fa-solid fa-award"></i></div>
+            <div class="vd-pillar-title">Experienced Team</div>
+            <p class="vd-pillar-desc">Dental professionals handling everything from routine care to advanced treatment.</p>
+          </div>
+        </div>
+        <div class="col">
+          <div class="vd-pillar text-center h-100">
+            <div class="vd-pillar-icon"><i class="fa-solid fa-location-dot"></i></div>
+            <div class="vd-pillar-title">Two Convenient Branches</div>
+            <p class="vd-pillar-desc">Serving patients in both Alcala and Tuguegarao, Cagayan.</p>
+          </div>
         </div>
       </div>
 
@@ -192,8 +226,10 @@
       <?php foreach ($clinics as $clinic): ?>
         <div class="col-12 col-sm-6 col-md-4">
           <div class="card vd-clinic-card-index h-100 text-center border">
-            <img src="public/assets/clinic-images/<?= htmlspecialchars($clinic['clinic_image']) ?>" class="card-img-top p-3" alt="<?= htmlspecialchars($clinic['clinic_name']) ?>">
             <div class="card-body">
+              <div class="vd-clinic-icon-badge mx-auto">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
               <h5 class="card-title"><?= htmlspecialchars($clinic['clinic_name']) ?></h5>
               <p class="card-text small text-muted"><?= htmlspecialchars($clinic['clinic_address']) ?></p>
               <p class="card-text small text-muted">Phone: <?= htmlspecialchars($clinic['clinic_contact']) ?></p>
