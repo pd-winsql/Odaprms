@@ -51,11 +51,12 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT
                 a.*,
+                s.service_name,
                 c.clinic_name
                 FROM appointments a
                 LEFT JOIN clinics c
                 ON a.clinic_id = c.clinic_id
-
+                JOIN services s ON a.service_id = s.service_id
                 WHERE a.patient_id = :patient_id
                 AND a.date >= CURDATE()
 

@@ -3,11 +3,52 @@
 
   require_once 'config/conn.php';
   require_once 'apps/models/clinicModel.php';
+  require_once 'apps/models/serviceModel.php';
 
   $db = new Database();
   $conn = $db->connect();
   $clinicModel = new Clinic($conn);
   $clinics = $clinicModel->getAllClinics();
+
+  $serviceModel = new ServiceModel($conn);
+  $allCategories = $serviceModel->getAllCategories();
+  $allServices   = $serviceModel->getAllServices();
+  $mapRows       = $serviceModel->getAllServiceCategoryMap();
+
+  // Build category_id => [service_id, ...]
+  $categoryServiceIds = [];
+  foreach ($mapRows as $row) {
+      $categoryServiceIds[$row['category_id']][] = $row['service_id'];
+  }
+  $servicesById = array_column($allServices, null, 'service_id');
+
+  // Reshape into the same [title, description, services[]] structure the
+  // template below already expects, so the markup itself didn't need to change.
+  // Only active services are shown on the public landing page.
+  $serviceCategories = [];
+  $activeServiceCount = 0;
+  foreach ($allCategories as $cat) {
+      $serviceIds = $categoryServiceIds[$cat['category_id']] ?? [];
+      $categoryServices = [];
+
+      foreach ($serviceIds as $sid) {
+          if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
+          $categoryServices[] = [
+              'name' => $servicesById[$sid]['service_name'],
+              'icon' => $servicesById[$sid]['service_icon'],
+              'desc' => $servicesById[$sid]['service_description'],
+          ];
+          $activeServiceCount++;
+      }
+
+      if (empty($categoryServices)) continue; // skip empty categories on the public page
+
+      $serviceCategories[] = [
+          'title' => $cat['category_name'],
+          'description' => $cat['category_description'],
+          'services' => $categoryServices,
+      ];
+  }
 
   $isLoggedIn = isset($_SESSION['user_id']);
 
@@ -17,49 +58,6 @@
       'Patient'          => 'apps/views/patient/dashboard.php',
       default            => 'index.php',
   };
-
-  // Services grouped to match the categories already used in the booking form
-  // (Preventive, Restorative, Surgical, Cosmetic). Descriptions are placeholder
-  // copy — feel free to refine the wording once you finalize official text.
-  $serviceCategories = [
-    [
-      'title' => 'Preventive & Diagnostic Care',
-      'description' => 'Routine visits that catch problems early and keep your smile healthy in between appointments.',
-      'services' => [
-        ['name' => 'Cleaning (Prophylaxis)', 'icon' => 'fa-solid fa-broom', 'desc' => 'Professional plaque and tartar removal for a fresher, healthier smile.'],
-        ['name' => 'Scaling', 'icon' => 'fa-solid fa-teeth', 'desc' => 'Deep cleaning below the gumline to treat and help prevent gum disease.'],
-        ['name' => 'Periapical X-ray', 'icon' => 'fa-solid fa-x-ray', 'desc' => 'Detailed imaging of a tooth\'s root and the surrounding bone.'],
-      ],
-    ],
-    [
-      'title' => 'Restorative Treatments',
-      'description' => 'Repairing damaged, decayed, or missing teeth so you can bite, chew, and smile with confidence.',
-      'services' => [
-        ['name' => 'Restoration (Fillings)', 'icon' => 'fa-solid fa-tooth', 'desc' => 'Composite or amalgam fillings that repair cavities and minor damage.'],
-        ['name' => 'Crown / Jackets', 'icon' => 'fa-solid fa-crown', 'desc' => 'A custom cap that protects and rebuilds a weakened or broken tooth.'],
-        ['name' => 'Bridge', 'icon' => 'fa-solid fa-link', 'desc' => 'A fixed replacement that closes the gap left by a missing tooth.'],
-        ['name' => 'Root Canal', 'icon' => 'fa-solid fa-syringe', 'desc' => 'Treats infected or damaged tooth pulp to help save the natural tooth.'],
-        ['name' => 'Dentures', 'icon' => 'fa-solid fa-teeth', 'desc' => 'Removable replacements for some or all missing teeth.'],
-      ],
-    ],
-    [
-      'title' => 'Oral Surgery',
-      'description' => 'Extractions and surgical procedures performed with care, plus clear aftercare guidance.',
-      'services' => [
-        ['name' => 'Extraction', 'icon' => 'fa-solid fa-tooth', 'desc' => 'Safe removal of a damaged, decayed, or problematic tooth.'],
-        ['name' => 'Wisdom Tooth Removal', 'icon' => 'fa-solid fa-tooth', 'desc' => 'Removal of impacted or emerging third molars.'],
-      ],
-    ],
-    [
-      'title' => 'Cosmetic & Orthodontic',
-      'description' => 'Options to align, brighten, and refine the appearance of your smile.',
-      'services' => [
-        ['name' => 'Braces', 'icon' => 'fa-solid fa-teeth-open', 'desc' => 'Gradually aligns crowded, gapped, or misaligned teeth over time.'],
-        ['name' => 'Whitening', 'icon' => 'fa-solid fa-star', 'desc' => 'A professional treatment to brighten stained or discolored teeth.'],
-        ['name' => 'Veneer', 'icon' => 'fa-solid fa-gem', 'desc' => 'Thin custom shells that reshape and brighten the front of a tooth.'],
-      ],
-    ],
-  ];
 ?>
 
 <!DOCTYPE html>
@@ -125,7 +123,7 @@
           <div class="vd-hero-feature-grid">
             <div class="vd-feature-tile">
               <div class="vd-feature-icon"><i class="fa-solid fa-tooth"></i></div>
-              <div class="vd-feature-label">13 Dental Services</div>
+              <div class="vd-feature-label"><?= (int)$activeServiceCount ?> Dental Services</div>
             </div>
             <div class="vd-feature-tile">
               <div class="vd-feature-icon"><i class="fa-solid fa-location-dot"></i></div>

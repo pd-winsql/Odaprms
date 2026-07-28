@@ -52,7 +52,7 @@ function statusClass($s) {
                 <span class="vd-appt-mon"><?= date('M', strtotime($appt['date'])) ?></span>
             </div>
             <div class="vd-appt-info">
-                <div class="vd-appt-name"><?= htmlspecialchars($appt['service']) ?></div>
+                <div class="vd-appt-name"><?= htmlspecialchars($appt['service_name']) ?></div>
                 <div class="vd-appt-meta">
                 <?= htmlspecialchars($appt['clinic_name'] ?? $appt['clinic'] ?? '—') ?>
                 </div>
@@ -83,7 +83,7 @@ function statusClass($s) {
                 <span class="vd-appt-mon"><?= date('M', strtotime($appt['date'])) ?></span>
             </div>
             <div class="vd-appt-info">
-                <div class="vd-appt-name"><?= htmlspecialchars($appt['service']) ?></div>
+                <div class="vd-appt-name"><?= htmlspecialchars($appt['service_name']) ?></div>
                 <div class="vd-appt-meta">
                 <?= htmlspecialchars($appt['clinic_name'] ?? $appt['clinic'] ?? '—') ?>
                 </div>

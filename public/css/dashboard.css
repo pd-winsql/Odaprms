@@ -1281,3 +1281,92 @@
   font-size: 14px;
   padding: 6px 0;
 }
+
+/* ── Services management */
+
+.vd-service-filter-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--gold-pale);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  align-items: center;
+}
+.vd-service-filter-bar input,
+.vd-service-filter-bar select {
+  flex: 1;
+  min-width: 140px;
+}
+.vd-service-count {
+  font-size: 11px;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+.vd-service-category-group-title {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mid);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.vd-service-card-header { cursor: pointer; }
+.vd-service-status-badge {
+  font-size: 10px;
+  border-radius: 10px;
+  padding: 2px 10px;
+}
+.vd-status-active   { background: #eaf3de; color: #3b6d11; border: 1px solid #c3e0a0; }
+.vd-status-inactive { background: #f1efe8; color: #5f5e5a; border: 1px solid #d3d1c7; }
+
+.vd-service-collapsed .vd-dash-card-body { display: none; }
+
+.vd-service-icon-col { width: 90px; flex-shrink: 0; }
+.vd-service-icon-preview {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-size: 20px;
+  margin: 0 auto;
+}
+
+.vd-chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.vd-chip {
+  font-size: 11px;
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  color: var(--mid);
+  border-radius: 10px;
+  padding: 3px 10px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  transition: all 0.15s;
+}
+.vd-chip-selected {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  color: var(--dark);
+}
+
+.vd-category-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.vd-category-row:last-child { border-bottom: none; padding-bottom: 0; }
+.vd-category-row .vd-category-field { flex: 2; min-width: 140px; }
+.vd-category-row .vd-category-order { flex: 0 0 70px; min-width: 60px; }
