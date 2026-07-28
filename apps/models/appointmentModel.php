@@ -77,11 +77,12 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT
                 a.*,
+                s.service_name,
                 c.clinic_name
                 FROM appointments a
                 LEFT JOIN clinics c
                 ON a.clinic_id = c.clinic_id
-
+                JOIN services s ON a.service_id = s.service_id
                 WHERE a.patient_id = :patient_id
                 AND a.date < CURDATE()
 
@@ -159,11 +160,12 @@ class Appointment {
 
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, a.service,
+                    p.phone_number, p.email, c.clinic_name, s.service_name,
                     a.date, a.status
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
-                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id 
+                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                JOIN services s ON a.service_id = s.service_id
                 WHERE a.date < CURDATE()
                 ORDER BY a.date DESC
             ");
@@ -202,11 +204,12 @@ class Appointment {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, a.service,
+                    p.phone_number, p.email, c.clinic_name, s.service_name,
                     a.date, a.status
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                JOIN services s ON a.service_id = s.service_id
                 WHERE a.date >= CURDATE()
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
@@ -268,10 +271,11 @@ class Appointment {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, a.service, a.date, a.status
+                    p.phone_number, p.email, c.clinic_name, s.service_name, a.date, a.status
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                JOIN services s ON a.service_id = s.service_id
                 WHERE a.date >= CURDATE()
                 AND a.status = :status
                 ORDER BY a.date ASC

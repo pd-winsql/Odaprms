@@ -56,7 +56,7 @@
         <div class="vd-dash-card">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">Upcoming Appointments</span>
-            <a href="appointments.php" class="vd-dash-card-link">View all →</a>
+            <a href="appointment-content.php" class="vd-dash-card-link">View all →</a>
         </div>
         <div class="vd-dash-card-body">
             <?php if (empty($upcoming)): ?>
@@ -76,7 +76,7 @@
                 </div>
                 <div class="vd-appt-info">
                     <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
-                    <div class="vd-appt-meta"><?= htmlspecialchars($appt['service']) ?> · <?= htmlspecialchars($appt['clinic_name']) ?></div>
+                    <div class="vd-appt-meta"><?= htmlspecialchars($appt['service_name']) ?> · <?= htmlspecialchars($appt['clinic_name']) ?></div>
                 </div>
                 <span class="vd-status vd-status-<?= $status ?>"><?= htmlspecialchars($appt['status']) ?></span>
                 </div>

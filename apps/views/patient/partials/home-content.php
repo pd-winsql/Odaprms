@@ -38,7 +38,7 @@ $firstname = $patient['firstname'] ?? $_SESSION['username'];
     <?php if ($next): ?>
     <div class="vd-next-appt-card">
         <div class="vd-next-appt-label">Next Appointment</div>
-        <div class="vd-next-appt-service"><?= htmlspecialchars($next['service']) ?></div>
+        <div class="vd-next-appt-service"><?= htmlspecialchars($next['service_name']) ?></div>
         <div class="vd-next-appt-meta">
         <span><i class="ti ti-building"></i> <?= htmlspecialchars($next['clinic_name'] ?? $next['clinic'] ?? '—') ?></span>
         <span><i class="ti ti-calendar"></i> <?= date('F d, Y', strtotime($next['date'])) ?></span>
@@ -88,7 +88,7 @@ $firstname = $patient['firstname'] ?? $_SESSION['username'];
             <span class="vd-appt-mon"><?= date('M', strtotime($appt['date'])) ?></span>
             </div>
             <div class="vd-appt-info">
-            <div class="vd-appt-name"><?= htmlspecialchars($appt['service']) ?></div>
+            <div class="vd-appt-name"><?= htmlspecialchars($appt['service_name']) ?></div>
             <div class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name'] ?? $appt['clinic'] ?? '—') ?></div>
             </div>
             <span class="vd-status vd-status-<?= strtolower($appt['status']) ?>">
