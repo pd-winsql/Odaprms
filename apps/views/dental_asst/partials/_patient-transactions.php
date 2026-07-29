@@ -74,7 +74,7 @@ function txStatusClass($status) {
                         <tbody>
                             <?php foreach ($transactions as $t): ?>
                                 <tr>
-                                    <td class="vd-appt-meta"><?= htmlspecialchars($t['service']) ?></td>
+                                    <td class="vd-appt-meta"><?= htmlspecialchars($t['service_name']) ?></td>
                                     <td class="vd-appt-meta"><?= htmlspecialchars($t['clinic_name'] ?? '—') ?></td>
                                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($t['date'])) ?></td>
                                     <td>

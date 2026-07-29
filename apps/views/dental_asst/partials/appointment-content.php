@@ -113,7 +113,7 @@ function statusClass($status) {
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                     </td>
-                    <td class="vd-appt-meta"><?= htmlspecialchars($appt['service']) ?></td>
+                    <td class="vd-appt-meta"><?= htmlspecialchars($appt['service_name']) ?></td>
                     <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
                     <td>
@@ -215,7 +215,7 @@ function statusClass($status) {
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                     </td>
-                    <td class="vd-appt-meta"><?= htmlspecialchars($appt['service']) ?></td>
+                    <td class="vd-appt-meta"><?= htmlspecialchars($appt['service_name']) ?></td>
                     <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
                     <td>

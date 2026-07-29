@@ -298,12 +298,13 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT
                     a.appointment_id,
-                    a.service,
+                    s.service_name,
                     a.date,
                     a.status,
                     c.clinic_name
                 FROM appointments a
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                JOIN services s ON s.service_id = a.service_id
                 WHERE a.patient_id = :patient_id
                 ORDER BY a.date DESC
             ");

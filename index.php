@@ -171,7 +171,7 @@
             <div class="vd-service-item h-100">
               <div class="vd-service-icon"><i class="<?= htmlspecialchars($service['icon']) ?>"></i></div>
               <div>
-                <div class="vd-service-name"><?= htmlspecialchars($service['name']) ?></div>
+                <div class="vd-service-name"><?= htmlspecialchars($service['service']) ?></div>
                 <div class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></div>
               </div>
             </div>
