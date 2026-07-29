@@ -13,42 +13,41 @@
   $serviceModel = new ServiceModel($conn);
   $allCategories = $serviceModel->getAllCategories();
   $allServices   = $serviceModel->getAllServices();
-  $mapRows       = $serviceModel->getAllServiceCategoryMap();
-
-  // Build category_id => [service_id, ...]
-  $categoryServiceIds = [];
-  foreach ($mapRows as $row) {
-      $categoryServiceIds[$row['category_id']][] = $row['service_id'];
-  }
-  $servicesById = array_column($allServices, null, 'service_id');
-
-  // Reshape into the same [title, description, services[]] structure the
-  // template below already expects, so the markup itself didn't need to change.
-  // Only active services are shown on the public landing page.
   $serviceCategories = [];
-  $activeServiceCount = 0;
-  foreach ($allCategories as $cat) {
-      $serviceIds = $categoryServiceIds[$cat['category_id']] ?? [];
-      $categoryServices = [];
+$activeServiceCount = 0;
 
-      foreach ($serviceIds as $sid) {
-          if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
-          $categoryServices[] = [
-              'name' => $servicesById[$sid]['service_name'],
-              'icon' => $servicesById[$sid]['service_icon'],
-              'desc' => $servicesById[$sid]['service_description'],
-          ];
-          $activeServiceCount++;
-      }
+foreach ($allCategories as $cat) {
 
-      if (empty($categoryServices)) continue; // skip empty categories on the public page
+    $services = $serviceModel->getServicesByCategory($cat['category_id']);
 
-      $serviceCategories[] = [
-          'title' => $cat['category_name'],
-          'description' => $cat['category_description'],
-          'services' => $categoryServices,
-      ];
-  }
+    $categoryServices = [];
+
+    foreach ($services as $service) {
+
+        if (!$service['is_active']) {
+            continue;
+        }
+
+        $categoryServices[] = [
+            'name' => $service['service_name'],
+            'icon' => $service['service_icon'],
+            'desc' => $service['service_description']
+        ];
+
+        $activeServiceCount++;
+    }
+
+    if (empty($categoryServices)) {
+        continue;
+    }
+
+    $serviceCategories[] = [
+        'title' => $cat['category_name'],
+        'description' => $cat['category_description'],
+        'services' => $categoryServices
+    ];
+} 
+
 
   $isLoggedIn = isset($_SESSION['user_id']);
 
@@ -171,7 +170,7 @@
             <div class="vd-service-item h-100">
               <div class="vd-service-icon"><i class="<?= htmlspecialchars($service['icon']) ?>"></i></div>
               <div>
-                <div class="vd-service-name"><?= htmlspecialchars($service['service']) ?></div>
+                <div class="vd-service-name"><?= htmlspecialchars($service['name']) ?></div>
                 <div class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></div>
               </div>
             </div>

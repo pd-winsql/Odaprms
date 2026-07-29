@@ -89,21 +89,26 @@ class serviceController {
         $icon        = trim($_POST['icon'] ?? '');
         $isActive    = isset($_POST['is_active']) ? 1 : 0;
         $order       = (int)($_POST['order'] ?? 0);
-        $categoryIds = isset($_POST['category_ids']) ? array_map('intval', (array)$_POST['category_ids']) : [];
+        $category_id = (int)($_POST['category_id'] ?? 0);
 
         if (!$name) {
             echo json_encode(['success' => false, 'message' => 'Service name is required.']);
             exit;
         }
 
-        $newId = $this->services->addService($name, $description, $icon, $isActive, $order);
+        $newId = $this->services->addService(
+            $name,
+            $description,
+            $icon,
+            $category_id,
+            $isActive,
+            $order
+        );
 
         if (!$newId) {
             echo json_encode(['success' => false, 'message' => 'Failed to add service.']);
             exit;
         }
-
-        $this->services->setServiceCategories($newId, $categoryIds);
 
         echo json_encode(['success' => true, 'message' => 'Service added.', 'service_id' => $newId]);
         exit;
@@ -118,15 +123,22 @@ class serviceController {
         $icon        = trim($_POST['icon'] ?? '');
         $isActive    = isset($_POST['is_active']) ? 1 : 0;
         $order       = (int)($_POST['order'] ?? 0);
-        $categoryIds = isset($_POST['category_ids']) ? array_map('intval', (array)$_POST['category_ids']) : [];
+        $category_id = (int)($_POST['category_id'] ?? 0);
 
         if (!$id || !$name) {
             echo json_encode(['success' => false, 'message' => 'Service name is required.']);
             exit;
         }
 
-        $result = $this->services->updateService($id, $name, $description, $icon, $isActive, $order);
-        $this->services->setServiceCategories($id, $categoryIds);
+        $result = $this->services->updateService(
+            $id,
+            $name,
+            $description,
+            $icon,
+            $category_id,
+            $isActive,
+            $order
+        );
 
         echo json_encode($result
             ? ['success' => true, 'message' => 'Service updated.']
@@ -141,6 +153,13 @@ class serviceController {
             ? ['success' => true, 'message' => 'Service deleted.']
             : ['success' => false, 'message' => 'Failed to delete service.']);
         exit;
+    }
+
+    public function homepage()
+    {
+        $services = $this->services->getHomepageServices();
+
+        require '../views/index.php';
     }
 }
 

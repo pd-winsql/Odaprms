@@ -106,46 +106,70 @@ class ServiceModel {
         }
     }
 
-    public function addService($name, $description, $icon, $isActive, $order) {
+    public function addService($name, $description, $icon, $category_id, $isActive, $order)
+    {
         try {
-            $stmt = $this->conn->prepare(
-                "INSERT INTO services (service_name, service_description, service_icon, is_active, display_order)
-                 VALUES (:name, :description, :icon, :active, :order)"
-            );
+            $stmt = $this->conn->prepare("
+                INSERT INTO services
+                (
+                    service_name,
+                    service_description,
+                    service_icon,
+                    category_id,
+                    is_active,
+                    display_order
+                )
+                VALUES
+                (
+                    :name,
+                    :description,
+                    :icon,
+                    :category_id,
+                    :active,
+                    :order
+                )
+            ");
+
             $stmt->execute([
                 ':name' => $name,
                 ':description' => $description,
                 ':icon' => $icon,
+                ':category_id' => $category_id,
                 ':active' => $isActive,
-                ':order' => $order,
+                ':order' => $order
             ]);
+
             return $this->conn->lastInsertId();
-        } catch (PDOException $e) {
-            error_log("addService error: " . $e->getMessage());
+
+        } catch(PDOException $e){
+            error_log($e->getMessage());
             return false;
         }
     }
 
-    public function updateService($id, $name, $description, $icon, $isActive, $order) {
-        try {
-            $stmt = $this->conn->prepare(
-                "UPDATE services
-                 SET service_name = :name, service_description = :description, service_icon = :icon,
-                     is_active = :active, display_order = :order
-                 WHERE service_id = :id"
-            );
-            return $stmt->execute([
-                ':id' => $id,
-                ':name' => $name,
-                ':description' => $description,
-                ':icon' => $icon,
-                ':active' => $isActive,
-                ':order' => $order,
-            ]);
-        } catch (PDOException $e) {
-            error_log("updateService error: " . $e->getMessage());
-            return false;
-        }
+    public function updateService($service_id, $name, $description, $icon, $category_id, $is_active, $display_order) {
+
+        $stmt = $this->conn->prepare("
+            UPDATE services
+            SET
+                service_name = :name,
+                service_description = :description,
+                service_icon = :icon,
+                category_id = :category_id,
+                is_active = :active,
+                display_order = :display_order
+            WHERE service_id = :service_id
+        ");
+
+        return $stmt->execute([
+            ':name' => $name,
+            ':description' => $description,
+            ':icon' => $icon,
+            ':category_id' => $category_id,
+            ':active' => $is_active,
+            ':display_order' => $display_order,
+            ':service_id' => $service_id
+        ]);
     }
 
     public function deleteService($id) {
@@ -158,45 +182,51 @@ class ServiceModel {
         }
     }
 
-    // ---------------------------------------------------------------
-    // Service <-> Category mapping (many-to-many)
-    // ---------------------------------------------------------------
+    public function getServicesByCategory($category_id)
+    {
+        $stmt = $this->conn->prepare("
+            SELECT *
+            FROM services
+            WHERE category_id = :category_id
+            ORDER BY display_order
+        ");
 
-    public function getAllServiceCategoryMap() {
+        $stmt->execute([
+            ':category_id' => $category_id
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getHomepageServices()
+    {
         try {
-            $stmt = $this->conn->prepare("SELECT service_id, category_id FROM service_category_map");
+            $stmt = $this->conn->prepare("
+                SELECT
+                    c.category_id,
+                    c.category_name,
+                    c.category_description,
+                    s.service_id,
+                    s.service_name,
+                    s.service_description,
+                    s.service_icon
+                FROM service_categories c
+                LEFT JOIN services s
+                    ON s.category_id = c.category_id
+                    AND s.is_active = 1
+                ORDER BY
+                    c.display_order,
+                    s.display_order
+            ");
+
             $stmt->execute();
+
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("getAllServiceCategoryMap error: " . $e->getMessage());
+
+        } catch(PDOException $e){
+            error_log($e->getMessage());
             return [];
         }
     }
 
-    // Replaces all category assignments for a service in one go —
-    // simplest approach for an inline chip-toggle UI (delete then re-insert).
-    public function setServiceCategories($serviceId, array $categoryIds) {
-        try {
-            $this->conn->beginTransaction();
-
-            $del = $this->conn->prepare("DELETE FROM service_category_map WHERE service_id = :id");
-            $del->execute([':id' => $serviceId]);
-
-            if (!empty($categoryIds)) {
-                $ins = $this->conn->prepare(
-                    "INSERT INTO service_category_map (service_id, category_id) VALUES (:service_id, :category_id)"
-                );
-                foreach ($categoryIds as $categoryId) {
-                    $ins->execute([':service_id' => $serviceId, ':category_id' => $categoryId]);
-                }
-            }
-
-            $this->conn->commit();
-            return true;
-        } catch (PDOException $e) {
-            $this->conn->rollBack();
-            error_log("setServiceCategories error: " . $e->getMessage());
-            return false;
-        }
-    }
 }
