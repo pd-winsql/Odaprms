@@ -65,36 +65,36 @@ $today = date('l, F j Y');
         <nav class="vd-sidebar-nav">
         <div class="vd-nav-section">Main</div>
         <a href="#" class="vd-nav-item active" data-page="dashboard-content.php">
-            <i class="ti ti-layout-dashboard"></i> Dashboard
+            <span class="vd-nav-icon"><i class="ti ti-layout-dashboard"></i></span> Dashboard
         </a>
         <a href="#" class="vd-nav-item" data-page="appointment-content.php">
-            <i class="ti ti-calendar"></i> Appointments
+            <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
         </a>
         <a href="#" class="vd-nav-item" data-page="patient-content.php">
-            <i class="ti ti-users"></i> Patients
+            <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
         </a>
 
         <div class="vd-nav-section">Manage</div>
         <a href="#" class="vd-nav-item" data-page="den-assist-content.php">
-            <i class="ti ti-nurse"></i> Dental Assistants
+            <span class="vd-nav-icon"><i class="ti ti-nurse"></i></span> Dental Assistants
         </a>
         <a href="#" class="vd-nav-item" data-page="services-content.php">
-            <i class="ti ti-building"></i> Services
+            <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Services
         </a>
         <a href="#" class="vd-nav-item" data-page="clinic-content.php">
-            <i class="ti ti-building"></i> Clinics
+            <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Clinics
         </a>
-        
+
         <a href="#" class="vd-nav-item" data-page="schedule-content.php">
-            <i class="ti ti-clock"></i> Schedules
+            <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
         </a>
 
         <div class="vd-nav-section">Account</div>
         <a href="#" class="vd-nav-item" data-page="settings-content.php">
-            <i class="ti ti-settings"></i> Settings
+            <span class="vd-nav-icon"><i class="ti ti-settings"></i></span> Settings
         </a>
         <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
-            <i class="ti ti-logout"></i> Logout
+            <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
         </a>
         </nav>
 
@@ -120,9 +120,14 @@ $today = date('l, F j Y');
             <i class="ti ti-menu-2"></i>
             </button>
             <span class="vd-dash-title">Dashboard</span>
+            <!--<div class="vd-topbar-search">
+                <i class="ti ti-search"></i>
+                <input type="text" placeholder="Search...">
+            </div>  -->
         </div>
         <div class="vd-topbar-right">
             <span class="vd-topbar-date"><?= $today ?></span>
+            <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
             <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
         </div>
         </div>

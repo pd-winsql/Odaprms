@@ -12,6 +12,16 @@
   --border:     #d9c9a8;
   --white-bg:   #fffdf9;
   --bg:         #e8e0d4;
+
+  /* Complementary accents — used only as icon-badge tints on the
+     dashboard shell, never as text or borders. Gold stays the
+     dominant brand color everywhere else. */
+  --sage:       #6f8a5f;
+  --sage-pale:  #eef2ea;
+  --terracotta: #a8664f;
+  --terracotta-pale: #f4e9e6;
+  --dusty-blue: #5c7c93;
+  --dusty-blue-pale: #e9eef2;
 }
 
 html { scroll-behavior: smooth; scroll-padding-top: 80px; }

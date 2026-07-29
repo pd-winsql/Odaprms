@@ -15,14 +15,17 @@ $serviceModel = new ServiceModel($conn);
 
 $categories = $serviceModel->getAllCategories();
 $services   = $serviceModel->getAllServices();
-$mapRows    = $serviceModel->getAllServiceCategoryMap();
 
-// Build lookup: category_id => [service_id, ...] and service_id => [category_id, ...]
-$categoryServiceIds = [];
-$serviceCategoryIds = [];
-foreach ($mapRows as $row) {
-    $categoryServiceIds[$row['category_id']][] = $row['service_id'];
-    $serviceCategoryIds[$row['service_id']][] = $row['category_id'];
+$categoryServices = [];
+
+foreach ($categories as $category) {
+    $categoryServices[$category['category_name']] = [];
+}
+
+foreach ($services as $service) {
+    if (!empty($service['category'])) {
+        $categoryServices[$service['category']][] = $service;
+    }
 }
 
 $servicesById = array_column($services, null, 'service_id');

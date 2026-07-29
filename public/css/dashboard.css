@@ -3,6 +3,12 @@
    Load AFTER bootstrap.min.css AND styles.css
    ============================================================ */
 
+:root {
+  --shadow-sm: 0 1px 3px rgba(74,63,48,0.08), 0 1px 2px rgba(74,63,48,0.05);
+  --shadow-md: 0 6px 16px rgba(74,63,48,0.10), 0 2px 6px rgba(74,63,48,0.06);
+  --shadow-lg: 0 12px 28px rgba(74,63,48,0.14);
+}
+
 /* ============================================================
    SHARED — used by Admin, Dental Assistant, and Patient
    ============================================================ */
@@ -22,10 +28,10 @@
 
 /* ── Sidebar ── */
 .vd-sidebar {
-  width: 220px;
+  width: 232px;
   flex-shrink: 0;
   background: var(--white-bg);
-  border-right: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -37,22 +43,33 @@
   transition: transform 0.3s ease;
   z-index: 300;
 }
+.vd-sidebar::-webkit-scrollbar { width: 6px; }
+.vd-sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.vd-sidebar::-webkit-scrollbar-track { background: transparent; }
 
 .vd-sidebar-brand {
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 24px 22px 18px;
   flex-shrink: 0;
+  position: relative;
+}
+.vd-sidebar-brand::after {
+  content: '';
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 0;
+  height: 1px;
+  background: var(--border);
 }
 
 .vd-sidebar-nav {
   flex: 1;
-  padding: 10px 0;
+  padding: 14px 0;
   overflow-y: auto;
 }
 
 .vd-sidebar-footer {
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
+  padding: 14px 16px;
   flex-shrink: 0;
 }
 
@@ -63,20 +80,23 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--gold);
-  padding: 14px 20px 6px;
+  padding: 14px 22px 8px;
+  margin-top: 4px;
 }
+.vd-nav-section:first-child { margin-top: 0; }
 
 .vd-nav-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 20px;
+  padding: 6px 12px;
+  margin: 2px 10px;
   color: var(--mid);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 300;
   text-decoration: none;
-  border-left: 2px solid transparent;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  border-radius: 10px;
+  transition: background 0.15s, color 0.15s;
   cursor: pointer;
 }
 .vd-nav-item:hover {
@@ -86,13 +106,39 @@
 }
 .vd-nav-item.active {
   background: var(--gold-pale);
-  border-left-color: var(--gold);
-  color: var(--gold);
+  color: var(--mid);
   font-weight: 500;
 }
 .vd-nav-item i {
-  font-size: 17px;
+  font-size: 14px;
   flex-shrink: 0;
+}
+
+/* Icon badge — small rounded square behind each nav icon */
+.vd-nav-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--gold-pale);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.vd-nav-item.active .vd-nav-icon {
+  background: var(--gold);
+  color: var(--white-bg);
+}
+/* Manage-section variant, tinted sage instead of gold */
+.vd-nav-icon-alt {
+  background: var(--sage-pale);
+  color: var(--sage);
+}
+.vd-nav-item.active .vd-nav-icon-alt {
+  background: var(--sage);
+  color: var(--white-bg);
 }
 
 /* User chip in sidebar footer */
@@ -100,19 +146,23 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--gold-pale);
 }
 .vd-user-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--gold-pale);
-  border: 1px solid var(--border);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--gold);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  color: var(--gold);
+  color: #fff;
   flex-shrink: 0;
   font-family: 'Cormorant Garamond', serif;
   letter-spacing: 0.04em;
@@ -140,8 +190,8 @@
 /* ── Topbar ── */
 .vd-dash-topbar {
   background: var(--white-bg);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 28px;
+  box-shadow: var(--shadow-sm);
+  padding: 16px 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -180,8 +230,61 @@
   text-transform: uppercase;
   background: var(--gold);
   color: #fff;
-  padding: 4px 10px;
-  border-radius: 2px;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* Topbar search bar (visual only for now) */
+.vd-topbar-search {
+  flex: 1;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold-pale);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 8px 16px;
+  color: var(--mid);
+  font-size: 12px;
+  transition: border-color 0.15s;
+}
+.vd-topbar-search:focus-within { border-color: var(--gold); }
+.vd-topbar-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: var(--dark);
+  flex: 1;
+}
+.vd-topbar-search input::placeholder { color: var(--mid); opacity: 0.7; }
+.vd-topbar-search i { font-size: 14px; }
+
+/* Notification bell */
+.vd-topbar-bell {
+  position: relative;
+  color: var(--mid);
+  font-size: 17px;
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.vd-topbar-bell:hover { background: var(--gold-pale); }
+.vd-topbar-bell-dot {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
 }
 
 /* Mobile menu toggle — hidden on desktop */
@@ -209,10 +312,10 @@
 
 /* ── Dashboard content wrapper ── */
 .vd-dash-content {
-  padding: 24px 28px;
+  padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
   flex: 1;
 }
 
@@ -225,9 +328,30 @@
 .vd-stat-card {
   background: var(--white-bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 18px 20px;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
+.vd-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+.vd-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--gold-pale);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+.vd-stat-icon-sage       { background: var(--sage-pale); color: var(--sage); }
+.vd-stat-icon-terracotta { background: var(--terracotta-pale); color: var(--terracotta); }
+.vd-stat-icon-blue       { background: var(--dusty-blue-pale); color: var(--dusty-blue); }
 .vd-stat-label {
   font-size: 9px;
   font-weight: 500;
@@ -260,11 +384,12 @@
 .vd-dash-card {
   background: var(--white-bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 .vd-dash-card-header {
-  padding: 13px 20px;
+  padding: 15px 22px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -285,7 +410,7 @@
   transition: color 0.15s;
 }
 .vd-dash-card-link:hover { color: var(--mid); }
-.vd-dash-card-body { padding: 16px 20; }
+.vd-dash-card-body { padding: 18px 22px; }
 
 /* ── Button styles ── */
 .btn {
@@ -293,8 +418,8 @@
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 7px 14px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: all 0.15s;
@@ -302,9 +427,12 @@
 .btn-primary {
   background: var(--gold);
   color: #fff;
+  box-shadow: var(--shadow-sm);
 }
 .btn-primary:hover {
   background: var(--gold-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -317,6 +445,7 @@
   background: var(--gold-pale);
   border-color: var(--gold);
   color: var(--gold);
+  transform: translateY(-1px);
 }
 
 /* ── Appointment rows ── */
@@ -336,7 +465,7 @@
   height: 40px;
   background: var(--gold-pale);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 9px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -813,6 +942,7 @@
   .vd-stat-value { font-size: 28px; }
   .vd-dash-topbar { padding: 10px 14px; }
   .vd-dash-title { font-size: 18px; }
+  .vd-topbar-search { display: none; }
   .vd-topbar-date { display: none; }
 }
 
@@ -918,12 +1048,12 @@
   bottom: 24px;
   right: 24px;
   padding: 12px 20px;
-  border-radius: 4px;
+  border-radius: 10px;
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.04em;
   z-index: 9999;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-md);
   transition: opacity 0.3s;
 }
 .vd-toast-success { background: #eaf3de; color: #3b6d11; border: 1px solid #c3e0a0; }
@@ -994,11 +1124,12 @@
 
 /* Override the mockup sidebar styles from styles.css */
 .vd-dash-body .vd-sidebar {
-  width: 220px;
+  width: 232px;
 }
 .vd-dash-body .vd-nav-item {
-  font-size: 13px;
-  padding: 10px 20px;
+  font-size: 12.5px;
+  padding: 6px 12px;
+  margin: 2px 10px;
 }
 
 /* Add schedule inline form */
