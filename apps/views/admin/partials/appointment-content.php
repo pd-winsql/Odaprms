@@ -47,7 +47,14 @@ function statusClass($status) {
 
 <div class="d-flex flex-column gap-4">
 
+    <!-- VIEW TOGGLE (Upcoming / Past) -->
+    <div class="vd-view-toggle mb-2">
+        <button type="button" class="vd-toggle-btn active" data-view="upcoming">Upcoming</button>
+        <button type="button" class="vd-toggle-btn" data-view="past">Past</button>
+    </div>
+
     <!-- ── UPCOMING APPOINTMENTS ── -->
+    <div id="upcomingView">
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Upcoming Appointments</span>
@@ -150,7 +157,10 @@ function statusClass($status) {
         </div>
     </div>
 
+    </div>
+
     <!-- ── PAST APPOINTMENTS ── -->
+    <div id="pastView" class="d-none">
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Past Appointments</span>
@@ -316,6 +326,27 @@ function statusClass($status) {
 
     setupTableFilter('upcomingApptTable', 'filterStatusUpcoming', 'filterMonthFromUpcoming', 'filterMonthToUpcoming', 'clearUpcomingFilters', 'upcomingCountLabel');
     setupTableFilter('pastApptTable', 'filterStatusPast', 'filterMonthFromPast', 'filterMonthToPast', 'clearPastFilters', 'pastCountLabel');
+
+    // Toggle between Upcoming and Past views (uses same design as services-content)
+    const toggleBtns = document.querySelectorAll('.vd-toggle-btn');
+    const upcomingView = document.getElementById('upcomingView');
+    const pastView = document.getElementById('pastView');
+    if (toggleBtns && toggleBtns.length) {
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                toggleBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const view = this.dataset.view;
+                if (view === 'upcoming') {
+                    upcomingView.classList.remove('d-none');
+                    pastView.classList.add('d-none');
+                } else {
+                    upcomingView.classList.add('d-none');
+                    pastView.classList.remove('d-none');
+                }
+            });
+        });
+    }
 
     // Enable/disable Save & Notify button based on whether status changed
     document.querySelectorAll('.vd-status-select').forEach(select => {
