@@ -105,61 +105,137 @@ $clinics = $clinicModel->getAllClinics();
         </div>
 </div>
 
+<!-- Delete confirmation modal -->
+<div class="modal fade" id="deleteScheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title vd-modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to delete this schedule? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="vd-btn-outline btn" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="vd-btn-gold btn" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-        // ── Edit max appointments ──
+    // Show toast for query param results (e.g., edit conflict) — use global showToast if available
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error') === 'conflict') {
+            if (typeof showToast === 'function') showToast('Cannot change date: another schedule exists for that date.', false);
+            // remove param from URL to avoid repeat on refresh
+            history.replaceState(null, '', window.location.pathname);
+        }
+        if (params.get('updated') === '1') {
+            if (typeof showToast === 'function') showToast('Schedule updated.', true);
+            history.replaceState(null, '', window.location.pathname);
+        }
+    })();
+
+    // ── Edit max appointments ──
     document.querySelectorAll('.vd-edit-sched-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const card     = document.getElementById('schedCard-' + btn.dataset.id);
-        const cardView = card.querySelector('.vd-sched-card-view');
-        const cardEdit = card.querySelector('.vd-sched-card-edit');
-        cardView.classList.add('d-none');
-        cardEdit.classList.remove('d-none');
-    });
+        btn.addEventListener('click', () => {
+            const card     = document.getElementById('schedCard-' + btn.dataset.id);
+            const cardView = card.querySelector('.vd-sched-card-view');
+            const cardEdit = card.querySelector('.vd-sched-card-edit');
+            cardView.classList.add('d-none');
+            cardEdit.classList.remove('d-none');
+        });
     });
 
     document.querySelectorAll('.vd-cancel-sched-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const card     = btn.closest('.vd-sched-card');
-        card.querySelector('.vd-sched-card-view').classList.remove('d-none');
-        card.querySelector('.vd-sched-card-edit').classList.add('d-none');
-    });
+        btn.addEventListener('click', () => {
+            const card     = btn.closest('.vd-sched-card');
+            card.querySelector('.vd-sched-card-view').classList.remove('d-none');
+            card.querySelector('.vd-sched-card-edit').classList.add('d-none');
+        });
     });
 
     document.querySelectorAll('.vd-save-sched-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const id      = btn.dataset.id;
-        const card    = document.getElementById('schedCard-' + id);
-        const newMax  = card.querySelector('.vd-edit-max-input').value;
+        btn.addEventListener('click', async () => {
+            const id      = btn.dataset.id;
+            const card    = document.getElementById('schedCard-' + id);
+            const newMax  = card.querySelector('.vd-edit-max-input').value;
 
-        if (!newMax || newMax < 1) {
-        alert('Please enter a valid number.');
-        return;
-        }
+            if (!newMax || newMax < 1) {
+                showToast('Please enter a valid number.', false);
+                return;
+            }
 
-        const fd = new FormData();
-        fd.append('action',          'edit_schedule');
-        fd.append('schedule_id',     id);
-        fd.append('max_appointments', newMax);
+            const fd = new FormData();
+            fd.append('action',          'edit_schedule');
+            fd.append('schedule_id',     id);
+            fd.append('max_appointments', newMax);
+
+            try {
+                const res    = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: fd });
+                const result = await res.text();
+
+                if (result.trim() === 'success') {
+                    document.getElementById('slots-' + id).textContent = newMax + ' slots';
+                    card.querySelector('.vd-sched-card-view').classList.remove('d-none');
+                    card.querySelector('.vd-sched-card-edit').classList.add('d-none');
+                    showToast('Schedule updated.', true);
+                } else {
+                    showToast('Failed to update. Please try again.', false);
+                }
+            } catch (err) {
+                showToast('Network error.', false);
+                console.error(err);
+            }
+        });
+    });
+
+    // ── Delete schedule via confirmation modal ──
+    let scheduleToDelete = null;
+    document.querySelectorAll('.vd-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            scheduleToDelete = btn.dataset.id;
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteScheduleModal'));
+            deleteModal.show();
+        });
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!scheduleToDelete) return;
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Deleting…';
+
+        const formData = new FormData();
+        formData.append('action', 'delete_schedule');
+        formData.append('schedule_id', scheduleToDelete);
 
         try {
-        const res    = await fetch('../../controllers/scheduleController.php', {
-            method: 'POST', body: fd
-        });
-        const result = await res.text();
-
-        if (result.trim() === 'success') {
-            document.getElementById('slots-' + id).textContent = newMax + ' slots';
-            card.querySelector('.vd-sched-card-view').classList.remove('d-none');
-            card.querySelector('.vd-sched-card-edit').classList.add('d-none');
-        } else {
-            alert('Failed to update. Please try again.');
-        }
+            const resp = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: formData });
+            const text = await resp.text();
+            if (text.trim() === 'success') {
+                const card = document.getElementById('schedCard-' + scheduleToDelete);
+                if (card) card.remove();
+                showToast('Schedule deleted successfully!', true);
+                setTimeout(() => location.reload(), 900);
+            } else {
+                showToast('Error: ' + text, false);
+            }
         } catch (err) {
-        alert('Network error.');
-        console.error(err);
+            showToast('Network error. Please try again.', false);
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Delete';
+            scheduleToDelete = null;
+            const deleteModalEl = document.getElementById('deleteScheduleModal');
+            const modal = bootstrap.Modal.getInstance(deleteModalEl);
+            if (modal) modal.hide();
         }
-    });
     });
 </script>
-<!-- Modal included from separate partial file -->
+
 <?php include '_add-schedule-modal.php'; ?>

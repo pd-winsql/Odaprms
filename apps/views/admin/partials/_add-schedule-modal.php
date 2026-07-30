@@ -23,22 +23,8 @@
     </div>
 </div>
 
-<!-- Toast notification -->
-<div id="scheduleToast" class="vd-toast d-none">
-    <span id="scheduleToastMsg"></span>
-</div>
-
 <script>
 (function() {
-    function showToast(msg, success) {
-        const toast = document.getElementById('scheduleToast');
-        const msgEl = document.getElementById('scheduleToastMsg');
-        msgEl.textContent = msg;
-        toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error');
-        toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error');
-        setTimeout(() => toast.classList.add('d-none'), 3000);
-    }
-
     document.getElementById('addScheduleModal').addEventListener('show.bs.modal', function(e) {
         const btn = e.relatedTarget; // the button that triggered the modal
         document.getElementById('modalClinicName').textContent = btn.dataset.clinicName;
@@ -51,42 +37,25 @@
         formData.append('action', 'add_schedule');
 
         fetch('../../controllers/scheduleController.php', {
-        method: 'POST',
-        body: formData
-        })        
+            method: 'POST',
+            body: formData
+        })
         .then(response => response.text())
         .then(text => {
             if (text.trim() === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('addScheduleModal')).hide();
-                showToast('Schedule added successfully!', true);
+                // showToast is defined in the parent schedule-content.php so it's available here
+                if (typeof showToast === 'function') showToast('Schedule added successfully!', true);
                 setTimeout(() => location.reload(), 1500);
             } else {
                 document.getElementById('addError').textContent = text;
-                document.getElementById('addError').classList.remove('d-none');            }
+                document.getElementById('addError').classList.remove('d-none');
+                if (typeof showToast === 'function') showToast(text, false);
+            }
         })
-    });
-
-    document.querySelectorAll('.vd-delete-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!confirm('Delete this schedule?')) return;
-            const formData = new FormData();
-            formData.append('action', 'delete_schedule');
-            formData.append('schedule_id', btn.dataset.id);
-
-            fetch('../../controllers/scheduleController.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(r => r.text())
-            .then(text => {
-                if (text.trim() === 'success') {
-                    document.getElementById('schedCard-' + btn.dataset.id).remove();
-                    showToast('Schedule deleted successfully!', true);
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    showToast('Error: ' + text, false);
-                }
-            });
+        .catch(err => {
+            if (typeof showToast === 'function') showToast('Network error. Please try again.', false);
+            console.error(err);
         });
     });
 })();

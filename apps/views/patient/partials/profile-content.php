@@ -401,6 +401,7 @@ $allConditions = [
     const CONTROLLER = '../../controllers/patientController.php';
 
     function showToast(msg, success) {
+        if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
         const toast = document.getElementById('profileToast');
         const msgEl = document.getElementById('profileToastMsg');
         msgEl.textContent = msg;

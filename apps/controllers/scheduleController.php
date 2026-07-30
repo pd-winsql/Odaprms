@@ -28,6 +28,12 @@ class ScheduleController {
             echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
             exit;
         }
+        // Prevent overlap across all clinics: ensure no other schedule exists on this date.
+        if ($this->schedules->existsScheduleOnDate($sched_date)) {
+            echo 'A schedule already exists for that date.';
+            exit;
+        }
+
         $result = $this->schedules->addSchedule($clinic_id, $sched_date, $max_appointments);
 
         if ($result) {
@@ -64,6 +70,12 @@ class ScheduleController {
             $clinic_id = $_POST['clinic_id'];
             $sched_date = $_POST['sched_date'];
             $max_appointments = $_POST['max_appointments'];
+
+            // Prevent changing the date to one that already exists for another schedule (across clinics)
+            if ($this->schedules->existsScheduleOnDate($sched_date, $schedule_id)) {
+                header("Location: ../views/admin/schedules.php?error=conflict");
+                exit;
+            }
 
             $result = $this->schedules->updateSchedule($schedule_id, $clinic_id, $sched_date, $max_appointments);
 

@@ -341,6 +341,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
     ];
 
     function showToast(msg, success) {
+        if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
         const toast = document.getElementById('serviceToast');
         const msgEl = document.getElementById('serviceToastMsg');
         msgEl.textContent = msg;

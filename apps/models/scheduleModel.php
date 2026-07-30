@@ -86,8 +86,30 @@ class Schedule {
         }
     }
 
+    public function existsScheduleOnDate($sched_date, $exclude_schedule_id = null)
+    {
+        try {
+            if ($exclude_schedule_id) {
+                $stmt = $this->conn->prepare("SELECT COUNT(*) FROM schedules WHERE sched_date = :sched_date AND schedule_id != :exclude_id");
+                $stmt->execute([':sched_date' => $sched_date, ':exclude_id' => $exclude_schedule_id]);
+            } else {
+                $stmt = $this->conn->prepare("SELECT COUNT(*) FROM schedules WHERE sched_date = :sched_date");
+                $stmt->execute([':sched_date' => $sched_date]);
+            }
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            error_log("existsScheduleOnDate error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function addSchedule($clinic_id, $sched_date, $max_appointments) {
         try {
+            // Prevent overlapping schedules across all clinics: same date cannot be reused.
+            if ($this->existsScheduleOnDate($sched_date)) {
+                return false;
+            }
+
             $stmt = $this->conn->prepare("INSERT INTO schedules (clinic_id, sched_date, max_appointments) VALUES (:clinic_id, :sched_date, :max_appointments)");
             return $stmt->execute([
                 ':clinic_id' => $clinic_id,

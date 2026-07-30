@@ -198,6 +198,7 @@ $staffList  = $staffModel->getAllStaff();
     const CONTROLLER = '../../../apps/controllers/staffController.php';
 
     function showToast(msg, success) {
+        if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
         const toast = document.getElementById('staffToast');
         const msgEl = document.getElementById('staffToastMsg');
         msgEl.textContent = msg;

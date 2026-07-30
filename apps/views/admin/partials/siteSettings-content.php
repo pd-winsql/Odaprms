@@ -208,6 +208,7 @@ function sv($settings, $key) {
     };
 
     function showToast(msg, success) {
+        if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
         const toast = document.getElementById('settingsToast');
         const msgEl = document.getElementById('settingsToastMsg');
         msgEl.textContent = msg;

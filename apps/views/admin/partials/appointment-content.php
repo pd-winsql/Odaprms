@@ -244,6 +244,7 @@ function statusClass($status) {
     const CONTROLLER = '../../../apps/controllers/appointmentController.php';
 
     function showToast(msg, success) {
+        if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
         const toast = document.getElementById('statusToast');
         const msgEl = document.getElementById('statusToastMsg');
         msgEl.textContent = msg;
