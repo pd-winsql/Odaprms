@@ -311,10 +311,6 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
   </div>
 </div>
 
-<!-- Toast -->
-<div id="serviceToast" class="vd-toast d-none">
-    <span id="serviceToastMsg"></span>
-</div>
 
 <script>
 (function () {
@@ -342,12 +338,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
 
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        const toast = document.getElementById('serviceToast');
-        const msgEl = document.getElementById('serviceToastMsg');
-        msgEl.textContent = msg;
-        toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error');
-        toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error');
-        setTimeout(() => toast.classList.add('d-none'), 3000);
+        console.warn('showToast not available:', msg);
     }
 
     function refreshPage() {

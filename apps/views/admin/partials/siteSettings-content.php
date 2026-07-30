@@ -172,10 +172,6 @@ function sv($settings, $key) {
 
 </div>
 
-<!-- Toast -->
-<div id="settingsToast" class="vd-toast d-none">
-    <span id="settingsToastMsg"></span>
-</div>
 
 <!-- Save confirmation modal -->
 <div class="modal fade" id="settingsConfirmModal" tabindex="-1" aria-hidden="true">
@@ -209,12 +205,7 @@ function sv($settings, $key) {
 
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        const toast = document.getElementById('settingsToast');
-        const msgEl = document.getElementById('settingsToastMsg');
-        msgEl.textContent = msg;
-        toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error');
-        toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error');
-        setTimeout(() => toast.classList.add('d-none'), 3000);
+        console.warn('showToast not available:', msg);
     }
 
     const confirmModalEl = document.getElementById('settingsConfirmModal');

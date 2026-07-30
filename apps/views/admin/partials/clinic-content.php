@@ -82,23 +82,13 @@ $clinics = $clinicModel->getAllClinics();
 
 </div>
 
-<!-- Toast -->
-<div id="clinicToast" class="vd-toast d-none">
-    <span id="clinicToastMsg"></span>
-</div>
-
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/clinicController.php';
 
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        const toast = document.getElementById('clinicToast');
-        const msgEl = document.getElementById('clinicToastMsg');
-        msgEl.textContent = msg;
-        toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error');
-        toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error');
-        setTimeout(() => toast.classList.add('d-none'), 3000);
+        console.warn('showToast not available:', msg);
     }
 
     document.querySelectorAll('.vd-save-clinic-btn').forEach(btn => {

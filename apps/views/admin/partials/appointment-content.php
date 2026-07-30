@@ -244,23 +244,15 @@ function statusClass($status) {
 
 </div>
 
-<!-- Toast -->
-<div id="statusToast" class="vd-toast d-none">
-    <span id="statusToastMsg"></span>
-</div>
-
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/appointmentController.php';
 
     function showToast(msg, success) {
+        // Prefer the global showToast provided by the dashboard shell.
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        const toast = document.getElementById('statusToast');
-        const msgEl = document.getElementById('statusToastMsg');
-        msgEl.textContent = msg;
-        toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error');
-        toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error');
-        setTimeout(() => toast.classList.add('d-none'), 3000);
+        // No global toast available (partial may be loaded standalone). Log instead.
+        console.warn('showToast not available:', msg);
     }
 
     function updateStatusPill(id, newStatus) {

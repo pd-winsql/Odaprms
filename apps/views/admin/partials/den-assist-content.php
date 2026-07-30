@@ -188,9 +188,23 @@ $staffList  = $staffModel->getAllStaff();
     </div>
 </div>
 
-<!-- Toast -->
-<div id="staffToast" class="vd-toast d-none">
-    <span id="staffToastMsg"></span>
+<!-- Toggle Status Confirmation Modal -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title vd-modal-title">Confirm Status Change</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="toggleStatusMessage">Are you sure you want to change this status?</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="vd-btn-outline btn" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="vd-btn-gold btn" id="confirmToggleStatusBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -199,12 +213,7 @@ $staffList  = $staffModel->getAllStaff();
 
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        const toast = document.getElementById('staffToast');
-        const msgEl = document.getElementById('staffToastMsg');
-        msgEl.textContent = msg;
-        toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error');
-        toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error');
-        setTimeout(() => toast.classList.add('d-none'), 3000);
+        console.warn('showToast not available:', msg);
     }
 
     // ── Create account ──
@@ -307,15 +316,15 @@ $staffList  = $staffModel->getAllStaff();
         });
     });
 
-    // ── Toggle status ──
-    document.querySelectorAll('.vd-toggle-status-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-        const id         = btn.dataset.id;
-        const current    = btn.dataset.status;
-        const newStatus  = current === 'Active' ? 'Inactive' : 'Active';
+    const toggleStatusModalEl = document.getElementById('toggleStatusModal');
+    const toggleStatusMessage = document.getElementById('toggleStatusMessage');
+    const confirmToggleStatusBtn = document.getElementById('confirmToggleStatusBtn');
+    const toggleStatusModal = new bootstrap.Modal(toggleStatusModalEl);
+    let pendingToggleButton = null;
+    let pendingNewStatus = '';
 
-        if (!confirm(`Set this dental assistant to ${newStatus}?`)) return;
-
+    async function performStatusToggle(btn, newStatus) {
+        const id = btn.dataset.id;
         const fd = new FormData();
         fd.append('action', 'toggleStatus');
         fd.append('staff_id', id);
@@ -337,7 +346,36 @@ $staffList  = $staffModel->getAllStaff();
             showToast('Network error.', false);
             console.error(err);
         }
+    }
+
+    // ── Toggle status ──
+    document.querySelectorAll('.vd-toggle-status-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+        const current = btn.dataset.status;
+        pendingNewStatus = current === 'Active' ? 'Inactive' : 'Active';
+        pendingToggleButton = btn;
+        toggleStatusMessage.textContent = `Set this dental assistant to ${pendingNewStatus}?`;
+        confirmToggleStatusBtn.disabled = false;
+        confirmToggleStatusBtn.textContent = 'Confirm';
+        toggleStatusModal.show();
         });
+    });
+
+    confirmToggleStatusBtn.addEventListener('click', async function () {
+        if (!pendingToggleButton) return;
+
+        this.disabled = true;
+        this.textContent = 'Updating…';
+
+        try {
+            await performStatusToggle(pendingToggleButton, pendingNewStatus);
+            toggleStatusModal.hide();
+        } finally {
+            pendingToggleButton = null;
+            pendingNewStatus = '';
+            this.disabled = false;
+            this.textContent = 'Confirm';
+        }
     });
 
 })();

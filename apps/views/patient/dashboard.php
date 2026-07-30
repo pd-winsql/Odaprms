@@ -122,8 +122,30 @@ $today    = date('l, F j Y');
 
     </main>
 
+    <!-- Global Toast (for patient partials) -->
+    <div id="globalToast" class="vd-toast d-none" role="status" aria-live="polite" aria-atomic="true" style="right:16px; bottom:16px;">
+        <div class="vd-toast-body">
+            <div class="vd-toast-message" id="globalToastMsg"></div>
+        </div>
+    </div>
+
     <script src="../../../public/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Expose a global showToast() so all loaded partials can call it
+        window.showToast = function(message, success = true) {
+            const toast = document.getElementById('globalToast');
+            const msgEl = document.getElementById('globalToastMsg');
+            if (!toast || !msgEl) return;
+            msgEl.textContent = message;
+            toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error', 'show');
+            toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error', 'show');
+            clearTimeout(window._globalToastTimeout);
+            window._globalToastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.classList.add('d-none'), 250);
+            }, 3000);
+        };
+
         const sidebar    = document.getElementById('sidebar');
         const overlay    = document.getElementById('sidebarOverlay');
         const menuToggle = document.getElementById('menuToggle');

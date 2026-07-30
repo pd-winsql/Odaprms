@@ -391,23 +391,13 @@ $allConditions = [
 
 </div>
 
-<!-- Toast -->
-<div id="profileToast" class="vd-toast d-none">
-    <span id="profileToastMsg"></span>
-</div>
-
 <script>
 (function () {
     const CONTROLLER = '../../controllers/patientController.php';
 
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        const toast = document.getElementById('profileToast');
-        const msgEl = document.getElementById('profileToastMsg');
-        msgEl.textContent = msg;
-        toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error');
-        toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error');
-        setTimeout(() => toast.classList.add('d-none'), 3000);
+        console.warn('showToast not available:', msg);
     }
 
     function showFeedback(prefix, success, msg) {
