@@ -4,50 +4,65 @@
   require_once 'config/conn.php';
   require_once 'apps/models/clinicModel.php';
   require_once 'apps/models/serviceModel.php';
+  require_once 'apps/models/siteSettingsModel.php';
 
   $db = new Database();
   $conn = $db->connect();
   $clinicModel = new Clinic($conn);
   $clinics = $clinicModel->getAllClinics();
 
+  $settingsModel = new SiteSettingsModel($conn);
+  $settings = $settingsModel->getSettings();
+
+  function sv($settings, $key, $fallback = '') {
+      return htmlspecialchars($settings[$key] ?? $fallback);
+  }
+
   $serviceModel = new ServiceModel($conn);
   $allCategories = $serviceModel->getAllCategories();
   $allServices   = $serviceModel->getAllServices();
+
+  // Build category_id => [service_id, ...] from services.category_id
+  $categoryServiceIds = [];
+  foreach ($allServices as $service) {
+      $serviceId = (int)($service['service_id'] ?? 0);
+      $categoryId = (int)($service['category_id'] ?? 0);
+
+      if ($serviceId <= 0 || $categoryId <= 0) {
+          continue;
+      }
+
+      $categoryServiceIds[$categoryId][] = $serviceId;
+  }
+  $servicesById = array_column($allServices, null, 'service_id');
+
+  // Reshape into the same [title, description, services[]] structure the
+  // template below already expects, so the markup itself didn't need to change.
+  // Only active services are shown on the public landing page.
   $serviceCategories = [];
-$activeServiceCount = 0;
+  $activeServiceCount = 0;
+  foreach ($allCategories as $cat) {
+      $serviceIds = $categoryServiceIds[$cat['category_id']] ?? [];
+      $categoryServices = [];
 
-foreach ($allCategories as $cat) {
+      foreach ($serviceIds as $sid) {
+          if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
+          $categoryServices[] = [
+              'name' => $servicesById[$sid]['service_name'],
+              'icon' => $servicesById[$sid]['service_icon'],
+              'desc' => $servicesById[$sid]['service_description'],
+          ];
+          $activeServiceCount++;
+      }
 
-    $services = $serviceModel->getServicesByCategory($cat['category_id']);
+      if (empty($categoryServices)) continue; // skip empty categories on the public page
 
-    $categoryServices = [];
-
-    foreach ($services as $service) {
-
-        if (!$service['is_active']) {
-            continue;
-        }
-
-        $categoryServices[] = [
-            'name' => $service['service_name'],
-            'icon' => $service['service_icon'],
-            'desc' => $service['service_description']
-        ];
-
-        $activeServiceCount++;
-    }
-
-    if (empty($categoryServices)) {
-        continue;
-    }
-
-    $serviceCategories[] = [
-        'title' => $cat['category_name'],
-        'description' => $cat['category_description'],
-        'services' => $categoryServices
-    ];
-} 
-
+      $serviceCategories[] = [
+          'title' => $cat['category_name'],
+          'description' => $cat['category_description'],
+          'services' => $categoryServices,
+      ];
+  }
 
   $isLoggedIn = isset($_SESSION['user_id']);
 
@@ -77,8 +92,12 @@ foreach ($allCategories as $cat) {
   <nav class="navbar navbar-expand-lg vd-navbar sticky-top">
     <div class="container-fluid px-4 px-lg-5">
       <a class="navbar-brand vd-navbar-brand-wrap" href="#hero-section">
-        <div class="vd-logo-name">Dr. Aprille</div>
-        <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
+        <?php if (!empty($settings['site_logo'])): ?>
+          <img src="public/assets/<?= htmlspecialchars($settings['site_logo']) ?>" alt="<?= sv($settings, 'brand_name_top', 'Dr. Aprille') ?>" class="vd-navbar-logo-img">
+        <?php else: ?>
+          <div class="vd-logo-name"><?= sv($settings, 'brand_name_top', 'Dr. Aprille') ?></div>
+          <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
+        <?php endif; ?>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
         <span class="navbar-toggler-icon"></span>
@@ -108,10 +127,10 @@ foreach ($allCategories as $cat) {
       <div class="row align-items-center g-5">
         <div class="col-12 col-lg-6">
           <div class="vd-hero-card">
-            <div class="vd-hero-system-tag">Online Dental Appointment &amp; Patient Records Management System</div>
-            <div class="vd-hero-eyebrow">Two Clinics in Cagayan · Alcala &amp; Tuguegarao</div>
-            <h1 class="vd-hero-title">Dental care for Alcala and Tuguegarao families.</h1>
-            <p class="vd-hero-sub">From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.</p>
+            <div class="vd-hero-system-tag"><?= sv($settings, 'hero_system_tag', 'Online Dental Appointment & Patient Records Management System') ?></div>
+            <div class="vd-hero-eyebrow"><?= sv($settings, 'hero_eyebrow', 'Two Clinics in Cagayan · Alcala & Tuguegarao') ?></div>
+            <h1 class="vd-hero-title"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
+            <p class="vd-hero-sub"><?= sv($settings, 'hero_subtext', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.') ?></p>
             <div class="d-flex flex-wrap gap-3">
               <a href="apps/views/ventura_booking_form.php" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
               <a href="#services" class="btn vd-btn-outline px-4 py-2">View Services</a>
@@ -188,29 +207,29 @@ foreach ($allCategories as $cat) {
       <div class="text-center mb-4">
         <div class="vd-eyebrow">Who We Are</div>
         <h2 class="vd-section-heading mb-2">About Us</h2>
-        <p class="vd-section-intro">Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.</p>
+        <p class="vd-section-intro"><?= sv($settings, 'about_intro') ?></p>
       </div>
 
       <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
         <div class="col">
           <div class="vd-pillar text-center h-100">
             <div class="vd-pillar-icon"><i class="fa-solid fa-heart"></i></div>
-            <div class="vd-pillar-title">Patient-Centered Care</div>
-            <p class="vd-pillar-desc">Every visit is explained clearly, so you always know what to expect.</p>
+            <div class="vd-pillar-title"><?= sv($settings, 'pillar1_title', 'Patient-Centered Care') ?></div>
+            <p class="vd-pillar-desc"><?= sv($settings, 'pillar1_desc') ?></p>
           </div>
         </div>
         <div class="col">
           <div class="vd-pillar text-center h-100">
             <div class="vd-pillar-icon"><i class="fa-solid fa-award"></i></div>
-            <div class="vd-pillar-title">Experienced Team</div>
-            <p class="vd-pillar-desc">Dental professionals handling everything from routine care to advanced treatment.</p>
+            <div class="vd-pillar-title"><?= sv($settings, 'pillar2_title', 'Experienced Team') ?></div>
+            <p class="vd-pillar-desc"><?= sv($settings, 'pillar2_desc') ?></p>
           </div>
         </div>
         <div class="col">
           <div class="vd-pillar text-center h-100">
             <div class="vd-pillar-icon"><i class="fa-solid fa-location-dot"></i></div>
-            <div class="vd-pillar-title">Two Convenient Branches</div>
-            <p class="vd-pillar-desc">Serving patients in both Alcala and Tuguegarao, Cagayan.</p>
+            <div class="vd-pillar-title"><?= sv($settings, 'pillar3_title', 'Two Convenient Branches') ?></div>
+            <p class="vd-pillar-desc"><?= sv($settings, 'pillar3_desc') ?></p>
           </div>
         </div>
       </div>
@@ -245,13 +264,13 @@ foreach ($allCategories as $cat) {
         <div class="col-12 col-md-5">
           <div class="vd-eyebrow mb-2">Get In Touch</div>
           <h2 class="vd-contact-heading mb-3">We'd Love to Hear From You</h2>
-          <p class="text-muted mb-1">Address: Alcala &amp; Tuguegarao, Cagayan</p>
-          <p class="text-muted mb-1">Phone: 0912-345-6789</p>
-          <p class="text-muted">Email: <a href="mailto:info@draprilleventura.com" class="vd-link">info@draprilleventura.com</a></p>
+          <p class="text-muted mb-1">Address: <?= sv($settings, 'contact_address', 'Alcala & Tuguegarao, Cagayan') ?></p>
+          <p class="text-muted mb-1">Phone: <?= sv($settings, 'contact_phone', '0912-345-6789') ?></p>
+          <p class="text-muted">Email: <a href="mailto:<?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?>" class="vd-link"><?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?></a></p>
         </div>
         <div class="col-12 col-md-5">
           <div class="card vd-form-card p-4 border">
-            <form action="mailto:info@draprilleventura.com" method="POST" enctype="text/plain">
+            <form action="mailto:<?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?>" method="POST" enctype="text/plain">
               <div class="mb-3">
                 <label for="name" class="form-label vd-label">Name</label>
                 <input type="text" id="name" name="name" class="form-control vd-input" required>

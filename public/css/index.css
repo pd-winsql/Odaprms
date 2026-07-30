@@ -99,6 +99,7 @@
   font-size: 12px;
   padding: 1px 4px;
 }
+.vd-navbar-logo-img { height: 32px; width: auto; display: block; }
 
 /* Hero icon feature grid — replaces a photo with icon + label tiles */
 .vd-hero-feature-grid {

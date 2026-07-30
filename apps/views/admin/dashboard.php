@@ -90,7 +90,7 @@ $today = date('l, F j Y');
         </a>
 
         <div class="vd-nav-section">Account</div>
-        <a href="#" class="vd-nav-item" data-page="settings-content.php">
+        <a href="#" class="vd-nav-item" data-page="siteSettings-content.php">
             <span class="vd-nav-icon"><i class="ti ti-settings"></i></span> Settings
         </a>
         <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
@@ -126,6 +126,7 @@ $today = date('l, F j Y');
             </div>  -->
         </div>
         <div class="vd-topbar-right">
+
             <span class="vd-topbar-date"><?= $today ?></span>
             <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
             <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
