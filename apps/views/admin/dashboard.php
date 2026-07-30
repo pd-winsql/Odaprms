@@ -119,7 +119,7 @@ $today = date('l, F j Y');
             <button class="vd-menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
             <i class="ti ti-menu-2"></i>
             </button>
-            <span class="vd-dash-title">Dashboard</span>
+            <span class="vd-dash-title" id="dashTitle">Dashboard</span>
             <!--<div class="vd-topbar-search">
                 <i class="ti ti-search"></i>
                 <input type="text" placeholder="Search...">
@@ -162,6 +162,16 @@ $today = date('l, F j Y');
         /* Navigation */
         const navItems = document.querySelectorAll('.vd-nav-item');
         const dashContent = document.querySelector('.vd-dash-content');
+        const dashTitle = document.getElementById('dashTitle');
+
+        function getPageTitle(page) {
+            const nav = document.querySelector(`.vd-nav-item[data-page="${page}"]`);
+            return nav ? nav.textContent.trim() : 'Dashboard';
+        }
+
+        function setDashboardTitle(page) {
+            dashTitle.textContent = getPageTitle(page);
+        }
         
         async function loadpage(page) {
         try {
@@ -199,6 +209,7 @@ $today = date('l, F j Y');
             item.classList.add('active');
 
             window.location.hash = page;
+            setDashboardTitle(page);
 
             await loadpage(page);
             });
@@ -211,6 +222,7 @@ $today = date('l, F j Y');
                 if(matchingNav) {
                 navItems.forEach(i => i.classList.remove('active'));
                 matchingNav.classList.add('active');
+                setDashboardTitle(hash);
                 await loadpage(hash);
                 }
             }

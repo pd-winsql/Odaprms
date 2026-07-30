@@ -198,43 +198,20 @@ class AppointmentController {
                 exit;
             }
 
-            // 1. CHECK IF PATIENT ALREADY EXISTS
-            $patient = $patientModel->getPatientByEmail($_POST['email']);
-
-            if ($patient) {
-
-                // Existing patient
-                $patient_id = $patient['patient_id'];
-
-            } else {
-
-                // First-time patient
-                $patient_id = $patientModel->createPatient(
-                    null,
-                    $_POST['firstname'],
-                    $_POST['lastname'],
-                    $_POST['middlename'],
-                    $_POST['age'],
-                    $_POST['gender'],
-                    $_POST['phone_number'],
-                    $_POST['email']
-                );
-
-                if (!$patient_id) {
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Failed to create patient.'
-                    ]);
-                    exit;
-                }
+            $email = trim($_POST['email'] ?? '');
+            if (!$email) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Email is required.'
+                ]);
+                exit;
             }
 
-            $patient = $patientModel->getPatientByEmail($_POST['email']);
-
-            if($patient) {
+            // 1. CHECK IF PATIENT ALREADY EXISTS
+            $patient = $patientModel->getPatientByEmail($email);
+            if ($patient) {
                 $patient_id = $patient['patient_id'];
             } else {
-
                 $patient_id = $patientModel->createPatient(
                     null,
                     $_POST['firstname'],
@@ -243,7 +220,7 @@ class AppointmentController {
                     $_POST['age'],
                     $_POST['gender'],
                     $_POST['phone_number'],
-                    $_POST['email']
+                    $email
                 );
 
                 if (!$patient_id) {
