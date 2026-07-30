@@ -44,9 +44,9 @@
         .then(text => {
             if (text.trim() === 'success') {
                 bootstrap.Modal.getInstance(document.getElementById('addScheduleModal')).hide();
-                // showToast is defined in the parent schedule-content.php so it's available here
                 if (typeof showToast === 'function') showToast('Schedule added successfully!', true);
-                setTimeout(() => location.reload(), 1500);
+                if (typeof refreshPage === 'function') refreshPage();
+                else if (typeof loadpage === 'function') loadpage('schedule-content.php');
             } else {
                 document.getElementById('addError').textContent = text;
                 document.getElementById('addError').classList.remove('d-none');

@@ -208,6 +208,10 @@ function sv($settings, $key) {
         console.warn('showToast not available:', msg);
     }
 
+    function refreshPage() {
+        if (typeof loadpage === 'function') loadpage('siteSettings-content.php');
+    }
+
     const confirmModalEl = document.getElementById('settingsConfirmModal');
     const confirmMessageEl = document.getElementById('settingsConfirmMessage');
     const confirmBtn = document.getElementById('settingsConfirmBtn');
@@ -308,7 +312,7 @@ function sv($settings, $key) {
                         const result   = await response.json();
                         showToast(result.message || (result.success ? 'Logo updated.' : 'Failed to upload.'), result.success);
                         if (result.success) {
-                            setTimeout(() => window.location.reload(), 1200);
+                            refreshPage();
                         }
                     } catch (err) {
                         showToast('Network error. Please try again.', false);
@@ -339,7 +343,7 @@ function sv($settings, $key) {
                     const result   = await response.json();
                     showToast(result.message || (result.success ? 'Logo removed.' : 'Failed to remove.'), result.success);
                     if (result.success) {
-                        setTimeout(() => window.location.reload(), 800);
+                        refreshPage();
                     }
                 } catch (err) {
                     showToast('Network error. Please try again.', false);

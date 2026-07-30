@@ -216,6 +216,10 @@ $staffList  = $staffModel->getAllStaff();
         console.warn('showToast not available:', msg);
     }
 
+    function refreshPage() {
+        if (typeof loadpage === 'function') loadpage('den-assist-content.php');
+    }
+
     // ── Create account ──
     document.getElementById('createStaffForm').addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -245,9 +249,11 @@ $staffList  = $staffModel->getAllStaff();
         }
     });
 
-    // Done button — reload to show new staff in list
+    // Done button — reload partial to show new staff in list
     document.getElementById('createDoneBtn').addEventListener('click', () => {
-        location.reload();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createStaffModal'));
+        if (modal) modal.hide();
+        refreshPage();
     });
 
     // Reset modal on close

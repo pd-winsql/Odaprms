@@ -125,6 +125,10 @@ $clinics = $clinicModel->getAllClinics();
 </div>
 
 <script>
+    function refreshPage() {
+        if (typeof loadpage === 'function') loadpage('schedule-content.php');
+    }
+
     // Show toast for query param results (e.g., edit conflict) — use global showToast if available
     (function () {
         const params = new URLSearchParams(window.location.search);
@@ -217,10 +221,8 @@ $clinics = $clinicModel->getAllClinics();
             const resp = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: formData });
             const text = await resp.text();
             if (text.trim() === 'success') {
-                const card = document.getElementById('schedCard-' + scheduleToDelete);
-                if (card) card.remove();
                 showToast('Schedule deleted successfully!', true);
-                setTimeout(() => location.reload(), 900);
+                refreshPage();
             } else {
                 showToast('Error: ' + text, false);
             }

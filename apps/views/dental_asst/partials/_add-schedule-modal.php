@@ -64,7 +64,8 @@
                 if (text.trim() === 'success') {
                     modalInstance.hide();
                     if (typeof showToast === 'function') showToast('Schedule added successfully!', true);
-                    setTimeout(() => location.reload(), 1500);
+                    if (typeof refreshPage === 'function') refreshPage();
+                    else if (typeof loadpage === 'function') loadpage('schedule-content.php');
                 } else {
                     const addError = document.getElementById('addError');
                     addError.textContent = text;
