@@ -126,6 +126,94 @@ function sendOTPEmail($toEmail, $toName, $otp, $type = 'register') {
     return sendTemplateEmail($toEmail, $toName, $templateKey, $otp);
 }
 
+// ── Credentials email shell: same gold/cream look, but shows two rows
+//    (Username + Password) instead of the single big code box used by OTPs ──
+function buildCredentialsEmailHtml($toName, $template, $username, $password) {
+    return '
+    <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="font-size: 11px; letter-spacing: 0.22em; color: #b5924c; font-style: italic;">Dr. Aprille</div>
+        <div style="font-size: 32px; font-weight: 300; letter-spacing: 0.12em; color: #1a1612;">
+          VEN<span style="display:inline-block; background:#b5924c; color:#fff; font-size:18px; font-weight:600; padding:2px 6px; border-radius:2px; margin:0 2px;">✚</span>URA
+        </div>
+        <div style="font-size: 9px; letter-spacing: 0.28em; color: #b5924c; margin-top: 4px;">CLINICA DENTAL</div>
+      </div>
+
+      <p style="font-size: 14px; color: #4a3f30; margin-bottom: 8px;">Hello, <strong>' . htmlspecialchars($toName) . '</strong></p>
+      <p style="font-size: 13px; color: #4a3f30; line-height: 1.6; margin-bottom: 24px;">
+        ' . htmlspecialchars($template['intro']) . '<br><br>
+        ' . htmlspecialchars($template['instruction']) . '
+      </p>
+
+      <div style="background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 6px; padding: 20px 24px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #d9c9a8;">
+          <span style="font-size: 11px; letter-spacing: 0.15em; color: #b5924c; text-transform: uppercase;">Username</span>
+          <span style="font-size: 14px; font-weight: 600; color: #1a1612;">' . htmlspecialchars($username) . '</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+          <span style="font-size: 11px; letter-spacing: 0.15em; color: #b5924c; text-transform: uppercase;">Password</span>
+          <span style="font-size: 14px; font-weight: 600; color: #1a1612;">' . htmlspecialchars($password) . '</span>
+        </div>
+      </div>
+
+      <p style="font-size: 12px; color: #4a3f30; line-height: 1.6;">
+        ' . htmlspecialchars($template['footer']) . '
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #d9c9a8; margin: 24px 0;">
+      <p style="font-size: 11px; color: #b5924c; text-align: center; letter-spacing: 0.08em;">
+        Dr. Aprille Ventura Clinica Dental
+      </p>
+    </div>';
+}
+
+// ── New: dental assistant account-created notification (used by Admin "New Account") ──
+function sendStaffAccountEmail($toEmail, $toName, $username, $password) {
+    $template = getEmailTemplate('staff_account_created');
+
+    if (!$template) {
+        error_log("sendStaffAccountEmail error: missing 'staff_account_created' template");
+        return ['success' => false, 'message' => 'Unknown email template.'];
+    }
+
+    $config = getMailConfig();
+    $mail   = new PHPMailer(true);
+
+    try {
+        $mail->isSMTP();
+
+        $mail->Host       = $config['host'];
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $config['username'];
+        $mail->Password   = $config['password'];
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = $config['port'];
+
+        $mail->setFrom($_ENV['MAIL_FROM_ADDRESS'], $_ENV['MAIL_FROM_NAME']);
+        $mail->addAddress($toEmail, $toName);
+
+        $mail->CharSet = 'UTF-8';
+        $mail->isHTML(true);
+        $mail->Subject = $template['subject'] . ' — Dr. Aprille Ventura Clinica Dental';
+        $mail->Body    = buildCredentialsEmailHtml($toName, $template, $username, $password);
+        $mail->AltBody =
+            "Dr. Aprille Ventura Clinica Dental\n\n" .
+            "Hello $toName,\n\n" .
+            $template['intro'] . "\n\n" .
+            "Username: $username\n" .
+            "Password: $password\n\n" .
+            $template['instruction'] . "\n\n" .
+            $template['footer'];
+
+        $mail->send();
+        return ['success' => true];
+
+    } catch (Exception $e) {
+        error_log("Mailer error (staff_account_created): " . $mail->ErrorInfo);
+        return ['success' => false, 'message' => $mail->ErrorInfo];
+    }
+}
+
 // ── New: appointment status notification (used by admin "Save & Notify") ──
 function sendAppointmentStatusEmail($toEmail, $toName, $status) {
     $map = [

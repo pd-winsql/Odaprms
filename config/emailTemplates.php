@@ -91,6 +91,22 @@ return [
 
         'footer' =>
             'Thank you for your understanding.'
+    ],
+
+    'staff_account_created' => [
+
+        'subject' => 'Your Dental Assistant Account Has Been Created',
+
+        'heading' => 'Account Created',
+
+        'intro' =>
+            'An account has been created for you at Dr. Aprille Ventura Clinica Dental.',
+
+        'instruction' =>
+            'Use the credentials below to log in. For security, please change your password after your first login.',
+
+        'footer' =>
+            'If you were not expecting this account, please contact the clinic.'
     ]
 
 ];

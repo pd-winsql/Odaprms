@@ -134,13 +134,14 @@ $staffList  = $staffModel->getAllStaff();
                 <input type="text" name="firstname" class="form-control vd-input" required>
             </div>
             <div class="col-12 col-sm-4">
-                <label class="vd-label form-label">Last Name <span class="text-danger">*</span></label>
-                <input type="text" name="lastname" class="form-control vd-input" required>
-            </div>
-            <div class="col-12 col-sm-4">
                 <label class="vd-label form-label">Middle Name</label>
                 <input type="text" name="middlename" class="form-control vd-input">
             </div>
+            <div class="col-12 col-sm-4">
+                <label class="vd-label form-label">Last Name <span class="text-danger">*</span></label>
+                <input type="text" name="lastname" class="form-control vd-input" required>
+            </div>
+            
             <div class="col-12 col-sm-6">
                 <label class="vd-label form-label">Gender <span class="text-danger">*</span></label>
                 <select name="gender" class="form-select vd-input" required>

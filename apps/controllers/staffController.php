@@ -1,6 +1,7 @@
 <?php
 require_once '../models/staffModel.php';
 require_once '../../config/conn.php';
+require_once '../../config/mailer.php';
 
 session_start();
 
@@ -37,9 +38,16 @@ class StaffController {
         $result = $this->staffModel->createStaff($firstname, $lastname, $middlename, $gender, $phone, $email, $password);
 
         if ($result['success']) {
+            $message = 'Account created successfully.';
+
+            $emailResult = sendStaffAccountEmail($email, "$firstname $lastname", $result['username'], $password);
+            if (!$emailResult['success']) {
+                $message = 'Account created, but the notification email failed to send.';
+            }
+
             echo json_encode([
                 'success'  => true,
-                'message'  => 'Account created successfully.',
+                'message'  => $message,
                 'username' => $result['username'],
             ]);
         } else {
