@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 13, 2026 at 03:56 PM
+-- Generation Time: Jul 30, 2026 at 03:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,9 +32,9 @@ CREATE TABLE `appointments` (
   `patient_id` int(11) DEFAULT NULL,
   `schedule_id` int(11) NOT NULL,
   `clinic_id` int(11) NOT NULL,
-  `service` varchar(100) NOT NULL,
+  `service_id` int(11) DEFAULT NULL,
   `date` date NOT NULL,
-  `status` enum('Pending','Confirmed','Cancelled','Completed') NOT NULL DEFAULT 'Pending',
+  `status` enum('Pending','Confirmed','Cancelled','Completed','Rejected') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -42,11 +42,13 @@ CREATE TABLE `appointments` (
 -- Dumping data for table `appointments`
 --
 
-INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clinic_id`, `service`, `date`, `status`, `created_at`) VALUES
-(10, 1, 14, 1, 'cleaning', '2026-06-26', 'Cancelled', '2026-06-25 15:05:28'),
-(11, 4, 15, 1, 'fluoride', '2026-07-02', 'Completed', '2026-07-01 15:12:50'),
-(12, 7, 16, 1, 'whitening', '2026-07-10', 'Confirmed', '2026-07-09 10:22:47'),
-(13, 8, 16, 1, 'pediatric', '2026-07-10', 'Confirmed', '2026-07-09 10:40:51');
+INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clinic_id`, `service_id`, `date`, `status`, `created_at`) VALUES
+(17, 14, 20, 1, 1, '2026-07-27', 'Confirmed', '2026-07-24 09:47:53'),
+(19, 14, 21, 2, 3, '2026-07-29', 'Confirmed', '2026-07-24 10:29:34'),
+(20, 16, 20, 1, 9, '2026-07-27', 'Confirmed', '2026-07-27 06:17:38'),
+(22, 17, 20, 1, 12, '2026-07-27', 'Confirmed', '2026-07-27 06:52:37'),
+(23, 18, 30, 2, 9, '2026-08-07', 'Pending', '2026-07-28 03:00:13'),
+(24, 19, 30, 2, 5, '2026-08-07', 'Pending', '2026-07-28 03:02:02');
 
 -- --------------------------------------------------------
 
@@ -69,6 +71,59 @@ CREATE TABLE `clinics` (
 INSERT INTO `clinics` (`clinic_id`, `clinic_name`, `clinic_address`, `clinic_contact`, `clinic_image`) VALUES
 (1, 'Alcala Branch', 'Zone 4, Tupang, Alcala, Cagayan', '0912-345-6789', NULL),
 (2, 'Tuguegarao Branch', 'Bartolome St., Caggay, Tuguegarao City, Cagayan', '0912-345-6789', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `email_verifications`
+--
+
+CREATE TABLE `email_verifications` (
+  `id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `otp` varchar(6) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `email_verifications`
+--
+
+INSERT INTO `email_verifications` (`id`, `email`, `otp`, `expires_at`, `used`, `created_at`) VALUES
+(2, 'winsight11@gmail.com', '652689', '2026-07-24 18:02:02', 1, '2026-07-24 09:52:02'),
+(4, 'roncorpuz09@gmail.com', '904227', '2026-07-25 13:38:02', 0, '2026-07-25 05:28:02'),
+(8, 'stephanieunista@gmail.com', '192956', '2026-07-27 13:32:10', 1, '2026-07-27 05:22:10'),
+(9, 'llantomichelle9@gmail.com', '136841', '2026-07-27 14:55:09', 1, '2026-07-27 06:45:09'),
+(13, 'small@gmail.com', '581017', '2026-07-27 09:31:03', 0, '2026-07-27 07:21:03'),
+(15, 'winje@gmail.com', '908945', '2026-07-27 22:50:21', 1, '2026-07-27 14:40:21'),
+(16, 'j.cruz@gmail.com', '023441', '2026-07-28 11:13:10', 1, '2026-07-28 03:03:10'),
+(17, 'jcruz@gmail.com', '406047', '2026-07-28 11:14:43', 1, '2026-07-28 03:04:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL,
+  `token_hash` varchar(255) DEFAULT NULL,
+  `email` varchar(255) NOT NULL,
+  `otp` varchar(6) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `password_resets`
+--
+
+INSERT INTO `password_resets` (`id`, `token_hash`, `email`, `otp`, `expires_at`, `used`, `created_at`) VALUES
+(37, NULL, 'winsight11@gmail.com', '146966', '2026-07-29 18:20:01', 0, '2026-07-29 10:10:01'),
+(38, NULL, 'roncorpuz09@gmail.com', '475333', '2026-07-29 18:21:36', 0, '2026-07-29 10:11:36');
 
 -- --------------------------------------------------------
 
@@ -106,13 +161,12 @@ CREATE TABLE `patients` (
 --
 
 INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middlename`, `age`, `gender`, `phone_number`, `email`, `birthdate`, `civil_status`, `home_address`, `work_address`, `fb_account`, `occupation`, `office_contact`, `guardian_name`, `guardian_contact`, `physician_name`, `physician_contact`, `physician_address`, `created_at`) VALUES
-(1, NULL, 'sheesshh', 'palo', 'santossss', 23, 'Female', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-06-25 15:05:28'),
-(2, NULL, 'Angelo', 'Cabulay', '', 24, 'Male', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-01 15:12:20'),
-(3, NULL, 'Angelo', 'Cabulay', '', 24, 'Male', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-01 15:12:37'),
-(4, NULL, 'Angelo', 'Cabulay', 'boi', 24, 'Male', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-01 15:12:50'),
-(6, NULL, 'Test', 'User', 'CLI', 30, 'Female', '09170000000', 'testcli@example.com', '1995-01-10', 'Single', 'Test Address', 'Work Address', 'testfb', 'Tester', '09170000001', '', '', '', '', '', '2026-07-07 03:31:41'),
-(7, NULL, 'Stephanie', 'Unista', 'Dikoalam', 21, 'Female', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-09 10:22:47'),
-(8, NULL, 'Michelle', 'Llanto', 'Dikoalam', 21, 'Female', '09123456789', 'palokaboi@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-09 10:40:51');
+(14, 14, 'Win', 'Corpuz', 'Joaquin', 21, 'Male', '09123456789', 'winsight11@gmail.com', NULL, 'Single', 'Baybayog, Alcala, Cagayan', 'Baybayog, Alcala, Cagayan', NULL, 'Student', NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-24 09:47:53'),
+(16, 15, 'Ning', 'Unista', 'v ', 21, 'Female', '09218656206', 'stephanieunista@gmail.com', '2004-09-04', 'Single', 'masin, alcala cagayan ', 'masin,alcala, cgayan', 'step  unista', 'student', 'n/a', NULL, NULL, NULL, NULL, NULL, '2026-07-27 05:23:30'),
+(17, 17, 'Michelle', 'LLANTO', 'JACINTO', 21, 'Female', '09999997652566', 'llantomichelle9@gmail.com', '2005-06-02', 'Single', 'Baculod Alcala Cagayan', 'N/A', 'MICHELLE LLANTO', 'STUDENT', 'N/A', NULL, NULL, NULL, NULL, NULL, '2026-07-27 06:49:28'),
+(18, 21, 'Juan', 'Dela Cruz', 'Santos', 22, 'Male', '09123456789', 'jcruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:00:13'),
+(19, NULL, 'Maria', 'Lago', 'Palo', 20, 'Female', '09123456789', 'm.lago@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:02:02'),
+(20, 20, 'CruzJ', '', NULL, NULL, NULL, NULL, 'j.cruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:03:46');
 
 -- --------------------------------------------------------
 
@@ -131,7 +185,7 @@ CREATE TABLE `patient_conditions` (
 --
 
 INSERT INTO `patient_conditions` (`condition_id`, `patient_id`, `condition`) VALUES
-(1, 6, 'Heart Disease');
+(2, 17, 'Anemia');
 
 -- --------------------------------------------------------
 
@@ -153,7 +207,8 @@ CREATE TABLE `patient_consent` (
 --
 
 INSERT INTO `patient_consent` (`consent_id`, `patient_id`, `consent_name`, `consent_for`, `consent_date`, `created_at`) VALUES
-(1, 6, 'Test User', 'myself', '2026-07-07', '2026-07-07 03:31:41');
+(2, 16, NULL, 'myself', '2026-07-21', '2026-07-27 05:44:48'),
+(3, 17, NULL, 'myself', '2026-07-25', '2026-07-27 07:35:28');
 
 -- --------------------------------------------------------
 
@@ -169,15 +224,18 @@ CREATE TABLE `patient_dental_history` (
   `treatment_done` varchar(255) DEFAULT NULL,
   `reason_for_visit` varchar(255) DEFAULT NULL,
   `referred_by` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `last_updated_by` varchar(20) DEFAULT NULL,
+  `last_updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patient_dental_history`
 --
 
-INSERT INTO `patient_dental_history` (`dental_history_id`, `patient_id`, `previous_dentist`, `last_dental_visit`, `treatment_done`, `reason_for_visit`, `referred_by`, `created_at`) VALUES
-(2, 6, 'Dr. Test', '2024-01-01', 'Cleaning', 'Checkup', 'Friend', '2026-07-07 03:31:41');
+INSERT INTO `patient_dental_history` (`dental_history_id`, `patient_id`, `previous_dentist`, `last_dental_visit`, `treatment_done`, `reason_for_visit`, `referred_by`, `created_at`, `last_updated_by`, `last_updated_at`) VALUES
+(3, 16, 'yesgdbhyfgeg ', '2026-07-01', 'toothtache ', 'check up', 'none', '2026-07-27 05:50:18', 'patient', '2026-07-27 13:54:32'),
+(4, 17, 'STEPHANIE UNISTA', '2026-07-25', 'TOOTHWHITENING', 'CHECK UP', 'DR. RON RON', '2026-07-27 07:28:06', 'patient', '2026-07-27 15:28:06');
 
 -- --------------------------------------------------------
 
@@ -208,15 +266,18 @@ CREATE TABLE `patient_medical_history` (
   `cond_others` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `blood_type` varchar(10) DEFAULT NULL,
-  `blood_pressure` varchar(20) DEFAULT NULL
+  `blood_pressure` varchar(20) DEFAULT NULL,
+  `last_updated_by` varchar(20) DEFAULT NULL,
+  `last_updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patient_medical_history`
 --
 
-INSERT INTO `patient_medical_history` (`medical_history_id`, `patient_id`, `good_health`, `medical_condition`, `medical_condition_detail`, `serious_illness`, `serious_illness_detail`, `hospitalized`, `hospitalized_detail`, `medication`, `medication_detail`, `smoke`, `alcohol`, `drugs`, `allergy`, `allergy_detail`, `pregnant`, `nursing`, `birth_control`, `cond_others`, `created_at`, `blood_type`, `blood_pressure`) VALUES
-(2, 6, 1, 0, '', 0, '', 0, '', 0, '', 0, 0, 0, 0, '', 0, 0, 0, '', '2026-07-07 03:31:41', NULL, NULL);
+INSERT INTO `patient_medical_history` (`medical_history_id`, `patient_id`, `good_health`, `medical_condition`, `medical_condition_detail`, `serious_illness`, `serious_illness_detail`, `hospitalized`, `hospitalized_detail`, `medication`, `medication_detail`, `smoke`, `alcohol`, `drugs`, `allergy`, `allergy_detail`, `pregnant`, `nursing`, `birth_control`, `cond_others`, `created_at`, `blood_type`, `blood_pressure`, `last_updated_by`, `last_updated_at`) VALUES
+(3, 16, 1, 0, NULL, 1, NULL, 1, NULL, 0, NULL, 0, 0, 0, 1, NULL, 0, 0, 0, NULL, '2026-07-27 05:50:15', 'ab+', '120/80', 'patient', '2026-07-27 13:56:13'),
+(4, 17, 1, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, 0, 0, 0, NULL, 0, 0, 0, NULL, '2026-07-27 07:29:18', NULL, NULL, 'patient', '2026-07-27 15:29:21');
 
 -- --------------------------------------------------------
 
@@ -236,9 +297,108 @@ CREATE TABLE `schedules` (
 --
 
 INSERT INTO `schedules` (`schedule_id`, `clinic_id`, `sched_date`, `max_appointments`) VALUES
-(14, 1, '2026-06-26', 8),
-(15, 1, '2026-07-02', 8),
-(16, 1, '2026-07-10', 8);
+(20, 1, '2026-07-27', 10),
+(21, 2, '2026-07-29', 8),
+(24, 1, '2026-07-31', 8),
+(25, 1, '2026-08-03', 8),
+(26, 1, '2026-08-04', 8),
+(27, 1, '2026-08-05', 8),
+(29, 2, '2026-08-06', 8),
+(30, 2, '2026-08-07', 8);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `services`
+--
+
+CREATE TABLE `services` (
+  `service_id` int(11) NOT NULL,
+  `category_id` int(11) NOT NULL,
+  `service_name` varchar(100) NOT NULL,
+  `service_description` varchar(255) DEFAULT NULL,
+  `service_icon` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `display_order` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `services`
+--
+
+INSERT INTO `services` (`service_id`, `category_id`, `service_name`, `service_description`, `service_icon`, `is_active`, `display_order`) VALUES
+(1, 1, 'Cleaning (Prophylaxis)', 'Professional plaque and tartar removal for a fresher, healthier smile.', 'fa-solid fa-broom', 1, 1),
+(2, 1, 'Scaling', 'Deep cleaning below the gumline to treat and help prevent gum disease.', 'fa-solid fa-teeth', 1, 2),
+(3, 1, 'Periapical X-ray', 'Detailed imaging of a tooth\'s root and the surrounding bone.', 'fa-solid fa-x-ray', 1, 3),
+(4, 2, 'Restoration (Fillings)', 'Composite or amalgam fillings that repair cavities and minor damage.', 'fa-solid fa-tooth', 1, 4),
+(5, 2, 'Crown / Jackets', 'A custom cap that protects and rebuilds a weakened or broken tooth.', 'fa-solid fa-crown', 1, 5),
+(6, 2, 'Bridge', 'A fixed replacement that closes the gap left by a missing tooth.', 'fa-solid fa-link', 1, 6),
+(7, 2, 'Root Canal', 'Treats infected or damaged tooth pulp to help save the natural tooth.', 'fa-solid fa-syringe', 1, 7),
+(8, 2, 'Dentures', 'Removable replacements for some or all missing teeth.', 'fa-solid fa-teeth', 1, 8),
+(9, 3, 'Extraction', 'Safe removal of a damaged, decayed, or problematic tooth.', 'fa-solid fa-tooth', 1, 9),
+(10, 3, 'Wisdom Tooth Removal', 'Removal of impacted or emerging third molars.', 'fa-solid fa-tooth', 1, 10),
+(11, 4, 'Braces', 'Gradually aligns crowded, gapped, or misaligned teeth over time.', 'fa-solid fa-teeth-open', 1, 11),
+(12, 4, 'Whitening', 'A professional treatment to brighten stained or discolored teeth.', 'fa-solid fa-star', 1, 12),
+(13, 4, 'Veneer', 'Thin custom shells that reshape and brighten the front of a tooth.', 'fa-solid fa-gem', 1, 13);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_categories`
+--
+
+CREATE TABLE `service_categories` (
+  `category_id` int(11) NOT NULL,
+  `category_name` varchar(100) NOT NULL,
+  `category_description` varchar(255) DEFAULT NULL,
+  `display_order` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `service_categories`
+--
+
+INSERT INTO `service_categories` (`category_id`, `category_name`, `category_description`, `display_order`) VALUES
+(1, 'Preventive & Diagnostic Care', 'Routine visits that catch problems early and keep your smile healthy in between appointments.', 1),
+(2, 'Restorative Treatments', 'Repairing damaged, decayed, or missing teeth so you can bite, chew, and smile with confidence.', 2),
+(3, 'Oral Surgery', 'Extractions and surgical procedures performed with care, plus clear aftercare guidance.', 3),
+(4, 'Cosmetic & Orthodontic', 'Options to align, brighten, and refine the appearance of your smile.', 4);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `site_settings`
+--
+
+CREATE TABLE `site_settings` (
+  `id` int(11) NOT NULL DEFAULT 1,
+  `brand_name_top` varchar(50) DEFAULT 'Dr. Aprille',
+  `brand_name_sub` varchar(50) DEFAULT 'Clinica Dental',
+  `site_logo` varchar(255) DEFAULT NULL,
+  `hero_system_tag` varchar(150) DEFAULT 'Online Dental Appointment & Patient Records Management System',
+  `hero_eyebrow` varchar(150) DEFAULT 'Two Clinics in Cagayan · Alcala & Tuguegarao',
+  `hero_title` varchar(255) DEFAULT 'Dental care for Alcala and Tuguegarao families.',
+  `hero_subtext` varchar(500) DEFAULT 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.',
+  `about_intro` text DEFAULT NULL,
+  `pillar1_title` varchar(100) DEFAULT 'Patient-Centered Care',
+  `pillar1_desc` varchar(255) DEFAULT 'Every visit is explained clearly, so you always know what to expect.',
+  `pillar2_title` varchar(100) DEFAULT 'Experienced Team',
+  `pillar2_desc` varchar(255) DEFAULT 'Dental professionals handling everything from routine care to advanced treatment.',
+  `pillar3_title` varchar(100) DEFAULT 'Two Convenient Branches',
+  `pillar3_desc` varchar(255) DEFAULT 'Serving patients in both Alcala and Tuguegarao, Cagayan.',
+  `contact_address` varchar(255) DEFAULT 'Alcala & Tuguegarao, Cagayan',
+  `contact_phone` varchar(20) DEFAULT '0912-345-6789',
+  `contact_email` varchar(100) DEFAULT 'info@draprilleventura.com',
+  `last_updated_by` varchar(20) DEFAULT NULL,
+  `last_updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `site_settings`
+--
+
+INSERT INTO `site_settings` (`id`, `brand_name_top`, `brand_name_sub`, `site_logo`, `hero_system_tag`, `hero_eyebrow`, `hero_title`, `hero_subtext`, `about_intro`, `pillar1_title`, `pillar1_desc`, `pillar2_title`, `pillar2_desc`, `pillar3_title`, `pillar3_desc`, `contact_address`, `contact_phone`, `contact_email`, `last_updated_by`, `last_updated_at`) VALUES
+(1, 'Dr. Aprille', 'Clinica Dental', NULL, 'Online Dental Appointment & Patient Records Management System', 'Two Clinics in Cagayan · Alcala & Tuguegarao', 'Dental care for Alcala and Tuguegarao families.', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.', 'Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.', 'Patient-Centered Care', 'Every visit is explained clearly, so you always know what to expect.', 'Experienced Team', 'Dental professionals handling everything from routine care to advanced treatment.', 'Two Convenient Branches', 'Serving patients in both Alcala and Tuguegarao, Cagayan.', 'Alcala & Tuguegarao, Cagayan', '0912-345-6789', 'info@draprilleventura.com', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -259,6 +419,14 @@ CREATE TABLE `staffs` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `staffs`
+--
+
+INSERT INTO `staffs` (`staff_id`, `user_id`, `firstname`, `lastname`, `middlename`, `gender`, `phone_number`, `email`, `employment_status`, `created_at`) VALUES
+(2, 16, 'stephanie', 'unista', 'v', 'Female', '09218656206', 'stephyyyunista94@gmail.com', 'Active', '2026-07-27 06:24:33'),
+(3, 18, 'Winje', 'Corpuz', 'Joaquin', 'Male', '09123412345', 'roncorpuz09@gmail.com', 'Active', '2026-07-27 10:26:30');
+
 -- --------------------------------------------------------
 
 --
@@ -278,9 +446,15 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `username`, `password`, `user_role`) VALUES
-(4, 'e@gmail.com', 'test', '$2y$10$teQbwME4SpYXK81FOA6i3.ljEz/tNajs.st/0mHCGOGwnOzMoGtMG', 'Patient'),
-(6, 'test1@gmail.com', 'test2', '$2y$10$F4/Rozsj2sLqEMNK8DshzOewNtgICvfP7RwxRLdjtOisRNgmmvm9S', 'Patient'),
-(7, 'admin@gmail.com', 'admin', '$2y$10$yjiG6c81sf6NPj8gEWkR8.6BEFnug.jLEry2zzD7L9gGzhxY/NTGm', 'Admin');
+(7, 'admin@gmail.com', 'admin', '$2y$10$yjiG6c81sf6NPj8gEWkR8.6BEFnug.jLEry2zzD7L9gGzhxY/NTGm', 'Admin'),
+(14, 'winsight11@gmail.com', 'winpogi', '$2y$10$LCnzbcs3UMoF2hcce2O4feKZXYrDrCdeOhAcUCapWImYiq.GN6zWW', 'Patient'),
+(15, 'stephanieunista@gmail.com', 'ning', '$2y$10$vNimCUMY2cHtz3PPQfyLNezSOy9WR/Qryu4lQYb1k6AVOfCtaR6dG', 'Patient'),
+(16, 'stephyyyunista94@gmail.com', 'stephanie.unista', '$2y$10$6dDvGf5.aFptNtGWE9QiseE3qAk9V/jB7rL/4jW2Y.WTTJy.CAvem', 'Dental Assistant'),
+(17, 'llantomichelle9@gmail.com', 'michelle', '$2y$10$CYTbshBCb.qmC2LVdU407OyB5G4IAxge4lwH4Lx.hbVYGTbNJQI7q', 'Patient'),
+(18, 'roncorpuz09@gmail.com', 'winje.corpuz', '$2y$10$6SSUY0/c2WLmquUkQXC7gehJfOLHHBqc1i2uhb6HmH2c64LJc4bMm', 'Dental Assistant'),
+(19, 'winje@gmail.com', 'winje.win', '$2y$10$C69fAaA/Er81z90RnoB0H.XQ9ze3mZhkEn/2fK5q7z80h04ZVUVRm', 'Patient'),
+(20, 'j.cruz@gmail.com', 'cruzJ', '$2y$10$3y.eHdpfkHY6s.7oChZwEOfGiWzhvMo.yhfjwwgRUgY8LQbys/XlW', 'Patient'),
+(21, 'jcruz@gmail.com', 'cruz.J', '$2y$10$F/Rfkca9YMPaDkjVAXRdTeLZvRiAWVX3ldVDr490E8CbCnQw.hSnu', 'Patient');
 
 -- --------------------------------------------------------
 
@@ -361,13 +535,26 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 ALTER TABLE `appointments`
   ADD PRIMARY KEY (`appointment_id`),
   ADD KEY `clinic_id` (`clinic_id`),
-  ADD KEY `fk_appointments_schedule` (`schedule_id`);
+  ADD KEY `fk_appointments_schedule` (`schedule_id`),
+  ADD KEY `fk_appointments_service` (`service_id`);
 
 --
 -- Indexes for table `clinics`
 --
 ALTER TABLE `clinics`
   ADD PRIMARY KEY (`clinic_id`);
+
+--
+-- Indexes for table `email_verifications`
+--
+ALTER TABLE `email_verifications`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `patients`
@@ -412,6 +599,25 @@ ALTER TABLE `schedules`
   ADD KEY `fkclinic_id` (`clinic_id`);
 
 --
+-- Indexes for table `services`
+--
+ALTER TABLE `services`
+  ADD PRIMARY KEY (`service_id`),
+  ADD KEY `fk_category` (`category_id`);
+
+--
+-- Indexes for table `service_categories`
+--
+ALTER TABLE `service_categories`
+  ADD PRIMARY KEY (`category_id`);
+
+--
+-- Indexes for table `site_settings`
+--
+ALTER TABLE `site_settings`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `staffs`
 --
 ALTER TABLE `staffs`
@@ -434,7 +640,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `clinics`
@@ -443,52 +649,76 @@ ALTER TABLE `clinics`
   MODIFY `clinic_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `email_verifications`
+--
+ALTER TABLE `email_verifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+
+--
+-- AUTO_INCREMENT for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+
+--
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `patient_conditions`
 --
 ALTER TABLE `patient_conditions`
-  MODIFY `condition_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `condition_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `patient_consent`
 --
 ALTER TABLE `patient_consent`
-  MODIFY `consent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `consent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `patient_dental_history`
 --
 ALTER TABLE `patient_dental_history`
-  MODIFY `dental_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `dental_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `patient_medical_history`
 --
 ALTER TABLE `patient_medical_history`
-  MODIFY `medical_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `medical_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT for table `services`
+--
+ALTER TABLE `services`
+  MODIFY `service_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `service_categories`
+--
+ALTER TABLE `service_categories`
+  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `staffs`
 --
 ALTER TABLE `staffs`
-  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- Constraints for dumped tables
@@ -499,7 +729,8 @@ ALTER TABLE `users`
 --
 ALTER TABLE `appointments`
   ADD CONSTRAINT `fk_appointment` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_appointments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`);
+  ADD CONSTRAINT `fk_appointments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`),
+  ADD CONSTRAINT `fk_appointments_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `patients`
@@ -536,6 +767,12 @@ ALTER TABLE `patient_medical_history`
 --
 ALTER TABLE `schedules`
   ADD CONSTRAINT `fkclinic_id` FOREIGN KEY (`clinic_id`) REFERENCES `clinics` (`clinic_id`);
+
+--
+-- Constraints for table `services`
+--
+ALTER TABLE `services`
+  ADD CONSTRAINT `fk_category` FOREIGN KEY (`category_id`) REFERENCES `service_categories` (`category_id`);
 
 --
 -- Constraints for table `staffs`

@@ -394,7 +394,8 @@ body {
 .vd-modal-content, .vd-modal-bs {
   background: var(--white-bg) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 4px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 28px rgba(74,63,48,0.16);
   font-family: 'Jost', sans-serif;
 }
 .vd-modal-title {
