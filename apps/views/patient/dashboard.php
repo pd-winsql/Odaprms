@@ -52,15 +52,14 @@ $today    = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/styles.css">
     <link rel="stylesheet" href="../../../public/css/dashboard.css">
     <link rel="stylesheet" href="../../../public/css/patient-dashboard.css">
-    <link rel="stylesheet" href="../../../public/css/auth.css">
 </head>
-<body class="vd-pat-body">
+<body class="vd-dash-body">
 
     <!-- Sidebar overlay (mobile) -->
     <div class="vd-sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- SIDEBAR -->
-    <aside class="vd-pat-sidebar" id="sidebar">
+    <aside class="vd-sidebar" id="sidebar">
         <div class="vd-sidebar-brand">
         <div class="vd-logo-name">Dr. Aprille</div>
         <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
@@ -70,21 +69,21 @@ $today    = date('l, F j Y');
         <nav class="vd-sidebar-nav">
         <div class="vd-nav-section">Main</div>
         <a href="#" class="vd-nav-item active" data-page="home-content.php">
-            <i class="ti ti-home"></i> Home
+            <span class="vd-nav-icon"><i class="ti ti-home"></i></span> Home
         </a>
         <a href="#" class="vd-nav-item" data-page="appointment-content.php">
-            <i class="ti ti-calendar"></i> Appointments
+            <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
         </a>
 
         <div class="vd-nav-section">Account</div>
         <a href="#" class="vd-nav-item" data-page="profile-content.php">
-            <i class="ti ti-user"></i> My Profile
+            <span class="vd-nav-icon"><i class="ti ti-user"></i></span> My Profile
         </a>
         <a href="#" class="vd-nav-item" data-page="change-password-content.php">
-            <i class="ti ti-lock"></i> Change Password
+            <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
         </a>
         <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
-            <i class="ti ti-logout"></i> Logout
+            <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
         </a>
         </nav>
 
@@ -100,7 +99,7 @@ $today    = date('l, F j Y');
     </aside>
 
     <!-- MAIN -->
-    <main class="vd-pat-main">
+    <main class="vd-dash-main">
 
         <!-- Topbar -->
         <div class="vd-dash-topbar">
@@ -108,15 +107,17 @@ $today    = date('l, F j Y');
             <button class="vd-menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
             <i class="ti ti-menu-2"></i>
             </button>
-            <span class="vd-dash-title">My Account</span>
+            <span class="vd-dash-title" id="dashTitle">Home</span>
         </div>
         <div class="vd-topbar-right">
             <span class="vd-topbar-date"><?= $today ?></span>
+            <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
+            <span class="vd-role-badge">Patient</span>
         </div>
         </div>
 
         <!-- Content -->
-        <div class="vd-dash-content" id="patDashContent">
+        <div class="vd-dash-content">
         <?php include 'partials/home-content.php'; ?>
         </div>
 
@@ -129,7 +130,8 @@ $today    = date('l, F j Y');
         </div>
     </div>
 
-    <script src="../../../public/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../public/js/logout-confirmation.js"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
         window.showToast = function(message, success = true) {
@@ -165,7 +167,17 @@ $today    = date('l, F j Y');
         overlay.addEventListener('click', closeSidebar);
 
         const navItems   = document.querySelectorAll('.vd-nav-item');
-        const dashContent = document.getElementById('patDashContent');
+        const dashContent = document.querySelector('.vd-dash-content');
+        const dashTitle = document.getElementById('dashTitle');
+
+        function getPageTitle(page) {
+            const nav = document.querySelector(`.vd-nav-item[data-page="${page}"]`);
+            return nav ? nav.textContent.trim() : 'Home';
+        }
+
+        function setDashboardTitle(page) {
+            dashTitle.textContent = getPageTitle(page);
+        }
 
         async function loadPage(page) {
         try {
@@ -194,18 +206,17 @@ $today    = date('l, F j Y');
             e.preventDefault();
 
             if (item.hasAttribute('data-logout-confirm')) {
-                const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
-                modal.show();
                 return;
             }
 
             const page = item.getAttribute('data-page');
-            if (!page) return;
+            if (!page || page === '#') return;
 
             navItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
 
             window.location.hash = page;
+            setDashboardTitle(page);
             await loadPage(page);
         });
         });
@@ -218,6 +229,7 @@ $today    = date('l, F j Y');
             if (matchingNav) {
             navItems.forEach(i => i.classList.remove('active'));
             matchingNav.classList.add('active');
+            setDashboardTitle(hash);
             await loadPage(hash);
             }
         }
@@ -231,20 +243,21 @@ $today    = date('l, F j Y');
         });
     </script>
 
-    <!-- Logout Modal -->
-    <div class="modal fade" id="logoutModal" tabindex="-1">
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content vd-modal-content p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="vd-modal-title mb-0">Logout</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content vd-modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title vd-modal-title" id="logoutModalLabel">Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Are you sure you want to logout from your account?</p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="vd-btn-outline btn" data-bs-dismiss="modal">Cancel</button>
+                    <a href="#" id="confirmLogoutBtn" class="vd-btn-gold btn">Logout</a>
+                </div>
             </div>
-            <p class="small mb-4">Are you sure you want to logout from your account?</p>
-            <div class="d-flex justify-content-end gap-2">
-            <button class="btn vd-btn-outline" data-bs-dismiss="modal">Cancel</button>
-            <a href="../../../apps/controllers/userController.php?action=logout" class="btn vd-btn-gold">Logout</a>
-            </div>
-        </div>
         </div>
     </div>
 

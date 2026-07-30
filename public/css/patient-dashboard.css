@@ -1,35 +1,4 @@
-/* ── Body & layout ── */
-.vd-pat-body {
-    min-height: 100vh;
-    background-color: var(--bg);
-    font-family: 'Jost', sans-serif;
-    font-weight: 300;
-    color: var(--dark);
-    display: flex;
-}
-
-.vd-pat-sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: var(--white-bg);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    transition: transform 0.3s ease;
-    z-index: 300;
-}
-
-.vd-pat-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
+/* Patient dashboard content styles — shell layout lives in dashboard.css */
 
 /* ── Welcome block ── */
 .vd-pat-welcome {
@@ -165,22 +134,7 @@
 .vd-pat-appt-row:last-child { border-bottom: none; }
 .vd-pat-appt-row:hover { background: var(--gold-pale); }
 
-/* ── Mobile — sidebar collapses ── */
-@media (max-width: 991px) {
-    .vd-pat-sidebar {
-        position: fixed;
-        left: 0;
-        top: 0;
-        transform: translateX(-100%);
-        height: 100vh;
-    }
-    .vd-pat-sidebar.open {
-        transform: translateX(0);
-        box-shadow: 4px 0 24px rgba(26,22,18,0.15);
-    }
-    .vd-menu-toggle { display: flex !important; align-items: center; }
-    }
-
+/* ── Mobile — content-specific compact tweaks ── */
 @media (max-width: 575px) {
     .vd-pat-quick-grid {
         grid-template-columns: repeat(3, 1fr);

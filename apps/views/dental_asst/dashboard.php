@@ -47,7 +47,6 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css">
     <link rel="stylesheet" href="../../../public/css/dashboard.css">
-    <link rel="stylesheet" href="../../../public/css/auth.css"
 </head>
 <body class="vd-dash-body">
 
@@ -66,26 +65,26 @@ $today = date('l, F j Y');
         <nav class="vd-sidebar-nav">
         <div class="vd-nav-section">Main</div>
         <a href="#" class="vd-nav-item active" data-page="dashboard-content.php">
-            <i class="ti ti-layout-dashboard"></i> Dashboard
+            <span class="vd-nav-icon"><i class="ti ti-layout-dashboard"></i></span> Dashboard
         </a>
         <a href="#" class="vd-nav-item" data-page="appointment-content.php">
-            <i class="ti ti-calendar"></i> Appointments
+            <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
         </a>
         <a href="#" class="vd-nav-item" data-page="patient-content.php">
-            <i class="ti ti-users"></i> Patients
+            <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
         </a>
 
         <div class="vd-nav-section">Manage</div>
         <a href="#" class="vd-nav-item" data-page="schedule-content.php">
-            <i class="ti ti-clock"></i> Schedules
+            <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
         </a>
 
         <div class="vd-nav-section">Account</div>
         <a href="#" class="vd-nav-item" data-page="change-password-content.php">
-            <i class="ti ti-lock"></i> Change Password
+            <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
         </a>
         <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
-            <i class="ti ti-logout"></i> Logout
+            <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
         </a>
         </nav>
 
@@ -110,10 +109,11 @@ $today = date('l, F j Y');
             <button class="vd-menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
             <i class="ti ti-menu-2"></i>
             </button>
-            <span class="vd-dash-title">Dashboard</span>
+            <span class="vd-dash-title" id="dashTitle">Dashboard</span>
         </div>
         <div class="vd-topbar-right">
             <span class="vd-topbar-date"><?= $today ?></span>
+            <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
             <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
         </div>
         </div>
@@ -171,7 +171,17 @@ $today = date('l, F j Y');
         /* Navigation */
         const navItems = document.querySelectorAll('.vd-nav-item');
         const dashContent = document.querySelector('.vd-dash-content');
-        
+        const dashTitle = document.getElementById('dashTitle');
+
+        function getPageTitle(page) {
+            const nav = document.querySelector(`.vd-nav-item[data-page="${page}"]`);
+            return nav ? nav.textContent.trim() : 'Dashboard';
+        }
+
+        function setDashboardTitle(page) {
+            dashTitle.textContent = getPageTitle(page);
+        }
+
         async function loadpage(page) {
         try {
             const response = await fetch(`partials/${page}`);
@@ -208,6 +218,7 @@ $today = date('l, F j Y');
             item.classList.add('active');
 
             window.location.hash = page;
+            setDashboardTitle(page);
 
             await loadpage(page);
             });
@@ -220,6 +231,7 @@ $today = date('l, F j Y');
                 if(matchingNav) {
                 navItems.forEach(i => i.classList.remove('active'));
                 matchingNav.classList.add('active');
+                setDashboardTitle(hash);
                 await loadpage(hash);
                 }
             }
