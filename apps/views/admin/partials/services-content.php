@@ -342,7 +342,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
     }
 
     function refreshPage() {
-        if (typeof loadpage === 'function') loadpage('services-content');
+        if (typeof loadpage === 'function') loadpage('services-content.php');
     }
 
     // ---------------------------------------------------------------
