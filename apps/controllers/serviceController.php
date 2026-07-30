@@ -161,6 +161,44 @@ class serviceController {
 
         require '../views/index.php';
     }
+
+    // ---------------------------------------------------------------
+    // Public: services for the booking form (no admin required)
+    // ---------------------------------------------------------------
+
+    public function bookingServices()
+    {
+        header('Content-Type: application/json');
+
+        $rows = $this->services->getHomepageServices();
+
+        $categories = [];
+
+        foreach ($rows as $row) {
+            $catId = $row['category_id'];
+
+            if (!isset($categories[$catId])) {
+                $categories[$catId] = [
+                    'category_id'          => $catId,
+                    'category_name'        => $row['category_name'],
+                    'category_description' => $row['category_description'],
+                    'services'             => [],
+                ];
+            }
+
+            if ($row['service_id']) {
+                $categories[$catId]['services'][] = [
+                    'service_id'          => $row['service_id'],
+                    'service_name'        => $row['service_name'],
+                    'service_description' => $row['service_description'],
+                    'service_icon'        => $row['service_icon'],
+                ];
+            }
+        }
+
+        echo json_encode(['success' => true, 'categories' => array_values($categories)]);
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -189,6 +227,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'deleteService') {
         $id = $_GET['id'] ?? null;
         if ($id) $controller->deleteService($id);
+    } elseif ($action === 'bookingServices') {
+        $controller->bookingServices();
     } else {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Unknown action.']);

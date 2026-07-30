@@ -7,14 +7,14 @@ class Appointment {
         $this->conn = $conn;
     }
 
-    public function bookAppointment($patient_id, $clinic_id, $service, $date, $schedule_id, $status = 'Pending') {
+    public function bookAppointment($patient_id, $clinic_id, $service_id, $date, $schedule_id, $status = 'Pending') {
         try {
             $stmt = $this->conn->prepare("
                 INSERT INTO appointments
                 (
                     patient_id,
                     clinic_id,
-                    service,
+                    service_id,
                     date,
                     schedule_id,
                     status
@@ -23,7 +23,7 @@ class Appointment {
                 (
                     :patient_id,
                     :clinic_id,
-                    :service,
+                    :service_id,
                     :date,
                     :schedule_id,
                     :status
@@ -32,7 +32,7 @@ class Appointment {
             return $stmt->execute([
                 ':patient_id' => $patient_id,
                 ':clinic_id' => $clinic_id,
-                ':service' => $service,
+                ':service_id' => $service_id,
                 ':date' => $date,
                 ':schedule_id' => $schedule_id,
                 ':status' => $status
@@ -40,7 +40,7 @@ class Appointment {
         } catch(PDOException $e){
             error_log("bookAppointment error: ".$e->getMessage());
             return false;
-        } 
+        }
     }
 
     // ===== PATIENT FUNCTIONS =====

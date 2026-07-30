@@ -148,6 +148,7 @@ class AppointmentController {
             require_once '../models/clinicModel.php';
             require_once '../models/scheduleModel.php';
             require_once '../models/patientModel.php';
+            require_once '../models/serviceModel.php';
 
             $db = new Database();
             $conn = $db->connect();
@@ -155,10 +156,12 @@ class AppointmentController {
             $patientModel = new Patient($conn);
             $clinicModel = new Clinic($conn);
             $scheduleModel = new Schedule($conn);
+            $serviceModel = new ServiceModel($conn);
 
-            // GET SELECTED CLINIC + SCHEDULE
-            $clinic_id = $_POST['clinic_id'] ?? '';
+            // GET SELECTED CLINIC + SCHEDULE + SERVICE
+            $clinic_id   = $_POST['clinic_id'] ?? '';
             $schedule_id = $_POST['schedule_id'] ?? '';
+            $service_id  = $_POST['service_id'] ?? '';
 
             if (!$clinic_id || !$schedule_id) {
                 echo json_encode([
@@ -168,12 +171,29 @@ class AppointmentController {
                 exit;
             }
 
+            if (!$service_id) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Please select a service.'
+                ]);
+                exit;
+            }
+
             $clinic = $clinicModel->getClinicById($clinic_id);
             $schedule = $scheduleModel->getScheduleById($schedule_id);
+            $service = $serviceModel->getServiceById($service_id);
             if (!$clinic || !$schedule) {
                 echo json_encode([
                     'success'=>false,
                     'message'=>'Invalid clinic or schedule.'
+                ]);
+                exit;
+            }
+
+            if (!$service) {
+                echo json_encode([
+                    'success'=>false,
+                    'message'=>'Invalid service selected.'
                 ]);
                 exit;
             }
@@ -250,7 +270,7 @@ class AppointmentController {
             $result = $this->appointmentModel->bookAppointment(
                 $patient_id,
                 $clinic_id,
-                $_POST['service'],
+                $service_id,
                 $schedule['sched_date'],
                 $schedule_id
             );
