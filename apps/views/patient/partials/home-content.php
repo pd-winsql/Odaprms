@@ -25,6 +25,19 @@ $next     = $upcoming[0] ?? null;
 $hour     = (int) date('H');
 $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
 $firstname = $patient['firstname'] ?? $_SESSION['username'];
+
+$profileRequirements = [
+    'first name' => $patient['firstname'] ?? '',
+    'last name' => $patient['lastname'] ?? '',
+    'birthdate' => $patient['birthdate'] ?? '',
+    'gender' => $patient['gender'] ?? '',
+    'phone number' => $patient['phone_number'] ?? '',
+    'email address' => $patient['email'] ?? '',
+];
+$missingProfileFields = array_keys(array_filter(
+    $profileRequirements,
+    static fn($value) => trim((string) $value) === ''
+));
 ?>
 <div class="d-flex flex-column gap-4">
     
@@ -32,7 +45,21 @@ $firstname = $patient['firstname'] ?? $_SESSION['username'];
     <div class="vd-pat-welcome">
         <div class="vd-welcome-greet"><?= $greeting ?>,</div>
         <div class="vd-welcome-name"><?= htmlspecialchars($firstname) ?></div>
+        <p class="text-muted small mb-0 mt-2">Here is a quick overview of your next visit and account readiness.</p>
     </div>
+
+    <?php if (!empty($missingProfileFields)): ?>
+    <div class="vd-home-profile-notice">
+        <div class="vd-home-profile-notice-icon"><i class="ti ti-user-exclamation"></i></div>
+        <div class="vd-home-profile-notice-copy">
+            <strong>Complete your patient profile</strong>
+            <span>Add your <?= htmlspecialchars(implode(', ', $missingProfileFields)) ?> so future bookings can be prepared faster.</span>
+        </div>
+        <button type="button" class="btn vd-btn-outline btn-sm" onclick="document.querySelector('[data-page=\'profile-content.php\']').click()">
+            Complete Profile
+        </button>
+    </div>
+    <?php endif; ?>
     
     <!-- Next appointment -->
     <?php if ($next): ?>
@@ -46,58 +73,18 @@ $firstname = $patient['firstname'] ?? $_SESSION['username'];
         <span class="vd-status vd-status-<?= strtolower($next['status']) ?>">
         <?= htmlspecialchars($next['status']) ?>
         </span>
+        <button type="button" class="btn vd-home-next-cta" onclick="document.querySelector('[data-page=\'booking-content.php\']').click()">
+            <i class="ti ti-calendar-plus me-1"></i> View Available Schedules
+        </button>
     </div>
     <?php else: ?>
     <div class="vd-next-appt-empty">
         <i class="ti ti-calendar-off" style="font-size:28px; color:var(--border);"></i>
-        <div class="mt-2">No upcoming appointments.</div>
-        <a href="../../../apps/views/ventura_booking_form.php" class="btn vd-btn-gold mt-3">
-        Book an Appointment
-        </a>
-    </div>
-    <?php endif; ?>
-    
-    <!-- Quick actions -->
-    <div class="vd-pat-quick-grid">
-        <a href="../../../apps/views/ventura_booking_form.php" class="vd-pat-quick-card">
-        <i class="ti ti-calendar-plus"></i>
-        <span>Book Appointment</span>
-        </a>
-        <button class="vd-pat-quick-card" onclick="document.querySelector('[data-page=\'appointments-content.php\']').click()">
-        <i class="ti ti-list"></i>
-        <span>My Appointments</span>
-        </button>
-        <button class="vd-pat-quick-card" onclick="document.querySelector('[data-page=\'profile-content.php\']').click()">
-        <i class="ti ti-user"></i>
-        <span>My Profile</span>
+        <div class="mt-2">You have no upcoming appointments.</div>
+        <div class="text-muted small mt-1">Choose a clinic and view its available schedules when you are ready.</div>
+        <button type="button" class="btn vd-btn-gold vd-home-empty-cta mt-3" onclick="document.querySelector('[data-page=\'booking-content.php\']').click()">
+        View Available Schedules
         </button>
     </div>
- 
-    <!-- Upcoming appointments summary -->
-    <?php if (!empty($upcoming)): ?>
-    <div class="vd-dash-card">
-        <div class="vd-dash-card-header">
-        <span class="vd-dash-card-title">Upcoming Appointments</span>
-        <span class="vd-topbar-date"><?= count($upcoming) ?> total</span>
-        </div>
-        <div class="vd-dash-card-body" style="padding: 0;">
-        <?php foreach ($upcoming as $appt): ?>
-        <div class="vd-pat-appt-row">
-            <div class="vd-appt-date-box">
-            <span class="vd-appt-day"><?= date('d', strtotime($appt['date'])) ?></span>
-            <span class="vd-appt-mon"><?= date('M', strtotime($appt['date'])) ?></span>
-            </div>
-            <div class="vd-appt-info">
-            <div class="vd-appt-name"><?= htmlspecialchars($appt['service_name']) ?></div>
-            <div class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name'] ?? $appt['clinic'] ?? '—') ?></div>
-            </div>
-            <span class="vd-status vd-status-<?= strtolower($appt['status']) ?>">
-            <?= htmlspecialchars($appt['status']) ?>
-            </span>
-        </div>
-        <?php endforeach; ?>
-        </div>
-    </div>
     <?php endif; ?>
- 
 </div>

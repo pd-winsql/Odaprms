@@ -116,8 +116,12 @@
                         <input type="text" name="middlename" class="form-control vd-input" placeholder="Santos">
                         </div>
                         <div class="col-6 col-md-4">
+                        <label class="vd-label form-label">Birthdate</label>
+                        <input type="date" name="birthdate" id="birthdate" class="form-control vd-input" max="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="col-6 col-md-4">
                         <label class="vd-label form-label">Age</label>
-                        <input type="number" name="age" class="form-control vd-input" min="1" max="120" placeholder="25" required>
+                        <input type="number" name="age" id="age" class="form-control vd-input" min="0" max="120" placeholder="Calculated automatically" readonly required>
                         </div>
                         <div class="col-6 col-md-4">
                         <label class="vd-label form-label">Gender</label>
@@ -135,7 +139,7 @@
                         </div>
                         <div class="col-12 col-md-6">
                         <label class="vd-label form-label">Email Address</label>
-                        <input type="email" name="email" class="form-control vd-input" placeholder="email@example.com">
+                        <input type="email" name="email" class="form-control vd-input" placeholder="email@example.com" required>
                         </div>
                     </div>
 
@@ -148,7 +152,8 @@
 
                 <!-- STEP 2: SELECT SERVICE -->
                 <div class="vd-wizard-panel d-none" data-panel="2">
-                    <p class="vd-section-label">Select a Dental Service</p>
+                    <p class="vd-section-label">Select One or More Dental Services</p>
+                    <p class="text-muted small mb-3">Choose every service you would like to discuss during this appointment.</p>
 
                     <?php if (empty($serviceCategories)): ?>
                     <div class="vd-schedule-empty">
@@ -165,7 +170,8 @@
                             </div>
                             <div class="vd-svc-grid" id="svcGrid<?= $ci ?>">
                                 <?php foreach ($cat['services'] as $svc): ?>
-                                <div class="vd-svc-card" onclick="selectServiceCard(this, <?= (int)$svc['service_id'] ?>)">
+                                <div class="vd-svc-card" onclick="toggleServiceCard(this)">
+                                    <input type="checkbox" class="d-none vd-service-checkbox" name="service_ids[]" value="<?= (int)$svc['service_id'] ?>">
                                     <i class="fa-solid <?= htmlspecialchars($svc['service_icon'] ?: 'fa-tooth') ?>"></i>
                                     <div class="vd-svc-card-name"><?= htmlspecialchars($svc['service_name']) ?></div>
                                     <div class="vd-svc-card-desc"><?= htmlspecialchars($svc['service_description'] ?? '') ?></div>
@@ -176,9 +182,6 @@
                         <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
-
-                    <!-- Hidden field carries the chosen service_id (FK into services table) -->
-                    <input type="hidden" id="serviceInput" name="service_id" required>
 
                     <div class="d-flex justify-content-between pt-4" style="border-top:1px solid #d9c9a8;">
                         <button type="button" class="btn vd-btn-outline px-4" onclick="goToStep(1)">
@@ -339,9 +342,11 @@
             const fields = [
                 { name: 'lastname',     label: 'Last Name' },
                 { name: 'firstname',    label: 'First Name' },
+                { name: 'birthdate',    label: 'Birthdate' },
                 { name: 'age',          label: 'Age' },
                 { name: 'gender',       label: 'Gender' },
                 { name: 'phone_number', label: 'Phone Number' },
+                { name: 'email',        label: 'Email Address' },
             ];
             fields.forEach(f => {
                 const el = bookingForm.elements[f.name];
@@ -352,7 +357,7 @@
 
         function validateStep2() {
             const missing = [];
-            if (!serviceInput.value) missing.push('Dental Service');
+            if (!document.querySelector('.vd-service-checkbox:checked')) missing.push('Dental Service');
             return missing;
         }
 
@@ -384,12 +389,10 @@
         // STEP 2: SERVICE SELECTION (server-rendered cards)
         // ---------------------------------------------------------------
 
-        const serviceInput = document.getElementById('serviceInput');
-
-        function selectServiceCard(card, serviceId) {
-            document.querySelectorAll('.vd-svc-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            serviceInput.value = serviceId;
+        function toggleServiceCard(card) {
+            const checkbox = card.querySelector('.vd-service-checkbox');
+            checkbox.checked = !checkbox.checked;
+            card.classList.toggle('selected', checkbox.checked);
         }
 
         function toggleServiceCategory(index) {
@@ -430,8 +433,8 @@
                 ? clinicRadio.closest('.vd-clinic-card').querySelector('.vd-clinic-tag').textContent
                 : '—';
 
-            const selectedCard = document.querySelector('.vd-svc-card.selected .vd-svc-card-name');
-            const serviceName  = selectedCard ? selectedCard.textContent : '—';
+            const serviceNames = Array.from(document.querySelectorAll('.vd-svc-card.selected .vd-svc-card-name'))
+                .map(el => el.textContent.trim());
 
             const selectedSchedCard = document.querySelector('.vd-schedule-card.selected');
             const scheduleLabel = selectedSchedCard
@@ -445,7 +448,7 @@
                 <div class="vd-summary-row"><span class="vd-summary-lbl">Age / Gender</span><span class="vd-summary-val">${bookingForm.elements['age'].value} / ${bookingForm.elements['gender'].value}</span></div>
                 <div class="vd-summary-row"><span class="vd-summary-lbl">Phone</span><span class="vd-summary-val">${bookingForm.elements['phone_number'].value}</span></div>
                 <div class="vd-summary-row"><span class="vd-summary-lbl">Email</span><span class="vd-summary-val">${bookingForm.elements['email'].value || '—'}</span></div>
-                <div class="vd-summary-row"><span class="vd-summary-lbl">Service</span><span class="vd-summary-val">${serviceName}</span></div>
+                <div class="vd-summary-row"><span class="vd-summary-lbl">Services</span><span class="vd-summary-val">${serviceNames.join(', ')}</span></div>
                 <div class="vd-summary-row"><span class="vd-summary-lbl">Clinic</span><span class="vd-summary-val">${clinicName}</span></div>
                 <div class="vd-summary-row"><span class="vd-summary-lbl">Schedule</span><span class="vd-summary-val">${scheduleLabel}</span></div>`;
 
@@ -574,7 +577,25 @@
         });
         });
 
-        const phoneInput = document.getElementById('phoneNumber'); // match the id you used above
+        const phoneInput = document.getElementById('phoneNumber');
+        const birthdateInput = document.getElementById('birthdate');
+        const ageInput = document.getElementById('age');
+
+        function calculateAge() {
+            if (!birthdateInput.value) {
+                ageInput.value = '';
+                return;
+            }
+
+            const [year, month, day] = birthdateInput.value.split('-').map(Number);
+            const today = new Date();
+            let age = today.getFullYear() - year;
+            const monthDifference = (today.getMonth() + 1) - month;
+            if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < day)) age--;
+            ageInput.value = age >= 0 && age <= 120 ? age : '';
+        }
+
+        birthdateInput.addEventListener('change', calculateAge);
 
         if (phoneInput) {
             const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter',

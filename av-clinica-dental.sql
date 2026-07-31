@@ -779,6 +779,21 @@ ALTER TABLE `services`
 --
 ALTER TABLE `staffs`
   ADD CONSTRAINT `fk_staff_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Multi-service selections for appointments
+--
+CREATE TABLE IF NOT EXISTS `appointment_services` (
+  `appointment_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL,
+  PRIMARY KEY (`appointment_id`, `service_id`),
+  KEY `fk_appointment_services_service` (`service_id`),
+  CONSTRAINT `fk_appointment_services_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_appointment_services_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT IGNORE INTO `appointment_services` (`appointment_id`, `service_id`)
+SELECT `appointment_id`, `service_id` FROM `appointments` WHERE `service_id` IS NOT NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

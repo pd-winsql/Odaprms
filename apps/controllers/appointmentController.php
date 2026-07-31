@@ -145,6 +145,7 @@ class AppointmentController {
     public function bookAppointment() {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            header('Content-Type: application/json');
             require_once '../models/clinicModel.php';
             require_once '../models/scheduleModel.php';
             require_once '../models/patientModel.php';
@@ -158,10 +159,11 @@ class AppointmentController {
             $scheduleModel = new Schedule($conn);
             $serviceModel = new ServiceModel($conn);
 
-            // GET SELECTED CLINIC + SCHEDULE + SERVICE
+            // GET SELECTED CLINIC + SCHEDULE + SERVICES
             $clinic_id   = $_POST['clinic_id'] ?? '';
             $schedule_id = $_POST['schedule_id'] ?? '';
-            $service_id  = $_POST['service_id'] ?? '';
+            $service_ids = $_POST['service_ids'] ?? ($_POST['service_id'] ?? []);
+            $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
 
             if (!$clinic_id || !$schedule_id) {
                 echo json_encode([
@@ -171,18 +173,17 @@ class AppointmentController {
                 exit;
             }
 
-            if (!$service_id) {
+            if (empty($service_ids)) {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Please select a service.'
+                    'message' => 'Please select at least one service.'
                 ]);
                 exit;
             }
 
             $clinic = $clinicModel->getClinicById($clinic_id);
             $schedule = $scheduleModel->getScheduleById($schedule_id);
-            $service = $serviceModel->getServiceById($service_id);
-            if (!$clinic || !$schedule) {
+            if (!$clinic || !$schedule || (int) $schedule['clinic_id'] !== (int) $clinic_id || $schedule['sched_date'] < date('Y-m-d')) {
                 echo json_encode([
                     'success'=>false,
                     'message'=>'Invalid clinic or schedule.'
@@ -190,38 +191,70 @@ class AppointmentController {
                 exit;
             }
 
-            if (!$service) {
-                echo json_encode([
-                    'success'=>false,
-                    'message'=>'Invalid service selected.'
-                ]);
-                exit;
+            foreach ($service_ids as $service_id) {
+                $service = $serviceModel->getServiceById($service_id);
+                if (!$service || (int) ($service['is_active'] ?? 0) !== 1) {
+                    echo json_encode([
+                        'success'=>false,
+                        'message'=>'One or more selected services are invalid.'
+                    ]);
+                    exit;
+                }
             }
 
-            $email = trim($_POST['email'] ?? '');
-            if (!$email) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Email is required.'
-                ]);
-                exit;
-            }
-
-            // 1. CHECK IF PATIENT ALREADY EXISTS
-            $patient = $patientModel->getPatientByEmail($email);
-            if ($patient) {
+            // Logged-in patients always book against their own profile.
+            $patient = null;
+            if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? '') === 'Patient') {
+                $patient = $patientModel->getPatientByUserId($_SESSION['user_id']);
+                if (!$patient) {
+                    echo json_encode(['success' => false, 'message' => 'Patient profile not found.']);
+                    exit;
+                }
                 $patient_id = $patient['patient_id'];
             } else {
-                $patient_id = $patientModel->createPatient(
-                    null,
-                    $_POST['firstname'],
-                    $_POST['lastname'],
-                    $_POST['middlename'],
-                    $_POST['age'],
-                    $_POST['gender'],
-                    $_POST['phone_number'],
-                    $email
-                );
+                $email = trim($_POST['email'] ?? '');
+                $birthdate = trim($_POST['birthdate'] ?? '');
+                $age = null;
+                if ($birthdate) {
+                    $birth = DateTime::createFromFormat('Y-m-d', $birthdate);
+                    $today = new DateTime('today');
+                    if (!$birth || $birth > $today) {
+                        echo json_encode(['success' => false, 'message' => 'Please enter a valid birthdate.']);
+                        exit;
+                    }
+                    $age = $birth->diff($today)->y;
+                }
+
+                if (!$email || !$birthdate) {
+                    echo json_encode(['success' => false, 'message' => 'Email and birthdate are required.']);
+                    exit;
+                }
+
+                $patient = $patientModel->getPatientByEmail($email);
+                if ($patient) {
+                    $patient_id = $patient['patient_id'];
+                    $patientModel->fillMissingBookingDetails($patient_id, [
+                        'firstname' => trim($_POST['firstname'] ?? ''),
+                        'lastname' => trim($_POST['lastname'] ?? ''),
+                        'middlename' => trim($_POST['middlename'] ?? ''),
+                        'age' => $age,
+                        'gender' => trim($_POST['gender'] ?? ''),
+                        'phone_number' => trim($_POST['phone_number'] ?? ''),
+                        'birthdate' => $birthdate,
+                    ]);
+                } else {
+                    $patient_id = $patientModel->createPatient(
+                        null,
+                        trim($_POST['firstname'] ?? ''),
+                        trim($_POST['lastname'] ?? ''),
+                        trim($_POST['middlename'] ?? ''),
+                        $age,
+                        trim($_POST['gender'] ?? ''),
+                        trim($_POST['phone_number'] ?? ''),
+                        $email,
+                        $birthdate
+                    );
+                }
 
                 if (!$patient_id) {
                     echo json_encode([
@@ -247,7 +280,7 @@ class AppointmentController {
             $result = $this->appointmentModel->bookAppointment(
                 $patient_id,
                 $clinic_id,
-                $service_id,
+                $service_ids,
                 $schedule['sched_date'],
                 $schedule_id
             );
@@ -255,10 +288,9 @@ class AppointmentController {
 
 
             if ($result) {
-                $id = $this->appointmentModel->getLastInsertedId();
                 echo json_encode([
                     'success'=>true,
-                    'appointment_id'=>$id
+                    'appointment_id'=>(int) $result
                 ]);
             } else {
                 echo json_encode([

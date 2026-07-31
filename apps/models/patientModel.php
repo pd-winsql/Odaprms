@@ -107,15 +107,15 @@ class Patient {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function createPatient($user_id, $firstname, $lastname, $middlename, $age, $gender, $phone_number, $email) {
+    public function createPatient($user_id, $firstname, $lastname, $middlename, $age, $gender, $phone_number, $email, $birthdate = null) {
 
         try {
 
             $stmt = $this->conn->prepare("
                 INSERT INTO patients
-                (user_id, firstname, lastname, middlename, age, gender, phone_number, email)
+                (user_id, firstname, lastname, middlename, age, gender, phone_number, email, birthdate)
                 VALUES
-                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :email)
+                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :email, :birthdate)
             ");
 
             $stmt->execute([
@@ -126,11 +126,41 @@ class Patient {
                 ':age' => $age,
                 ':gender' => $gender,
                 ':phone_number' => $phone_number,
-                ':email' => $email
+                ':email' => $email,
+                ':birthdate' => $birthdate ?: null
             ]);
             return $this->conn->lastInsertId();
         } catch(PDOException $e){
             error_log("createPatient error: ".$e->getMessage());
+            return false;
+        }
+    }
+
+    public function fillMissingBookingDetails($patient_id, $data) {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE patients SET
+                    firstname = COALESCE(NULLIF(firstname, ''), :firstname),
+                    lastname = COALESCE(NULLIF(lastname, ''), :lastname),
+                    middlename = COALESCE(NULLIF(middlename, ''), :middlename),
+                    age = COALESCE(age, :age),
+                    gender = COALESCE(NULLIF(gender, ''), :gender),
+                    phone_number = COALESCE(NULLIF(phone_number, ''), :phone_number),
+                    birthdate = COALESCE(birthdate, :birthdate)
+                WHERE patient_id = :patient_id
+            ");
+            return $stmt->execute([
+                ':firstname' => $data['firstname'] ?: null,
+                ':lastname' => $data['lastname'] ?: null,
+                ':middlename' => $data['middlename'] ?: null,
+                ':age' => $data['age'],
+                ':gender' => $data['gender'] ?: null,
+                ':phone_number' => $data['phone_number'] ?: null,
+                ':birthdate' => $data['birthdate'] ?: null,
+                ':patient_id' => $patient_id,
+            ]);
+        } catch (PDOException $e) {
+            error_log("fillMissingBookingDetails error: " . $e->getMessage());
             return false;
         }
     }

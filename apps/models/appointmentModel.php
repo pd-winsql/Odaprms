@@ -2,13 +2,68 @@
 
 class Appointment {
     private $conn;
+    private $hasAppointmentServicesTable = false;
+
     public function __construct($conn) 
     {
         $this->conn = $conn;
+        $this->hasAppointmentServicesTable = $this->appointmentServicesTableExists();
     }
 
-    public function bookAppointment($patient_id, $clinic_id, $service_id, $date, $schedule_id, $status = 'Pending') {
+    private function appointmentServicesTableExists() {
         try {
+            $stmt = $this->conn->query("SHOW TABLES LIKE 'appointment_services'");
+            return (bool) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    private function ensureAppointmentServicesTable() {
+        if ($this->hasAppointmentServicesTable) return true;
+
+        try {
+            $this->conn->exec("
+                CREATE TABLE IF NOT EXISTS appointment_services (
+                    appointment_id INT(11) NOT NULL,
+                    service_id INT(11) NOT NULL,
+                    PRIMARY KEY (appointment_id, service_id),
+                    KEY fk_appointment_services_service (service_id),
+                    CONSTRAINT fk_appointment_services_appointment
+                        FOREIGN KEY (appointment_id) REFERENCES appointments (appointment_id)
+                        ON DELETE CASCADE ON UPDATE CASCADE,
+                    CONSTRAINT fk_appointment_services_service
+                        FOREIGN KEY (service_id) REFERENCES services (service_id)
+                        ON DELETE RESTRICT ON UPDATE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+            ");
+            $this->hasAppointmentServicesTable = true;
+            return true;
+        } catch (PDOException $e) {
+            error_log("ensureAppointmentServicesTable error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function serviceNameSelect() {
+        if (!$this->hasAppointmentServicesTable) return 's.service_name';
+
+        return "COALESCE(
+            (SELECT GROUP_CONCAT(ms.service_name ORDER BY ms.display_order, ms.service_name SEPARATOR ', ')
+             FROM appointment_services aps
+             JOIN services ms ON ms.service_id = aps.service_id
+             WHERE aps.appointment_id = a.appointment_id),
+            s.service_name
+        )";
+    }
+
+    public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $status = 'Pending') {
+        $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
+        if (empty($service_ids) || !$this->ensureAppointmentServicesTable()) return false;
+
+        try {
+            $this->conn->beginTransaction();
+            $primary_service_id = $service_ids[0];
             $stmt = $this->conn->prepare("
                 INSERT INTO appointments
                 (
@@ -29,15 +84,36 @@ class Appointment {
                     :status
                 )
             ");
-            return $stmt->execute([
+            $inserted = $stmt->execute([
                 ':patient_id' => $patient_id,
                 ':clinic_id' => $clinic_id,
-                ':service_id' => $service_id,
+                ':service_id' => $primary_service_id,
                 ':date' => $date,
                 ':schedule_id' => $schedule_id,
                 ':status' => $status
             ]);
+
+            if (!$inserted) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $appointment_id = (int) $this->conn->lastInsertId();
+            $link = $this->conn->prepare("
+                INSERT INTO appointment_services (appointment_id, service_id)
+                VALUES (:appointment_id, :service_id)
+            ");
+            foreach ($service_ids as $service_id) {
+                $link->execute([
+                    ':appointment_id' => $appointment_id,
+                    ':service_id' => $service_id,
+                ]);
+            }
+
+            $this->conn->commit();
+            return $appointment_id;
         } catch(PDOException $e){
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log("bookAppointment error: ".$e->getMessage());
             return false;
         }
@@ -48,10 +124,11 @@ class Appointment {
     // Patient: view upcoming appointments
     public function getPatientUpcomingAppointments($patient_id) {
         try {
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT
                 a.*,
-                s.service_name,
+                {$serviceName} AS service_name,
                 c.clinic_name
                 FROM appointments a
                 LEFT JOIN clinics c
@@ -74,10 +151,11 @@ class Appointment {
     // Patient: view past appointments
     public function getPatientPastAppointments($patient_id) {
         try {
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT
                 a.*,
-                s.service_name,
+                {$serviceName} AS service_name,
                 c.clinic_name
                 FROM appointments a
                 LEFT JOIN clinics c
@@ -158,9 +236,10 @@ class Appointment {
             // Auto-update statuses before fetching
             $this->autoUpdatePastAppointmentStatuses();
 
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, s.service_name,
+                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
                     a.date, a.status
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
@@ -202,9 +281,10 @@ class Appointment {
     // Admin: view all upcoming appointments with status
     public function getAllUpcomingWithStatus() {
         try {
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, s.service_name,
+                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
                     a.date, a.status
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
@@ -269,9 +349,10 @@ class Appointment {
 
     public function getAppointmentsByStatus($status) {
         try {
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, s.service_name, a.date, a.status
+                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name, a.date, a.status
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
@@ -295,10 +376,11 @@ class Appointment {
 
     public function getPatientTransactionHistory($patient_id) {
         try {
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT
                     a.appointment_id,
-                    s.service_name,
+                    {$serviceName} AS service_name,
                     a.date,
                     a.status,
                     c.clinic_name
