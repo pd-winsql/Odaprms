@@ -66,8 +66,7 @@ return [
             'Great news! Your appointment has been confirmed.',
 
         'instruction' =>
-            //'Please arrive 15 minutes before your appointment.',
-            'Please arrive early for your appointment.',
+            'Please arrive early for your appointment. Patients are accommodated on a first-come, first-served basis.',
 
         'label' => 'Appointment Status',
 
