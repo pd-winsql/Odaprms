@@ -2,74 +2,32 @@
 
 class Appointment {
     private $conn;
-    private $hasAppointmentServicesTable = false;
 
     public function __construct($conn) 
     {
         $this->conn = $conn;
-        $this->hasAppointmentServicesTable = $this->appointmentServicesTableExists();
-    }
-
-    private function appointmentServicesTableExists() {
-        try {
-            $stmt = $this->conn->query("SHOW TABLES LIKE 'appointment_services'");
-            return (bool) $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            return false;
-        }
-    }
-
-    private function ensureAppointmentServicesTable() {
-        if ($this->hasAppointmentServicesTable) return true;
-
-        try {
-            $this->conn->exec("
-                CREATE TABLE IF NOT EXISTS appointment_services (
-                    appointment_id INT(11) NOT NULL,
-                    service_id INT(11) NOT NULL,
-                    PRIMARY KEY (appointment_id, service_id),
-                    KEY fk_appointment_services_service (service_id),
-                    CONSTRAINT fk_appointment_services_appointment
-                        FOREIGN KEY (appointment_id) REFERENCES appointments (appointment_id)
-                        ON DELETE CASCADE ON UPDATE CASCADE,
-                    CONSTRAINT fk_appointment_services_service
-                        FOREIGN KEY (service_id) REFERENCES services (service_id)
-                        ON DELETE RESTRICT ON UPDATE CASCADE
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-            ");
-            $this->hasAppointmentServicesTable = true;
-            return true;
-        } catch (PDOException $e) {
-            error_log("ensureAppointmentServicesTable error: " . $e->getMessage());
-            return false;
-        }
     }
 
     private function serviceNameSelect() {
-        if (!$this->hasAppointmentServicesTable) return 's.service_name';
-
-        return "COALESCE(
-            (SELECT GROUP_CONCAT(ms.service_name ORDER BY ms.display_order, ms.service_name SEPARATOR ', ')
-             FROM appointment_services aps
-             JOIN services ms ON ms.service_id = aps.service_id
-             WHERE aps.appointment_id = a.appointment_id),
-            s.service_name
+        return "(
+            SELECT GROUP_CONCAT(ms.service_name ORDER BY ms.display_order, ms.service_name SEPARATOR ', ')
+            FROM appointment_services aps
+            JOIN services ms ON ms.service_id = aps.service_id
+            WHERE aps.appointment_id = a.appointment_id
         )";
     }
 
     public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $status = 'Pending') {
         $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
-        if (empty($service_ids) || !$this->ensureAppointmentServicesTable()) return false;
+        if (empty($service_ids)) return false;
 
         try {
             $this->conn->beginTransaction();
-            $primary_service_id = $service_ids[0];
             $stmt = $this->conn->prepare("
                 INSERT INTO appointments
                 (
                     patient_id,
                     clinic_id,
-                    service_id,
                     date,
                     schedule_id,
                     status
@@ -78,7 +36,6 @@ class Appointment {
                 (
                     :patient_id,
                     :clinic_id,
-                    :service_id,
                     :date,
                     :schedule_id,
                     :status
@@ -87,7 +44,6 @@ class Appointment {
             $inserted = $stmt->execute([
                 ':patient_id' => $patient_id,
                 ':clinic_id' => $clinic_id,
-                ':service_id' => $primary_service_id,
                 ':date' => $date,
                 ':schedule_id' => $schedule_id,
                 ':status' => $status
@@ -133,7 +89,6 @@ class Appointment {
                 FROM appointments a
                 LEFT JOIN clinics c
                 ON a.clinic_id = c.clinic_id
-                JOIN services s ON a.service_id = s.service_id
                 WHERE a.patient_id = :patient_id
                 AND a.date >= CURDATE()
 
@@ -160,7 +115,6 @@ class Appointment {
                 FROM appointments a
                 LEFT JOIN clinics c
                 ON a.clinic_id = c.clinic_id
-                JOIN services s ON a.service_id = s.service_id
                 WHERE a.patient_id = :patient_id
                 AND a.date < CURDATE()
 
@@ -178,13 +132,14 @@ class Appointment {
     // Patient: view upcoming appointments with status
     public function getUpcomingWithStatus($email) {
         try {
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT
                     p.lastname,
                     p.firstname,
                     p.email,
                     c.clinic_name,
-                    a.service,
+                    {$serviceName} AS service_name,
                     a.date,
                     a.status
                 FROM appointments a
@@ -192,6 +147,9 @@ class Appointment {
                 ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c
                 ON a.clinic_id = c.clinic_id
+                WHERE p.email = :email
+                AND a.date >= CURDATE()
+                ORDER BY a.date ASC
             ");
             $stmt->execute([':email' => $email]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -244,7 +202,6 @@ class Appointment {
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
-                JOIN services s ON a.service_id = s.service_id
                 WHERE a.date < CURDATE()
                 ORDER BY a.date DESC
             ");
@@ -260,8 +217,10 @@ class Appointment {
     // Admin: view past appointments per clinic
     public function getAdminPastAppointmentsByClinic($clinic) {
         try {
+            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
-                SELECT a.*, p.lastname, p.firstname, p.middlename, p.age, p.gender, p.phone_number, p.email, c.clinic_name
+                SELECT a.*, p.lastname, p.firstname, p.middlename, p.age, p.gender,
+                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
@@ -289,7 +248,6 @@ class Appointment {
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
-                JOIN services s ON a.service_id = s.service_id
                 WHERE a.date >= CURDATE()
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
@@ -356,7 +314,6 @@ class Appointment {
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
-                JOIN services s ON a.service_id = s.service_id
                 WHERE a.date >= CURDATE()
                 AND a.status = :status
                 ORDER BY a.date ASC
@@ -386,7 +343,6 @@ class Appointment {
                     c.clinic_name
                 FROM appointments a
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
-                JOIN services s ON s.service_id = a.service_id
                 WHERE a.patient_id = :patient_id
                 ORDER BY a.date DESC
             ");

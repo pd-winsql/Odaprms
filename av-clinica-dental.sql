@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 30, 2026 at 03:01 AM
+-- Generation Time: Aug 01, 2026 at 02:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,7 +32,6 @@ CREATE TABLE `appointments` (
   `patient_id` int(11) DEFAULT NULL,
   `schedule_id` int(11) NOT NULL,
   `clinic_id` int(11) NOT NULL,
-  `service_id` int(11) DEFAULT NULL,
   `date` date NOT NULL,
   `status` enum('Pending','Confirmed','Cancelled','Completed','Rejected') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -42,13 +41,45 @@ CREATE TABLE `appointments` (
 -- Dumping data for table `appointments`
 --
 
-INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clinic_id`, `service_id`, `date`, `status`, `created_at`) VALUES
-(17, 14, 20, 1, 1, '2026-07-27', 'Confirmed', '2026-07-24 09:47:53'),
-(19, 14, 21, 2, 3, '2026-07-29', 'Confirmed', '2026-07-24 10:29:34'),
-(20, 16, 20, 1, 9, '2026-07-27', 'Confirmed', '2026-07-27 06:17:38'),
-(22, 17, 20, 1, 12, '2026-07-27', 'Confirmed', '2026-07-27 06:52:37'),
-(23, 18, 30, 2, 9, '2026-08-07', 'Pending', '2026-07-28 03:00:13'),
-(24, 19, 30, 2, 5, '2026-08-07', 'Pending', '2026-07-28 03:02:02');
+INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clinic_id`, `date`, `status`, `created_at`) VALUES
+(17, 14, 20, 1, '2026-07-27', 'Confirmed', '2026-07-24 09:47:53'),
+(19, 14, 21, 2, '2026-07-29', 'Confirmed', '2026-07-24 10:29:34'),
+(20, 16, 20, 1, '2026-07-27', 'Confirmed', '2026-07-27 06:17:38'),
+(22, 17, 20, 1, '2026-07-27', 'Confirmed', '2026-07-27 06:52:37'),
+(23, 18, 30, 2, '2026-08-07', 'Pending', '2026-07-28 03:00:13'),
+(24, 19, 30, 2, '2026-08-07', 'Pending', '2026-07-28 03:02:02'),
+(25, 14, 26, 1, '2026-08-04', 'Confirmed', '2026-07-30 01:24:05'),
+(26, 14, 25, 1, '2026-08-03', 'Confirmed', '2026-07-30 01:38:36'),
+(27, 21, 25, 1, '2026-08-03', 'Cancelled', '2026-07-31 12:10:03'),
+(28, 14, 30, 2, '2026-08-07', 'Pending', '2026-07-31 14:33:08');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `appointment_services`
+--
+
+CREATE TABLE `appointment_services` (
+  `appointment_id` int(11) NOT NULL,
+  `service_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `appointment_services`
+--
+
+INSERT INTO `appointment_services` (`appointment_id`, `service_id`) VALUES
+(17, 1),
+(19, 3),
+(20, 9),
+(22, 12),
+(23, 9),
+(24, 5),
+(25, 8),
+(26, 2),
+(27, 9),
+(28, 2),
+(28, 6);
 
 -- --------------------------------------------------------
 
@@ -99,7 +130,8 @@ INSERT INTO `email_verifications` (`id`, `email`, `otp`, `expires_at`, `used`, `
 (13, 'small@gmail.com', '581017', '2026-07-27 09:31:03', 0, '2026-07-27 07:21:03'),
 (15, 'winje@gmail.com', '908945', '2026-07-27 22:50:21', 1, '2026-07-27 14:40:21'),
 (16, 'j.cruz@gmail.com', '023441', '2026-07-28 11:13:10', 1, '2026-07-28 03:03:10'),
-(17, 'jcruz@gmail.com', '406047', '2026-07-28 11:14:43', 1, '2026-07-28 03:04:43');
+(17, 'jcruz@gmail.com', '406047', '2026-07-28 11:14:43', 1, '2026-07-28 03:04:43'),
+(18, 'christianjamescapule@gmail.com', '488760', '2026-07-31 20:11:35', 1, '2026-07-31 12:01:35');
 
 -- --------------------------------------------------------
 
@@ -122,8 +154,8 @@ CREATE TABLE `password_resets` (
 --
 
 INSERT INTO `password_resets` (`id`, `token_hash`, `email`, `otp`, `expires_at`, `used`, `created_at`) VALUES
-(37, NULL, 'winsight11@gmail.com', '146966', '2026-07-29 18:20:01', 0, '2026-07-29 10:10:01'),
-(38, NULL, 'roncorpuz09@gmail.com', '475333', '2026-07-29 18:21:36', 0, '2026-07-29 10:11:36');
+(38, NULL, 'roncorpuz09@gmail.com', '475333', '2026-07-29 18:21:36', 0, '2026-07-29 10:11:36'),
+(39, NULL, 'stephanieunista@gmail.com', '873462', '2026-07-30 20:35:01', 0, '2026-07-30 12:25:01');
 
 -- --------------------------------------------------------
 
@@ -161,12 +193,13 @@ CREATE TABLE `patients` (
 --
 
 INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middlename`, `age`, `gender`, `phone_number`, `email`, `birthdate`, `civil_status`, `home_address`, `work_address`, `fb_account`, `occupation`, `office_contact`, `guardian_name`, `guardian_contact`, `physician_name`, `physician_contact`, `physician_address`, `created_at`) VALUES
-(14, 14, 'Win', 'Corpuz', 'Joaquin', 21, 'Male', '09123456789', 'winsight11@gmail.com', NULL, 'Single', 'Baybayog, Alcala, Cagayan', 'Baybayog, Alcala, Cagayan', NULL, 'Student', NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-24 09:47:53'),
+(14, 14, 'Win', 'Corpuz', 'Joaquin', 21, 'Male', '09123456789', 'winsight11@gmail.com', '2005-04-09', 'Single', 'Baybayog, Alcala, Cagayan', 'Baybayog, Alcala, Cagayan', NULL, 'Student', NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-24 09:47:53'),
 (16, 15, 'Ning', 'Unista', 'v ', 21, 'Female', '09218656206', 'stephanieunista@gmail.com', '2004-09-04', 'Single', 'masin, alcala cagayan ', 'masin,alcala, cgayan', 'step  unista', 'student', 'n/a', NULL, NULL, NULL, NULL, NULL, '2026-07-27 05:23:30'),
 (17, 17, 'Michelle', 'LLANTO', 'JACINTO', 21, 'Female', '09999997652566', 'llantomichelle9@gmail.com', '2005-06-02', 'Single', 'Baculod Alcala Cagayan', 'N/A', 'MICHELLE LLANTO', 'STUDENT', 'N/A', NULL, NULL, NULL, NULL, NULL, '2026-07-27 06:49:28'),
 (18, 21, 'Juan', 'Dela Cruz', 'Santos', 22, 'Male', '09123456789', 'jcruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:00:13'),
 (19, NULL, 'Maria', 'Lago', 'Palo', 20, 'Female', '09123456789', 'm.lago@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:02:02'),
-(20, 20, 'CruzJ', '', NULL, NULL, NULL, NULL, 'j.cruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:03:46');
+(20, 20, 'CruzJ', '', NULL, NULL, NULL, NULL, 'j.cruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:03:46'),
+(21, 28, 'Pogicj', '', NULL, NULL, NULL, NULL, 'christianjamescapule@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-31 12:02:19');
 
 -- --------------------------------------------------------
 
@@ -304,7 +337,10 @@ INSERT INTO `schedules` (`schedule_id`, `clinic_id`, `sched_date`, `max_appointm
 (26, 1, '2026-08-04', 8),
 (27, 1, '2026-08-05', 8),
 (29, 2, '2026-08-06', 8),
-(30, 2, '2026-08-07', 8);
+(30, 2, '2026-08-07', 8),
+(31, 2, '2026-08-08', 10),
+(34, 1, '2026-08-01', 8),
+(35, 2, '2026-08-10', 8);
 
 -- --------------------------------------------------------
 
@@ -398,7 +434,7 @@ CREATE TABLE `site_settings` (
 --
 
 INSERT INTO `site_settings` (`id`, `brand_name_top`, `brand_name_sub`, `site_logo`, `hero_system_tag`, `hero_eyebrow`, `hero_title`, `hero_subtext`, `about_intro`, `pillar1_title`, `pillar1_desc`, `pillar2_title`, `pillar2_desc`, `pillar3_title`, `pillar3_desc`, `contact_address`, `contact_phone`, `contact_email`, `last_updated_by`, `last_updated_at`) VALUES
-(1, 'Dr. Aprille', 'Clinica Dental', NULL, 'Online Dental Appointment & Patient Records Management System', 'Two Clinics in Cagayan · Alcala & Tuguegarao', 'Dental care for Alcala and Tuguegarao families.', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.', 'Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.', 'Patient-Centered Care', 'Every visit is explained clearly, so you always know what to expect.', 'Experienced Team', 'Dental professionals handling everything from routine care to advanced treatment.', 'Two Convenient Branches', 'Serving patients in both Alcala and Tuguegarao, Cagayan.', 'Alcala & Tuguegarao, Cagayan', '0912-345-6789', 'info@draprilleventura.com', NULL, NULL);
+(1, 'Dr. Aprille', 'Clinica Dental', 'site_logo_1785381335.png', 'Online Dental Appointment & Patient Records Management System', 'Two Clinics in Cagayan · Alcala & Tuguegarao', 'Dental care for Alcala and Tuguegarao families.', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.', 'Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.', 'Patient-Centered Care', 'Every visit is explained clearly, so you always know what to expect.', 'Experienced Team', 'Dental professionals handling everything from routine care to advanced treatment.', 'Two Convenient Branches', 'Serving patients in both Alcala and Tuguegarao, Cagayan.', 'Alcala & Tuguegarao, Cagayan', '0912-345-6789', 'info@draprilleventura.com', 'Admin', '2026-07-30 13:01:09');
 
 -- --------------------------------------------------------
 
@@ -425,7 +461,8 @@ CREATE TABLE `staffs` (
 
 INSERT INTO `staffs` (`staff_id`, `user_id`, `firstname`, `lastname`, `middlename`, `gender`, `phone_number`, `email`, `employment_status`, `created_at`) VALUES
 (2, 16, 'stephanie', 'unista', 'v', 'Female', '09218656206', 'stephyyyunista94@gmail.com', 'Active', '2026-07-27 06:24:33'),
-(3, 18, 'Winje', 'Corpuz', 'Joaquin', 'Male', '09123412345', 'roncorpuz09@gmail.com', 'Active', '2026-07-27 10:26:30');
+(3, 18, 'Winje', 'Corpuz', 'Joaquin', 'Male', '09123412345', 'roncorpuz09@gmail.com', 'Active', '2026-07-27 10:26:30'),
+(4, 22, 'Pogi', 'Naman', 'Mo', 'Male', '09123412345', 'corpuzwinjemelron@gmail.com', 'Active', '2026-07-30 13:47:39');
 
 -- --------------------------------------------------------
 
@@ -447,14 +484,16 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `email`, `username`, `password`, `user_role`) VALUES
 (7, 'admin@gmail.com', 'admin', '$2y$10$yjiG6c81sf6NPj8gEWkR8.6BEFnug.jLEry2zzD7L9gGzhxY/NTGm', 'Admin'),
-(14, 'winsight11@gmail.com', 'winpogi', '$2y$10$LCnzbcs3UMoF2hcce2O4feKZXYrDrCdeOhAcUCapWImYiq.GN6zWW', 'Patient'),
+(14, 'winsight11@gmail.com', 'winpogi', '$2y$10$u.XUDEHisxdJ6QbWZciI/un2sHC5csepwapa6q9XNkmGlqQ6.mtdi', 'Patient'),
 (15, 'stephanieunista@gmail.com', 'ning', '$2y$10$vNimCUMY2cHtz3PPQfyLNezSOy9WR/Qryu4lQYb1k6AVOfCtaR6dG', 'Patient'),
 (16, 'stephyyyunista94@gmail.com', 'stephanie.unista', '$2y$10$6dDvGf5.aFptNtGWE9QiseE3qAk9V/jB7rL/4jW2Y.WTTJy.CAvem', 'Dental Assistant'),
 (17, 'llantomichelle9@gmail.com', 'michelle', '$2y$10$CYTbshBCb.qmC2LVdU407OyB5G4IAxge4lwH4Lx.hbVYGTbNJQI7q', 'Patient'),
 (18, 'roncorpuz09@gmail.com', 'winje.corpuz', '$2y$10$6SSUY0/c2WLmquUkQXC7gehJfOLHHBqc1i2uhb6HmH2c64LJc4bMm', 'Dental Assistant'),
 (19, 'winje@gmail.com', 'winje.win', '$2y$10$C69fAaA/Er81z90RnoB0H.XQ9ze3mZhkEn/2fK5q7z80h04ZVUVRm', 'Patient'),
 (20, 'j.cruz@gmail.com', 'cruzJ', '$2y$10$3y.eHdpfkHY6s.7oChZwEOfGiWzhvMo.yhfjwwgRUgY8LQbys/XlW', 'Patient'),
-(21, 'jcruz@gmail.com', 'cruz.J', '$2y$10$F/Rfkca9YMPaDkjVAXRdTeLZvRiAWVX3ldVDr490E8CbCnQw.hSnu', 'Patient');
+(21, 'jcruz@gmail.com', 'cruz.J', '$2y$10$F/Rfkca9YMPaDkjVAXRdTeLZvRiAWVX3ldVDr490E8CbCnQw.hSnu', 'Patient'),
+(22, 'corpuzwinjemelron@gmail.com', 'pogi.naman', '$2y$10$AeUUJZzAJHanni9kfh452eu2R2nVKKNgWOC.1EOtPR67782eCz3p6', 'Dental Assistant'),
+(28, 'christianjamescapule@gmail.com', 'pogicj', '$2y$10$BPHcRiUNHPEqlA2q7g2ETe/jWRamNzub5vNH9WGxri1buDZdC3GW2', 'Patient');
 
 -- --------------------------------------------------------
 
@@ -535,8 +574,14 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 ALTER TABLE `appointments`
   ADD PRIMARY KEY (`appointment_id`),
   ADD KEY `clinic_id` (`clinic_id`),
-  ADD KEY `fk_appointments_schedule` (`schedule_id`),
-  ADD KEY `fk_appointments_service` (`service_id`);
+  ADD KEY `fk_appointments_schedule` (`schedule_id`);
+
+--
+-- Indexes for table `appointment_services`
+--
+ALTER TABLE `appointment_services`
+  ADD PRIMARY KEY (`appointment_id`,`service_id`),
+  ADD KEY `fk_appointment_services_service` (`service_id`);
 
 --
 -- Indexes for table `clinics`
@@ -640,7 +685,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `clinics`
@@ -652,19 +697,19 @@ ALTER TABLE `clinics`
 -- AUTO_INCREMENT for table `email_verifications`
 --
 ALTER TABLE `email_verifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `password_resets`
 --
 ALTER TABLE `password_resets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `patient_conditions`
@@ -694,7 +739,7 @@ ALTER TABLE `patient_medical_history`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -712,13 +757,13 @@ ALTER TABLE `service_categories`
 -- AUTO_INCREMENT for table `staffs`
 --
 ALTER TABLE `staffs`
-  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- Constraints for dumped tables
@@ -729,8 +774,14 @@ ALTER TABLE `users`
 --
 ALTER TABLE `appointments`
   ADD CONSTRAINT `fk_appointment` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_appointments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`),
-  ADD CONSTRAINT `fk_appointments_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_appointments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`);
+
+--
+-- Constraints for table `appointment_services`
+--
+ALTER TABLE `appointment_services`
+  ADD CONSTRAINT `fk_appointment_services_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_appointment_services_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `patients`
@@ -779,21 +830,6 @@ ALTER TABLE `services`
 --
 ALTER TABLE `staffs`
   ADD CONSTRAINT `fk_staff_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Multi-service selections for appointments
---
-CREATE TABLE IF NOT EXISTS `appointment_services` (
-  `appointment_id` int(11) NOT NULL,
-  `service_id` int(11) NOT NULL,
-  PRIMARY KEY (`appointment_id`, `service_id`),
-  KEY `fk_appointment_services_service` (`service_id`),
-  CONSTRAINT `fk_appointment_services_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_appointment_services_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-INSERT IGNORE INTO `appointment_services` (`appointment_id`, `service_id`)
-SELECT `appointment_id`, `service_id` FROM `appointments` WHERE `service_id` IS NOT NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

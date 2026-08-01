@@ -132,8 +132,6 @@ $allConditions = [
                 value="<?= htmlspecialchars($patient['fb_account'] ?? '') ?>">
             </div>
             </div>
-            <div id="personalError"   class="text-danger small mt-3 d-none"></div>
-            <div id="personalSuccess" class="text-success small mt-3 d-none"></div>
         </form>
         </div>
     </div>
@@ -174,8 +172,6 @@ $allConditions = [
                 value="<?= htmlspecialchars($patient['physician_address'] ?? '') ?>">
             </div>
             </div>
-            <div id="minorsError"   class="text-danger small mt-3 d-none"></div>
-            <div id="minorsSuccess" class="text-success small mt-3 d-none"></div>
         </form>
         </div>
     </div>
@@ -215,8 +211,6 @@ $allConditions = [
                 value="<?= htmlspecialchars($patient['referred_by'] ?? '') ?>">
             </div>
             </div>
-            <div id="dentalError"   class="text-danger small mt-3 d-none"></div>
-            <div id="dentalSuccess" class="text-success small mt-3 d-none"></div>
         </form>
         </div>
     </div>
@@ -314,8 +308,6 @@ $allConditions = [
                 value="<?= htmlspecialchars($patient['blood_pressure'] ?? '') ?>" placeholder="e.g. 120/80">
             </div>
             </div>
-            <div id="healthError"   class="text-danger small mt-3 d-none"></div>
-            <div id="healthSuccess" class="text-success small mt-3 d-none"></div>
         </form>
         </div>
     </div>
@@ -346,8 +338,6 @@ $allConditions = [
                 value="<?= htmlspecialchars($patient['cond_others'] ?? '') ?>"
                 placeholder="Specify…">
             </div>
-            <div id="conditionsError"   class="text-danger small mt-3 d-none"></div>
-            <div id="conditionsSuccess" class="text-success small mt-3 d-none"></div>
         </form>
         </div>
     </div>
@@ -383,8 +373,6 @@ $allConditions = [
                 value="<?= htmlspecialchars($patient['consent_date'] ?? '') ?>">
             </div>
             </div>
-            <div id="consentError"   class="text-danger small mt-3 d-none"></div>
-            <div id="consentSuccess" class="text-success small mt-3 d-none"></div>
         </form>
         </div>
     </div>
@@ -400,21 +388,7 @@ $allConditions = [
         console.warn('showToast not available:', msg);
     }
 
-    function showFeedback(prefix, success, msg) {
-        const errEl = document.getElementById(prefix + 'Error');
-        const sucEl = document.getElementById(prefix + 'Success');
-        errEl.classList.add('d-none');
-        sucEl.classList.add('d-none');
-        if (success) {
-        sucEl.textContent = msg;
-        sucEl.classList.remove('d-none');
-        } else {
-        errEl.textContent = msg;
-        errEl.classList.remove('d-none');
-        }
-    }
-
-    async function submitSection(formId, action, feedbackPrefix) {
+    async function submitSection(formId, action) {
         const form     = document.getElementById(formId);
         const formData = new FormData(form);
         formData.append('action', action);
@@ -422,32 +396,31 @@ $allConditions = [
         try {
         const res    = await fetch(CONTROLLER, { method: 'POST', body: formData });
         const result = await res.json();
-        showFeedback(feedbackPrefix, result.success, result.message);
         showToast(result.message, result.success);
         } catch (err) {
-        showFeedback(feedbackPrefix, false, 'Network error. Please try again.');
+        showToast('Network error. Please try again.', false);
         console.error(err);
         }
     }
 
     // ── Save buttons ──
     document.getElementById('savePersonalBtn').addEventListener('click', () =>
-        submitSection('personalForm', 'updatePersonal', 'personal'));
+        submitSection('personalForm', 'updatePersonal'));
 
     document.getElementById('saveMinorsBtn')?.addEventListener('click', () =>
-        submitSection('minorsForm', 'updateMinors', 'minors'));
+        submitSection('minorsForm', 'updateMinors'));
 
     document.getElementById('saveDentalBtn').addEventListener('click', () =>
-        submitSection('dentalForm', 'updateDental', 'dental'));
+        submitSection('dentalForm', 'updateDental'));
 
     document.getElementById('saveHealthBtn').addEventListener('click', () =>
-        submitSection('healthForm', 'updateHealth', 'health'));
+        submitSection('healthForm', 'updateHealth'));
 
     document.getElementById('saveConditionsBtn').addEventListener('click', () =>
-        submitSection('conditionsForm', 'updateConditions', 'conditions'));
+        submitSection('conditionsForm', 'updateConditions'));
 
     document.getElementById('saveConsentBtn').addEventListener('click', () =>
-        submitSection('consentForm', 'updateConsent', 'consent'));
+        submitSection('consentForm', 'updateConsent'));
 
     // ── Show/hide minors card based on age ──
     const birthdateInput = document.querySelector('input[name="birthdate"]');
