@@ -122,14 +122,18 @@ krsort($months); // latest first
 					<?php endif; ?>
 					</td>
 					<td>
-						<div class="vd-action-group">
-						<button class="btn btn-sm vd-btn-outline vd-view-profile-btn"
-							data-id="<?= $p['patient_id'] ?>">
-							View Profile
+						<div class="vd-action-group vd-patient-actions">
+						<button class="btn vd-btn-outline vd-table-icon-btn vd-view-profile-btn"
+							data-id="<?= $p['patient_id'] ?>"
+							data-bs-toggle="tooltip" data-bs-placement="top"
+							title="View profile" aria-label="View profile">
+							<i class="ti ti-user" aria-hidden="true"></i>
 						</button>
-						<button class="btn btn-sm vd-btn-outline vd-view-transactions-btn"
-							data-id="<?= $p['patient_id'] ?>">
-							Transaction History
+						<button class="btn vd-btn-outline vd-table-icon-btn vd-view-transactions-btn"
+							data-id="<?= $p['patient_id'] ?>"
+							data-bs-toggle="tooltip" data-bs-placement="top"
+							title="Transaction history" aria-label="Transaction history">
+							<i class="ti ti-receipt" aria-hidden="true"></i>
 						</button>
 						</div>
 					</td>
@@ -159,6 +163,11 @@ krsort($months); // latest first
 	const noResults    = document.getElementById('noResults');
 	const countLabel   = document.getElementById('patientCountLabel');
 	const totalCount   = rows.length;
+
+	document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
+		const tooltip = bootstrap.Tooltip.getOrCreateInstance(element, { container: 'body' });
+		element.addEventListener('click', () => tooltip.hide());
+	});
 
 	function filterTable() {
 		const search = searchInput.value.toLowerCase().trim();

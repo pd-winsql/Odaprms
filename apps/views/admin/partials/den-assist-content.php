@@ -67,17 +67,20 @@ $staffList  = $staffModel->getAllStaff();
                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($staff['created_at'])) ?></td>
                     <td>
                         <div class="vd-action-group">
-                        <button class="btn btn-sm vd-btn-outline vd-edit-staff-btn"
+                        <button class="btn vd-btn-outline vd-table-icon-btn vd-edit-staff-btn"
                             data-id="<?= $staff['staff_id'] ?>"
                             data-phone="<?= htmlspecialchars($staff['phone_number']) ?>"
-                            data-email="<?= htmlspecialchars($staff['email']) ?>">
-                            <i class="ti ti-pencil"></i>
+                            data-email="<?= htmlspecialchars($staff['email']) ?>"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Edit dental assistant" aria-label="Edit dental assistant">
+                            <i class="ti ti-pencil" aria-hidden="true"></i>
                         </button>
-                        <button class="btn btn-sm vd-btn-outline vd-toggle-status-btn"
+                        <button class="btn vd-btn-outline vd-table-icon-btn vd-toggle-status-btn"
                             data-id="<?= $staff['staff_id'] ?>"
                             data-status="<?= $staff['employment_status'] ?>"
-                            title="Toggle Status">
-                            <i class="ti ti-power"></i>
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Change account status" aria-label="Change account status">
+                            <i class="ti ti-power" aria-hidden="true"></i>
                         </button>
                         </div>
                     </td>
@@ -211,6 +214,11 @@ $staffList  = $staffModel->getAllStaff();
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/staffController.php';
+
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
+        const tooltip = bootstrap.Tooltip.getOrCreateInstance(element, { container: 'body' });
+        element.addEventListener('click', () => tooltip.hide());
+    });
 
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }

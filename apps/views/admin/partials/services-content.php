@@ -72,8 +72,8 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
                     </div>
                 </div>
                 <div class="d-flex flex-column gap-2">
-                    <button class="btn vd-btn-outline btn-sm vd-edit-service-btn" title="Edit"><i class="ti ti-pencil"></i></button>
-                    <button class="btn vd-btn-outline btn-sm vd-delete-service-btn" data-id="<?= $id ?>" title="Delete"><i class="ti ti-trash"></i></button>
+                    <button class="btn vd-btn-outline vd-service-action-btn vd-edit-service-btn" data-bs-toggle="tooltip" data-bs-placement="left" title="Edit service" aria-label="Edit service"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+                    <button class="btn vd-btn-outline vd-service-action-btn vd-delete-service-btn" data-id="<?= $id ?>" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete service" aria-label="Delete service"><i class="ti ti-trash" aria-hidden="true"></i></button>
                 </div>
             </div>
         </div>
@@ -113,8 +113,8 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <span class="vd-order-badge">Order <?= (int)$cat['display_order'] ?></span>
-                        <button class="btn vd-btn-outline btn-sm vd-edit-category-btn" title="Edit"><i class="ti ti-pencil"></i></button>
-                        <button class="btn vd-btn-outline btn-sm vd-delete-category-btn" data-id="<?= $cat['category_id'] ?>" title="Delete"><i class="ti ti-trash"></i></button>
+                        <button class="btn vd-btn-outline vd-service-action-btn vd-edit-category-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit category" aria-label="Edit category"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+                        <button class="btn vd-btn-outline vd-service-action-btn vd-delete-category-btn" data-id="<?= $cat['category_id'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete category" aria-label="Delete category"><i class="ti ti-trash" aria-hidden="true"></i></button>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -335,6 +335,11 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/serviceController.php';
+
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
+        const tooltip = bootstrap.Tooltip.getOrCreateInstance(element, { container: 'body' });
+        element.addEventListener('click', () => tooltip.hide());
+    });
 
     // The dashboard shell only loads Tabler icons. Service icons are stored
     // as Font Awesome classes (matching the public landing page), so load
