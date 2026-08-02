@@ -108,7 +108,7 @@ $clinics = $clinicModel->getAllClinics();
 <!-- Delete confirmation modal -->
 <div class="modal fade" id="deleteScheduleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content vd-modal-content">
+        <div class="modal-content vd-modal-content vd-confirm-modal">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title vd-modal-title">Confirm Delete</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -125,9 +125,11 @@ $clinics = $clinicModel->getAllClinics();
 </div>
 
 <script>
+(function () {
     function refreshPage() {
         if (typeof loadpage === 'function') loadpage('schedule-content.php');
     }
+    window.refreshSchedulePage = refreshPage;
 
     // Show toast for query param results (e.g., edit conflict) — use global showToast if available
     (function () {
@@ -177,6 +179,7 @@ $clinics = $clinicModel->getAllClinics();
             fd.append('action',          'edit_schedule');
             fd.append('schedule_id',     id);
             fd.append('max_appointments', newMax);
+            LoadingUI.setButton(btn, true, 'Saving…');
 
             try {
                 const res    = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: fd });
@@ -193,6 +196,8 @@ $clinics = $clinicModel->getAllClinics();
             } catch (err) {
                 showToast('Network error.', false);
                 console.error(err);
+            } finally {
+                LoadingUI.setButton(btn, false);
             }
         });
     });
@@ -213,16 +218,18 @@ $clinics = $clinicModel->getAllClinics();
         btn.disabled = true;
         btn.textContent = 'Deleting…';
 
+        LoadingUI.setButton(btn, true, 'Deleting…');
         const formData = new FormData();
         formData.append('action', 'delete_schedule');
         formData.append('schedule_id', scheduleToDelete);
 
+        let shouldRefresh = false;
         try {
             const resp = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: formData });
             const text = await resp.text();
             if (text.trim() === 'success') {
                 showToast('Schedule deleted successfully!', true);
-                refreshPage();
+                shouldRefresh = true;
             } else {
                 showToast('Error: ' + text, false);
             }
@@ -230,14 +237,20 @@ $clinics = $clinicModel->getAllClinics();
             showToast('Network error. Please try again.', false);
             console.error(err);
         } finally {
+            LoadingUI.setButton(btn, false);
             btn.disabled = false;
             btn.textContent = 'Delete';
             scheduleToDelete = null;
             const deleteModalEl = document.getElementById('deleteScheduleModal');
             const modal = bootstrap.Modal.getInstance(deleteModalEl);
+            if (shouldRefresh) {
+                deleteModalEl.addEventListener('hidden.bs.modal', refreshPage, { once: true });
+            }
             if (modal) modal.hide();
+            else if (shouldRefresh) refreshPage();
         }
     });
+})();
 </script>
 
 <?php include '_add-schedule-modal.php'; ?>

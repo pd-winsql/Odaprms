@@ -212,6 +212,7 @@ krsort($months); // latest first
 		btn.addEventListener('click', async function () {
 			const patientId = this.dataset.id;
 			const dashContent = document.querySelector('.vd-dash-content');
+			LoadingUI.showContent(dashContent, { label: 'Loading patient profile…' });
 
 			try {
 const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
@@ -230,6 +231,8 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 			} catch (err) {
 			dashContent.innerHTML = '<div class="vd-empty-state">Error loading patient profile.</div>';
 			console.error(err);
+			} finally {
+			LoadingUI.finishContent(dashContent);
 			}
 		});
 });
@@ -238,6 +241,7 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 		btn.addEventListener('click', async function () {
 			const patientId = this.dataset.id;
 			const dashContent = document.querySelector('.vd-dash-content');
+			LoadingUI.showContent(dashContent, { label: 'Loading transaction history…' });
 
 			try {
 				const response = await fetch(`partials/_patient-transactions.php?id=${patientId}`);
@@ -256,6 +260,8 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 			} catch (err) {
 				dashContent.innerHTML = '<div class="vd-empty-state">Error loading transaction history.</div>';
 				console.error(err);
+			} finally {
+				LoadingUI.finishContent(dashContent);
 			}
 		});
 	});
@@ -264,6 +270,7 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 
     async function loadpage(page) {
         const dashContent = document.querySelector('.vd-dash-content');
+        LoadingUI.showContent(dashContent, { label: 'Loading content…' });
         try {
             const response = await fetch(`partials/${page}`);
             if (!response.ok) throw new Error('Network response was not ok');
@@ -283,6 +290,8 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
                 dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
             }
             console.error('Error fetching page:', error);
+            } finally {
+            LoadingUI.finishContent(dashContent);
             }
         }
 </script>

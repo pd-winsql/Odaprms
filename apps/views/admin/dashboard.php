@@ -47,6 +47,8 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css">
     <link rel="stylesheet" href="../../../public/css/dashboard.css">
+    <link rel="stylesheet" href="../../../public/css/loading.css">
+    <script src="../../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-dash-body">
 
@@ -197,6 +199,7 @@ $today = date('l, F j Y');
         }
         
         async function loadpage(page) {
+        LoadingUI.showContent(dashContent, { label: 'Loading dashboard…' });
         try {
             const response = await fetch(`partials/${page}`);
             if (!response.ok) throw new Error('Network response was not ok');
@@ -214,6 +217,8 @@ $today = date('l, F j Y');
             } catch (error) {
             dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
             console.error('Error fetching page:', error);
+            } finally {
+            LoadingUI.finishContent(dashContent);
             }
         }
         
@@ -261,7 +266,7 @@ $today = date('l, F j Y');
 
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content vd-modal-content">
+            <div class="modal-content vd-modal-content vd-confirm-modal">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title vd-modal-title" id="logoutModalLabel">Logout</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

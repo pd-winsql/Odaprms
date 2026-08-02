@@ -22,6 +22,8 @@ if (!$token) {
     <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../public/css/styles.css">
     <link rel="stylesheet" href="../../public/css/auth.css">
+    <link rel="stylesheet" href="../../public/css/loading.css">
+    <script src="../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-auth-body">
 
@@ -129,6 +131,7 @@ if (!$token) {
 
         btn.textContent = 'Saving…';
         btn.disabled    = true;
+        LoadingUI.setButton(btn, true, 'Saving…');
 
         const formData = new FormData(this);
         formData.append('action', 'resetPassword');
@@ -147,12 +150,14 @@ if (!$token) {
             errEl.textContent = result.message;
             errEl.classList.remove('d-none');
             btn.textContent = 'Reset Password';
+            LoadingUI.setButton(btn, false);
             btn.disabled    = false;
             }
         } catch (err) {
             errEl.textContent = 'Network error. Please try again.';
             errEl.classList.remove('d-none');
             btn.textContent = 'Reset Password';
+            LoadingUI.setButton(btn, false);
             btn.disabled    = false;
         }
         });

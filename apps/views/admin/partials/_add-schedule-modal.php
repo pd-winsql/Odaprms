@@ -35,6 +35,8 @@
         e.preventDefault();
         const formData = new FormData(this);
         formData.append('action', 'add_schedule');
+        const submitButton = this.querySelector('button[type="submit"]');
+        LoadingUI.setButton(submitButton, true, 'Adding…');
 
         fetch('../../controllers/scheduleController.php', {
             method: 'POST',
@@ -43,10 +45,14 @@
         .then(response => response.text())
         .then(text => {
             if (text.trim() === 'success') {
-                bootstrap.Modal.getInstance(document.getElementById('addScheduleModal')).hide();
+                const modalElement = document.getElementById('addScheduleModal');
+                const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                modalElement.addEventListener('hidden.bs.modal', () => {
+                    if (typeof window.refreshSchedulePage === 'function') window.refreshSchedulePage();
+                    else if (typeof loadpage === 'function') loadpage('schedule-content.php');
+                }, { once: true });
+                modal.hide();
                 if (typeof showToast === 'function') showToast('Schedule added successfully!', true);
-                if (typeof refreshPage === 'function') refreshPage();
-                else if (typeof loadpage === 'function') loadpage('schedule-content.php');
             } else {
                 document.getElementById('addError').textContent = text;
                 document.getElementById('addError').classList.remove('d-none');
@@ -56,7 +62,8 @@
         .catch(err => {
             if (typeof showToast === 'function') showToast('Network error. Please try again.', false);
             console.error(err);
-        });
+        })
+        .finally(() => LoadingUI.setButton(submitButton, false));
     });
 })();
 </script>

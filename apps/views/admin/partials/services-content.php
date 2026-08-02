@@ -244,7 +244,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
 
       <!-- STEP 2: confirm (receipt) -->
       <div id="serviceModalConfirmStep" class="d-none">
-        <div class="modal-header border-0 pb-0 justify-content-center">
+        <div class="modal-header vd-confirm-header justify-content-center">
           <h5 class="modal-title vd-modal-title">Confirm Service Details</h5>
         </div>
         <div class="modal-body">
@@ -295,7 +295,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
       </div>
 
       <div id="categoryModalConfirmStep" class="d-none">
-        <div class="modal-header border-0 pb-0 justify-content-center">
+        <div class="modal-header vd-confirm-header justify-content-center">
           <h5 class="modal-title vd-modal-title">Confirm Category Details</h5>
         </div>
         <div class="modal-body">
@@ -307,6 +307,26 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- Shared delete confirmation for services and categories -->
+<div class="modal fade" id="resourceDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content vd-modal-content vd-confirm-modal">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title vd-modal-title" id="resourceDeleteTitle">Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1" id="resourceDeleteMessage"></p>
+        <p class="mb-0 small text-muted">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="vd-btn-outline btn" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="vd-btn-gold btn" id="resourceDeleteConfirmBtn">Delete</button>
+      </div>
     </div>
   </div>
 </div>
@@ -458,21 +478,26 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         });
     });
 
+    const resourceDeleteModalElement = document.getElementById('resourceDeleteModal');
+    const resourceDeleteModal = new bootstrap.Modal(resourceDeleteModalElement);
+    const resourceDeleteTitle = document.getElementById('resourceDeleteTitle');
+    const resourceDeleteMessage = document.getElementById('resourceDeleteMessage');
+    const resourceDeleteConfirmBtn = document.getElementById('resourceDeleteConfirmBtn');
+    let pendingDelete = null;
+
+    function openDeleteConfirmation(type, id, name) {
+        pendingDelete = { type, id };
+        resourceDeleteTitle.textContent = type === 'service' ? 'Delete Service' : 'Delete Category';
+        resourceDeleteMessage.textContent = type === 'service'
+            ? `Are you sure you want to delete “${name}”?`
+            : `Delete “${name}”? Services assigned to it will keep their other categories.`;
+        resourceDeleteModal.show();
+    }
+
     document.querySelectorAll('.vd-delete-service-btn').forEach(btn => {
-        btn.addEventListener('click', async function () {
-            const id = this.dataset.id;
-            if (!confirm('Delete this service? This cannot be undone.')) return;
-            this.disabled = true;
-            try {
-                const response = await fetch(`${CONTROLLER}?action=deleteService&id=${id}`);
-                const result = await response.json();
-                if (result.success) { showToast(result.message, true); refreshPage(); }
-                else { showToast(result.message || 'Failed to delete service.', false); this.disabled = false; }
-            } catch (err) {
-                showToast('Network error. Please try again.', false);
-                console.error(err);
-                this.disabled = false;
-            }
+        btn.addEventListener('click', function () {
+            const card = this.closest('.vd-service-card');
+            openDeleteConfirmation('service', this.dataset.id, card?.dataset.name || 'this service');
         });
     });
 
@@ -521,21 +546,24 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         this.disabled = true;
         this.textContent = 'Saving…';
 
+        LoadingUI.setButton(this, true, 'Saving…');
         try {
             const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
             const result = await response.json();
             if (result.success) {
+                serviceModalEl.addEventListener('hidden.bs.modal', refreshPage, { once: true });
                 serviceModal.hide();
                 showToast(result.message, true);
-                refreshPage();
             } else {
                 showToast(result.message || 'Failed to save service.', false);
+                LoadingUI.setButton(this, false);
                 this.disabled = false;
                 this.textContent = 'Confirm & Save';
             }
         } catch (err) {
             showToast('Network error. Please try again.', false);
             console.error(err);
+            LoadingUI.setButton(this, false);
             this.disabled = false;
             this.textContent = 'Confirm & Save';
         }
@@ -591,21 +619,41 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
     });
 
     document.querySelectorAll('.vd-delete-category-btn').forEach(btn => {
-        btn.addEventListener('click', async function () {
-            const id = this.dataset.id;
-            if (!confirm('Delete this category? Services assigned to it will keep their other categories.')) return;
-            this.disabled = true;
-            try {
-                const response = await fetch(`${CONTROLLER}?action=deleteCategory&id=${id}`);
-                const result = await response.json();
-                if (result.success) { showToast(result.message, true); refreshPage(); }
-                else { showToast(result.message || 'Failed to delete category.', false); this.disabled = false; }
-            } catch (err) {
-                showToast('Network error. Please try again.', false);
-                console.error(err);
-                this.disabled = false;
-            }
+        btn.addEventListener('click', function () {
+            const row = this.closest('.vd-category-list-row');
+            openDeleteConfirmation('category', this.dataset.id, row?.dataset.name || 'this category');
         });
+    });
+
+    resourceDeleteConfirmBtn.addEventListener('click', async function () {
+        if (!pendingDelete) return;
+
+        const { type, id } = pendingDelete;
+        const action = type === 'service' ? 'deleteService' : 'deleteCategory';
+        LoadingUI.setButton(this, true, 'Deleting…');
+
+        try {
+            const response = await fetch(`${CONTROLLER}?action=${action}&id=${id}`);
+            const result = await response.json();
+
+            if (!result.success) {
+                showToast(result.message || `Failed to delete ${type}.`, false);
+                return;
+            }
+
+            showToast(result.message, true);
+            resourceDeleteModalElement.addEventListener('hidden.bs.modal', refreshPage, { once: true });
+            resourceDeleteModal.hide();
+        } catch (err) {
+            showToast('Network error. Please try again.', false);
+            console.error(err);
+        } finally {
+            LoadingUI.setButton(this, false);
+        }
+    });
+
+    resourceDeleteModalElement.addEventListener('hidden.bs.modal', () => {
+        pendingDelete = null;
     });
 
     document.getElementById('categoryModalReviewBtn').addEventListener('click', function () {
@@ -640,21 +688,24 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         this.disabled = true;
         this.textContent = 'Saving…';
 
+        LoadingUI.setButton(this, true, 'Saving…');
         try {
             const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
             const result = await response.json();
             if (result.success) {
+                categoryModalEl.addEventListener('hidden.bs.modal', refreshPage, { once: true });
                 categoryModal.hide();
                 showToast(result.message, true);
-                refreshPage();
             } else {
                 showToast(result.message || 'Failed to save category.', false);
+                LoadingUI.setButton(this, false);
                 this.disabled = false;
                 this.textContent = 'Confirm & Save';
             }
         } catch (err) {
             showToast('Network error. Please try again.', false);
             console.error(err);
+            LoadingUI.setButton(this, false);
             this.disabled = false;
             this.textContent = 'Confirm & Save';
         }

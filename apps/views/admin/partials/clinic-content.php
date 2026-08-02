@@ -115,6 +115,7 @@ $clinics = $clinicModel->getAllClinics();
             this.disabled = true;
             this.textContent = 'Saving…';
 
+            LoadingUI.setButton(this, true, 'Saving…');
             try {
                 const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
                 const result   = await response.json();
@@ -150,6 +151,7 @@ $clinics = $clinicModel->getAllClinics();
                 showToast('Network error. Please try again.', false);
                 console.error(err);
             } finally {
+                LoadingUI.setButton(this, false);
                 this.disabled = false;
                 this.textContent = originalText;
             }

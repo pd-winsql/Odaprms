@@ -192,7 +192,7 @@ $staffList  = $staffModel->getAllStaff();
 <!-- Toggle Status Confirmation Modal -->
 <div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content vd-modal-content">
+        <div class="modal-content vd-modal-content vd-confirm-modal">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title vd-modal-title">Confirm Status Change</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -228,6 +228,8 @@ $staffList  = $staffModel->getAllStaff();
         formData.append('action', 'create');
         const errorEl = document.getElementById('createError');
         errorEl.classList.add('d-none');
+        const submitButton = this.querySelector('button[type="submit"]');
+        LoadingUI.setButton(submitButton, true, 'Creating…');
 
         try {
         const res    = await fetch(CONTROLLER, { method: 'POST', body: formData });
@@ -247,6 +249,8 @@ $staffList  = $staffModel->getAllStaff();
         errorEl.textContent = 'Network error. Please try again.';
         errorEl.classList.remove('d-none');
         console.error(err);
+        } finally {
+        LoadingUI.setButton(submitButton, false);
         }
     });
 
@@ -301,6 +305,7 @@ $staffList  = $staffModel->getAllStaff();
         fd.append('staff_id', id);
         fd.append('phone', phone);
         fd.append('email', email);
+        LoadingUI.setButton(btn, true, 'Saving…');
 
         try {
             const res    = await fetch(CONTROLLER, { method: 'POST', body: fd });
@@ -319,6 +324,8 @@ $staffList  = $staffModel->getAllStaff();
         } catch (err) {
             showToast('Network error.', false);
             console.error(err);
+        } finally {
+            LoadingUI.setButton(btn, false);
         }
         });
     });
@@ -374,10 +381,12 @@ $staffList  = $staffModel->getAllStaff();
         this.disabled = true;
         this.textContent = 'Updating…';
 
+        LoadingUI.setButton(this, true, 'Updating…');
         try {
             await performStatusToggle(pendingToggleButton, pendingNewStatus);
             toggleStatusModal.hide();
         } finally {
+            LoadingUI.setButton(this, false);
             pendingToggleButton = null;
             pendingNewStatus = '';
             this.disabled = false;

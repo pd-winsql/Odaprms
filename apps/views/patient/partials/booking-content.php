@@ -218,6 +218,7 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
         const submitButton = document.getElementById('dashboardBookingSubmit');
         submitButton.disabled = true;
         submitButton.textContent = 'Submitting...';
+        LoadingUI.setButton(submitButton, true, 'Submitting…');
         try {
             const response = await fetch('../../controllers/appointmentController.php', {
                 method: 'POST',
@@ -230,6 +231,7 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
         } catch (error) {
             errorBox.textContent = error.message || 'Unable to submit your appointment. Please try again.';
             errorBox.classList.remove('d-none');
+            LoadingUI.setButton(submitButton, false);
             submitButton.disabled = false;
             submitButton.textContent = 'Request Appointment';
         }

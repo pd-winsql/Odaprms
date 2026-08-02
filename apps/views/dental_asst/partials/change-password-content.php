@@ -104,6 +104,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Dental Assistant
             return;
         }
 
+        const submitButton = this.querySelector('button[type="submit"]');
+        LoadingUI.setButton(submitButton, true, 'Saving…');
         try {
             const res = await fetch('../../controllers/patientController.php', {
                 method: 'POST',
@@ -121,6 +123,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Dental Assistant
         } catch (err) {
             errEl.textContent = 'Network error. Please try again.';
             errEl.classList.remove('d-none');
+        } finally {
+            LoadingUI.setButton(submitButton, false);
         }
     });
 })();

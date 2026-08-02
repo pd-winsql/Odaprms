@@ -406,6 +406,24 @@ body {
   letter-spacing: 0.08em;
 }
 
+/* Confirmation dialogs: clear title, message, and action hierarchy. */
+.vd-confirm-modal .modal-header,
+.vd-confirm-header {
+  border-bottom: 1px solid var(--border) !important;
+  padding-bottom: 1rem !important;
+}
+.vd-confirm-modal .modal-body {
+  color: #5f6772;
+  line-height: 1.65;
+  padding-bottom: 1.25rem;
+  padding-top: 1.15rem;
+}
+.vd-confirm-modal .modal-footer {
+  background: rgba(181, 146, 76, 0.04);
+  border-top: 1px solid rgba(181, 146, 76, 0.14) !important;
+  padding: 0.9rem 1rem 1rem;
+}
+
 /* Navbar */
 .vd-navbar {
   background-color: var(--white-bg);

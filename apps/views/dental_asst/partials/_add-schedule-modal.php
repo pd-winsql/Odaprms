@@ -35,12 +35,6 @@
     modalElement.dataset.bound = 'true';
 
     const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
-    modalInstance.hide();
-    modalElement.classList.remove('show');
-    modalElement.style.display = 'none';
-    modalElement.setAttribute('aria-hidden', 'true');
-    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
-    document.body.classList.remove('modal-open');
 
     modalElement.addEventListener('show.bs.modal', function(e) {
         const btn = e.relatedTarget;
@@ -54,6 +48,8 @@
             e.preventDefault();
             const formData = new FormData(this);
             formData.append('action', 'add_schedule');
+            const submitButton = this.querySelector('button[type="submit"]');
+            LoadingUI.setButton(submitButton, true, 'Adding…');
 
             fetch('../../controllers/scheduleController.php', {
                 method: 'POST',
@@ -62,10 +58,12 @@
             .then(response => response.text())
             .then(text => {
                 if (text.trim() === 'success') {
+                    modalElement.addEventListener('hidden.bs.modal', () => {
+                        if (typeof window.refreshSchedulePage === 'function') window.refreshSchedulePage();
+                        else if (typeof loadpage === 'function') loadpage('schedule-content.php');
+                    }, { once: true });
                     modalInstance.hide();
                     if (typeof showToast === 'function') showToast('Schedule added successfully!', true);
-                    if (typeof refreshPage === 'function') refreshPage();
-                    else if (typeof loadpage === 'function') loadpage('schedule-content.php');
                 } else {
                     const addError = document.getElementById('addError');
                     addError.textContent = text;
@@ -76,7 +74,8 @@
             .catch(err => {
                 if (typeof showToast === 'function') showToast('Network error. Please try again.', false);
                 console.error(err);
-            });
+            })
+            .finally(() => LoadingUI.setButton(submitButton, false));
         });
     }
 })();

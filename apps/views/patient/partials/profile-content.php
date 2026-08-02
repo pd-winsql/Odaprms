@@ -388,11 +388,12 @@ $allConditions = [
         console.warn('showToast not available:', msg);
     }
 
-    async function submitSection(formId, action) {
+    async function submitSection(formId, action, button) {
         const form     = document.getElementById(formId);
         const formData = new FormData(form);
         formData.append('action', action);
 
+        LoadingUI.setButton(button, true, 'Saving…');
         try {
         const res    = await fetch(CONTROLLER, { method: 'POST', body: formData });
         const result = await res.json();
@@ -400,27 +401,29 @@ $allConditions = [
         } catch (err) {
         showToast('Network error. Please try again.', false);
         console.error(err);
+        } finally {
+        LoadingUI.setButton(button, false);
         }
     }
 
     // ── Save buttons ──
-    document.getElementById('savePersonalBtn').addEventListener('click', () =>
-        submitSection('personalForm', 'updatePersonal'));
+    document.getElementById('savePersonalBtn').addEventListener('click', (event) =>
+        submitSection('personalForm', 'updatePersonal', event.currentTarget));
 
-    document.getElementById('saveMinorsBtn')?.addEventListener('click', () =>
-        submitSection('minorsForm', 'updateMinors'));
+    document.getElementById('saveMinorsBtn')?.addEventListener('click', (event) =>
+        submitSection('minorsForm', 'updateMinors', event.currentTarget));
 
-    document.getElementById('saveDentalBtn').addEventListener('click', () =>
-        submitSection('dentalForm', 'updateDental'));
+    document.getElementById('saveDentalBtn').addEventListener('click', (event) =>
+        submitSection('dentalForm', 'updateDental', event.currentTarget));
 
-    document.getElementById('saveHealthBtn').addEventListener('click', () =>
-        submitSection('healthForm', 'updateHealth'));
+    document.getElementById('saveHealthBtn').addEventListener('click', (event) =>
+        submitSection('healthForm', 'updateHealth', event.currentTarget));
 
-    document.getElementById('saveConditionsBtn').addEventListener('click', () =>
-        submitSection('conditionsForm', 'updateConditions'));
+    document.getElementById('saveConditionsBtn').addEventListener('click', (event) =>
+        submitSection('conditionsForm', 'updateConditions', event.currentTarget));
 
-    document.getElementById('saveConsentBtn').addEventListener('click', () =>
-        submitSection('consentForm', 'updateConsent'));
+    document.getElementById('saveConsentBtn').addEventListener('click', (event) =>
+        submitSection('consentForm', 'updateConsent', event.currentTarget));
 
     // ── Show/hide minors card based on age ──
     const birthdateInput = document.querySelector('input[name="birthdate"]');

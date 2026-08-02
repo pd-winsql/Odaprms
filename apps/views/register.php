@@ -16,6 +16,8 @@ if (isset($_SESSION['user_id'])) {
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
   <link rel="stylesheet" href="../../public/css/auth.css">
+    <link rel="stylesheet" href="../../public/css/loading.css">
+    <script src="../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-auth-body">
 
@@ -145,6 +147,7 @@ if (isset($_SESSION['user_id'])) {
       formData.append('action', 'sendRegisterOTP');
       btn.textContent = 'Sending verification code…';
       btn.disabled    = true;
+      LoadingUI.setButton(btn, true, 'Sending code…');
 
       try {
         const res    = await fetch('/Capstone System/apps/controllers/userController.php', {
@@ -163,12 +166,14 @@ if (isset($_SESSION['user_id'])) {
           errEl.textContent = result.message;
           errEl.classList.remove('d-none');
           btn.textContent = 'Create Account';
+          LoadingUI.setButton(btn, false);
           btn.disabled    = false;
         }
       } catch (err) {
         errEl.textContent = 'Network error. Please try again.';
         errEl.classList.remove('d-none');
         btn.textContent = 'Create Account';
+        LoadingUI.setButton(btn, false);
         btn.disabled    = false;
       }
     });

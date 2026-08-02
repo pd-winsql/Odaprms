@@ -43,6 +43,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../public/css/styles.css">
+    <link rel="stylesheet" href="../../public/css/loading.css">
+    <script src="../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-form-page py-5">
 
@@ -224,7 +226,7 @@
 
                     <!-- Loading -->
                     <div id="scheduleLoading" class="vd-schedule-loading d-none">
-                        <span class="vd-schedule-spinner"></span>
+                        <span class="vd-spinner" aria-hidden="true"></span>
                         Loading available dates&hellip;
                     </div>
 
@@ -302,8 +304,8 @@
             </div>
             <p class="text-muted small mb-4">Would you like to create an account to manage your appointments and view your booking history?</p>
             <div class="d-flex justify-content-end gap-2">
-            <button class="btn vd-btn-outline" onclick="skipAccount()">No, thanks</button>
-            <button class="btn vd-btn-gold" onclick="proceedAccount()">Yes, create account</button>
+                <button class="btn vd-btn-outline" onclick="skipAccount(this)">No, thanks</button>
+                <button class="btn vd-btn-gold" onclick="proceedAccount(this)">Yes, create account</button>
             </div>
         </div>
         </div>
@@ -461,21 +463,23 @@
             accountModal.show();
         }
 
-        function skipAccount() {
+        function skipAccount(button) {
         document.activeElement.blur();
         accountModal.hide();
-        submitBooking();
+        submitBooking(false, button);
         }
 
-        function proceedAccount() {
+        function proceedAccount(button) {
         document.activeElement.blur();
         accountModal.hide();
-        submitBooking(true);
+        submitBooking(true, button);
         }
 
-        async function submitBooking(redirect = false) {
+        async function submitBooking(redirect = false, button = null) {
         const formData = new FormData(document.getElementById('bookingForm'));
+        LoadingUI.setButton(button, true, 'Booking…');
 
+        try {
         const response = await fetch('../../apps/controllers/appointmentController.php', {
             method: 'POST',
             body: formData
@@ -493,6 +497,12 @@
             }
         } else {
             alert(result.message);
+            LoadingUI.setButton(button, false);
+        }
+        } catch (error) {
+            LoadingUI.setButton(button, false);
+            alert('Unable to submit your booking. Please try again.');
+            console.error(error);
         }
         }
 

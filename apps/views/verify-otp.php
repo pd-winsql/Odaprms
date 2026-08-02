@@ -21,6 +21,8 @@ if (!$email) {
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
   <link rel="stylesheet" href="../../public/css/auth.css">
+    <link rel="stylesheet" href="../../public/css/loading.css">
+    <script src="../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-auth-body">
 
@@ -122,6 +124,7 @@ if (!$email) {
       const formData = new FormData();
       formData.append('action', 'sendOTP');
       formData.append('email', '<?= htmlspecialchars($email) ?>');
+      LoadingUI.setButton(resendBtn, true, 'Sending…');
 
       try {
         const res    = await fetch('../controllers/passwordResetController.php', {
@@ -129,11 +132,13 @@ if (!$email) {
         });
         const result = await res.json();
         if (result.success) {
+          LoadingUI.setButton(resendBtn, false);
           document.getElementById('otpSuccess').textContent = 'New OTP sent!';
           document.getElementById('otpSuccess').classList.remove('d-none');
           startTimer();
         }
       } catch (err) {
+        LoadingUI.setButton(resendBtn, false);
         console.error(err);
       }
     });
@@ -156,6 +161,7 @@ if (!$email) {
 
       btn.textContent = 'Verifying…';
       btn.disabled    = true;
+      LoadingUI.setButton(btn, true, 'Verifying…');
 
       const formData = new FormData(this);
       formData.append('action', 'verifyOTP');
@@ -176,12 +182,14 @@ if (!$email) {
           errEl.textContent = result.message;
           errEl.classList.remove('d-none');
           btn.textContent = 'Verify Code';
+          LoadingUI.setButton(btn, false);
           btn.disabled    = false;
         }
       } catch (err) {
         errEl.textContent = 'Network error. Please try again.';
         errEl.classList.remove('d-none');
         btn.textContent = 'Verify Code';
+        LoadingUI.setButton(btn, false);
         btn.disabled    = false;
       }
     });

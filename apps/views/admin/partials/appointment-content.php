@@ -359,9 +359,7 @@ function statusClass($status) {
         const email     = select.dataset.email;
         const name      = select.dataset.name;
 
-        btn.disabled  = true;
-        btn.textContent = 'Saving…';
-
+        LoadingUI.setButton(btn, true, 'Saving…');
         const formData = new FormData();
         formData.append('action', 'updateStatus');
         formData.append('appointment_id', id);
@@ -377,16 +375,15 @@ function statusClass($status) {
             updateStatusPill(id, newStatus);
             row.dataset.status = newStatus;
             select.dataset.original = newStatus;
-            btn.textContent = 'Save & Notify';
+            LoadingUI.setButton(btn, false);
+            btn.disabled = true;
             showToast('Status updated to ' + newStatus, true);
             } else {
-            btn.disabled = false;
-            btn.textContent = 'Save & Notify';
+            LoadingUI.setButton(btn, false);
             showToast(result.message || 'Failed to update.', false);
             }
         } catch (err) {
-            btn.disabled = false;
-            btn.textContent = 'Save & Notify';
+            LoadingUI.setButton(btn, false);
             showToast('Network error. Please try again.', false);
             console.error(err);
         }

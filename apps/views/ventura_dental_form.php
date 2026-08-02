@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../public/css/styles.css">
+    <link rel="stylesheet" href="../../public/css/loading.css">
+    <script src="../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-form-page py-5">
 
@@ -391,6 +393,7 @@
         const submitButton = this.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.textContent = 'Submitting...';
+        LoadingUI.setButton(submitButton, true, 'Submitting…');
 
         const formData = new FormData(this);
 
@@ -414,6 +417,7 @@
             showToast('Unable to submit the form right now.', 'error');
         } finally {
             if (!toast.classList.contains('show') || toast.classList.contains('error')) {
+                LoadingUI.setButton(submitButton, false);
                 submitButton.disabled = false;
                 submitButton.textContent = 'Submit Patient Form';
             }

@@ -24,6 +24,8 @@ if (isset($_SESSION['user_id'])) {
 	<link rel="stylesheet" href="../../public/css/bootstrap.min.css">
 	<link rel="stylesheet" href="../../public/css/styles.css">
 	<link rel="stylesheet" href="../../public/css/auth.css">
+	<link rel="stylesheet" href="../../public/css/loading.css">
+	<script src="../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-auth-body">
 
@@ -121,6 +123,7 @@ if (isset($_SESSION['user_id'])) {
 		errEl.classList.add('d-none');
 		btn.textContent = 'Signing in…';
 		btn.disabled    = true;
+		LoadingUI.setButton(btn, true, 'Signing in…');
 
 		const formData = new FormData(this);
 		formData.append('action', 'login');
@@ -137,12 +140,14 @@ if (isset($_SESSION['user_id'])) {
 			errEl.textContent = result.message;
 			errEl.classList.remove('d-none');
 			btn.textContent = 'Sign In';
+			LoadingUI.setButton(btn, false);
 			btn.disabled    = false;
 			}
 		} catch (err) {
 			errEl.textContent = 'Network error. Please try again.';
 			errEl.classList.remove('d-none');
 			btn.textContent = 'Sign In';
+			LoadingUI.setButton(btn, false);
 			btn.disabled    = false;
 		}
 		});

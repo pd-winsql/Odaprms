@@ -176,7 +176,7 @@ function sv($settings, $key) {
 <!-- Save confirmation modal -->
 <div class="modal fade" id="settingsConfirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content vd-modal-content">
+        <div class="modal-content vd-modal-content vd-confirm-modal">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title vd-modal-title">Confirm Save</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -232,14 +232,21 @@ function sv($settings, $key) {
         this.disabled = true;
         this.textContent = 'Saving…';
 
+        LoadingUI.setButton(this, true, 'Saving…');
         try {
-            await pendingConfirmAction();
+            const shouldRefresh = await pendingConfirmAction();
+            if (shouldRefresh) {
+                confirmModalEl.addEventListener('hidden.bs.modal', refreshPage, { once: true });
+            }
             confirmModal.hide();
         } catch (err) {
             console.error(err);
             this.disabled = false;
             this.textContent = 'Confirm & Save';
         } finally {
+            LoadingUI.setButton(this, false);
+            this.disabled = false;
+            this.textContent = 'Confirm & Save';
             pendingConfirmAction = null;
         }
     });
@@ -268,6 +275,7 @@ function sv($settings, $key) {
                     saveButton.disabled = true;
                     saveButton.textContent = 'Saving…';
 
+                    LoadingUI.setButton(saveButton, true, 'Saving…');
                     try {
                         const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
                         const result   = await response.json();
@@ -276,6 +284,7 @@ function sv($settings, $key) {
                         showToast('Network error. Please try again.', false);
                         console.error(err);
                     } finally {
+                        LoadingUI.setButton(saveButton, false);
                         saveButton.disabled = false;
                         saveButton.textContent = originalText;
                     }
@@ -307,17 +316,17 @@ function sv($settings, $key) {
                     uploadButton.disabled = true;
                     uploadButton.textContent = 'Uploading…';
 
+                    LoadingUI.setButton(uploadButton, true, 'Uploading…');
                     try {
                         const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
                         const result   = await response.json();
                         showToast(result.message || (result.success ? 'Logo updated.' : 'Failed to upload.'), result.success);
-                        if (result.success) {
-                            refreshPage();
-                        }
+                        return result.success;
                     } catch (err) {
                         showToast('Network error. Please try again.', false);
                         console.error(err);
                     } finally {
+                        LoadingUI.setButton(uploadButton, false);
                         uploadButton.disabled = false;
                         uploadButton.textContent = originalText;
                     }
@@ -338,17 +347,17 @@ function sv($settings, $key) {
                 btn.disabled = true;
                 btn.textContent = 'Removing…';
 
+                LoadingUI.setButton(btn, true, 'Removing…');
                 try {
                     const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
                     const result   = await response.json();
                     showToast(result.message || (result.success ? 'Logo removed.' : 'Failed to remove.'), result.success);
-                    if (result.success) {
-                        refreshPage();
-                    }
+                    return result.success;
                 } catch (err) {
                     showToast('Network error. Please try again.', false);
                     console.error(err);
                 } finally {
+                    LoadingUI.setButton(btn, false);
                     btn.disabled = false;
                     btn.textContent = originalText;
                 }
