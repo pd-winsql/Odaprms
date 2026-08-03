@@ -1,11 +1,15 @@
 <?php
 
+require_once __DIR__ . '/auditLogModel.php';
+
 class Appointment {
     private $conn;
+    private $auditLog;
 
     public function __construct($conn) 
     {
         $this->conn = $conn;
+        $this->auditLog = new AuditLog($conn);
     }
 
     private function serviceNameSelect() {
@@ -198,10 +202,22 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
                     p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
-                    a.date, a.status
+                    a.date, a.status,
+                    al.performed_by_name AS status_changed_by,
+                    al.performed_by_role AS status_changed_by_role,
+                    al.performed_at AS status_changed_at
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                LEFT JOIN audit_logs al ON al.audit_log_id = (
+                    SELECT al2.audit_log_id
+                    FROM audit_logs al2
+                    WHERE al2.entity_type = 'appointment'
+                    AND al2.entity_id = a.appointment_id
+                    AND al2.action = 'status_changed'
+                    ORDER BY al2.audit_log_id DESC
+                    LIMIT 1
+                )
                 WHERE a.date < CURDATE()
                 ORDER BY a.date DESC
             ");
@@ -244,10 +260,22 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
                     p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
-                    a.date, a.status
+                    a.date, a.status,
+                    al.performed_by_name AS status_changed_by,
+                    al.performed_by_role AS status_changed_by_role,
+                    al.performed_at AS status_changed_at
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                LEFT JOIN audit_logs al ON al.audit_log_id = (
+                    SELECT al2.audit_log_id
+                    FROM audit_logs al2
+                    WHERE al2.entity_type = 'appointment'
+                    AND al2.entity_id = a.appointment_id
+                    AND al2.action = 'status_changed'
+                    ORDER BY al2.audit_log_id DESC
+                    LIMIT 1
+                )
                 WHERE a.date >= CURDATE()
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
@@ -261,27 +289,79 @@ class Appointment {
     }
 
     // Admin: update appointment status
-    public function updateAppointmentStatus($appointment_id, $status) {
+    public function updateAppointmentStatus($appointment_id, $status, $performedByUserId) {
         $allowed = ['Pending', 'Confirmed', 'Cancelled', 'Completed'];
 
-        if (!in_array($status, $allowed)) {
-            return false;
+        if (!in_array($status, $allowed, true)) {
+            return ['success' => false, 'message' => 'Invalid appointment status.'];
         }
 
         try {
+            $this->conn->beginTransaction();
+
+            $currentStmt = $this->conn->prepare("
+                SELECT status
+                FROM appointments
+                WHERE appointment_id = :id
+                FOR UPDATE
+            ");
+            $currentStmt->execute([':id' => $appointment_id]);
+            $oldStatus = $currentStmt->fetchColumn();
+
+            if ($oldStatus === false) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'Appointment not found.'];
+            }
+
+            if ($oldStatus === $status) {
+                $this->conn->rollBack();
+                return ['success' => true, 'changed' => false, 'message' => 'The appointment already has this status.'];
+            }
+
+            $actor = $this->auditLog->getUserActor($performedByUserId);
+            if (!$actor) {
+                throw new RuntimeException('The authenticated user could not be found.');
+            }
+
             $stmt = $this->conn->prepare("
                 UPDATE appointments 
                 SET status = :status 
                 WHERE appointment_id = :id
             ");
-            return $stmt->execute([
+            $stmt->execute([
                 ':status' => $status,
                 ':id'     => $appointment_id,
             ]);
 
-        } catch (PDOException $e) {
+            $audit = $this->auditLog->record(
+                'appointment',
+                (int) $appointment_id,
+                'status_changed',
+                "Changed appointment #{$appointment_id} status from {$oldStatus} to {$status}.",
+                ['status' => $oldStatus],
+                ['status' => $status],
+                $actor
+            );
+
+            $this->conn->commit();
+
+            return [
+                'success' => true,
+                'changed' => true,
+                'message' => 'Status updated successfully.',
+                'audit' => [
+                    'performed_by_name' => $actor['name'],
+                    'performed_by_role' => $actor['role'],
+                    'performed_at' => $audit['performed_at'],
+                ],
+            ];
+
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             error_log("updateAppointmentStatus error: " . $e->getMessage());
-            return false;
+            return ['success' => false, 'message' => 'Failed to update status.'];
         }
     }
 

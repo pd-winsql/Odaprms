@@ -45,6 +45,20 @@ $pastFilters     = buildFilterOptions($past);
 function statusClass($status) {
     return 'vd-status vd-status-' . strtolower($status);
 }
+
+function actorInitials($name) {
+    $parts = preg_split('/\s+/', trim($name));
+    $parts = array_values(array_filter($parts));
+    if (!$parts) return '?';
+
+    $first = function_exists('mb_substr') ? mb_substr($parts[0], 0, 1) : substr($parts[0], 0, 1);
+    $lastPart = count($parts) > 1 ? $parts[count($parts) - 1] : '';
+    $last = $lastPart !== ''
+        ? (function_exists('mb_substr') ? mb_substr($lastPart, 0, 1) : substr($lastPart, 0, 1))
+        : '';
+
+    return strtoupper($first . $last);
+}
 ?>
 
 <div class="d-flex flex-column gap-4">
@@ -97,6 +111,7 @@ function statusClass($status) {
                     <th>Clinic</th>
                     <th>Date</th>
                     <th>Status</th>
+                    <th>Latest Activity</th>
                     <th>Action</th>
                 </tr>
                 </thead>
@@ -116,6 +131,31 @@ function statusClass($status) {
                         <span class="<?= statusClass($appt['status']) ?>" id="pill-<?= $appt['appointment_id'] ?>">
                         <?= htmlspecialchars($appt['status']) ?>
                         </span>
+                    </td>
+                    <td id="audit-<?= $appt['appointment_id'] ?>" class="vd-activity-cell">
+                        <?php if (!empty($appt['status_changed_by'])): ?>
+                            <div class="vd-activity-card">
+                                <span class="vd-activity-avatar"><?= htmlspecialchars(actorInitials($appt['status_changed_by'])) ?></span>
+                                <span class="vd-activity-copy">
+                                    <span class="vd-activity-heading">
+                                        <span class="vd-activity-name"><?= htmlspecialchars($appt['status_changed_by']) ?></span>
+                                        <span class="vd-role-chip"><?= htmlspecialchars($appt['status_changed_by_role']) ?></span>
+                                    </span>
+                                    <span class="vd-activity-meta">
+                                        <?= htmlspecialchars($appt['status']) ?> ·
+                                        <?= date('M d, Y g:i A', strtotime($appt['status_changed_at'])) ?>
+                                    </span>
+                                </span>
+                            </div>
+                        <?php else: ?>
+                            <div class="vd-activity-card vd-activity-empty">
+                                <span class="vd-activity-avatar">—</span>
+                                <span class="vd-activity-copy">
+                                    <span class="vd-activity-name">No audit history</span>
+                                    <span class="vd-activity-meta">No status change recorded</span>
+                                </span>
+                            </div>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <div class="vd-action-group">
@@ -194,6 +234,7 @@ function statusClass($status) {
                     <th>Clinic</th>
                     <th>Date</th>
                     <th>Status</th>
+                    <th>Latest Activity</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -212,6 +253,31 @@ function statusClass($status) {
                         <span class="<?= statusClass($appt['status']) ?>">
                         <?= htmlspecialchars($appt['status']) ?>
                         </span>
+                    </td>
+                    <td class="vd-activity-cell">
+                        <?php if (!empty($appt['status_changed_by'])): ?>
+                            <div class="vd-activity-card">
+                                <span class="vd-activity-avatar"><?= htmlspecialchars(actorInitials($appt['status_changed_by'])) ?></span>
+                                <span class="vd-activity-copy">
+                                    <span class="vd-activity-heading">
+                                        <span class="vd-activity-name"><?= htmlspecialchars($appt['status_changed_by']) ?></span>
+                                        <span class="vd-role-chip"><?= htmlspecialchars($appt['status_changed_by_role']) ?></span>
+                                    </span>
+                                    <span class="vd-activity-meta">
+                                        <?= htmlspecialchars($appt['status']) ?> ·
+                                        <?= date('M d, Y g:i A', strtotime($appt['status_changed_at'])) ?>
+                                    </span>
+                                </span>
+                            </div>
+                        <?php else: ?>
+                            <div class="vd-activity-card vd-activity-empty">
+                                <span class="vd-activity-avatar">—</span>
+                                <span class="vd-activity-copy">
+                                    <span class="vd-activity-name">No audit history</span>
+                                    <span class="vd-activity-meta">No status change recorded</span>
+                                </span>
+                            </div>
+                        <?php endif; ?>
                     </td>
                     </tr>
                 <?php endforeach; ?>
@@ -238,6 +304,55 @@ function statusClass($status) {
         if (!pill) return;
         pill.className = 'vd-status vd-status-' + newStatus.toLowerCase();
         pill.textContent = newStatus;
+    }
+
+    function updateStatusAudit(id, audit) {
+        const cell = document.getElementById('audit-' + id);
+        if (!cell || !audit) return;
+        renderActivityCard(cell, audit, document.getElementById('pill-' + id)?.textContent.trim() || 'Updated');
+    }
+
+    function formatDateTime(value, dateOnly = false) {
+        if (!value) return 'Date unavailable';
+        const parsed = new Date(String(value).replace(' ', 'T'));
+        if (Number.isNaN(parsed.getTime())) return value;
+        return dateOnly
+            ? parsed.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })
+            : parsed.toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
+    function getInitials(name) {
+        const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return '?';
+        return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+    }
+
+    function renderActivityCard(cell, audit, status) {
+        const card = document.createElement('div');
+        card.className = 'vd-activity-card';
+
+        const avatar = document.createElement('span');
+        avatar.className = 'vd-activity-avatar';
+        avatar.textContent = getInitials(audit.performed_by_name);
+
+        const copy = document.createElement('span');
+        copy.className = 'vd-activity-copy';
+        const heading = document.createElement('span');
+        heading.className = 'vd-activity-heading';
+        const name = document.createElement('span');
+        name.className = 'vd-activity-name';
+        name.textContent = audit.performed_by_name;
+        const role = document.createElement('span');
+        role.className = 'vd-role-chip';
+        role.textContent = audit.performed_by_role;
+        const meta = document.createElement('span');
+        meta.className = 'vd-activity-meta';
+        meta.textContent = status + ' · ' + formatDateTime(audit.performed_at);
+        heading.append(name, role);
+        copy.append(heading, meta);
+
+        card.append(avatar, copy);
+        cell.replaceChildren(card);
     }
 
     // ── Generic status + day-range filter, reused for Upcoming and Past tables ──
@@ -330,6 +445,7 @@ function statusClass($status) {
 
             if (result.success) {
             updateStatusPill(id, newStatus);
+            updateStatusAudit(id, result.audit);
             row.dataset.status = newStatus;
             select.dataset.original = newStatus;
             LoadingUI.setButton(btn, false);

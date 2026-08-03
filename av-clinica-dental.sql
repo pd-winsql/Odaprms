@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 02, 2026 at 07:04 AM
+-- Generation Time: Aug 03, 2026 at 03:44 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -80,6 +80,27 @@ INSERT INTO `appointment_services` (`appointment_id`, `service_id`) VALUES
 (27, 9),
 (28, 2),
 (28, 6);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `audit_logs`
+--
+
+CREATE TABLE `audit_logs` (
+  `audit_log_id` bigint(20) UNSIGNED NOT NULL,
+  `entity_type` varchar(50) NOT NULL,
+  `entity_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `action` varchar(50) NOT NULL,
+  `description` varchar(500) NOT NULL,
+  `old_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`old_values`)),
+  `new_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`new_values`)),
+  `performed_by_user_id` int(11) DEFAULT NULL,
+  `performed_by_name` varchar(255) NOT NULL,
+  `performed_by_role` varchar(50) NOT NULL,
+  `source` enum('User','System') NOT NULL DEFAULT 'User',
+  `performed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -585,6 +606,16 @@ ALTER TABLE `appointment_services`
   ADD KEY `fk_appointment_services_service` (`service_id`);
 
 --
+-- Indexes for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  ADD PRIMARY KEY (`audit_log_id`),
+  ADD KEY `idx_audit_entity` (`entity_type`,`entity_id`),
+  ADD KEY `idx_audit_action` (`action`),
+  ADD KEY `idx_audit_user` (`performed_by_user_id`),
+  ADD KEY `idx_audit_date` (`performed_at`);
+
+--
 -- Indexes for table `clinics`
 --
 ALTER TABLE `clinics`
@@ -689,6 +720,12 @@ ALTER TABLE `appointments`
   MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
+-- AUTO_INCREMENT for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  MODIFY `audit_log_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `clinics`
 --
 ALTER TABLE `clinics`
@@ -783,6 +820,12 @@ ALTER TABLE `appointments`
 ALTER TABLE `appointment_services`
   ADD CONSTRAINT `fk_appointment_services_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_appointment_services_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `audit_logs`
+--
+ALTER TABLE `audit_logs`
+  ADD CONSTRAINT `fk_audit_logs_user` FOREIGN KEY (`performed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `patients`

@@ -120,22 +120,31 @@ class AppointmentController {
                 exit;
             }
 
-            $result = $this->appointmentModel->updateAppointmentStatus($appointment_id, $status);
+            $result = $this->appointmentModel->updateAppointmentStatus(
+                $appointment_id,
+                $status,
+                $_SESSION['user_id']
+            );
 
-            if ($result) {
-                $message = 'Status updated successfully.';
+            if ($result['success']) {
+                $message = $result['message'];
 
                 // Notify the patient of their new status, if we have their email on hand
-                if ($email && $name) {
+                if (($result['changed'] ?? false) && $email && $name) {
                     $emailResult = sendAppointmentStatusEmail($email, $name, $status);
                     if (!$emailResult['success']) {
                         $message = 'Status updated, but the notification email failed to send.';
                     }
                 }
 
-                echo json_encode(['success' => true, 'message' => $message]);
+                echo json_encode([
+                    'success' => true,
+                    'changed' => $result['changed'] ?? false,
+                    'message' => $message,
+                    'audit' => $result['audit'] ?? null,
+                ]);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to update status.']);
+                echo json_encode(['success' => false, 'message' => $result['message']]);
             }
             exit;
         }

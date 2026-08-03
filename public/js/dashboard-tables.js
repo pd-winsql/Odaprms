@@ -65,7 +65,16 @@
             term.textContent = label;
 
             const description = document.createElement('dd');
-            description.textContent = normaliseLabel(cell.textContent) || '—';
+            const activity = label === 'Latest Activity'
+                ? cell.querySelector('.vd-activity-card')
+                : null;
+
+            if (activity) {
+                description.classList.add('vd-table-details-activity');
+                description.appendChild(activity.cloneNode(true));
+            } else {
+                description.textContent = normaliseLabel(cell.textContent) || '—';
+            }
 
             item.append(term, description);
             list.appendChild(item);
