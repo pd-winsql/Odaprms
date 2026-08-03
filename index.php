@@ -84,7 +84,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="public/css/styles.css">
-  <link rel="stylesheet" href="public/css/index.css">
+  <link rel="stylesheet" href="public/css/index.css?v=20260802-2">
   <link rel="stylesheet" href="public/css/loading.css">
   <script src="public/js/loading.js" defer></script>
 </head>
@@ -296,11 +296,22 @@
   <!-- FOOTER -->
   <footer class="vd-footer py-3">
     <div class="container text-center">
-      <p class="mb-0 small text-white">
+      <a
+        href="#systemTermsModal"
+        class="vd-footer-link"
+        data-bs-toggle="modal"
+        aria-label="Read the system terms and conditions"
+      >
+        <span>System Terms and Conditions</span>
+      </a>
+      <p class="mb-0 mt-2 small text-white">
         &copy; <script>document.write(new Date().getFullYear())</script> Dr. Aprille Ventura Clinica Dental. All rights reserved.
       </p>
     </div>
   </footer>
+
+  <!-- System terms are public. Clinic-specific terms remain unpublished until supplied. -->
+  <?php require __DIR__ . '/apps/views/system-terms.php'; ?>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

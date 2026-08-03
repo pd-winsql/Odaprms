@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 01, 2026 at 02:01 AM
+-- Generation Time: Aug 02, 2026 at 07:04 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,12 +46,12 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clin
 (19, 14, 21, 2, '2026-07-29', 'Confirmed', '2026-07-24 10:29:34'),
 (20, 16, 20, 1, '2026-07-27', 'Confirmed', '2026-07-27 06:17:38'),
 (22, 17, 20, 1, '2026-07-27', 'Confirmed', '2026-07-27 06:52:37'),
-(23, 18, 30, 2, '2026-08-07', 'Pending', '2026-07-28 03:00:13'),
-(24, 19, 30, 2, '2026-08-07', 'Pending', '2026-07-28 03:02:02'),
+(23, 18, 30, 2, '2026-08-07', 'Confirmed', '2026-07-28 03:00:13'),
+(24, 19, 30, 2, '2026-08-07', 'Confirmed', '2026-07-28 03:02:02'),
 (25, 14, 26, 1, '2026-08-04', 'Confirmed', '2026-07-30 01:24:05'),
 (26, 14, 25, 1, '2026-08-03', 'Confirmed', '2026-07-30 01:38:36'),
 (27, 21, 25, 1, '2026-08-03', 'Cancelled', '2026-07-31 12:10:03'),
-(28, 14, 30, 2, '2026-08-07', 'Pending', '2026-07-31 14:33:08');
+(28, 14, 30, 2, '2026-08-07', 'Confirmed', '2026-07-31 14:33:08');
 
 -- --------------------------------------------------------
 
@@ -199,7 +199,7 @@ INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middl
 (18, 21, 'Juan', 'Dela Cruz', 'Santos', 22, 'Male', '09123456789', 'jcruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:00:13'),
 (19, NULL, 'Maria', 'Lago', 'Palo', 20, 'Female', '09123456789', 'm.lago@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:02:02'),
 (20, 20, 'CruzJ', '', NULL, NULL, NULL, NULL, 'j.cruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:03:46'),
-(21, 28, 'Pogicj', '', NULL, NULL, NULL, NULL, 'christianjamescapule@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-31 12:02:19');
+(21, 28, 'Pogicj', 'palo', 'Dikoalam', NULL, NULL, NULL, 'christianjamescapule@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-31 12:02:19');
 
 -- --------------------------------------------------------
 
@@ -340,7 +340,8 @@ INSERT INTO `schedules` (`schedule_id`, `clinic_id`, `sched_date`, `max_appointm
 (30, 2, '2026-08-07', 8),
 (31, 2, '2026-08-08', 10),
 (34, 1, '2026-08-01', 8),
-(35, 2, '2026-08-10', 8);
+(37, 1, '2026-08-12', 8),
+(41, 2, '2026-08-11', 8);
 
 -- --------------------------------------------------------
 
@@ -739,7 +740,7 @@ ALTER TABLE `patient_medical_history`
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `services`

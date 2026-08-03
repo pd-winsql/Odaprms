@@ -18,23 +18,25 @@ $past     = $appointmentModel->getAdminPastAppointments();
 
 $statuses = ['Pending', 'Confirmed', 'Cancelled'];
 
-// Build status + month option lists for each table independently
+// Build status options and date bounds for each table independently.
 function buildFilterOptions($rows) {
     $statusesFound = [];
-    $months        = [];
+    $dates         = [];
 
     foreach ($rows as $r) {
         $statusesFound[$r['status']] = $r['status'];
 
-        $key   = date('Y-m', strtotime($r['date']));
-        $label = date('F Y', strtotime($r['date']));
-        $months[$key] = $label;
+        $dates[] = date('Y-m-d', strtotime($r['date']));
     }
 
     ksort($statusesFound);
-    ksort($months); // chronological order, for From/To range selects
+    sort($dates);
 
-    return ['statuses' => $statusesFound, 'months' => $months];
+    return [
+        'statuses' => $statusesFound,
+        'minDate' => $dates[0] ?? '',
+        'maxDate' => $dates ? $dates[count($dates) - 1] : '',
+    ];
 }
 
 $upcomingFilters = buildFilterOptions($upcoming);
@@ -73,22 +75,16 @@ function statusClass($status) {
             </select>
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">From Month</label>
-            <select id="filterMonthFromUpcoming" class="form-select vd-input vd-filter-select">
-            <option value="">Any</option>
-            <?php foreach ($upcomingFilters['months'] as $key => $label): ?>
-                <option value="<?= $key ?>"><?= $label ?></option>
-            <?php endforeach; ?>
-            </select>
+            <label class="vd-label form-label">From Day</label>
+            <input type="date" id="filterDateFromUpcoming" class="form-control vd-input vd-filter-select"
+                min="<?= htmlspecialchars($upcomingFilters['minDate']) ?>"
+                max="<?= htmlspecialchars($upcomingFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">To Month</label>
-            <select id="filterMonthToUpcoming" class="form-select vd-input vd-filter-select">
-            <option value="">Any</option>
-            <?php foreach ($upcomingFilters['months'] as $key => $label): ?>
-                <option value="<?= $key ?>"><?= $label ?></option>
-            <?php endforeach; ?>
-            </select>
+            <label class="vd-label form-label">To Day</label>
+            <input type="date" id="filterDateToUpcoming" class="form-control vd-input vd-filter-select"
+                min="<?= htmlspecialchars($upcomingFilters['minDate']) ?>"
+                max="<?= htmlspecialchars($upcomingFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group vd-filter-clear">
             <button id="clearUpcomingFilters" class="btn vd-btn-outline">Clear</button>
@@ -115,7 +111,7 @@ function statusClass($status) {
                 <?php foreach ($upcoming as $appt): ?>
                     <tr data-id="<?= $appt['appointment_id'] ?>"
                         data-status="<?= htmlspecialchars($appt['status']) ?>"
-                        data-month="<?= date('Y-m', strtotime($appt['date'])) ?>">
+                        data-date="<?= date('Y-m-d', strtotime($appt['date'])) ?>">
                     <td>
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
@@ -179,22 +175,16 @@ function statusClass($status) {
             </select>
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">From Month</label>
-            <select id="filterMonthFromPast" class="form-select vd-input vd-filter-select">
-            <option value="">Any</option>
-            <?php foreach ($pastFilters['months'] as $key => $label): ?>
-                <option value="<?= $key ?>"><?= $label ?></option>
-            <?php endforeach; ?>
-            </select>
+            <label class="vd-label form-label">From Day</label>
+            <input type="date" id="filterDateFromPast" class="form-control vd-input vd-filter-select"
+                min="<?= htmlspecialchars($pastFilters['minDate']) ?>"
+                max="<?= htmlspecialchars($pastFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">To Month</label>
-            <select id="filterMonthToPast" class="form-select vd-input vd-filter-select">
-            <option value="">Any</option>
-            <?php foreach ($pastFilters['months'] as $key => $label): ?>
-                <option value="<?= $key ?>"><?= $label ?></option>
-            <?php endforeach; ?>
-            </select>
+            <label class="vd-label form-label">To Day</label>
+            <input type="date" id="filterDateToPast" class="form-control vd-input vd-filter-select"
+                min="<?= htmlspecialchars($pastFilters['minDate']) ?>"
+                max="<?= htmlspecialchars($pastFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group vd-filter-clear">
             <button id="clearPastFilters" class="btn vd-btn-outline">Clear</button>
@@ -220,7 +210,7 @@ function statusClass($status) {
                 <?php foreach ($past as $appt): ?>
                     <tr data-id="<?= $appt['appointment_id'] ?>"
                         data-status="<?= htmlspecialchars($appt['status']) ?>"
-                        data-month="<?= date('Y-m', strtotime($appt['date'])) ?>">
+                        data-date="<?= date('Y-m-d', strtotime($appt['date'])) ?>">
                     <td>
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
@@ -262,15 +252,15 @@ function statusClass($status) {
         pill.textContent = newStatus;
     }
 
-    // ── Generic status + month-range filter, reused for Upcoming and Past tables ──
-    // Month keys are 'YYYY-MM' strings, which compare correctly with <= and >= directly.
-    function setupTableFilter(tableId, statusSelectId, monthFromId, monthToId, clearBtnId, countLabelId) {
+    // ── Generic status + day-range filter, reused for Upcoming and Past tables ──
+    // Date keys are 'YYYY-MM-DD' strings, which compare correctly with <= and >= directly.
+    function setupTableFilter(tableId, statusSelectId, dateFromId, dateToId, clearBtnId, countLabelId) {
         const table = document.getElementById(tableId);
         if (!table) return;
 
         const statusSelect = document.getElementById(statusSelectId);
-        const monthFrom     = document.getElementById(monthFromId);
-        const monthTo       = document.getElementById(monthToId);
+        const dateFrom      = document.getElementById(dateFromId);
+        const dateTo        = document.getElementById(dateToId);
         const clearBtn       = document.getElementById(clearBtnId);
         const countLabel     = document.getElementById(countLabelId);
         const rows            = table.querySelectorAll('tbody tr');
@@ -278,16 +268,16 @@ function statusClass($status) {
 
         function applyFilter() {
             const status = statusSelect.value;
-            const from   = monthFrom.value;
-            const to     = monthTo.value;
+            const from   = dateFrom.value;
+            const to     = dateTo.value;
             let visible  = 0;
 
             rows.forEach(row => {
-                const rowMonth = row.dataset.month;
+                const rowDate = row.dataset.date;
 
                 const matchStatus = !status || row.dataset.status === status;
-                const matchFrom   = !from   || rowMonth >= from;
-                const matchTo     = !to     || rowMonth <= to;
+                const matchFrom   = !from || rowDate >= from;
+                const matchTo     = !to || rowDate <= to;
 
                 if (matchStatus && matchFrom && matchTo) {
                     row.style.display = '';
@@ -303,21 +293,21 @@ function statusClass($status) {
         }
 
         statusSelect.addEventListener('change', applyFilter);
-        monthFrom.addEventListener('change', applyFilter);
-        monthTo.addEventListener('change', applyFilter);
+        dateFrom.addEventListener('change', applyFilter);
+        dateTo.addEventListener('change', applyFilter);
 
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
                 statusSelect.value = '';
-                monthFrom.value    = '';
-                monthTo.value      = '';
+                dateFrom.value    = '';
+                dateTo.value      = '';
                 applyFilter();
             });
         }
     }
 
-    setupTableFilter('upcomingApptTable', 'filterStatusUpcoming', 'filterMonthFromUpcoming', 'filterMonthToUpcoming', 'clearUpcomingFilters', 'upcomingCountLabel');
-    setupTableFilter('pastApptTable', 'filterStatusPast', 'filterMonthFromPast', 'filterMonthToPast', 'clearPastFilters', 'pastCountLabel');
+    setupTableFilter('upcomingApptTable', 'filterStatusUpcoming', 'filterDateFromUpcoming', 'filterDateToUpcoming', 'clearUpcomingFilters', 'upcomingCountLabel');
+    setupTableFilter('pastApptTable', 'filterStatusPast', 'filterDateFromPast', 'filterDateToPast', 'clearPastFilters', 'pastCountLabel');
 
     // Toggle between Upcoming and Past views (uses same design as services-content)
     const toggleBtns = document.querySelectorAll('.vd-toggle-btn');

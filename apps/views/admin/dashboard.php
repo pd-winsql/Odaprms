@@ -46,7 +46,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=2">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=5">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
 </head>
@@ -90,6 +90,13 @@ $today = date('l, F j Y');
         <a href="#" class="vd-nav-item" data-page="schedule-content.php">
             <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
         </a>
+
+        <?php if (($_SESSION['user_role'] ?? '') === 'Admin'): ?>
+        <div class="vd-nav-section">Insights</div>
+        <a href="#" class="vd-nav-item" data-page="reports-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-report-analytics"></i></span> Reports &amp; Export
+        </a>
+        <?php endif; ?>
 
         <div class="vd-nav-section">Account</div>
         <a href="#" class="vd-nav-item" data-page="siteSettings-content.php">
@@ -150,6 +157,7 @@ $today = date('l, F j Y');
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
+    <script src="../../../public/js/dashboard-tables.js?v=2"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
         window.showToast = function(message, success = true) {
@@ -283,3 +291,4 @@ $today = date('l, F j Y');
     </div>
 </body>
 </html>
+
