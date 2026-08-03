@@ -35,6 +35,11 @@ class StaffController {
             exit;
         }
 
+        if (!preg_match('/^[0-9]{11}$/', $phone)) {
+            echo json_encode(['success' => false, 'message' => 'Phone number must contain exactly 11 digits.']);
+            exit;
+        }
+
         $result = $this->staffModel->createStaff($firstname, $lastname, $middlename, $gender, $phone, $email, $password);
 
         if ($result['success']) {
@@ -75,6 +80,11 @@ class StaffController {
 
         if (!$staff_id || !$phone || !$email) {
             echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
+            exit;
+        }
+
+        if (!preg_match('/^[0-9]{11}$/', $phone)) {
+            echo json_encode(['success' => false, 'message' => 'Phone number must contain exactly 11 digits.']);
             exit;
         }
 

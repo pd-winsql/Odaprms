@@ -68,6 +68,129 @@
     border: none;
 }
 
+/* Additional appointments after the highlighted next visit */
+.vd-other-appts {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--white-bg);
+}
+
+.vd-other-appts-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--gold-pale);
+}
+
+.vd-other-appts-heading .vd-next-appt-label {
+    color: var(--gold);
+}
+
+.vd-other-appts-heading h2 {
+    margin: 3px 0 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 21px;
+    font-weight: 400;
+    color: var(--dark);
+}
+
+.vd-other-appts-count {
+    flex: 0 0 auto;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--gold);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.vd-other-appts-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.vd-other-appt-item {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+}
+
+.vd-other-appt-item + .vd-other-appt-item {
+    border-top: 1px solid rgba(217, 201, 168, 0.65);
+}
+
+.vd-other-appt-date {
+    width: 52px;
+    padding: 6px 4px;
+    border-radius: 7px;
+    background: var(--gold-pale);
+    text-align: center;
+    color: var(--gold);
+}
+
+.vd-other-appt-date span {
+    display: block;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+}
+
+.vd-other-appt-date strong {
+    display: block;
+    margin-top: 1px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.vd-other-appt-copy {
+    min-width: 0;
+}
+
+.vd-other-appt-copy h3 {
+    margin: 0 0 4px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+.vd-other-appt-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 14px;
+    color: var(--mid);
+    font-size: 11px;
+}
+
+.vd-other-appt-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.vd-other-appt-meta i {
+    color: var(--gold);
+}
+
+.vd-no-other-appts {
+    padding: 0 2px;
+    color: var(--mid);
+    font-size: 12px;
+}
+
 /* Mobile-first appointment action: part of the card, not a detached control */
 .vd-home-next-cta {
     width: 100%;
@@ -112,6 +235,23 @@
         width: auto;
         align-self: flex-start;
         padding-inline: 18px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vd-other-appt-item {
+        grid-template-columns: 46px minmax(0, 1fr);
+        gap: 11px;
+        padding: 13px 14px;
+    }
+
+    .vd-other-appt-date {
+        width: 46px;
+    }
+
+    .vd-other-appt-item .vd-status {
+        grid-column: 2;
+        justify-self: start;
     }
 }
 

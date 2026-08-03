@@ -89,13 +89,13 @@ function actorInitials($name) {
             </select>
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">From Day</label>
+            <label class="vd-label form-label">Start Date</label>
             <input type="date" id="filterDateFromUpcoming" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($upcomingFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($upcomingFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">To Day</label>
+            <label class="vd-label form-label">End Date</label>
             <input type="date" id="filterDateToUpcoming" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($upcomingFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($upcomingFilters['maxDate']) ?>">
@@ -215,13 +215,13 @@ function actorInitials($name) {
             </select>
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">From Day</label>
+            <label class="vd-label form-label">Start Date</label>
             <input type="date" id="filterDateFromPast" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($pastFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($pastFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">To Day</label>
+            <label class="vd-label form-label">End Date</label>
             <input type="date" id="filterDateToPast" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($pastFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($pastFilters['maxDate']) ?>">

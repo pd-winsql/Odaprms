@@ -144,7 +144,7 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
             </div>
             <div class="vd-report-filter-actions">
                 <button type="submit" class="btn vd-btn-gold"><i class="ti ti-filter me-1"></i> Generate</button>
-                <button type="button" class="btn vd-btn-outline" id="clearReportFilters">Reset</button>
+                <button type="button" class="btn vd-btn-outline vd-filter-reset" id="clearReportFilters">Reset</button>
             </div>
         </form>
         <?php if ($error): ?>

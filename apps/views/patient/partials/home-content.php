@@ -21,6 +21,7 @@ $appointmentModel = new Appointment($conn);
 $patient  = $patientModel->getPatientByUserId($_SESSION['user_id']);
 $upcoming = $appointmentModel->getPatientUpcomingAppointments($patient['patient_id'] ?? '');
 $next     = $upcoming[0] ?? null;
+$otherUpcoming = array_slice($upcoming, 1);
 
 $hour     = (int) date('H');
 $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
@@ -77,6 +78,45 @@ $missingProfileFields = array_keys(array_filter(
             <i class="ti ti-calendar-plus me-1"></i> View Available Schedules
         </button>
     </div>
+
+    <?php if (!empty($otherUpcoming)): ?>
+    <section class="vd-other-appts" aria-labelledby="otherUpcomingTitle">
+        <div class="vd-other-appts-heading">
+            <div>
+                <div class="vd-next-appt-label">Coming Up</div>
+                <h2 id="otherUpcomingTitle">Other Upcoming Appointments</h2>
+            </div>
+            <span class="vd-other-appts-count"><?= count($otherUpcoming) ?></span>
+        </div>
+
+        <div class="vd-other-appts-list">
+            <?php foreach ($otherUpcoming as $appointment): ?>
+                <?php
+                $appointmentStatus = $appointment['status'] ?? 'Pending';
+                $statusClass = strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $appointmentStatus));
+                ?>
+                <article class="vd-other-appt-item">
+                    <div class="vd-other-appt-date" aria-label="<?= date('F d, Y', strtotime($appointment['date'])) ?>">
+                        <span><?= date('M', strtotime($appointment['date'])) ?></span>
+                        <strong><?= date('d', strtotime($appointment['date'])) ?></strong>
+                    </div>
+                    <div class="vd-other-appt-copy">
+                        <h3><?= htmlspecialchars($appointment['service_name'] ?: 'Dental appointment') ?></h3>
+                        <div class="vd-other-appt-meta">
+                            <span><i class="ti ti-building"></i> <?= htmlspecialchars($appointment['clinic_name'] ?? $appointment['clinic'] ?? '—') ?></span>
+                            <span><i class="ti ti-calendar"></i> <?= date('F d, Y', strtotime($appointment['date'])) ?></span>
+                        </div>
+                    </div>
+                    <span class="vd-status vd-status-<?= htmlspecialchars($statusClass) ?>">
+                        <?= htmlspecialchars($appointmentStatus) ?>
+                    </span>
+                </article>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php else: ?>
+    <p class="vd-no-other-appts mb-0">No other upcoming appointments are scheduled.</p>
+    <?php endif; ?>
     <?php else: ?>
     <div class="vd-next-appt-empty">
         <i class="ti ti-calendar-off" style="font-size:28px; color:var(--border);"></i>

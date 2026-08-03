@@ -92,7 +92,9 @@ $staffList  = $staffModel->getAllStaff();
                         <div class="vd-filter-group">
                             <label class="vd-label form-label">Phone</label>
                             <input type="tel" class="form-control vd-input vd-edit-phone"
-                            value="<?= htmlspecialchars($staff['phone_number']) ?>">
+                            value="<?= htmlspecialchars($staff['phone_number']) ?>"
+                            inputmode="numeric" pattern="[0-9]{11}" minlength="11" maxlength="11"
+                            title="Enter exactly 11 digits">
                         </div>
                         <div class="vd-filter-group">
                             <label class="vd-label form-label">Email</label>
@@ -156,7 +158,9 @@ $staffList  = $staffModel->getAllStaff();
             </div>
             <div class="col-12 col-sm-6">
                 <label class="vd-label form-label">Phone Number <span class="text-danger">*</span></label>
-                <input type="tel" name="phone" class="form-control vd-input" required>
+                <input type="tel" name="phone" class="form-control vd-input vd-staff-phone"
+                    inputmode="numeric" pattern="[0-9]{11}" minlength="11" maxlength="11"
+                    title="Enter exactly 11 digits" required>
             </div>
             <div class="col-12">
                 <label class="vd-label form-label">Email Address <span class="text-danger">*</span></label>
@@ -229,6 +233,13 @@ $staffList  = $staffModel->getAllStaff();
         if (typeof loadpage === 'function') loadpage('den-assist-content.php');
     }
 
+    // Phone numbers must remain numeric and exactly 11 digits long.
+    document.querySelectorAll('.vd-staff-phone, .vd-edit-phone').forEach(input => {
+        input.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 11);
+        });
+    });
+
     // ── Create account ──
     document.getElementById('createStaffForm').addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -236,6 +247,14 @@ $staffList  = $staffModel->getAllStaff();
         formData.append('action', 'create');
         const errorEl = document.getElementById('createError');
         errorEl.classList.add('d-none');
+        const phone = this.querySelector('.vd-staff-phone').value.trim();
+
+        if (!/^\d{11}$/.test(phone)) {
+            errorEl.textContent = 'Phone number must contain exactly 11 digits.';
+            errorEl.classList.remove('d-none');
+            return;
+        }
+
         const submitButton = this.querySelector('button[type="submit"]');
         LoadingUI.setButton(submitButton, true, 'Creating…');
 
@@ -305,6 +324,11 @@ $staffList  = $staffModel->getAllStaff();
 
         if (!phone || !email) {
             showToast('Phone and email are required.', false);
+            return;
+        }
+
+        if (!/^\d{11}$/.test(phone)) {
+            showToast('Phone number must contain exactly 11 digits.', false);
             return;
         }
 
