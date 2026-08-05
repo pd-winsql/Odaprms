@@ -110,6 +110,10 @@ class AppointmentController {
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+                echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
+                exit;
+            }
             $appointment_id = $_POST['appointment_id'] ?? '';
             $status         = $_POST['status'] ?? '';
             $email          = trim($_POST['email'] ?? '');
@@ -155,6 +159,10 @@ class AppointmentController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Content-Type: application/json');
+            if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+                echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
+                exit;
+            }
             require_once '../models/clinicModel.php';
             require_once '../models/scheduleModel.php';
             require_once '../models/patientModel.php';
@@ -299,7 +307,11 @@ class AppointmentController {
             if ($result) {
                 echo json_encode([
                     'success'=>true,
-                    'appointment_id'=>(int) $result
+                    'appointment_id'=>(int) $result['appointment_id'],
+                    'payment_token'=>$result['payment_token'],
+                    'payment_deadline_at'=>$result['payment_deadline_at'],
+                    'deposit_amount'=>$result['deposit_amount'],
+                    'requires_payment'=>true
                 ]);
             } else {
                 echo json_encode([

@@ -58,7 +58,7 @@ function val($v, $fallback = '—') {
             <?= val($patient['email']) ?> &nbsp;·&nbsp; <?= val($patient['phone_number']) ?>
             </div>
         </div>
-        <?php if (!empty($patient['birthdate'])): ?>
+        <?php if (!empty($patient['profile_completed_at'])): ?>
             <span class="vd-status vd-status-confirmed ms-auto">Form Complete</span>
         <?php else: ?>
             <span class="vd-status vd-status-pending ms-auto">Form Incomplete</span>

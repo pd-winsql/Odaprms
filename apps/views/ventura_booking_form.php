@@ -1,4 +1,6 @@
 <?php
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
     require_once '../../config/conn.php';
     require_once '../models/clinicModel.php';
     require_once '../models/serviceModel.php';
@@ -77,7 +79,7 @@
             <!-- BOOKING FORM -->
             <div id="formView">
                 <h1 class="vd-page-title mb-1">Book an Appointment</h1>
-                <p class="text-muted small mb-4">Please fill in your details below. Our team will confirm your appointment within 24 hours.</p>
+                <p class="text-muted small mb-4">Choose your appointment, then submit the ₱400 GCash deposit within 30 minutes for clinic verification.</p>
 
                 <!-- WIZARD STEPPER -->
                 <div class="vd-wizard-steps mb-4">
@@ -248,6 +250,7 @@
                     </div>
 
                     <input type="hidden" name="action" value="book">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
 
                     <!-- ACTIONS -->
                     <div class="d-flex justify-content-between pt-4" style="border-top:1px solid #d9c9a8;">
@@ -288,24 +291,7 @@
             <div id="reviewSummary"></div>
             <div class="d-flex justify-content-end gap-2 mt-4">
             <button class="btn vd-btn-outline" data-bs-dismiss="modal">Edit Details</button>
-            <button class="btn vd-btn-gold px-4" onclick="confirmReview()">Confirm Booking</button>
-            </div>
-        </div>
-        </div>
-    </div>
-
-    <!-- ACCOUNT CREATION MODAL -->
-    <div id="accountModal" class="modal fade" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content vd-modal-bs p-4">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-            <h5 class="vd-modal-title mb-0">Create an Account?</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <p class="text-muted small mb-4">Would you like to create an account to manage your appointments and view your booking history?</p>
-            <div class="d-flex justify-content-end gap-2">
-                <button class="btn vd-btn-outline" onclick="skipAccount(this)">No, thanks</button>
-                <button class="btn vd-btn-gold" onclick="proceedAccount(this)">Yes, create account</button>
+            <button class="btn vd-btn-gold px-4" onclick="confirmReview(this)">Continue to Payment</button>
             </div>
         </div>
         </div>
@@ -413,8 +399,6 @@
         });
         });
 
-        const accountModalEl = document.getElementById('accountModal');
-        const accountModal   = new bootstrap.Modal(accountModalEl);
         const reviewModalEl  = document.getElementById('reviewModal');
         const reviewModal    = new bootstrap.Modal(reviewModalEl);
         const bookingForm    = document.getElementById('bookingForm');
@@ -457,22 +441,10 @@
             reviewModal.show();
         }
 
-        function confirmReview() {
+        function confirmReview(button) {
             document.activeElement.blur();
             reviewModal.hide();
-            accountModal.show();
-        }
-
-        function skipAccount(button) {
-        document.activeElement.blur();
-        accountModal.hide();
-        submitBooking(false, button);
-        }
-
-        function proceedAccount(button) {
-        document.activeElement.blur();
-        accountModal.hide();
-        submitBooking(true, button);
+            submitBooking(false, button);
         }
 
         async function submitBooking(redirect = false, button = null) {
@@ -490,11 +462,11 @@
         const result = JSON.parse(text);
 
         if (result.success) {
-            if (redirect) {
-            window.location.href = 'register.php';
-            } else {
-            window.location.href = '../../index.php';
-            }
+            const params = new URLSearchParams({
+                appointment_id: result.appointment_id,
+                token: result.payment_token
+            });
+            window.location.href = `payment.php?${params.toString()}`;
         } else {
             alert(result.message);
             LoadingUI.setButton(button, false);

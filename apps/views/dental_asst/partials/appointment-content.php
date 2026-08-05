@@ -12,11 +12,18 @@ require_once  __DIR__ . '/../../../models/appointmentModel.php';
 $db   = new Database();
 $conn = $db->connect();
 $appointmentModel = new Appointment($conn);
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
 $past     = $appointmentModel->getAdminPastAppointments();
 
-$statuses = ['Pending', 'Confirmed', 'Cancelled'];
+function allowedStatusOptions($current) {
+    $transitions = [
+        'Pending' => ['Confirmed', 'Cancelled'],
+        'Confirmed' => ['Completed', 'Cancelled', 'No-show', 'Rescheduled'],
+    ];
+    return array_values(array_unique(array_merge([$current], $transitions[$current] ?? [])));
+}
 
 // Build status options and date bounds for each table independently.
 function buildFilterOptions($rows) {
@@ -164,7 +171,7 @@ function actorInitials($name) {
                             data-original="<?= htmlspecialchars($appt['status']) ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
                             data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
-                            <?php foreach ($statuses as $s): ?>
+                            <?php foreach (allowedStatusOptions($appt['status']) as $s): ?>
                             <option value="<?= $s ?>" <?= $appt['status'] === $s ? 'selected' : '' ?>>
                                 <?= $s ?>
                             </option>
@@ -434,6 +441,7 @@ function actorInitials($name) {
         LoadingUI.setButton(btn, true, 'Saving…');
         const formData = new FormData();
         formData.append('action', 'updateStatus');
+        formData.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
         formData.append('appointment_id', id);
         formData.append('status', newStatus);
         formData.append('email', email);

@@ -65,7 +65,20 @@ class Schedule {
 
                 LEFT JOIN appointments a
                     ON s.schedule_id = a.schedule_id
-                    AND a.status IN ('Pending', 'Confirmed', 'Completed')
+                    AND (
+                        a.status IN ('Pending', 'Confirmed', 'Completed')
+                        OR (
+                            a.status = 'Awaiting Payment'
+                            AND (
+                                a.payment_deadline_at > NOW()
+                                OR EXISTS (
+                                    SELECT 1 FROM appointment_deposits review_deposit
+                                    WHERE review_deposit.appointment_id = a.appointment_id
+                                      AND review_deposit.status = 'Under Review'
+                                )
+                            )
+                        )
+                    )
 
                 WHERE s.clinic_id = :clinic_id
                     AND s.sched_date >= CURDATE()

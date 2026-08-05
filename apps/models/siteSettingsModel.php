@@ -14,6 +14,7 @@ class SiteSettingsModel {
         'hero'    => ['hero_system_tag', 'hero_eyebrow', 'hero_title', 'hero_subtext'],
         'about'   => ['about_intro', 'pillar1_title', 'pillar1_desc', 'pillar2_title', 'pillar2_desc', 'pillar3_title', 'pillar3_desc'],
         'contact' => ['contact_address', 'contact_phone', 'contact_email'],
+        'payment' => ['deposit_amount', 'payment_deadline_minutes', 'gcash_account_name', 'gcash_account_number'],
     ];
 
     // Fetch the single settings row. Falls back to the table's own DEFAULT
@@ -77,6 +78,20 @@ class SiteSettingsModel {
             return $stmt->execute([':logo' => $filename, ':updated_by' => $updatedBy]);
         } catch (PDOException $e) {
             error_log("updateLogo error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateGcashQr($filename, $updatedBy = 'admin') {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE site_settings
+                SET gcash_qr_path = :qr, last_updated_by = :updated_by, last_updated_at = NOW()
+                WHERE id = 1
+            ");
+            return $stmt->execute([':qr' => $filename, ':updated_by' => $updatedBy]);
+        } catch (PDOException $e) {
+            error_log('updateGcashQr error: ' . $e->getMessage());
             return false;
         }
     }

@@ -93,7 +93,7 @@ krsort($months); // latest first
 				</thead>
 				<tbody>
 				<?php foreach ($patients as $p):
-					$formComplete = !empty($p['birthdate']);
+					$formComplete = !empty($p['profile_completed_at']);
 					$monthKey     = date('Y-m', strtotime($p['created_at']));
 					$patientId    = $p['patient_id'] ?? $p['id'] ?? null;
 					$profilePage  = $patientId ? '_patient-profie.php?id=' . $patientId : '#';

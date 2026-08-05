@@ -72,6 +72,12 @@ $today = date('l, F j Y');
         <a href="#" class="vd-nav-item" data-page="appointment-content.php">
             <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
         </a>
+        <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Payment Review
+        </a>
+        <a href="#" class="vd-nav-item" data-page="logbook-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
+        </a>
         <a href="#" class="vd-nav-item" data-page="patient-content.php">
             <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
         </a>

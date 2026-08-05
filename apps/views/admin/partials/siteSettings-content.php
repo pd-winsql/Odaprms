@@ -14,6 +14,7 @@ $conn = $db->connect();
 $settingsModel = new SiteSettingsModel($conn);
 
 $settings = $settingsModel->getSettings();
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 function sv($settings, $key) {
     return htmlspecialchars($settings[$key] ?? '');
@@ -170,6 +171,24 @@ function sv($settings, $key) {
         </div>
     </div>
 
+    <div class="vd-dash-card">
+        <div class="vd-dash-card-header"><span class="vd-dash-card-title">GCash Deposit Settings</span></div>
+        <div class="vd-dash-card-body">
+            <div class="alert alert-info small">The feature uses a fixed ₱400 deposit and a 30-minute receipt-submission deadline.</div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-3"><label class="vd-label form-label">Deposit</label><input class="form-control vd-input vd-field" data-field="deposit_amount" value="400.00" readonly></div>
+                <div class="col-md-3"><label class="vd-label form-label">Deadline</label><input class="form-control vd-input vd-field" data-field="payment_deadline_minutes" value="30" readonly></div>
+                <div class="col-md-3"><label class="vd-label form-label">GCash Account Name</label><input class="form-control vd-input vd-field" data-field="gcash_account_name" value="<?= sv($settings, 'gcash_account_name') ?>" maxlength="100"></div>
+                <div class="col-md-3"><label class="vd-label form-label">GCash Number</label><input class="form-control vd-input vd-field" data-field="gcash_account_number" value="<?= sv($settings, 'gcash_account_number') ?>" maxlength="30"></div>
+            </div>
+            <div class="d-flex justify-content-end mb-4"><button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="payment">Save GCash Details</button></div>
+            <hr style="border-color: var(--border);">
+            <label class="vd-label form-label mt-2">GCash QR Code</label>
+            <?php if (!empty($settings['gcash_qr_path'])): ?><div class="mb-3"><img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="Current GCash QR" style="max-height:180px" class="img-thumbnail"></div><?php endif; ?>
+            <div class="d-flex flex-wrap gap-2 align-items-center"><input type="file" id="gcashQrInput" class="form-control form-control-sm" style="max-width:280px" accept="image/jpeg,image/png"><button type="button" class="btn vd-btn-outline btn-sm" id="uploadGcashQrBtn">Upload QR Code</button></div>
+        </div>
+    </div>
+
 </div>
 
 
@@ -195,12 +214,14 @@ function sv($settings, $key) {
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/siteSettingsController.php';
+    const settingsCsrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
 
     const groupLabels = {
         brand: 'Brand Text',
         hero: 'Hero Section',
         about: 'About Section',
         contact: 'Contact Information',
+        payment: 'GCash Deposit Settings',
     };
 
     function showToast(msg, success) {
@@ -266,6 +287,7 @@ function sv($settings, $key) {
 
                     const formData = new FormData();
                     formData.append('action', 'updateGroup');
+                    formData.append('csrf_token', settingsCsrfToken);
                     formData.append('group', group);
                     fields.forEach(field => {
                         formData.append(field.dataset.field, field.value.trim());
@@ -310,6 +332,7 @@ function sv($settings, $key) {
                 async function () {
                     const formData = new FormData();
                     formData.append('action', 'updateLogo');
+                    formData.append('csrf_token', settingsCsrfToken);
                     formData.append('logo', logoInput.files[0]);
 
                     const originalText = uploadButton.textContent;
@@ -342,6 +365,7 @@ function sv($settings, $key) {
             askForSaveConfirmation('Remove the current logo and revert to the text wordmark?', async function () {
                 const formData = new FormData();
                 formData.append('action', 'removeLogo');
+                formData.append('csrf_token', settingsCsrfToken);
 
                 const originalText = btn.textContent;
                 btn.disabled = true;
@@ -364,5 +388,26 @@ function sv($settings, $key) {
             });
         });
     }
+
+    const uploadGcashQrBtn = document.getElementById('uploadGcashQrBtn');
+    const gcashQrInput = document.getElementById('gcashQrInput');
+    uploadGcashQrBtn?.addEventListener('click', function () {
+        if (!gcashQrInput.files[0]) { showToast('Choose a QR image first.', false); return; }
+        const button = this;
+        askForSaveConfirmation('Upload this GCash QR code for patient deposit payments?', async function () {
+            const formData = new FormData();
+            formData.append('action', 'updateGcashQr');
+            formData.append('csrf_token', settingsCsrfToken);
+            formData.append('gcash_qr', gcashQrInput.files[0]);
+            LoadingUI.setButton(button, true, 'Uploading…');
+            try {
+                const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+                const result = await response.json();
+                showToast(result.message, result.success);
+                return result.success;
+            } catch (error) { showToast('Unable to upload the QR code.', false); }
+            finally { LoadingUI.setButton(button, false); }
+        });
+    });
 })();
 </script>

@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/auditLogModel.php';
+
 class Patient {
     private $conn;
 
@@ -39,8 +41,10 @@ class Patient {
     public function getPatientFull($patient_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT * FROM vw_patient_information 
-                WHERE patient_id = :patient_id
+                SELECT v.*, p.profile_completed_at, p.profile_completed_by_user_id
+                FROM vw_patient_information v
+                JOIN patients p ON p.patient_id = v.patient_id
+                WHERE v.patient_id = :patient_id
             ");
             $stmt->execute([':patient_id' => $patient_id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -528,6 +532,125 @@ class Patient {
         } catch (PDOException $e) {
             error_log("updateConsent error: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function completeProfileByStaff($patientId, array $data, $userId): array {
+        try {
+            $this->conn->beginTransaction();
+
+            $personal = $this->conn->prepare("
+                UPDATE patients SET
+                    firstname = :firstname, lastname = :lastname, middlename = :middlename,
+                    birthdate = :birthdate, age = :age, gender = :gender,
+                    civil_status = :civil_status, phone_number = :phone_number, email = :email,
+                    home_address = :home_address, work_address = :work_address,
+                    occupation = :occupation, office_contact = :office_contact, fb_account = :fb_account,
+                    guardian_name = :guardian_name, guardian_contact = :guardian_contact,
+                    physician_name = :physician_name, physician_contact = :physician_contact,
+                    physician_address = :physician_address
+                WHERE patient_id = :patient_id
+            ");
+            $personal->execute([
+                ':firstname' => $data['firstname'], ':lastname' => $data['lastname'],
+                ':middlename' => $data['middlename'] ?: null, ':birthdate' => $data['birthdate'],
+                ':age' => $data['age'], ':gender' => $data['gender'],
+                ':civil_status' => $data['civil_status'] ?: null, ':phone_number' => $data['phone_number'],
+                ':email' => $data['email'] ?: null, ':home_address' => $data['home_address'] ?: null,
+                ':work_address' => $data['work_address'] ?: null, ':occupation' => $data['occupation'] ?: null,
+                ':office_contact' => $data['office_contact'] ?: null, ':fb_account' => $data['fb_account'] ?: null,
+                ':guardian_name' => $data['guardian_name'] ?: null, ':guardian_contact' => $data['guardian_contact'] ?: null,
+                ':physician_name' => $data['physician_name'] ?: null, ':physician_contact' => $data['physician_contact'] ?: null,
+                ':physician_address' => $data['physician_address'] ?: null, ':patient_id' => $patientId,
+            ]);
+            if ($personal->rowCount() === 0 && !$this->getPatient($patientId)) {
+                throw new RuntimeException('Patient not found.');
+            }
+
+            $dental = $this->conn->prepare("
+                INSERT INTO patient_dental_history
+                    (patient_id, previous_dentist, last_dental_visit, treatment_done, reason_for_visit, referred_by, last_updated_by, last_updated_at)
+                VALUES
+                    (:patient_id, :previous_dentist, :last_dental_visit, :treatment_done, :reason_for_visit, :referred_by, :updated_by, NOW())
+                ON DUPLICATE KEY UPDATE
+                    previous_dentist = VALUES(previous_dentist), last_dental_visit = VALUES(last_dental_visit),
+                    treatment_done = VALUES(treatment_done), reason_for_visit = VALUES(reason_for_visit),
+                    referred_by = VALUES(referred_by), last_updated_by = VALUES(last_updated_by), last_updated_at = NOW()
+            ");
+            $dental->execute([
+                ':patient_id' => $patientId, ':previous_dentist' => $data['previous_dentist'] ?: null,
+                ':last_dental_visit' => $data['last_dental_visit'] ?: null, ':treatment_done' => $data['treatment_done'] ?: null,
+                ':reason_for_visit' => $data['reason_for_visit'], ':referred_by' => $data['referred_by'] ?: null,
+                ':updated_by' => 'staff:' . $userId,
+            ]);
+
+            $medicalFields = [
+                'good_health','medical_condition','medical_condition_detail','serious_illness','serious_illness_detail',
+                'hospitalized','hospitalized_detail','medication','medication_detail','smoke','alcohol','drugs',
+                'allergy','allergy_detail','pregnant','nursing','birth_control','blood_type','blood_pressure','cond_others'
+            ];
+            $columns = implode(', ', $medicalFields);
+            $values = implode(', ', array_map(static fn($field) => ':' . $field, $medicalFields));
+            $updates = implode(', ', array_map(static fn($field) => "$field = VALUES($field)", $medicalFields));
+            $medical = $this->conn->prepare("
+                INSERT INTO patient_medical_history (patient_id, {$columns}, last_updated_by, last_updated_at)
+                VALUES (:patient_id, {$values}, :updated_by, NOW())
+                ON DUPLICATE KEY UPDATE {$updates}, last_updated_by = VALUES(last_updated_by), last_updated_at = NOW()
+            ");
+            $medicalParams = [':patient_id' => $patientId, ':updated_by' => 'staff:' . $userId];
+            foreach ($medicalFields as $field) {
+                $value = $data[$field] ?? null;
+                $medicalParams[':' . $field] = $value === '' ? null : $value;
+            }
+            $medical->execute($medicalParams);
+
+            $this->conn->prepare("DELETE FROM patient_conditions WHERE patient_id = :patient_id")
+                ->execute([':patient_id' => $patientId]);
+            if (!empty($data['conditions'])) {
+                $conditionStmt = $this->conn->prepare("INSERT INTO patient_conditions (patient_id, `condition`) VALUES (:patient_id, :condition)");
+                foreach (array_unique($data['conditions']) as $condition) {
+                    $condition = trim($condition);
+                    if ($condition !== '') $conditionStmt->execute([':patient_id' => $patientId, ':condition' => $condition]);
+                }
+            }
+
+            $consent = $this->conn->prepare("
+                INSERT INTO patient_consent (patient_id, consent_name, consent_for, consent_date)
+                VALUES (:patient_id, :consent_name, :consent_for, :consent_date)
+                ON DUPLICATE KEY UPDATE consent_name = VALUES(consent_name), consent_for = VALUES(consent_for), consent_date = VALUES(consent_date)
+            ");
+            $consent->execute([
+                ':patient_id' => $patientId, ':consent_name' => $data['consent_name'],
+                ':consent_for' => $data['consent_for'], ':consent_date' => date('Y-m-d'),
+            ]);
+
+            $this->conn->prepare("
+                UPDATE patients
+                SET profile_completed_at = NOW(), profile_completed_by_user_id = :user_id
+                WHERE patient_id = :patient_id
+            ")->execute([':user_id' => $userId, ':patient_id' => $patientId]);
+            $this->conn->prepare("
+                UPDATE appointment_checkins ci
+                JOIN appointments a ON a.appointment_id = ci.appointment_id
+                SET ci.checkin_status = 'Ready', ci.ready_at = NOW()
+                WHERE a.patient_id = :patient_id AND a.date = CURDATE() AND ci.checkin_status = 'Profile Required'
+            ")->execute([':patient_id' => $patientId]);
+
+            $audit = new AuditLog($this->conn);
+            $actor = $audit->getUserActor($userId);
+            if (!$actor) throw new RuntimeException('Staff account not found.');
+            $audit->record(
+                'patient', $patientId, 'profile_completed',
+                "Completed the patient form for patient #{$patientId} at the front desk.",
+                ['profile_completed' => false], ['profile_completed' => true], $actor
+            );
+
+            $this->conn->commit();
+            return ['success' => true, 'message' => 'Patient form completed. The patient is ready.'];
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('completeProfileByStaff error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to complete the patient form.'];
         }
     }
 }

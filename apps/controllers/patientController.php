@@ -358,6 +358,59 @@ class PatientController {
 
         return null;
     }
+
+    public function completeProfileByStaff() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
+            exit;
+        }
+        $providedToken = (string) ($_POST['csrf_token'] ?? '');
+        $expectedToken = (string) ($_SESSION['csrf_token'] ?? '');
+        if ($expectedToken === '' || !hash_equals($expectedToken, $providedToken)) {
+            echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
+            exit;
+        }
+
+        $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $required = ['firstname', 'lastname', 'birthdate', 'gender', 'phone_number', 'reason_for_visit', 'consent_name', 'consent_for'];
+        foreach ($required as $field) {
+            if (trim($_POST[$field] ?? '') === '') {
+                echo json_encode(['success' => false, 'message' => 'Please complete all required patient-form fields.']);
+                exit;
+            }
+        }
+        $birth = DateTime::createFromFormat('Y-m-d', $_POST['birthdate']);
+        $today = new DateTime('today');
+        if (!$birth || $birth > $today) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid birthdate.']);
+            exit;
+        }
+
+        $booleanFields = ['good_health','medical_condition','serious_illness','hospitalized','medication','smoke','alcohol','drugs','allergy','pregnant','nursing','birth_control'];
+        $data = [];
+        foreach ($booleanFields as $field) {
+            $data[$field] = $this->toBool($_POST[$field] ?? null);
+        }
+        $textFields = [
+            'firstname','lastname','middlename','gender','civil_status','phone_number','email','home_address','work_address',
+            'occupation','office_contact','fb_account','guardian_name','guardian_contact','physician_name','physician_contact',
+            'physician_address','previous_dentist','last_dental_visit','treatment_done','reason_for_visit','referred_by',
+            'medical_condition_detail','serious_illness_detail','hospitalized_detail','medication_detail','allergy_detail',
+            'blood_type','blood_pressure','cond_others','consent_name','consent_for'
+        ];
+        foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        $data['birthdate'] = $_POST['birthdate'];
+        $data['age'] = $birth->diff($today)->y;
+        $submittedConditions = (array) ($_POST['conditions'] ?? []);
+        if (!empty($_POST['conditions_text'])) {
+            $submittedConditions = array_merge($submittedConditions, explode(',', $_POST['conditions_text']));
+        }
+        $data['conditions'] = array_values(array_filter(array_map('trim', $submittedConditions)));
+
+        echo json_encode($this->patients->completeProfileByStaff($patientId, $data, (int) $_SESSION['user_id']));
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -380,5 +433,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->updateConditions();
     } elseif ($action === 'updateConsent') {
         $controller->updateConsent();
+    } elseif ($action === 'completeProfileByStaff') {
+        $controller->completeProfileByStaff();
     }
 }

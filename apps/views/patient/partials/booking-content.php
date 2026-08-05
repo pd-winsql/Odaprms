@@ -100,6 +100,8 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
 
             <form id="dashboardBookingForm">
                 <input type="hidden" name="action" value="book">
+                <?php $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32)); ?>
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                 <input type="hidden" name="clinic_id" id="dashboardClinicInput">
                 <input type="hidden" name="schedule_id" id="dashboardScheduleInput">
 
@@ -226,8 +228,8 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
             });
             const result = await response.json();
             if (!result.success) throw new Error(result.message || 'Booking failed.');
-            window.showToast('Appointment requested successfully.', true);
-            document.querySelector('[data-page="home-content.php"]')?.click();
+            window.showToast('Booking created. Please submit the ₱400 deposit.', true);
+            document.querySelector('[data-page="billing-content.php"]')?.click();
         } catch (error) {
             errorBox.textContent = error.message || 'Unable to submit your appointment. Please try again.';
             errorBox.classList.remove('d-none');

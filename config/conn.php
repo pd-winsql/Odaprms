@@ -5,6 +5,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 // the safe default when the feature-database switch is missing or disabled.
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
+date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'Asia/Manila');
 
 class Database {
     private $servername = "localhost";

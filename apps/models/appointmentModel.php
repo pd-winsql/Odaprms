@@ -21,12 +21,68 @@ class Appointment {
         )";
     }
 
-    public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $status = 'Pending') {
+    public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id) {
         $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
         if (empty($service_ids)) return false;
 
         try {
             $this->conn->beginTransaction();
+
+            // Lock the schedule so concurrent requests cannot take the final
+            // slot at the same time.
+            $scheduleStmt = $this->conn->prepare("
+                SELECT schedule_id, clinic_id, sched_date, max_appointments
+                FROM schedules
+                WHERE schedule_id = :schedule_id
+                FOR UPDATE
+            ");
+            $scheduleStmt->execute([':schedule_id' => $schedule_id]);
+            $schedule = $scheduleStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$schedule
+                || (int) $schedule['clinic_id'] !== (int) $clinic_id
+                || $schedule['sched_date'] !== $date
+                || $schedule['sched_date'] < date('Y-m-d')) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $capacityStmt = $this->conn->prepare("
+                SELECT COUNT(*)
+                FROM appointments
+                WHERE schedule_id = :schedule_id
+                  AND (
+                    status IN ('Pending', 'Confirmed', 'Completed')
+                    OR (
+                        status = 'Awaiting Payment'
+                        AND (
+                            payment_deadline_at > NOW()
+                            OR EXISTS (
+                                SELECT 1 FROM appointment_deposits review_deposit
+                                WHERE review_deposit.appointment_id = appointments.appointment_id
+                                  AND review_deposit.status = 'Under Review'
+                            )
+                        )
+                    )
+                  )
+            ");
+            $capacityStmt->execute([':schedule_id' => $schedule_id]);
+            if ((int) $capacityStmt->fetchColumn() >= (int) $schedule['max_appointments']) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $settingsStmt = $this->conn->query("
+                SELECT deposit_amount, payment_deadline_minutes
+                FROM site_settings
+                WHERE id = 1
+            ");
+            $settings = $settingsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $depositAmount = (float) ($settings['deposit_amount'] ?? 400.00);
+            $deadlineMinutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 30));
+            $paymentToken = bin2hex(random_bytes(32));
+            $paymentTokenHash = hash('sha256', $paymentToken);
+
             $stmt = $this->conn->prepare("
                 INSERT INTO appointments
                 (
@@ -34,7 +90,10 @@ class Appointment {
                     clinic_id,
                     date,
                     schedule_id,
-                    status
+                    status,
+                    deposit_required,
+                    payment_deadline_at,
+                    payment_access_token_hash
                 )
                 VALUES
                 (
@@ -42,7 +101,10 @@ class Appointment {
                     :clinic_id,
                     :date,
                     :schedule_id,
-                    :status
+                    'Awaiting Payment',
+                    1,
+                    DATE_ADD(NOW(), INTERVAL {$deadlineMinutes} MINUTE),
+                    :payment_access_token_hash
                 )
             ");
             $inserted = $stmt->execute([
@@ -50,7 +112,7 @@ class Appointment {
                 ':clinic_id' => $clinic_id,
                 ':date' => $date,
                 ':schedule_id' => $schedule_id,
-                ':status' => $status
+                ':payment_access_token_hash' => $paymentTokenHash,
             ]);
 
             if (!$inserted) {
@@ -70,9 +132,31 @@ class Appointment {
                 ]);
             }
 
+            $depositStmt = $this->conn->prepare("
+                INSERT INTO appointment_deposits (appointment_id, amount)
+                VALUES (:appointment_id, :amount)
+            ");
+            $depositStmt->execute([
+                ':appointment_id' => $appointment_id,
+                ':amount' => $depositAmount,
+            ]);
+
+            $deadlineStmt = $this->conn->prepare("
+                SELECT payment_deadline_at
+                FROM appointments
+                WHERE appointment_id = :appointment_id
+            ");
+            $deadlineStmt->execute([':appointment_id' => $appointment_id]);
+            $paymentDeadline = $deadlineStmt->fetchColumn();
+
             $this->conn->commit();
-            return $appointment_id;
-        } catch(PDOException $e){
+            return [
+                'appointment_id' => $appointment_id,
+                'payment_token' => $paymentToken,
+                'payment_deadline_at' => $paymentDeadline,
+                'deposit_amount' => $depositAmount,
+            ];
+        } catch(Throwable $e){
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log("bookAppointment error: ".$e->getMessage());
             return false;
@@ -166,38 +250,9 @@ class Appointment {
 
     // ===== ADMIN FUNCTIONS =====
 
-    // Auto-update statuses for past appointments
-    public function autoUpdatePastAppointmentStatuses() {
-        try {
-            // Update Confirmed appointments to Completed if date is in the past
-            $stmt = $this->conn->prepare("
-                UPDATE appointments 
-                SET status = 'Completed'
-                WHERE a.date < CURDATE() 
-                AND status = 'Confirmed'
-            ");
-            $stmt->execute();
-
-            // Update Pending appointments to Cancelled if date is in the past
-            $stmt = $this->conn->prepare("
-                UPDATE appointments 
-                SET status = 'Cancelled'
-                WHERE a.date < CURDATE() 
-                AND status = 'Pending'
-            ");
-            $stmt->execute();
-
-        } catch (PDOException $e) {
-            error_log("autoUpdatePastAppointmentStatuses error: " . $e->getMessage());
-        }
-    }
-
     // Admin: view all past appointments
     public function getAdminPastAppointments() {
         try {
-            // Auto-update statuses before fetching
-            $this->autoUpdatePastAppointmentStatuses();
-
             $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
@@ -219,6 +274,14 @@ class Appointment {
                     LIMIT 1
                 )
                 WHERE a.date < CURDATE()
+                  AND (
+                    a.deposit_required = 0
+                    OR EXISTS (
+                        SELECT 1 FROM appointment_deposits ad
+                        WHERE ad.appointment_id = a.appointment_id
+                          AND ad.status IN ('Verified', 'Transferred')
+                    )
+                  )
                 ORDER BY a.date DESC
             ");
             $stmt->execute();
@@ -242,6 +305,14 @@ class Appointment {
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
                 WHERE a.date < CURDATE()
                 AND c.clinic_name = :clinic
+                AND (
+                    a.deposit_required = 0
+                    OR EXISTS (
+                        SELECT 1 FROM appointment_deposits ad
+                        WHERE ad.appointment_id = a.appointment_id
+                          AND ad.status IN ('Verified', 'Transferred')
+                    )
+                )
                 ORDER BY a.date DESC
             ");
             $stmt->execute([':clinic' => $clinic]);
@@ -277,6 +348,15 @@ class Appointment {
                     LIMIT 1
                 )
                 WHERE a.date >= CURDATE()
+                  AND (
+                    a.deposit_required = 0
+                    OR EXISTS (
+                        SELECT 1
+                        FROM appointment_deposits ad
+                        WHERE ad.appointment_id = a.appointment_id
+                          AND ad.status IN ('Verified', 'Transferred')
+                    )
+                  )
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
             $stmt->execute();
@@ -290,9 +370,18 @@ class Appointment {
 
     // Admin: update appointment status
     public function updateAppointmentStatus($appointment_id, $status, $performedByUserId) {
-        $allowed = ['Pending', 'Confirmed', 'Cancelled', 'Completed'];
+        $allowedTransitions = [
+            'Pending' => ['Confirmed', 'Cancelled'],
+            'Awaiting Payment' => ['Cancelled'],
+            'Confirmed' => ['Completed', 'Cancelled', 'No-show', 'Rescheduled'],
+            'Completed' => [],
+            'Cancelled' => [],
+            'No-show' => [],
+            'Rescheduled' => [],
+            'Rejected' => ['Cancelled'],
+        ];
 
-        if (!in_array($status, $allowed, true)) {
+        if (!in_array($status, array_keys($allowedTransitions), true)) {
             return ['success' => false, 'message' => 'Invalid appointment status.'];
         }
 
@@ -318,14 +407,24 @@ class Appointment {
                 return ['success' => true, 'changed' => false, 'message' => 'The appointment already has this status.'];
             }
 
+            if (!in_array($status, $allowedTransitions[$oldStatus] ?? [], true)) {
+                $this->conn->rollBack();
+                return [
+                    'success' => false,
+                    'message' => "Status cannot be changed from {$oldStatus} to {$status}.",
+                ];
+            }
+
             $actor = $this->auditLog->getUserActor($performedByUserId);
             if (!$actor) {
                 throw new RuntimeException('The authenticated user could not be found.');
             }
 
             $stmt = $this->conn->prepare("
-                UPDATE appointments 
-                SET status = :status 
+                UPDATE appointments
+                SET status = :status,
+                    confirmed_at = CASE WHEN :status = 'Confirmed' THEN COALESCE(confirmed_at, NOW()) ELSE confirmed_at END,
+                    cancelled_at = CASE WHEN :status = 'Cancelled' THEN NOW() ELSE cancelled_at END
                 WHERE appointment_id = :id
             ");
             $stmt->execute([
@@ -375,7 +474,20 @@ class Appointment {
             SELECT COUNT(*) AS total
             FROM appointments
             WHERE schedule_id = :schedule_id
-            AND status != 'Cancelled'
+              AND (
+                status IN ('Pending', 'Confirmed', 'Completed')
+                OR (
+                    status = 'Awaiting Payment'
+                    AND (
+                        payment_deadline_at > NOW()
+                        OR EXISTS (
+                            SELECT 1 FROM appointment_deposits review_deposit
+                            WHERE review_deposit.appointment_id = appointments.appointment_id
+                              AND review_deposit.status = 'Under Review'
+                        )
+                    )
+                )
+              )
         ");
 
         $stmt->execute([
@@ -396,6 +508,15 @@ class Appointment {
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
                 WHERE a.date >= CURDATE()
                 AND a.status = :status
+                AND (
+                    a.deposit_required = 0
+                    OR EXISTS (
+                        SELECT 1
+                        FROM appointment_deposits ad
+                        WHERE ad.appointment_id = a.appointment_id
+                          AND ad.status IN ('Verified', 'Transferred')
+                    )
+                )
                 ORDER BY a.date ASC
             ");
 
