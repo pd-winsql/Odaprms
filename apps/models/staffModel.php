@@ -10,7 +10,7 @@ class Staff {
     public function getAllStaff() {
         try {
             $stmt = $this->conn->prepare("
-                SELECT s.*, u.username, u.email AS user_email
+                SELECT s.*, u.email AS user_email
                 FROM staffs s
                 JOIN users u ON s.user_id = u.id
                 ORDER BY s.created_at DESC
@@ -27,30 +27,15 @@ class Staff {
         try {
             $this->conn->beginTransaction();
 
-            // Generate username: firstname.lastname (lowercase, no spaces)
-            $baseUsername = strtolower(
-                preg_replace('/\s+/', '', $firstname) . '.' .
-                preg_replace('/\s+/', '', $lastname)
-            );
-
-            // Ensure username is unique by appending a number if needed
-            $username = $baseUsername;
-            $count    = 1;
-            while ($this->usernameExists($username)) {
-                $username = $baseUsername . $count;
-                $count++;
-            }
-
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
             // Insert into users
             $stmt = $this->conn->prepare("
-                INSERT INTO users (email, username, password, user_role)
-                VALUES (:email, :username, :password, 'Dental Assistant')
+                INSERT INTO users (email, password, email_verified_at, user_role)
+                VALUES (:email, :password, NOW(), 'Dental Assistant')
             ");
             $stmt->execute([
                 ':email'    => $email,
-                ':username' => $username,
                 ':password' => $hashedPassword,
             ]);
             $userId = $this->conn->lastInsertId();
@@ -71,7 +56,7 @@ class Staff {
             ]);
 
             $this->conn->commit();
-            return ['success' => true, 'username' => $username];
+            return ['success' => true, 'email' => $email];
 
         } catch (PDOException $e) {
             $this->conn->rollBack();
@@ -134,9 +119,4 @@ class Staff {
         }
     }
 
-    private function usernameExists($username) {
-        $stmt = $this->conn->prepare("SELECT id FROM users WHERE username = :username");
-        $stmt->execute([':username' => $username]);
-        return $stmt->fetch() !== false;
-    }
 }

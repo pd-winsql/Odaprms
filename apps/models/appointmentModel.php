@@ -21,7 +21,7 @@ class Appointment {
         )";
     }
 
-    public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id) {
+    public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $performedByUserId = null) {
         $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
         if (empty($service_ids)) return false;
 
@@ -47,41 +47,29 @@ class Appointment {
                 return false;
             }
 
+            $activePatient = $this->conn->prepare("
+                SELECT appointment_id FROM appointments
+                WHERE patient_id = :patient_id
+                  AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress')
+                LIMIT 1 FOR UPDATE
+            ");
+            $activePatient->execute([':patient_id' => $patient_id]);
+            if ($activePatient->fetchColumn()) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'You already have an active appointment request.'];
+            }
+
             $capacityStmt = $this->conn->prepare("
                 SELECT COUNT(*)
                 FROM appointments
                 WHERE schedule_id = :schedule_id
-                  AND (
-                    status IN ('Pending', 'Confirmed', 'Completed')
-                    OR (
-                        status = 'Awaiting Payment'
-                        AND (
-                            payment_deadline_at > NOW()
-                            OR EXISTS (
-                                SELECT 1 FROM appointment_deposits review_deposit
-                                WHERE review_deposit.appointment_id = appointments.appointment_id
-                                  AND review_deposit.status = 'Under Review'
-                            )
-                        )
-                    )
-                  )
+                  AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
             ");
             $capacityStmt->execute([':schedule_id' => $schedule_id]);
             if ((int) $capacityStmt->fetchColumn() >= (int) $schedule['max_appointments']) {
                 $this->conn->rollBack();
-                return false;
+                return ['success' => false, 'message' => 'No available slots remain for this schedule.'];
             }
-
-            $settingsStmt = $this->conn->query("
-                SELECT deposit_amount, payment_deadline_minutes
-                FROM site_settings
-                WHERE id = 1
-            ");
-            $settings = $settingsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
-            $depositAmount = (float) ($settings['deposit_amount'] ?? 400.00);
-            $deadlineMinutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 30));
-            $paymentToken = bin2hex(random_bytes(32));
-            $paymentTokenHash = hash('sha256', $paymentToken);
 
             $stmt = $this->conn->prepare("
                 INSERT INTO appointments
@@ -92,8 +80,7 @@ class Appointment {
                     schedule_id,
                     status,
                     deposit_required,
-                    payment_deadline_at,
-                    payment_access_token_hash
+                    payment_deadline_at
                 )
                 VALUES
                 (
@@ -101,10 +88,9 @@ class Appointment {
                     :clinic_id,
                     :date,
                     :schedule_id,
-                    'Awaiting Payment',
+                    'Pending Review',
                     1,
-                    DATE_ADD(NOW(), INTERVAL {$deadlineMinutes} MINUTE),
-                    :payment_access_token_hash
+                    NULL
                 )
             ");
             $inserted = $stmt->execute([
@@ -112,7 +98,6 @@ class Appointment {
                 ':clinic_id' => $clinic_id,
                 ':date' => $date,
                 ':schedule_id' => $schedule_id,
-                ':payment_access_token_hash' => $paymentTokenHash,
             ]);
 
             if (!$inserted) {
@@ -132,34 +117,25 @@ class Appointment {
                 ]);
             }
 
-            $depositStmt = $this->conn->prepare("
-                INSERT INTO appointment_deposits (appointment_id, amount)
-                VALUES (:appointment_id, :amount)
-            ");
-            $depositStmt->execute([
-                ':appointment_id' => $appointment_id,
-                ':amount' => $depositAmount,
-            ]);
-
-            $deadlineStmt = $this->conn->prepare("
-                SELECT payment_deadline_at
-                FROM appointments
-                WHERE appointment_id = :appointment_id
-            ");
-            $deadlineStmt->execute([':appointment_id' => $appointment_id]);
-            $paymentDeadline = $deadlineStmt->fetchColumn();
+            $actor = $performedByUserId ? $this->auditLog->getUserActor($performedByUserId) : null;
+            $this->auditLog->record(
+                'appointment', $appointment_id, 'appointment_requested',
+                "Submitted appointment request #{$appointment_id} for staff review.",
+                null, ['status' => 'Pending Review'],
+                $actor ?: ['user_id' => null, 'name' => 'Patient', 'role' => 'Patient', 'source' => 'User']
+            );
 
             $this->conn->commit();
             return [
+                'success' => true,
                 'appointment_id' => $appointment_id,
-                'payment_token' => $paymentToken,
-                'payment_deadline_at' => $paymentDeadline,
-                'deposit_amount' => $depositAmount,
+                'status' => 'Pending Review',
+                'message' => 'Appointment request submitted for clinic review.',
             ];
         } catch(Throwable $e){
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log("bookAppointment error: ".$e->getMessage());
-            return false;
+            return ['success' => false, 'message' => 'Booking failed. Please try again.'];
         }
     }
 
@@ -348,15 +324,6 @@ class Appointment {
                     LIMIT 1
                 )
                 WHERE a.date >= CURDATE()
-                  AND (
-                    a.deposit_required = 0
-                    OR EXISTS (
-                        SELECT 1
-                        FROM appointment_deposits ad
-                        WHERE ad.appointment_id = a.appointment_id
-                          AND ad.status IN ('Verified', 'Transferred')
-                    )
-                  )
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
             $stmt->execute();
@@ -369,19 +336,21 @@ class Appointment {
     }
 
     // Admin: update appointment status
-    public function updateAppointmentStatus($appointment_id, $status, $performedByUserId) {
+    public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '') {
         $allowedTransitions = [
-            'Pending' => ['Confirmed', 'Cancelled'],
-            'Awaiting Payment' => ['Cancelled'],
-            'Confirmed' => ['Completed', 'Cancelled', 'No-show', 'Rescheduled'],
+            'Pending Review' => ['Awaiting Deposit', 'Rejected'],
+            'Awaiting Deposit' => ['Cancelled'],
+            'Payment Under Review' => [],
+            'Confirmed' => ['Checked In', 'Cancelled', 'No-show'],
+            'Checked In' => ['In Progress'],
+            'In Progress' => ['Completed'],
             'Completed' => [],
             'Cancelled' => [],
             'No-show' => [],
-            'Rescheduled' => [],
-            'Rejected' => ['Cancelled'],
+            'Rejected' => [],
         ];
 
-        if (!in_array($status, array_keys($allowedTransitions), true)) {
+        if (!in_array($status, array_merge(...array_values($allowedTransitions)), true)) {
             return ['success' => false, 'message' => 'Invalid appointment status.'];
         }
 
@@ -414,21 +383,72 @@ class Appointment {
                     'message' => "Status cannot be changed from {$oldStatus} to {$status}.",
                 ];
             }
+            if ($status === 'Rejected' && trim($reason) === '') {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'A rejection reason is required.'];
+            }
+            if ($status === 'In Progress') {
+                $readiness = $this->conn->prepare("
+                    SELECT p.profile_status, ci.checkin_status
+                    FROM appointments a JOIN patients p ON p.patient_id=a.patient_id
+                    LEFT JOIN appointment_checkins ci ON ci.appointment_id=a.appointment_id
+                    WHERE a.appointment_id=:id
+                ");
+                $readiness->execute([':id'=>$appointment_id]);
+                $ready=$readiness->fetch(PDO::FETCH_ASSOC);
+                if(!$ready || $ready['profile_status']!=='Complete' || $ready['checkin_status']!=='Ready'){
+                    $this->conn->rollBack();
+                    return ['success'=>false,'message'=>'Complete the entire patient profile before starting treatment.'];
+                }
+            }
 
             $actor = $this->auditLog->getUserActor($performedByUserId);
             if (!$actor) {
                 throw new RuntimeException('The authenticated user could not be found.');
             }
 
+            if ($oldStatus === 'Pending Review' && $status === 'Awaiting Deposit') {
+                $settings = $this->conn->query("SELECT deposit_amount, payment_deadline_minutes FROM site_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC) ?: [];
+                $amount = (float) ($settings['deposit_amount'] ?? 400);
+                $minutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 480));
+                $this->conn->prepare("
+                    INSERT INTO appointment_deposits (appointment_id, amount, status)
+                    VALUES (:appointment_id, :amount, 'Awaiting Submission')
+                    ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'Awaiting Submission'
+                ")->execute([':appointment_id' => $appointment_id, ':amount' => $amount]);
+            }
+            if ($status === 'No-show') {
+                $this->conn->prepare("UPDATE appointment_deposits SET status='Forfeited', refund_reason='Patient did not attend the confirmed appointment.' WHERE appointment_id=:id AND status='Verified'")
+                    ->execute([':id'=>$appointment_id]);
+            }
+            if ($status === 'Cancelled') {
+                $this->conn->prepare("
+                    UPDATE appointment_deposits SET
+                        status = CASE WHEN status='Verified' THEN 'For Refund' ELSE 'Expired' END,
+                        refund_reason = CASE WHEN status='Verified' THEN 'Clinic cancelled the appointment.' ELSE refund_reason END
+                    WHERE appointment_id=:id AND status IN ('Verified','Awaiting Submission','Rejected')
+                ")->execute([':id'=>$appointment_id]);
+            }
+
             $stmt = $this->conn->prepare("
-                UPDATE appointments
-                SET status = :status,
-                    confirmed_at = CASE WHEN :status = 'Confirmed' THEN COALESCE(confirmed_at, NOW()) ELSE confirmed_at END,
+                UPDATE appointments SET
+                    status = :status,
+                    reviewed_by_user_id = CASE WHEN :status IN ('Awaiting Deposit','Rejected') THEN :reviewer ELSE reviewed_by_user_id END,
+                    reviewed_at = CASE WHEN :status IN ('Awaiting Deposit','Rejected') THEN NOW() ELSE reviewed_at END,
+                    accepted_for_payment_at = CASE WHEN :status = 'Awaiting Deposit' THEN NOW() ELSE accepted_for_payment_at END,
+                    payment_deadline_at = CASE WHEN :status = 'Awaiting Deposit' THEN DATE_ADD(NOW(), INTERVAL :deadline_minutes MINUTE) ELSE payment_deadline_at END,
+                    rejected_at = CASE WHEN :status = 'Rejected' THEN NOW() ELSE rejected_at END,
+                    rejection_reason = CASE WHEN :status = 'Rejected' THEN :reason ELSE rejection_reason END,
+                    treatment_started_at = CASE WHEN :status = 'In Progress' THEN NOW() ELSE treatment_started_at END,
+                    completed_at = CASE WHEN :status = 'Completed' THEN NOW() ELSE completed_at END,
                     cancelled_at = CASE WHEN :status = 'Cancelled' THEN NOW() ELSE cancelled_at END
                 WHERE appointment_id = :id
             ");
             $stmt->execute([
                 ':status' => $status,
+                ':reviewer' => $performedByUserId,
+                ':deadline_minutes' => isset($minutes) ? $minutes : 480,
+                ':reason' => trim($reason) ?: null,
                 ':id'     => $appointment_id,
             ]);
 
@@ -447,7 +467,7 @@ class Appointment {
             return [
                 'success' => true,
                 'changed' => true,
-                'message' => 'Status updated successfully.',
+                'message' => $status === 'Awaiting Deposit' ? 'Appointment accepted. The patient now has eight hours to submit the deposit.' : 'Status updated successfully.',
                 'audit' => [
                     'performed_by_name' => $actor['name'],
                     'performed_by_role' => $actor['role'],
@@ -474,20 +494,7 @@ class Appointment {
             SELECT COUNT(*) AS total
             FROM appointments
             WHERE schedule_id = :schedule_id
-              AND (
-                status IN ('Pending', 'Confirmed', 'Completed')
-                OR (
-                    status = 'Awaiting Payment'
-                    AND (
-                        payment_deadline_at > NOW()
-                        OR EXISTS (
-                            SELECT 1 FROM appointment_deposits review_deposit
-                            WHERE review_deposit.appointment_id = appointments.appointment_id
-                              AND review_deposit.status = 'Under Review'
-                        )
-                    )
-                )
-              )
+              AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
         ");
 
         $stmt->execute([
@@ -508,15 +515,6 @@ class Appointment {
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
                 WHERE a.date >= CURDATE()
                 AND a.status = :status
-                AND (
-                    a.deposit_required = 0
-                    OR EXISTS (
-                        SELECT 1
-                        FROM appointment_deposits ad
-                        WHERE ad.appointment_id = a.appointment_id
-                          AND ad.status IN ('Verified', 'Transferred')
-                    )
-                )
                 ORDER BY a.date ASC
             ");
 

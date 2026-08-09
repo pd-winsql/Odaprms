@@ -45,7 +45,7 @@ class StaffController {
         if ($result['success']) {
             $message = 'Account created successfully.';
 
-            $emailResult = sendStaffAccountEmail($email, "$firstname $lastname", $result['username'], $password);
+            $emailResult = sendStaffAccountEmail($email, "$firstname $lastname", $password);
             if (!$emailResult['success']) {
                 $message = 'Account created, but the notification email failed to send.';
             }
@@ -53,7 +53,7 @@ class StaffController {
             echo json_encode([
                 'success'  => true,
                 'message'  => $message,
-                'username' => $result['username'],
+                'email' => $result['email'],
             ]);
         } else {
             // Check for duplicate email

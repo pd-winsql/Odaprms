@@ -45,7 +45,7 @@ class SiteSettingsController {
 
         if ($group === 'payment') {
             $data['deposit_amount'] = '400.00';
-            $data['payment_deadline_minutes'] = '30';
+            $data['payment_deadline_minutes'] = '480';
             if ($data['gcash_account_name'] === '' || $data['gcash_account_number'] === '') {
                 echo json_encode(['success' => false, 'message' => 'GCash account name and number are required.']);
                 exit;

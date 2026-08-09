@@ -118,6 +118,7 @@ class AppointmentController {
             $status         = $_POST['status'] ?? '';
             $email          = trim($_POST['email'] ?? '');
             $name           = trim($_POST['name'] ?? '');
+            $reason         = trim($_POST['reason'] ?? '');
 
             if (!$appointment_id || !$status) {
                 echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
@@ -127,7 +128,8 @@ class AppointmentController {
             $result = $this->appointmentModel->updateAppointmentStatus(
                 $appointment_id,
                 $status,
-                $_SESSION['user_id']
+                $_SESSION['user_id'],
+                $reason
             );
 
             if ($result['success']) {
@@ -135,7 +137,7 @@ class AppointmentController {
 
                 // Notify the patient of their new status, if we have their email on hand
                 if (($result['changed'] ?? false) && $email && $name) {
-                    $emailResult = sendAppointmentStatusEmail($email, $name, $status);
+                    $emailResult = sendAppointmentStatusEmail($email, $name, $status, $reason);
                     if (!$emailResult['success']) {
                         $message = 'Status updated, but the notification email failed to send.';
                     }
@@ -159,6 +161,10 @@ class AppointmentController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Content-Type: application/json');
+            if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Patient') {
+                echo json_encode(['success' => false, 'message' => 'Please sign in with a patient account before booking.']);
+                exit;
+            }
             if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
                 echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
                 exit;
@@ -219,8 +225,7 @@ class AppointmentController {
                 }
             }
 
-            // Logged-in patients always book against their own profile.
-            $patient = null;
+            // Every appointment belongs to an authenticated patient account.
             if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? '') === 'Patient') {
                 $patient = $patientModel->getPatientByUserId($_SESSION['user_id']);
                 if (!$patient) {
@@ -228,58 +233,6 @@ class AppointmentController {
                     exit;
                 }
                 $patient_id = $patient['patient_id'];
-            } else {
-                $email = trim($_POST['email'] ?? '');
-                $birthdate = trim($_POST['birthdate'] ?? '');
-                $age = null;
-                if ($birthdate) {
-                    $birth = DateTime::createFromFormat('Y-m-d', $birthdate);
-                    $today = new DateTime('today');
-                    if (!$birth || $birth > $today) {
-                        echo json_encode(['success' => false, 'message' => 'Please enter a valid birthdate.']);
-                        exit;
-                    }
-                    $age = $birth->diff($today)->y;
-                }
-
-                if (!$email || !$birthdate) {
-                    echo json_encode(['success' => false, 'message' => 'Email and birthdate are required.']);
-                    exit;
-                }
-
-                $patient = $patientModel->getPatientByEmail($email);
-                if ($patient) {
-                    $patient_id = $patient['patient_id'];
-                    $patientModel->fillMissingBookingDetails($patient_id, [
-                        'firstname' => trim($_POST['firstname'] ?? ''),
-                        'lastname' => trim($_POST['lastname'] ?? ''),
-                        'middlename' => trim($_POST['middlename'] ?? ''),
-                        'age' => $age,
-                        'gender' => trim($_POST['gender'] ?? ''),
-                        'phone_number' => trim($_POST['phone_number'] ?? ''),
-                        'birthdate' => $birthdate,
-                    ]);
-                } else {
-                    $patient_id = $patientModel->createPatient(
-                        null,
-                        trim($_POST['firstname'] ?? ''),
-                        trim($_POST['lastname'] ?? ''),
-                        trim($_POST['middlename'] ?? ''),
-                        $age,
-                        trim($_POST['gender'] ?? ''),
-                        trim($_POST['phone_number'] ?? ''),
-                        $email,
-                        $birthdate
-                    );
-                }
-
-                if (!$patient_id) {
-                    echo json_encode([
-                        'success' => false,
-                        'message' => 'Failed to create patient.'
-                    ]);
-                    exit;
-                }
             }
 
             $totalAppointments = $this->appointmentModel
@@ -299,24 +252,24 @@ class AppointmentController {
                 $clinic_id,
                 $service_ids,
                 $schedule['sched_date'],
-                $schedule_id
+                $schedule_id,
+                $_SESSION['user_id']
             );
 
 
 
-            if ($result) {
+            if ($result && ($result['success'] ?? false)) {
                 echo json_encode([
                     'success'=>true,
                     'appointment_id'=>(int) $result['appointment_id'],
-                    'payment_token'=>$result['payment_token'],
-                    'payment_deadline_at'=>$result['payment_deadline_at'],
-                    'deposit_amount'=>$result['deposit_amount'],
-                    'requires_payment'=>true
+                    'status'=>'Pending Review',
+                    'requires_payment'=>false,
+                    'message'=>$result['message']
                 ]);
             } else {
                 echo json_encode([
                     'success'=>false,
-                    'message'=>'Booking failed. Please try again.'
+                    'message'=>$result['message'] ?? 'Booking failed. Please try again.'
                 ]);
             }
             exit;

@@ -65,9 +65,9 @@ if (isset($_SESSION['user_id'])) {
 
 			<form id="loginForm" class="vd-auth-form" novalidate>
 			<div class="vd-auth-group">
-				<label class="vd-label">Email or Username</label>
+				<label class="vd-label">Email Address</label>
 				<input type="text" name="identity" class="vd-auth-input"
-				placeholder="Enter email or username" required autocomplete="username">
+				placeholder="Enter your email" required autocomplete="email" inputmode="email">
 			</div>
 			<div class="vd-auth-group">
 				<label class="vd-label">Password</label>
@@ -90,7 +90,7 @@ if (isset($_SESSION['user_id'])) {
 			</form>
 
 			<div class="vd-auth-footer">
-			Don't have an account? <a href="register.php">Sign up</a>
+            Don't have an account? <a href="register.php<?= ($_GET['next'] ?? '') === 'booking' ? '?next=booking' : '' ?>">Sign up</a>
 			</div>
 
 			<div class="vd-auth-footer mt-2">
@@ -127,6 +127,7 @@ if (isset($_SESSION['user_id'])) {
 
 		const formData = new FormData(this);
 		formData.append('action', 'login');
+		formData.append('next', new URLSearchParams(window.location.search).get('next') || '');
 
 		try {
 			const res    = await fetch('../controllers/userController.php', {

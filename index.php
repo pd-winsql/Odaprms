@@ -134,7 +134,7 @@
             <h1 class="vd-hero-title"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
             <p class="vd-hero-sub"><?= sv($settings, 'hero_subtext', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.') ?></p>
             <div class="d-flex flex-wrap gap-3">
-              <a href="apps/views/ventura_booking_form.php" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
+              <a href="<?= $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient' ? 'apps/views/patient/dashboard.php#booking-content.php' : 'apps/views/login.php?next=booking' ?>" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
               <a href="#services" class="btn vd-btn-outline px-4 py-2">View Services</a>
             </div>
           </div>

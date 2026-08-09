@@ -36,7 +36,6 @@ $staffList  = $staffModel->getAllStaff();
                 <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Username</th>
                     <th>Gender</th>
                     <th>Phone</th>
                     <th>Status</th>
@@ -53,7 +52,6 @@ $staffList  = $staffModel->getAllStaff();
                         </div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($staff['email']) ?></div>
                     </td>
-                    <td class="vd-appt-meta"><?= htmlspecialchars($staff['username']) ?></td>
                     <td class="vd-appt-meta"><?= htmlspecialchars($staff['gender'] ?? '—') ?></td>
                     <td class="vd-appt-meta" id="phone-<?= $staff['staff_id'] ?>">
                         <?= htmlspecialchars($staff['phone_number']) ?>
@@ -87,7 +85,7 @@ $staffList  = $staffModel->getAllStaff();
                     </tr>
                     <!-- Inline edit row — hidden by default -->
                     <tr class="vd-edit-row d-none" id="editRow-<?= $staff['staff_id'] ?>">
-                    <td colspan="7">
+                    <td colspan="6">
                         <div class="vd-inline-edit">
                         <div class="vd-filter-group">
                             <label class="vd-label form-label">Phone</label>
@@ -180,8 +178,8 @@ $staffList  = $staffModel->getAllStaff();
             <!-- Success message shown after creation -->
             <div id="createSuccess" class="d-none vd-staff-success-box">
             <div class="vd-staff-success-label">Account Created</div>
-            <div class="small mt-1">Username: <strong id="generatedUsername"></strong></div>
-            <div class="small">Share these credentials with the dental assistant.</div>
+            <div class="small mt-1">Login email: <strong id="generatedLoginEmail"></strong></div>
+            <div class="small">The dental assistant can sign in using their email and temporary password.</div>
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-1" id="createFormActions">
@@ -263,8 +261,7 @@ $staffList  = $staffModel->getAllStaff();
         const result = await res.json();
 
         if (result.success) {
-            // Show success block with generated username
-            document.getElementById('generatedUsername').textContent = result.username;
+            document.getElementById('generatedLoginEmail').textContent = result.email;
             document.getElementById('createSuccess').classList.remove('d-none');
             document.getElementById('createFormActions').classList.add('d-none');
             document.getElementById('createDoneActions').classList.remove('d-none');

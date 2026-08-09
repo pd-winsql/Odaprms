@@ -27,17 +27,13 @@ $patient = $patientModel->getPatientByUserId($_SESSION['user_id']);
 
 // If no patient record exists yet, create one
 if (!$patient) {
-    $patientModel->createPatientFromUser(
-        $_SESSION['user_id'],
-        $_SESSION['username'],
-        $_SESSION['email']
-    );
+    $patientModel->createPatientFromUser($_SESSION['user_id'], $_SESSION['email']);
     $patient = $patientModel->getPatientByUserId($_SESSION['user_id']);
 }
 
-$username = $_SESSION['username'] ?? 'Patient';
-$initials = strtoupper(substr($patient['firstname'] ?? $username, 0, 1) . substr($patient['lastname'] ?? '', 0, 1));
-$initials = trim($initials) ?: strtoupper(substr($username, 0, 2));
+$displayName = $_SESSION['display_name'] ?? $_SESSION['email'] ?? 'Patient';
+$initials = strtoupper(substr($patient['firstname'] ?? $displayName, 0, 1) . substr($patient['lastname'] ?? '', 0, 1));
+$initials = trim($initials) ?: strtoupper(substr($displayName, 0, 2));
 $today    = date('l, F j Y');
 ?>
 <!DOCTYPE html>
@@ -99,7 +95,7 @@ $today    = date('l, F j Y');
         <div class="vd-user-chip">
             <div class="vd-user-avatar"><?= htmlspecialchars($initials) ?></div>
             <div>
-            <div class="vd-user-name"><?= htmlspecialchars($patient['firstname'] ?? $username) ?></div>
+            <div class="vd-user-name"><?= htmlspecialchars($patient['firstname'] ?? $displayName) ?></div>
             <div class="vd-user-role">Patient</div>
             </div>
         </div>

@@ -38,6 +38,116 @@ class Patient {
         }
     }
 
+    public static function normalizeIdentityName($value): string {
+        return mb_strtolower(preg_replace('/\s+/u', ' ', trim((string) $value)), 'UTF-8');
+    }
+
+    public static function normalizePhone($value): string {
+        $digits = preg_replace('/\D+/', '', (string) $value);
+        if (strlen($digits) === 12 && str_starts_with($digits, '63')) return '0' . substr($digits, 2);
+        if (strlen($digits) === 10 && str_starts_with($digits, '9')) return '0' . $digits;
+        return $digits;
+    }
+
+    public static function identityMatchKey(array $data): string {
+        return hash('sha256', implode('|', [
+            self::normalizeIdentityName($data['firstname'] ?? ''),
+            self::normalizeIdentityName($data['middlename'] ?? ''),
+            self::normalizeIdentityName($data['lastname'] ?? ''),
+            self::normalizeIdentityName($data['suffix'] ?? ''),
+            trim((string) ($data['birthdate'] ?? '')),
+            self::normalizePhone($data['phone_number'] ?? ''),
+        ]));
+    }
+
+    public function findExactIdentity(array $data) {
+        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE identity_match_key = :identity_match_key LIMIT 1");
+        $stmt->execute([':identity_match_key' => self::identityMatchKey($data)]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function findPossibleIdentityMatches(array $data): array {
+        $stmt = $this->conn->prepare("
+            SELECT patient_id FROM patients
+            WHERE LOWER(TRIM(firstname)) = :firstname
+              AND LOWER(TRIM(lastname)) = :lastname
+              AND birthdate = :birthdate
+              AND (identity_match_key IS NULL OR identity_match_key <> :identity_match_key)
+        ");
+        $stmt->execute([
+            ':firstname' => self::normalizeIdentityName($data['firstname'] ?? ''),
+            ':lastname' => self::normalizeIdentityName($data['lastname'] ?? ''),
+            ':birthdate' => $data['birthdate'],
+            ':identity_match_key' => self::identityMatchKey($data),
+        ]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    public function getActiveLinkAuthorization(int $patientId, string $email) {
+        $stmt = $this->conn->prepare("
+            SELECT * FROM patient_account_link_authorizations
+            WHERE patient_id = :patient_id AND LOWER(authorized_email) = LOWER(:email)
+              AND status = 'Active' AND expires_at > NOW()
+            ORDER BY authorization_id DESC LIMIT 1
+        ");
+        $stmt->execute([':patient_id' => $patientId, ':email' => $email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function authorizeAccountLink(int $patientId, string $email, int $userId): array {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return ['success' => false, 'message' => 'Enter a valid email address.'];
+        try {
+            $patient = $this->getPatient($patientId);
+            if (!$patient || !empty($patient['user_id'])) return ['success' => false, 'message' => 'This patient is already linked to an account.'];
+            $this->conn->prepare("UPDATE patient_account_link_authorizations SET status='Revoked' WHERE patient_id=:patient_id AND status='Active'")
+                ->execute([':patient_id' => $patientId]);
+            $this->conn->prepare("
+                INSERT INTO patient_account_link_authorizations
+                    (patient_id, authorized_email, authorized_by_user_id, expires_at)
+                VALUES (:patient_id, :email, :user_id, DATE_ADD(NOW(), INTERVAL 24 HOUR))
+            ")->execute([':patient_id'=>$patientId, ':email'=>strtolower(trim($email)), ':user_id'=>$userId]);
+            $audit = new AuditLog($this->conn); $actor = $audit->getUserActor($userId);
+            $audit->record('patient',$patientId,'account_link_authorized',"Authorized account linking for patient #{$patientId}.",null,['email'=>$email,'expires_in_hours'=>24],$actor);
+            return ['success'=>true,'message'=>'Account linking authorized for 24 hours. Ask the patient to register using this email and their matching information.'];
+        } catch (Throwable $e) { error_log('authorizeAccountLink error: '.$e->getMessage()); return ['success'=>false,'message'=>'Unable to authorize account linking.']; }
+    }
+
+    public function createRegisteredPatient(int $userId, array $data, string $email): int {
+        $stmt = $this->conn->prepare("
+            INSERT INTO patients
+                (user_id, firstname, middlename, lastname, suffix, birthdate,
+                 phone_number, email, profile_status, identity_match_key)
+            VALUES
+                (:user_id, :firstname, :middlename, :lastname, :suffix, :birthdate,
+                 :phone_number, :email, 'Incomplete', :identity_match_key)
+        ");
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':firstname' => trim($data['firstname']),
+            ':middlename' => trim($data['middlename'] ?? '') ?: null,
+            ':lastname' => trim($data['lastname']),
+            ':suffix' => trim($data['suffix'] ?? '') ?: null,
+            ':birthdate' => $data['birthdate'],
+            ':phone_number' => self::normalizePhone($data['phone_number']),
+            ':email' => $email,
+            ':identity_match_key' => self::identityMatchKey($data),
+        ]);
+        return (int) $this->conn->lastInsertId();
+    }
+
+    public function flagPossibleDuplicates(int $newPatientId, array $candidateIds): void {
+        $stmt = $this->conn->prepare("
+            INSERT IGNORE INTO patient_duplicate_reviews
+                (new_patient_id, possible_existing_patient_id)
+            VALUES (:new_patient_id, :candidate_id)
+        ");
+        foreach ($candidateIds as $candidateId) {
+            if ((int) $candidateId !== $newPatientId) {
+                $stmt->execute([':new_patient_id' => $newPatientId, ':candidate_id' => (int) $candidateId]);
+            }
+        }
+    }
+
     public function getPatientFull($patient_id) {
         try {
             $stmt = $this->conn->prepare("
@@ -265,21 +375,14 @@ class Patient {
     
     
     // Create a basic patient record from a users account
-    public function createPatientFromUser($user_id, $username, $email) {
+    public function createPatientFromUser($user_id, $email) {
         try {
-            // Try to split username into firstname/lastname
-            $parts     = explode('.', $username);
-            $firstname = ucfirst($parts[0] ?? $username);
-            $lastname  = ucfirst($parts[1] ?? '');
-    
             $stmt = $this->conn->prepare("
                 INSERT INTO patients (user_id, firstname, lastname, email)
-                VALUES (:user_id, :firstname, :lastname, :email)
+                VALUES (:user_id, 'Patient', '', :email)
             ");
             return $stmt->execute([
                 ':user_id'   => $user_id,
-                ':firstname' => $firstname,
-                ':lastname'  => $lastname,
                 ':email'     => $email,
             ]);
         } catch (PDOException $e) {
@@ -535,7 +638,7 @@ class Patient {
         }
     }
 
-    public function completeProfileByStaff($patientId, array $data, $userId): array {
+    public function completeProfileByStaff($patientId, array $data, $userId, bool $markComplete = true): array {
         try {
             $this->conn->beginTransaction();
 
@@ -624,29 +727,27 @@ class Patient {
                 ':consent_for' => $data['consent_for'], ':consent_date' => date('Y-m-d'),
             ]);
 
-            $this->conn->prepare("
-                UPDATE patients
-                SET profile_completed_at = NOW(), profile_completed_by_user_id = :user_id
-                WHERE patient_id = :patient_id
-            ")->execute([':user_id' => $userId, ':patient_id' => $patientId]);
-            $this->conn->prepare("
-                UPDATE appointment_checkins ci
-                JOIN appointments a ON a.appointment_id = ci.appointment_id
-                SET ci.checkin_status = 'Ready', ci.ready_at = NOW()
-                WHERE a.patient_id = :patient_id AND a.date = CURDATE() AND ci.checkin_status = 'Profile Required'
-            ")->execute([':patient_id' => $patientId]);
+            if ($markComplete) {
+                $this->conn->prepare("UPDATE patients SET profile_completed_at=NOW(),profile_completed_by_user_id=:user_id,profile_status='Complete' WHERE patient_id=:patient_id")
+                    ->execute([':user_id'=>$userId,':patient_id'=>$patientId]);
+                $this->conn->prepare("UPDATE appointment_checkins ci JOIN appointments a ON a.appointment_id=ci.appointment_id SET ci.checkin_status='Ready',ci.ready_at=NOW() WHERE a.patient_id=:patient_id AND a.date=CURDATE() AND ci.checkin_status='Profile Required'")
+                    ->execute([':patient_id'=>$patientId]);
+            } else {
+                $this->conn->prepare("UPDATE patients SET profile_status='Draft' WHERE patient_id=:patient_id AND profile_completed_at IS NULL")
+                    ->execute([':patient_id'=>$patientId]);
+            }
 
             $audit = new AuditLog($this->conn);
             $actor = $audit->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
             $audit->record(
-                'patient', $patientId, 'profile_completed',
-                "Completed the patient form for patient #{$patientId} at the front desk.",
-                ['profile_completed' => false], ['profile_completed' => true], $actor
+                'patient', $patientId, $markComplete ? 'profile_completed' : 'profile_draft_saved',
+                ($markComplete ? 'Completed' : 'Saved a draft of') . " the patient form for patient #{$patientId} at the front desk.",
+                null, ['profile_status' => $markComplete ? 'Complete' : 'Draft'], $actor
             );
 
             $this->conn->commit();
-            return ['success' => true, 'message' => 'Patient form completed. The patient is ready.'];
+            return ['success' => true, 'message' => $markComplete ? 'Patient form completed. The patient is ready.' : 'Patient form draft saved. Treatment remains unavailable until the form is completed.'];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log('completeProfileByStaff error: ' . $e->getMessage());

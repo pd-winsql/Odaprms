@@ -7,18 +7,25 @@ class User {
         $this->conn = $conn;
     }
 
-    // Find user by email OR username for login
-    public function findByEmailOrUsername($identity) {
+    public function findByEmail($email) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT * FROM users
-                WHERE email = :identity OR username = :identity
+                SELECT u.*,
+                    COALESCE(
+                        NULLIF(TRIM(CONCAT_WS(' ', s.firstname, s.middlename, s.lastname)), ''),
+                        NULLIF(TRIM(CONCAT_WS(' ', p.firstname, p.middlename, p.lastname)), ''),
+                        u.email
+                    ) AS display_name
+                FROM users u
+                LEFT JOIN staffs s ON s.user_id = u.id
+                LEFT JOIN patients p ON p.user_id = u.id
+                WHERE LOWER(u.email) = LOWER(:email)
                 LIMIT 1
             ");
-            $stmt->execute([':identity' => $identity]);
+            $stmt->execute([':email' => $email]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("findByEmailOrUsername error: " . $e->getMessage());
+            error_log("findByEmail error: " . $e->getMessage());
             return null;
         }
     }
@@ -33,15 +40,14 @@ class User {
     }
 
     // Register new user
-    public function register($email, $username, $hashedPassword, $role = 'Patient') {
+    public function register($email, $hashedPassword, $role = 'Patient') {
         try {
             $stmt = $this->conn->prepare("
-                INSERT INTO users (email, username, password, user_role)
-                VALUES (:email, :username, :password, :role)
+                INSERT INTO users (email, password, email_verified_at, user_role)
+                VALUES (:email, :password, NOW(), :role)
             ");
             return $stmt->execute([
                 ':email'    => $email,
-                ':username' => $username,
                 ':password' => $hashedPassword,
                 ':role'     => $role,
             ]);
@@ -59,18 +65,6 @@ class User {
             return $stmt->fetch() !== false;
         } catch (PDOException $e) {
             error_log("emailExists error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    // Check if username exists
-    public function usernameExists($username) {
-        try {
-            $stmt = $this->conn->prepare("SELECT id FROM users WHERE username = :username");
-            $stmt->execute([':username' => $username]);
-            return $stmt->fetch() !== false;
-        } catch (PDOException $e) {
-            error_log("usernameExists error: " . $e->getMessage());
             return false;
         }
     }
@@ -99,19 +93,6 @@ class User {
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("getUserById error: " . $e->getMessage());
-            return null;
-        }
-    }
-        // Find user by email only (for password reset)
-    public function findByEmail($email) {
-        try {
-            $stmt = $this->conn->prepare("
-                SELECT * FROM users WHERE email = :email LIMIT 1
-            ");
-            $stmt->execute([':email' => $email]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("findByEmail error: " . $e->getMessage());
             return null;
         }
     }

@@ -98,7 +98,7 @@ function staffRadio($name, $value, $current) {
         </div>
 
         <div id="staffPatientFormError" class="alert alert-danger d-none"></div>
-        <div class="d-flex justify-content-end gap-2"><button type="button" class="btn vd-btn-outline" id="cancelStaffPatientFormBottom">Cancel</button><button type="submit" class="btn vd-btn-gold" id="saveStaffPatientForm">Complete Patient Form</button></div>
+        <div class="d-flex justify-content-end gap-2"><button type="button" class="btn vd-btn-outline" id="cancelStaffPatientFormBottom">Cancel</button><button type="button" class="btn vd-btn-outline" id="saveStaffPatientDraft">Save Draft</button><button type="submit" class="btn vd-btn-gold" id="saveStaffPatientForm">Complete Patient Form</button></div>
     </form>
 </div>
 
@@ -107,6 +107,10 @@ function staffRadio($name, $value, $current) {
     const back = () => document.querySelector('[data-page="dashboard-content.php"]')?.click();
     document.getElementById('cancelStaffPatientForm')?.addEventListener('click', back);
     document.getElementById('cancelStaffPatientFormBottom')?.addEventListener('click', back);
+    document.getElementById('saveStaffPatientDraft')?.addEventListener('click', async function(){
+        const form=document.getElementById('staffPatientForm');const body=new FormData(form);body.set('save_mode','draft');this.disabled=true;
+        try{const response=await fetch('../../controllers/patientController.php',{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);window.showToast(result.message,true);back();}catch(error){document.getElementById('staffPatientFormError').textContent=error.message;document.getElementById('staffPatientFormError').classList.remove('d-none');this.disabled=false;}
+    });
     document.getElementById('staffPatientForm').addEventListener('submit', async function (event) {
         event.preventDefault();
         const button = document.getElementById('saveStaffPatientForm');

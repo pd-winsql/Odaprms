@@ -30,7 +30,7 @@ class LogbookModel {
                 ci.ready_at,
                 COALESCE(
                     NULLIF(TRIM(CONCAT_WS(' ', st.firstname, st.middlename, st.lastname)), ''),
-                    u.username,
+                    u.email,
                     '—'
                 ) AS checked_in_by,
                 (
@@ -59,7 +59,7 @@ class LogbookModel {
                       AND d.status IN ('Verified', 'Transferred')
                 )
               )
-              AND a.status IN ('Confirmed', 'Completed', 'No-show', 'Cancelled', 'Rescheduled')
+              AND a.status IN ('Confirmed', 'Checked In', 'In Progress', 'Completed', 'No-show', 'Cancelled')
             ORDER BY ci.arrived_at IS NULL, ci.arrived_at ASC, a.created_at ASC
         ");
         $stmt->execute([':date' => $date]);
@@ -70,7 +70,25 @@ class LogbookModel {
         return $this->getForDate(date('Y-m-d'));
     }
 
-    public function checkIn($appointmentId, $userId): array {
+    public function lookupToday(string $term): array {
+        $term = trim($term);
+        if ($term === '') return [];
+        $byCode = str_starts_with(strtoupper($term), 'AVC-');
+        $sql = $this->baseLogbookQuery() . "
+            WHERE a.date = CURDATE() AND a.status = 'Confirmed' AND " .
+            ($byCode
+                ? "UPPER(a.appointment_code) = UPPER(:term)"
+                : "CONCAT_WS(' ', p.firstname, p.middlename, p.lastname) LIKE :term") . "
+            ORDER BY a.created_at ASC LIMIT 10
+        ";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':term' => $byCode ? $term : '%' . $term . '%']);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) $row['lookup_method'] = $byCode ? 'Code' : 'Patient Search';
+        return $rows;
+    }
+
+    public function checkIn($appointmentId, $userId, string $lookupMethod = 'Code'): array {
         try {
             $this->conn->beginTransaction();
             $stmt = $this->conn->prepare("
@@ -123,13 +141,15 @@ class LogbookModel {
                     checkin_status,
                     profile_required_at_arrival,
                     ready_at
+                    ,lookup_method
                 ) VALUES (
                     :appointment_id,
                     NOW(),
                     :user_id,
                     :checkin_status,
                     :profile_required,
-                    CASE WHEN :ready_status = 'Ready' THEN NOW() ELSE NULL END
+                    CASE WHEN :ready_status = 'Ready' THEN NOW() ELSE NULL END,
+                    :lookup_method
                 )
             ");
             $insert->execute([
@@ -138,7 +158,11 @@ class LogbookModel {
                 ':checkin_status' => $checkinStatus,
                 ':profile_required' => $profileRequired ? 1 : 0,
                 ':ready_status' => $checkinStatus,
+                ':lookup_method' => in_array($lookupMethod, ['Code', 'Patient Search'], true) ? $lookupMethod : 'Code',
             ]);
+
+            $this->conn->prepare("UPDATE appointments SET status = 'Checked In' WHERE appointment_id = :appointment_id")
+                ->execute([':appointment_id' => $appointmentId]);
 
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
@@ -148,7 +172,7 @@ class LogbookModel {
                 'patient_checked_in',
                 "Checked in the patient for appointment #{$appointmentId}.",
                 null,
-                ['checkin_status' => $checkinStatus, 'profile_required' => $profileRequired],
+                ['status' => 'Checked In', 'checkin_status' => $checkinStatus, 'profile_required' => $profileRequired, 'lookup_method' => $lookupMethod],
                 $actor
             );
 

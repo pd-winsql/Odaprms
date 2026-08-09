@@ -92,6 +92,42 @@ return [
             'Thank you for your understanding.'
     ],
 
+    'appointment_awaiting_deposit' => [
+        'subject' => 'Appointment Accepted - Deposit Required',
+        'heading' => 'Deposit Required',
+        'intro' => 'The clinic has tentatively accepted your appointment request.',
+        'instruction' => 'Please open Billing in your patient dashboard and submit the ₱400 GCash deposit within eight hours. Your slot remains reserved during this period.',
+        'label' => 'Appointment Status',
+        'footer' => 'Your appointment becomes fully confirmed after the clinic verifies your payment.'
+    ],
+
+    'appointment_rejected' => [
+        'subject' => 'Appointment Request Not Accepted',
+        'heading' => 'Appointment Rejected',
+        'intro' => 'The clinic was unable to accept your appointment request.',
+        'instruction' => 'The reason provided by the clinic is shown below. You may submit another appointment request.',
+        'label' => 'Reason',
+        'footer' => 'Please contact the clinic if you need assistance.'
+    ],
+
+    'payment_rejected' => [
+        'subject' => 'Deposit Proof Needs Correction',
+        'heading' => 'Payment Proof Rejected',
+        'intro' => 'The clinic could not verify your submitted GCash payment proof.',
+        'instruction' => 'Review the reason below and upload corrected proof within eight hours.',
+        'label' => 'Reason',
+        'footer' => 'The expiration timer is paused again after corrected proof is submitted.'
+    ],
+
+    'appointment_confirmed_code' => [
+        'subject' => 'Appointment Confirmed - Your Check-in Code',
+        'heading' => 'Appointment Confirmed',
+        'intro' => 'Your deposit has been verified and your appointment is now confirmed.',
+        'instruction' => 'Present the appointment code below to the front desk on your appointment date.',
+        'label' => 'Appointment Code',
+        'footer' => 'Keep this code private and bring it with you to the clinic.'
+    ],
+
     'staff_account_created' => [
 
         'subject' => 'Your Dental Assistant Account Has Been Created',
@@ -102,7 +138,7 @@ return [
             'An account has been created for you at Dr. Aprille Ventura Clinica Dental.',
 
         'instruction' =>
-            'Use the credentials below to log in. For security, please change your password after your first login.',
+            'Use your email address and the temporary password below to log in. For security, please change your password after your first login.',
 
         'footer' =>
             'If you were not expecting this account, please contact the clinic.'

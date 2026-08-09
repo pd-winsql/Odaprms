@@ -25,7 +25,7 @@ $otherUpcoming = array_slice($upcoming, 1);
 
 $hour     = (int) date('H');
 $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
-$firstname = $patient['firstname'] ?? $_SESSION['username'];
+$firstname = $patient['firstname'] ?? $_SESSION['display_name'] ?? 'Patient';
 
 $profileRequirements = [
     'first name' => $patient['firstname'] ?? '',
@@ -71,9 +71,15 @@ $missingProfileFields = array_keys(array_filter(
         <span><i class="ti ti-building"></i> <?= htmlspecialchars($next['clinic_name'] ?? $next['clinic'] ?? '—') ?></span>
         <span><i class="ti ti-calendar"></i> <?= date('F d, Y', strtotime($next['date'])) ?></span>
         </div>
-        <span class="vd-status vd-status-<?= strtolower($next['status']) ?>">
+        <span class="vd-status vd-status-<?= htmlspecialchars(strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $next['status']))) ?>">
         <?= htmlspecialchars($next['status']) ?>
         </span>
+        <?php if (!empty($next['appointment_code'])): ?>
+        <div class="alert alert-success mt-3 mb-0">
+            <small class="d-block text-uppercase">Front-desk appointment code</small>
+            <strong style="font-size:1.3rem;letter-spacing:.12em"><?= htmlspecialchars($next['appointment_code']) ?></strong>
+        </div>
+        <?php endif; ?>
         <button type="button" class="btn vd-home-next-cta" onclick="document.querySelector('[data-page=\'booking-content.php\']').click()">
             <i class="ti ti-calendar-plus me-1"></i> View Available Schedules
         </button>

@@ -11,7 +11,7 @@ class AuditLog {
         $stmt = $this->conn->prepare("
             SELECT
                 u.id,
-                u.username,
+                u.email,
                 u.user_role,
                 s.firstname,
                 s.middlename,
@@ -36,7 +36,7 @@ class AuditLog {
 
         return [
             'user_id' => (int) $user['id'],
-            'name' => $nameParts ? implode(' ', $nameParts) : $user['username'],
+            'name' => $nameParts ? implode(' ', $nameParts) : $user['email'],
             'role' => $user['user_role'],
         ];
     }

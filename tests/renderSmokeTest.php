@@ -5,7 +5,7 @@ session_save_path(sys_get_temp_dir());
 session_start();
 $_SESSION['user_id'] = $case === 'patient-billing' ? 14 : 7;
 $_SESSION['user_role'] = $case === 'patient-billing' ? 'Patient' : 'Admin';
-$_SESSION['username'] = $case === 'patient-billing' ? 'patient' : 'admin';
+$_SESSION['display_name'] = $case === 'patient-billing' ? 'Patient' : 'Administrator';
 
 $files = [
     'dashboard' => __DIR__ . '/../apps/views/admin/partials/dashboard-content.php',
@@ -13,6 +13,7 @@ $files = [
     'historical-logbook' => __DIR__ . '/../apps/views/admin/partials/logbook-content.php',
     'patient-billing' => __DIR__ . '/../apps/views/patient/partials/billing-content.php',
     'staff-patient-form' => __DIR__ . '/../apps/views/admin/partials/_patient-form.php',
+    'cash-billing' => __DIR__ . '/../apps/views/admin/partials/cash-billing-content.php',
 ];
 
 if (!isset($files[$case])) {

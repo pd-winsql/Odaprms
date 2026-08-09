@@ -51,7 +51,7 @@ if ($action === 'sendOTP') {
     ]);
 
     // Send email
-    $name   = $user['username'] ?? $email;
+    $name   = $user['display_name'] ?? $email;
     $result = sendOTPEmail($email, $name, $otp, 'forgot_password');
 
     if ($result['success']) {

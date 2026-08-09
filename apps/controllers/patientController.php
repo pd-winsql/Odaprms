@@ -373,8 +373,9 @@ class PatientController {
         }
 
         $patientId = (int) ($_POST['patient_id'] ?? 0);
+        $isDraft = ($_POST['save_mode'] ?? '') === 'draft';
         $required = ['firstname', 'lastname', 'birthdate', 'gender', 'phone_number', 'reason_for_visit', 'consent_name', 'consent_for'];
-        foreach ($required as $field) {
+        foreach ($isDraft ? [] : $required as $field) {
             if (trim($_POST[$field] ?? '') === '') {
                 echo json_encode(['success' => false, 'message' => 'Please complete all required patient-form fields.']);
                 exit;
@@ -382,7 +383,7 @@ class PatientController {
         }
         $birth = DateTime::createFromFormat('Y-m-d', $_POST['birthdate']);
         $today = new DateTime('today');
-        if (!$birth || $birth > $today) {
+        if (!$isDraft && (!$birth || $birth > $today)) {
             echo json_encode(['success' => false, 'message' => 'Enter a valid birthdate.']);
             exit;
         }
@@ -401,15 +402,22 @@ class PatientController {
         ];
         foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
         $data['birthdate'] = $_POST['birthdate'];
-        $data['age'] = $birth->diff($today)->y;
+        $data['age'] = $birth ? $birth->diff($today)->y : null;
         $submittedConditions = (array) ($_POST['conditions'] ?? []);
         if (!empty($_POST['conditions_text'])) {
             $submittedConditions = array_merge($submittedConditions, explode(',', $_POST['conditions_text']));
         }
         $data['conditions'] = array_values(array_filter(array_map('trim', $submittedConditions)));
 
-        echo json_encode($this->patients->completeProfileByStaff($patientId, $data, (int) $_SESSION['user_id']));
+        echo json_encode($this->patients->completeProfileByStaff($patientId, $data, (int) $_SESSION['user_id'], !$isDraft));
         exit;
+    }
+
+    public function authorizeAccountLink() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin','Dental Assistant'], true)) { echo json_encode(['success'=>false,'message'=>'Forbidden.']); exit; }
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string)($_POST['csrf_token'] ?? ''))) { echo json_encode(['success'=>false,'message'=>'Your session expired. Refresh and try again.']); exit; }
+        echo json_encode($this->patients->authorizeAccountLink((int)($_POST['patient_id'] ?? 0), trim($_POST['email'] ?? ''), (int)$_SESSION['user_id'])); exit;
     }
 }
 
@@ -435,5 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->updateConsent();
     } elseif ($action === 'completeProfileByStaff') {
         $controller->completeProfileByStaff();
+    } elseif ($action === 'authorizeAccountLink') {
+        $controller->authorizeAccountLink();
     }
 }

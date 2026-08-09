@@ -118,6 +118,17 @@
   max-width: 340px;
 }
 
+.vd-register-split { max-width: 1100px; }
+
+.vd-auth-form-wrap.vd-register-wrap { max-width: 720px; }
+.vd-auth-form.vd-register-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+  align-items: start;
+}
+.vd-register-span-2 { grid-column: 1 / -1; }
+
 /* Heading */
 .vd-auth-title {
   font-family: 'Cormorant Garamond', serif;
@@ -245,6 +256,8 @@
 
 /* ── Mobile ── */
 @media (max-width: 767px) {
+  .vd-register-grid { grid-template-columns: 1fr; }
+  .vd-register-span-2 { grid-column: auto; }
   .vd-auth-split { flex-direction: column; }
 
   .vd-auth-left {

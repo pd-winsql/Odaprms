@@ -228,8 +228,8 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
             });
             const result = await response.json();
             if (!result.success) throw new Error(result.message || 'Booking failed.');
-            window.showToast('Booking created. Please submit the ₱400 deposit.', true);
-            document.querySelector('[data-page="billing-content.php"]')?.click();
+            window.showToast('Appointment request submitted for clinic review.', true);
+            document.querySelector('[data-page="home-content.php"]')?.click();
         } catch (error) {
             errorBox.textContent = error.message || 'Unable to submit your appointment. Please try again.';
             errorBox.classList.remove('d-none');

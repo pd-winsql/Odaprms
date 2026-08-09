@@ -24,7 +24,13 @@ $action = $_POST['action'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'checkIn') {
     $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
-    echo json_encode($model->checkIn($appointmentId, (int) $_SESSION['user_id']));
+    $lookupMethod = trim($_POST['lookup_method'] ?? 'Code');
+    echo json_encode($model->checkIn($appointmentId, (int) $_SESSION['user_id'], $lookupMethod));
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'lookup') {
+    echo json_encode(['success' => true, 'matches' => $model->lookupToday(trim($_POST['term'] ?? ''))]);
     exit;
 }
 

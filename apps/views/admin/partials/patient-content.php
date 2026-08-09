@@ -14,6 +14,7 @@ $conn = $db->connect();
 $patientModel = new Patient($conn);
 
 $patients = $patientModel->getAllPatients();
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 // Build unique months from patient records for the dropdown
 $months = [];
@@ -135,6 +136,7 @@ krsort($months); // latest first
 							title="Transaction history" aria-label="Transaction history">
 							<i class="ti ti-receipt" aria-hidden="true"></i>
 						</button>
+						<?php if (empty($p['user_id'])): ?><button class="btn vd-btn-outline vd-table-icon-btn" data-authorize-link="<?= (int)$p['patient_id'] ?>" title="Authorize account link" aria-label="Authorize account link"><i class="ti ti-user-link"></i></button><?php endif; ?>
 						</div>
 					</td>
 				</tr>
@@ -274,6 +276,12 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 			}
 		});
 	});
+
+	document.querySelectorAll('[data-authorize-link]').forEach(btn => btn.addEventListener('click', async function(){
+		const email=window.prompt('Enter the verified email this patient will use to register:')?.trim(); if(!email)return;
+		const body=new FormData();body.append('action','authorizeAccountLink');body.append('csrf_token',<?= json_encode($_SESSION['csrf_token']) ?>);body.append('patient_id',this.dataset.authorizeLink);body.append('email',email);
+		try{const response=await fetch('../../controllers/patientController.php',{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);window.showToast(result.message,true);}catch(error){window.showToast(error.message||'Unable to authorize linking.',false);}
+	}));
 
 })();
 

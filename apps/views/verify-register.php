@@ -189,10 +189,10 @@ if (!$email) {
             const result = await res.json();
 
             if (result.success) {
-            sucEl.textContent = 'Account created! Redirecting to login…';
+            sucEl.textContent = 'Account created! Opening appointment booking…';
             sucEl.classList.remove('d-none');
             setTimeout(() => {
-                window.location.href = '/Capstone System/apps/views/login.php';
+                window.location.href = result.redirect || '/Capstone System/apps/views/patient/dashboard.php#booking-content.php';
             }, 1500);
             } else {
             errEl.textContent = result.message;

@@ -19,8 +19,11 @@ $past     = $appointmentModel->getAdminPastAppointments();
 
 function allowedStatusOptions($current) {
     $transitions = [
-        'Pending' => ['Confirmed', 'Cancelled'],
-        'Confirmed' => ['Completed', 'Cancelled', 'No-show', 'Rescheduled'],
+        'Pending Review' => ['Awaiting Deposit', 'Rejected'],
+        'Awaiting Deposit' => ['Cancelled'],
+        'Confirmed' => ['Cancelled', 'No-show'],
+        'Checked In' => ['In Progress'],
+        'In Progress' => ['Completed'],
     ];
     return array_values(array_unique(array_merge([$current], $transitions[$current] ?? [])));
 }
@@ -50,7 +53,7 @@ $upcomingFilters = buildFilterOptions($upcoming);
 $pastFilters     = buildFilterOptions($past);
 
 function statusClass($status) {
-    return 'vd-status vd-status-' . strtolower($status);
+    return 'vd-status vd-status-' . strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $status));
 }
 
 function actorInitials($name) {
@@ -189,6 +192,12 @@ function actorInitials($name) {
                             disabled>
                             Save & Notify
                         </button>
+                        <?php if ($appt['status'] === 'Awaiting Deposit'): ?>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-extend-deadline="<?= (int)$appt['appointment_id'] ?>">Extend 8h</button>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-transfer-deposit="<?= (int)$appt['appointment_id'] ?>">Transfer Deposit</button>
+                        <?php elseif ($appt['status'] === 'Cancelled'): ?>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-record-refund="<?= (int)$appt['appointment_id'] ?>">Record Refund</button>
+                        <?php endif; ?>
                         </div>
                     </td>
                     </tr>
@@ -321,7 +330,7 @@ function actorInitials($name) {
     function updateStatusPill(id, newStatus) {
         const pill = document.getElementById('pill-' + id);
         if (!pill) return;
-        pill.className = 'vd-status vd-status-' + newStatus.toLowerCase();
+        pill.className = 'vd-status vd-status-' + newStatus.toLowerCase().replace(/[^a-z0-9]+/g, '-');
         pill.textContent = newStatus;
     }
 
@@ -470,6 +479,14 @@ function actorInitials($name) {
         const newStatus = select.value;
         const email     = select.dataset.email;
         const name      = select.dataset.name;
+        let reason = '';
+        if (newStatus === 'Rejected') {
+            reason = window.prompt('Enter the reason for rejecting this appointment:')?.trim() || '';
+            if (!reason) {
+                showToast('A rejection reason is required.', false);
+                return;
+            }
+        }
 
         LoadingUI.setButton(btn, true, 'Saving…');
         const formData = new FormData();
@@ -479,6 +496,7 @@ function actorInitials($name) {
         formData.append('status', newStatus);
         formData.append('email', email);
         formData.append('name', name);
+        formData.append('reason', reason);
 
         try {
             const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
@@ -503,6 +521,14 @@ function actorInitials($name) {
         }
         });
     });
+
+    async function depositAction(action, fields) {
+        const body=new FormData();body.append('action',action);body.append('csrf_token',<?= json_encode($_SESSION['csrf_token']) ?>);Object.entries(fields).forEach(([key,value])=>body.append(key,value));
+        const response=await fetch('../../../apps/controllers/depositController.php',{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);showToast(result.message,true);return result;
+    }
+    document.querySelectorAll('[data-extend-deadline]').forEach(button=>button.addEventListener('click',async()=>{const reason=prompt('Reason for extending the payment deadline:')?.trim();if(!reason)return;try{await depositAction('extend',{appointment_id:button.dataset.extendDeadline,reason});}catch(error){showToast(error.message,false);}}));
+    document.querySelectorAll('[data-transfer-deposit]').forEach(button=>button.addEventListener('click',async()=>{const source=prompt('Enter the original appointment number containing the verified deposit:')?.trim();if(!source)return;const reason=prompt('Transfer reason:')?.trim()||'Patient requested a new appointment.';try{await depositAction('transfer',{source_appointment_id:source,target_appointment_id:button.dataset.transferDeposit,reason});document.querySelector('[data-page="appointment-content.php"]')?.click();}catch(error){showToast(error.message,false);}}));
+    document.querySelectorAll('[data-record-refund]').forEach(button=>button.addEventListener('click',async()=>{const notes=prompt('Optional refund notes:')?.trim()||'';try{await depositAction('refund',{appointment_id:button.dataset.recordRefund,notes});}catch(error){showToast(error.message,false);}}));
 
 })();
 </script>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 03, 2026 at 03:44 AM
+-- Generation Time: Aug 09, 2026 at 12:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `av-clinica-dental`
+-- Database: `av-clinica-dental-feature`
 --
 
 -- --------------------------------------------------------
@@ -33,7 +33,22 @@ CREATE TABLE `appointments` (
   `schedule_id` int(11) NOT NULL,
   `clinic_id` int(11) NOT NULL,
   `date` date NOT NULL,
-  `status` enum('Pending','Confirmed','Cancelled','Completed','Rejected') NOT NULL DEFAULT 'Pending',
+  `status` enum('Pending Review','Awaiting Deposit','Payment Under Review','Confirmed','Checked In','In Progress','Completed','Cancelled','No-show','Rejected','Pending','Awaiting Payment','Rescheduled') NOT NULL DEFAULT 'Pending Review',
+  `deposit_required` tinyint(1) NOT NULL DEFAULT 1,
+  `payment_deadline_at` datetime DEFAULT NULL,
+  `payment_access_token_hash` char(64) DEFAULT NULL,
+  `reviewed_by_user_id` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `accepted_for_payment_at` datetime DEFAULT NULL,
+  `rejected_at` datetime DEFAULT NULL,
+  `rejection_reason` varchar(255) DEFAULT NULL,
+  `appointment_code` varchar(20) DEFAULT NULL,
+  `code_generated_at` datetime DEFAULT NULL,
+  `confirmed_at` datetime DEFAULT NULL,
+  `treatment_started_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `cancelled_at` datetime DEFAULT NULL,
+  `cancellation_reason` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -41,17 +56,140 @@ CREATE TABLE `appointments` (
 -- Dumping data for table `appointments`
 --
 
-INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clinic_id`, `date`, `status`, `created_at`) VALUES
-(17, 14, 20, 1, '2026-07-27', 'Confirmed', '2026-07-24 09:47:53'),
-(19, 14, 21, 2, '2026-07-29', 'Confirmed', '2026-07-24 10:29:34'),
-(20, 16, 20, 1, '2026-07-27', 'Confirmed', '2026-07-27 06:17:38'),
-(22, 17, 20, 1, '2026-07-27', 'Confirmed', '2026-07-27 06:52:37'),
-(23, 18, 30, 2, '2026-08-07', 'Confirmed', '2026-07-28 03:00:13'),
-(24, 19, 30, 2, '2026-08-07', 'Confirmed', '2026-07-28 03:02:02'),
-(25, 14, 26, 1, '2026-08-04', 'Confirmed', '2026-07-30 01:24:05'),
-(26, 14, 25, 1, '2026-08-03', 'Confirmed', '2026-07-30 01:38:36'),
-(27, 21, 25, 1, '2026-08-03', 'Cancelled', '2026-07-31 12:10:03'),
-(28, 14, 30, 2, '2026-08-07', 'Confirmed', '2026-07-31 14:33:08');
+INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clinic_id`, `date`, `status`, `deposit_required`, `payment_deadline_at`, `payment_access_token_hash`, `reviewed_by_user_id`, `reviewed_at`, `accepted_for_payment_at`, `rejected_at`, `rejection_reason`, `appointment_code`, `code_generated_at`, `confirmed_at`, `treatment_started_at`, `completed_at`, `cancelled_at`, `cancellation_reason`, `created_at`) VALUES
+(17, 14, 20, 1, '2026-07-27', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-B89BDF77', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-24 09:47:53'),
+(19, 14, 21, 2, '2026-07-29', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-23E29085', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-24 10:29:34'),
+(20, 16, 20, 1, '2026-07-27', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-766A565A', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-27 06:17:38'),
+(22, 17, 20, 1, '2026-07-27', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-22975292', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-27 06:52:37'),
+(23, 18, 30, 2, '2026-08-07', 'Cancelled', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 18:41:12', NULL, '2026-07-28 03:00:13'),
+(24, 19, 30, 2, '2026-08-07', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-CFFFAF97', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:02:02'),
+(25, 14, 26, 1, '2026-08-04', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-4EAEE953', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-30 01:24:05'),
+(26, 14, 25, 1, '2026-08-03', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-804B172A', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-30 01:38:36'),
+(27, 21, 25, 1, '2026-08-03', 'Cancelled', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-31 12:10:03'),
+(28, 14, 30, 2, '2026-08-07', 'Confirmed', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AVC-129A198F', '2026-08-09 18:47:20', NULL, NULL, NULL, NULL, NULL, '2026-07-31 14:33:08'),
+(38, 14, 41, 2, '2026-08-11', 'Awaiting Deposit', 1, '2026-08-05 15:22:41', '890c4ef70cbc8c2138a4a0fb28542054ea6a309e3a4bb551df9c88e9136af8db', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:52:41'),
+(39, 21, 27, 1, '2026-08-05', 'Cancelled', 1, '2026-08-05 15:25:04', '1788ddbf94de599151ea44613df67e0077e1aef6dcb1feaadfa3b53b044c56ac', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 14:56:25', NULL, NULL, '2026-08-05 18:33:27', NULL, '2026-08-05 06:55:04'),
+(40, 14, 41, 2, '2026-08-11', 'Cancelled', 1, '2026-08-05 18:42:11', '2db68df83544600a2ade91a93f539e49ab9f8a55faeaa6fadf4fc4d27bee9847', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-09 08:45:54', 'Payment submission deadline expired.', '2026-08-05 10:12:11'),
+(41, 23, 37, 1, '2026-08-12', 'Confirmed', 1, '2026-08-05 18:47:46', 'ade548caf9a54cb812f19ed691d4b1253d6981d683a8517f4203c03745766aa5', NULL, NULL, NULL, NULL, NULL, 'AVC-D8654963', '2026-08-05 18:32:14', '2026-08-05 18:32:14', NULL, NULL, NULL, NULL, '2026-08-05 10:17:46');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `appointment_billings`
+--
+
+CREATE TABLE `appointment_billings` (
+  `billing_id` bigint(20) UNSIGNED NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `actual_service_amount` decimal(10,2) DEFAULT NULL,
+  `deposit_applied` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `remaining_balance` decimal(10,2) DEFAULT NULL,
+  `cash_received` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `payment_status` enum('Unpaid','Partially Paid','Paid') NOT NULL DEFAULT 'Unpaid',
+  `recorded_by_user_id` int(11) DEFAULT NULL,
+  `recorded_at` datetime DEFAULT NULL,
+  `paid_at` datetime DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `appointment_checkins`
+--
+
+CREATE TABLE `appointment_checkins` (
+  `checkin_id` int(11) NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `arrived_at` datetime NOT NULL,
+  `checked_in_by_user_id` int(11) DEFAULT NULL,
+  `lookup_method` enum('Code','Patient Search','Date Override') NOT NULL DEFAULT 'Code',
+  `checkin_status` enum('Profile Required','Ready') NOT NULL,
+  `profile_required_at_arrival` tinyint(1) NOT NULL DEFAULT 0,
+  `ready_at` datetime DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `date_override_reason` varchar(255) DEFAULT NULL,
+  `date_override_by_user_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `appointment_checkins`
+--
+
+INSERT INTO `appointment_checkins` (`checkin_id`, `appointment_id`, `arrived_at`, `checked_in_by_user_id`, `lookup_method`, `checkin_status`, `profile_required_at_arrival`, `ready_at`, `notes`, `date_override_reason`, `date_override_by_user_id`, `created_at`, `updated_at`) VALUES
+(5, 39, '2026-08-05 14:56:39', 7, 'Code', 'Profile Required', 1, NULL, NULL, NULL, NULL, '2026-08-05 06:56:39', '2026-08-05 06:56:39');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `appointment_deposits`
+--
+
+CREATE TABLE `appointment_deposits` (
+  `deposit_id` int(11) NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `amount` decimal(10,2) NOT NULL DEFAULT 400.00,
+  `gcash_reference` varchar(100) DEFAULT NULL,
+  `receipt_path` varchar(255) DEFAULT NULL,
+  `receipt_mime` varchar(100) DEFAULT NULL,
+  `status` enum('Awaiting Submission','Under Review','Verified','Rejected','Expired','Transferred','Forfeited','For Refund','Refunded') NOT NULL DEFAULT 'Awaiting Submission',
+  `submitted_at` datetime DEFAULT NULL,
+  `verified_by_user_id` int(11) DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `rejection_reason` varchar(255) DEFAULT NULL,
+  `resubmission_deadline_at` datetime DEFAULT NULL,
+  `deadline_extended_by_user_id` int(11) DEFAULT NULL,
+  `deadline_extended_at` datetime DEFAULT NULL,
+  `deadline_extension_reason` varchar(255) DEFAULT NULL,
+  `transferred_from_appointment_id` int(11) DEFAULT NULL,
+  `transferred_by_user_id` int(11) DEFAULT NULL,
+  `transferred_at` datetime DEFAULT NULL,
+  `transfer_reason` varchar(255) DEFAULT NULL,
+  `refund_reason` varchar(255) DEFAULT NULL,
+  `refunded_by_user_id` int(11) DEFAULT NULL,
+  `refunded_at` datetime DEFAULT NULL,
+  `refund_notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `appointment_deposits`
+--
+
+INSERT INTO `appointment_deposits` (`deposit_id`, `appointment_id`, `amount`, `gcash_reference`, `receipt_path`, `receipt_mime`, `status`, `submitted_at`, `verified_by_user_id`, `verified_at`, `rejection_reason`, `resubmission_deadline_at`, `deadline_extended_by_user_id`, `deadline_extended_at`, `deadline_extension_reason`, `transferred_from_appointment_id`, `transferred_by_user_id`, `transferred_at`, `transfer_reason`, `refund_reason`, `refunded_by_user_id`, `refunded_at`, `refund_notes`, `created_at`, `updated_at`) VALUES
+(10, 38, 400.00, '123456789', 'storage/payment_receipts/47de4d4f65a4f9635de21232c102ce9fb39c4084.png', 'image/png', 'Under Review', '2026-08-05 14:53:22', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:52:41', '2026-08-05 06:53:22'),
+(11, 39, 400.00, '12345678910', 'storage/payment_receipts/33f52d7a4e9c92dedc91a7cf95e25e1d1a9c14f4.png', 'image/png', 'Verified', '2026-08-05 14:55:25', 7, '2026-08-05 14:56:25', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:55:04', '2026-08-05 06:56:25'),
+(12, 40, 400.00, NULL, NULL, NULL, 'Expired', NULL, NULL, NULL, 'Payment submission deadline expired.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 10:12:11', '2026-08-09 00:45:54'),
+(13, 41, 400.00, '1234567891011', 'storage/payment_receipts/487099509dbe1f3a060bbd4ac68e5eba5ece9a2c.png', 'image/png', 'Verified', '2026-08-05 18:28:13', 7, '2026-08-05 18:32:14', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 10:17:46', '2026-08-05 10:32:14');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `appointment_email_notifications`
+--
+
+CREATE TABLE `appointment_email_notifications` (
+  `notification_id` bigint(20) UNSIGNED NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `recipient_user_id` int(11) DEFAULT NULL,
+  `notification_type` varchar(50) NOT NULL,
+  `recipient_email` varchar(255) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (`payload` is null or json_valid(`payload`)),
+  `deduplication_key` varchar(150) DEFAULT NULL,
+  `delivery_status` enum('Pending','Sent','Failed') NOT NULL DEFAULT 'Pending',
+  `attempts` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
+  `last_error` varchar(500) DEFAULT NULL,
+  `scheduled_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `sent_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -79,7 +217,13 @@ INSERT INTO `appointment_services` (`appointment_id`, `service_id`) VALUES
 (26, 2),
 (27, 9),
 (28, 2),
-(28, 6);
+(28, 6),
+(38, 5),
+(38, 8),
+(39, 2),
+(40, 2),
+(40, 10),
+(41, 3);
 
 -- --------------------------------------------------------
 
@@ -101,6 +245,18 @@ CREATE TABLE `audit_logs` (
   `source` enum('User','System') NOT NULL DEFAULT 'User',
   `performed_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `audit_logs`
+--
+
+INSERT INTO `audit_logs` (`audit_log_id`, `entity_type`, `entity_id`, `action`, `description`, `old_values`, `new_values`, `performed_by_user_id`, `performed_by_name`, `performed_by_role`, `source`, `performed_at`) VALUES
+(18, 'appointment', 39, 'status_changed', 'Verified the deposit and confirmed appointment #39.', '{\"status\":\"Awaiting Payment\",\"deposit_status\":\"Under Review\"}', '{\"status\":\"Confirmed\",\"deposit_status\":\"Verified\"}', 7, 'admin', 'Admin', 'User', '2026-08-05 06:56:25'),
+(19, 'appointment', 39, 'patient_checked_in', 'Checked in the patient for appointment #39.', NULL, '{\"checkin_status\":\"Profile Required\",\"profile_required\":true}', 7, 'admin', 'Admin', 'User', '2026-08-05 06:56:39'),
+(20, 'appointment', 41, 'status_changed', 'Verified the deposit and confirmed appointment #41.', '{\"status\":\"Awaiting Payment\",\"deposit_status\":\"Under Review\"}', '{\"status\":\"Confirmed\",\"deposit_status\":\"Verified\"}', 7, 'admin', 'Admin', 'User', '2026-08-05 10:32:14'),
+(21, 'appointment', 39, 'status_changed', 'Changed appointment #39 status from Confirmed to Cancelled.', '{\"status\":\"Confirmed\"}', '{\"status\":\"Cancelled\"}', 7, 'admin', 'Admin', 'User', '2026-08-05 10:33:27'),
+(22, 'appointment', 23, 'status_changed', 'Changed appointment #23 status from Confirmed to Cancelled.', '{\"status\":\"Confirmed\"}', '{\"status\":\"Cancelled\"}', 18, 'Winje Joaquin Corpuz', 'Dental Assistant', 'User', '2026-08-05 10:41:12'),
+(23, 'appointment', 40, 'status_changed', 'Cancelled appointment #40 after its payment deadline expired.', '{\"status\":\"Awaiting Payment\"}', '{\"status\":\"Cancelled\"}', NULL, 'System', 'System', 'System', '2026-08-09 00:45:54');
 
 -- --------------------------------------------------------
 
@@ -152,7 +308,8 @@ INSERT INTO `email_verifications` (`id`, `email`, `otp`, `expires_at`, `used`, `
 (15, 'winje@gmail.com', '908945', '2026-07-27 22:50:21', 1, '2026-07-27 14:40:21'),
 (16, 'j.cruz@gmail.com', '023441', '2026-07-28 11:13:10', 1, '2026-07-28 03:03:10'),
 (17, 'jcruz@gmail.com', '406047', '2026-07-28 11:14:43', 1, '2026-07-28 03:04:43'),
-(18, 'christianjamescapule@gmail.com', '488760', '2026-07-31 20:11:35', 1, '2026-07-31 12:01:35');
+(18, 'christianjamescapule@gmail.com', '488760', '2026-07-31 20:11:35', 1, '2026-07-31 12:01:35'),
+(19, 'ronniebarasi30@gmail.com', '900802', '2026-08-05 18:23:47', 1, '2026-08-05 10:13:47');
 
 -- --------------------------------------------------------
 
@@ -190,6 +347,7 @@ CREATE TABLE `patients` (
   `firstname` varchar(100) NOT NULL,
   `lastname` varchar(100) NOT NULL,
   `middlename` varchar(100) DEFAULT NULL,
+  `suffix` varchar(20) DEFAULT NULL,
   `age` int(11) DEFAULT NULL,
   `gender` varchar(50) DEFAULT NULL,
   `phone_number` varchar(20) DEFAULT NULL,
@@ -206,21 +364,45 @@ CREATE TABLE `patients` (
   `physician_name` varchar(100) DEFAULT NULL,
   `physician_contact` varchar(20) DEFAULT NULL,
   `physician_address` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `profile_completed_at` datetime DEFAULT NULL,
+  `profile_completed_by_user_id` int(11) DEFAULT NULL,
+  `profile_status` enum('Incomplete','Draft','Complete') NOT NULL DEFAULT 'Incomplete',
+  `identity_match_key` char(64) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `patients`
 --
 
-INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middlename`, `age`, `gender`, `phone_number`, `email`, `birthdate`, `civil_status`, `home_address`, `work_address`, `fb_account`, `occupation`, `office_contact`, `guardian_name`, `guardian_contact`, `physician_name`, `physician_contact`, `physician_address`, `created_at`) VALUES
-(14, 14, 'Win', 'Corpuz', 'Joaquin', 21, 'Male', '09123456789', 'winsight11@gmail.com', '2005-04-09', 'Single', 'Baybayog, Alcala, Cagayan', 'Baybayog, Alcala, Cagayan', NULL, 'Student', NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-24 09:47:53'),
-(16, 15, 'Ning', 'Unista', 'v ', 21, 'Female', '09218656206', 'stephanieunista@gmail.com', '2004-09-04', 'Single', 'masin, alcala cagayan ', 'masin,alcala, cgayan', 'step  unista', 'student', 'n/a', NULL, NULL, NULL, NULL, NULL, '2026-07-27 05:23:30'),
-(17, 17, 'Michelle', 'LLANTO', 'JACINTO', 21, 'Female', '09999997652566', 'llantomichelle9@gmail.com', '2005-06-02', 'Single', 'Baculod Alcala Cagayan', 'N/A', 'MICHELLE LLANTO', 'STUDENT', 'N/A', NULL, NULL, NULL, NULL, NULL, '2026-07-27 06:49:28'),
-(18, 21, 'Juan', 'Dela Cruz', 'Santos', 22, 'Male', '09123456789', 'jcruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:00:13'),
-(19, NULL, 'Maria', 'Lago', 'Palo', 20, 'Female', '09123456789', 'm.lago@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:02:02'),
-(20, 20, 'CruzJ', '', NULL, NULL, NULL, NULL, 'j.cruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:03:46'),
-(21, 28, 'Pogicj', 'palo', 'Dikoalam', NULL, NULL, NULL, 'christianjamescapule@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-31 12:02:19');
+INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middlename`, `suffix`, `age`, `gender`, `phone_number`, `email`, `birthdate`, `civil_status`, `home_address`, `work_address`, `fb_account`, `occupation`, `office_contact`, `guardian_name`, `guardian_contact`, `physician_name`, `physician_contact`, `physician_address`, `created_at`, `profile_completed_at`, `profile_completed_by_user_id`, `profile_status`, `identity_match_key`) VALUES
+(14, 14, 'Win', 'Corpuz', 'Joaquin', NULL, 21, 'Male', '09123456789', 'winsight11@gmail.com', '2005-04-09', 'Single', 'Baybayog, Alcala, Cagayan', 'Baybayog, Alcala, Cagayan', NULL, 'Student', NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-24 09:47:53', NULL, NULL, 'Incomplete', 'ed83b3dae05c29fd241f60f98ed05fb76d8a1f9ea49c42f8fd481b7e6b5a43be'),
+(16, 15, 'Ning', 'Unista', 'v ', NULL, 21, 'Female', '09218656206', 'stephanieunista@gmail.com', '2004-09-04', 'Single', 'masin, alcala cagayan ', 'masin,alcala, cgayan', 'step  unista', 'student', 'n/a', NULL, NULL, NULL, NULL, NULL, '2026-07-27 05:23:30', '2026-07-27 13:23:30', NULL, 'Complete', '82879cf53db26b5dbf683d55edd6ef6ff462b021ac9a18fd49c944abdb17004b'),
+(17, 17, 'Michelle', 'LLANTO', 'JACINTO', NULL, 21, 'Female', '09999997652566', 'llantomichelle9@gmail.com', '2005-06-02', 'Single', 'Baculod Alcala Cagayan', 'N/A', 'MICHELLE LLANTO', 'STUDENT', 'N/A', NULL, NULL, NULL, NULL, NULL, '2026-07-27 06:49:28', '2026-07-27 14:49:28', NULL, 'Complete', 'a35cde19f990a145c1db27df8a7a68c70e7b09e701700ef3d6a8b45effe23ac0'),
+(18, 21, 'Juan', 'Dela Cruz', 'Santos', NULL, 22, 'Male', '09123456789', 'jcruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:00:13', NULL, NULL, 'Incomplete', NULL),
+(19, NULL, 'Maria', 'Lago', 'Palo', NULL, 20, 'Female', '09123456789', 'm.lago@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:02:02', NULL, NULL, 'Incomplete', NULL),
+(20, 20, 'CruzJ', '', NULL, NULL, NULL, NULL, NULL, 'j.cruz@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-28 03:03:46', NULL, NULL, 'Incomplete', NULL),
+(21, 28, 'Pogicj', 'palo', 'Dikoalam', NULL, NULL, NULL, NULL, 'christianjamescapule@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-31 12:02:19', NULL, NULL, 'Incomplete', NULL),
+(23, 31, 'Ronnie', '', NULL, NULL, NULL, NULL, NULL, 'ronniebarasi30@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 10:14:28', NULL, NULL, 'Incomplete', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient_account_link_authorizations`
+--
+
+CREATE TABLE `patient_account_link_authorizations` (
+  `authorization_id` bigint(20) UNSIGNED NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `authorized_email` varchar(255) NOT NULL,
+  `status` enum('Active','Used','Revoked','Expired') NOT NULL DEFAULT 'Active',
+  `authorized_by_user_id` int(11) DEFAULT NULL,
+  `authorized_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `expires_at` datetime NOT NULL,
+  `used_by_user_id` int(11) DEFAULT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `notes` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -294,6 +476,25 @@ INSERT INTO `patient_dental_history` (`dental_history_id`, `patient_id`, `previo
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `patient_duplicate_reviews`
+--
+
+CREATE TABLE `patient_duplicate_reviews` (
+  `duplicate_review_id` bigint(20) UNSIGNED NOT NULL,
+  `new_patient_id` int(11) NOT NULL,
+  `possible_existing_patient_id` int(11) NOT NULL,
+  `match_basis` varchar(100) NOT NULL DEFAULT 'Name and birthdate',
+  `status` enum('Pending','Linked','Dismissed') NOT NULL DEFAULT 'Pending',
+  `reviewed_by_user_id` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `resolution_notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `patient_medical_history`
 --
 
@@ -362,7 +563,14 @@ INSERT INTO `schedules` (`schedule_id`, `clinic_id`, `sched_date`, `max_appointm
 (31, 2, '2026-08-08', 10),
 (34, 1, '2026-08-01', 8),
 (37, 1, '2026-08-12', 8),
-(41, 2, '2026-08-11', 8);
+(41, 2, '2026-08-11', 8),
+(42, 1, '2026-08-17', 8),
+(43, 1, '2026-08-18', 8),
+(44, 2, '2026-08-19', 8),
+(45, 2, '2026-08-20', 8),
+(46, 2, '2026-08-21', 8),
+(47, 1, '2026-08-24', 8),
+(48, 1, '2026-08-25', 8);
 
 -- --------------------------------------------------------
 
@@ -447,6 +655,11 @@ CREATE TABLE `site_settings` (
   `contact_address` varchar(255) DEFAULT 'Alcala & Tuguegarao, Cagayan',
   `contact_phone` varchar(20) DEFAULT '0912-345-6789',
   `contact_email` varchar(100) DEFAULT 'info@draprilleventura.com',
+  `deposit_amount` decimal(10,2) NOT NULL DEFAULT 400.00,
+  `payment_deadline_minutes` smallint(5) UNSIGNED NOT NULL DEFAULT 30,
+  `gcash_account_name` varchar(100) DEFAULT NULL,
+  `gcash_account_number` varchar(30) DEFAULT NULL,
+  `gcash_qr_path` varchar(255) DEFAULT NULL,
   `last_updated_by` varchar(20) DEFAULT NULL,
   `last_updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -455,8 +668,8 @@ CREATE TABLE `site_settings` (
 -- Dumping data for table `site_settings`
 --
 
-INSERT INTO `site_settings` (`id`, `brand_name_top`, `brand_name_sub`, `site_logo`, `hero_system_tag`, `hero_eyebrow`, `hero_title`, `hero_subtext`, `about_intro`, `pillar1_title`, `pillar1_desc`, `pillar2_title`, `pillar2_desc`, `pillar3_title`, `pillar3_desc`, `contact_address`, `contact_phone`, `contact_email`, `last_updated_by`, `last_updated_at`) VALUES
-(1, 'Dr. Aprille', 'Clinica Dental', 'site_logo_1785381335.png', 'Online Dental Appointment & Patient Records Management System', 'Two Clinics in Cagayan · Alcala & Tuguegarao', 'Dental care for Alcala and Tuguegarao families.', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.', 'Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.', 'Patient-Centered Care', 'Every visit is explained clearly, so you always know what to expect.', 'Experienced Team', 'Dental professionals handling everything from routine care to advanced treatment.', 'Two Convenient Branches', 'Serving patients in both Alcala and Tuguegarao, Cagayan.', 'Alcala & Tuguegarao, Cagayan', '0912-345-6789', 'info@draprilleventura.com', 'Admin', '2026-07-30 13:01:09');
+INSERT INTO `site_settings` (`id`, `brand_name_top`, `brand_name_sub`, `site_logo`, `hero_system_tag`, `hero_eyebrow`, `hero_title`, `hero_subtext`, `about_intro`, `pillar1_title`, `pillar1_desc`, `pillar2_title`, `pillar2_desc`, `pillar3_title`, `pillar3_desc`, `contact_address`, `contact_phone`, `contact_email`, `deposit_amount`, `payment_deadline_minutes`, `gcash_account_name`, `gcash_account_number`, `gcash_qr_path`, `last_updated_by`, `last_updated_at`) VALUES
+(1, 'Dr. Aprille', 'Clinica Dental', 'site_logo_1785381335.png', 'Online Dental Appointment & Patient Records Management System', 'Two Clinics in Cagayan · Alcala & Tuguegarao', 'Dental care for Alcala and Tuguegarao families.', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.', 'Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.', 'Patient-Centered Care', 'Every visit is explained clearly, so you always know what to expect.', 'Experienced Team', 'Dental professionals handling everything from routine care to advanced treatment.', 'Two Convenient Branches', 'Serving patients in both Alcala and Tuguegarao, Cagayan.', 'Alcala & Tuguegarao, Cagayan', '0912-345-6789', 'info@draprilleventura.com', 400.00, 480, NULL, NULL, NULL, 'Admin', '2026-07-30 13:01:09');
 
 -- --------------------------------------------------------
 
@@ -497,6 +710,7 @@ CREATE TABLE `users` (
   `email` varchar(255) NOT NULL,
   `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `email_verified_at` datetime DEFAULT NULL,
   `user_role` enum('Patient','Admin','Dental Assistant') NOT NULL DEFAULT 'Patient'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -504,18 +718,20 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `username`, `password`, `user_role`) VALUES
-(7, 'admin@gmail.com', 'admin', '$2y$10$yjiG6c81sf6NPj8gEWkR8.6BEFnug.jLEry2zzD7L9gGzhxY/NTGm', 'Admin'),
-(14, 'winsight11@gmail.com', 'winpogi', '$2y$10$u.XUDEHisxdJ6QbWZciI/un2sHC5csepwapa6q9XNkmGlqQ6.mtdi', 'Patient'),
-(15, 'stephanieunista@gmail.com', 'ning', '$2y$10$vNimCUMY2cHtz3PPQfyLNezSOy9WR/Qryu4lQYb1k6AVOfCtaR6dG', 'Patient'),
-(16, 'stephyyyunista94@gmail.com', 'stephanie.unista', '$2y$10$6dDvGf5.aFptNtGWE9QiseE3qAk9V/jB7rL/4jW2Y.WTTJy.CAvem', 'Dental Assistant'),
-(17, 'llantomichelle9@gmail.com', 'michelle', '$2y$10$CYTbshBCb.qmC2LVdU407OyB5G4IAxge4lwH4Lx.hbVYGTbNJQI7q', 'Patient'),
-(18, 'roncorpuz09@gmail.com', 'winje.corpuz', '$2y$10$6SSUY0/c2WLmquUkQXC7gehJfOLHHBqc1i2uhb6HmH2c64LJc4bMm', 'Dental Assistant'),
-(19, 'winje@gmail.com', 'winje.win', '$2y$10$C69fAaA/Er81z90RnoB0H.XQ9ze3mZhkEn/2fK5q7z80h04ZVUVRm', 'Patient'),
-(20, 'j.cruz@gmail.com', 'cruzJ', '$2y$10$3y.eHdpfkHY6s.7oChZwEOfGiWzhvMo.yhfjwwgRUgY8LQbys/XlW', 'Patient'),
-(21, 'jcruz@gmail.com', 'cruz.J', '$2y$10$F/Rfkca9YMPaDkjVAXRdTeLZvRiAWVX3ldVDr490E8CbCnQw.hSnu', 'Patient'),
-(22, 'corpuzwinjemelron@gmail.com', 'pogi.naman', '$2y$10$AeUUJZzAJHanni9kfh452eu2R2nVKKNgWOC.1EOtPR67782eCz3p6', 'Dental Assistant'),
-(28, 'christianjamescapule@gmail.com', 'pogicj', '$2y$10$BPHcRiUNHPEqlA2q7g2ETe/jWRamNzub5vNH9WGxri1buDZdC3GW2', 'Patient');
+INSERT INTO `users` (`id`, `email`, `username`, `password`, `email_verified_at`, `user_role`) VALUES
+(7, 'admin@gmail.com', 'admin', '$2y$10$yjiG6c81sf6NPj8gEWkR8.6BEFnug.jLEry2zzD7L9gGzhxY/NTGm', '2026-08-09 18:47:19', 'Admin'),
+(14, 'winsight11@gmail.com', 'winpogi', '$2y$10$u.XUDEHisxdJ6QbWZciI/un2sHC5csepwapa6q9XNkmGlqQ6.mtdi', '2026-08-09 18:47:19', 'Patient'),
+(15, 'stephanieunista@gmail.com', 'ning', '$2y$10$vNimCUMY2cHtz3PPQfyLNezSOy9WR/Qryu4lQYb1k6AVOfCtaR6dG', '2026-08-09 18:47:19', 'Patient'),
+(16, 'stephyyyunista94@gmail.com', 'stephanie.unista', '$2y$10$6dDvGf5.aFptNtGWE9QiseE3qAk9V/jB7rL/4jW2Y.WTTJy.CAvem', '2026-08-09 18:47:19', 'Dental Assistant'),
+(17, 'llantomichelle9@gmail.com', 'michelle', '$2y$10$CYTbshBCb.qmC2LVdU407OyB5G4IAxge4lwH4Lx.hbVYGTbNJQI7q', '2026-08-09 18:47:19', 'Patient'),
+(18, 'roncorpuz09@gmail.com', 'winje.corpuz', '$2y$10$6SSUY0/c2WLmquUkQXC7gehJfOLHHBqc1i2uhb6HmH2c64LJc4bMm', '2026-08-09 18:47:19', 'Dental Assistant'),
+(19, 'winje@gmail.com', 'winje.win', '$2y$10$C69fAaA/Er81z90RnoB0H.XQ9ze3mZhkEn/2fK5q7z80h04ZVUVRm', '2026-08-09 18:47:19', 'Patient'),
+(20, 'j.cruz@gmail.com', 'cruzJ', '$2y$10$3y.eHdpfkHY6s.7oChZwEOfGiWzhvMo.yhfjwwgRUgY8LQbys/XlW', '2026-08-09 18:47:19', 'Patient'),
+(21, 'jcruz@gmail.com', 'cruz.J', '$2y$10$F/Rfkca9YMPaDkjVAXRdTeLZvRiAWVX3ldVDr490E8CbCnQw.hSnu', '2026-08-09 18:47:19', 'Patient'),
+(22, 'corpuzwinjemelron@gmail.com', 'pogi.naman', '$2y$10$AeUUJZzAJHanni9kfh452eu2R2nVKKNgWOC.1EOtPR67782eCz3p6', '2026-08-09 18:47:19', 'Dental Assistant'),
+(28, 'christianjamescapule@gmail.com', 'pogicj', '$2y$10$BPHcRiUNHPEqlA2q7g2ETe/jWRamNzub5vNH9WGxri1buDZdC3GW2', '2026-08-09 18:47:19', 'Patient'),
+(30, 'codex-feature-test@example.invalid', 'codex_feature_test', '$2y$10$Z/TB4KriADPNW0Ex53qcbeehjydDYxsZqfs0x1QHSKg2ycmL2MRea', '2026-08-09 18:47:19', 'Admin'),
+(31, 'ronniebarasi30@gmail.com', 'ronnie', '$2y$10$CLljiRpNi.yKtFg4of6h/.iATUX.fcdf102G4mgYmGYjHzg8bX9Uu', '2026-08-09 18:47:19', 'Patient');
 
 -- --------------------------------------------------------
 
@@ -595,8 +811,59 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 ALTER TABLE `appointments`
   ADD PRIMARY KEY (`appointment_id`),
+  ADD UNIQUE KEY `uq_appointments_payment_token` (`payment_access_token_hash`),
+  ADD UNIQUE KEY `uq_appointments_code` (`appointment_code`),
   ADD KEY `clinic_id` (`clinic_id`),
-  ADD KEY `fk_appointments_schedule` (`schedule_id`);
+  ADD KEY `fk_appointments_schedule` (`schedule_id`),
+  ADD KEY `idx_appointments_patient` (`patient_id`),
+  ADD KEY `idx_appointments_daily_logbook` (`date`,`status`,`clinic_id`),
+  ADD KEY `idx_appointments_expiry` (`status`,`deposit_required`,`payment_deadline_at`),
+  ADD KEY `idx_appointments_review_queue` (`status`,`created_at`),
+  ADD KEY `idx_appointments_reviewer` (`reviewed_by_user_id`);
+
+--
+-- Indexes for table `appointment_billings`
+--
+ALTER TABLE `appointment_billings`
+  ADD PRIMARY KEY (`billing_id`),
+  ADD UNIQUE KEY `uq_appointment_billing` (`appointment_id`),
+  ADD KEY `idx_appointment_billing_status` (`payment_status`,`updated_at`),
+  ADD KEY `idx_appointment_billing_actor` (`recorded_by_user_id`);
+
+--
+-- Indexes for table `appointment_checkins`
+--
+ALTER TABLE `appointment_checkins`
+  ADD PRIMARY KEY (`checkin_id`),
+  ADD UNIQUE KEY `uq_appointment_checkins_appointment` (`appointment_id`),
+  ADD KEY `idx_appointment_checkins_arrival` (`arrived_at`),
+  ADD KEY `idx_appointment_checkins_actor` (`checked_in_by_user_id`),
+  ADD KEY `idx_checkin_override_actor` (`date_override_by_user_id`);
+
+--
+-- Indexes for table `appointment_deposits`
+--
+ALTER TABLE `appointment_deposits`
+  ADD PRIMARY KEY (`deposit_id`),
+  ADD UNIQUE KEY `uq_appointment_deposits_appointment` (`appointment_id`),
+  ADD UNIQUE KEY `uq_appointment_deposits_reference` (`gcash_reference`),
+  ADD UNIQUE KEY `uq_deposit_transfer_source` (`transferred_from_appointment_id`),
+  ADD KEY `idx_appointment_deposits_review` (`status`,`submitted_at`),
+  ADD KEY `idx_appointment_deposits_verifier` (`verified_by_user_id`),
+  ADD KEY `idx_appointment_deposits_transfer_source` (`transferred_from_appointment_id`),
+  ADD KEY `idx_appointment_deposits_transfer_actor` (`transferred_by_user_id`),
+  ADD KEY `idx_deposit_deadline_extension_actor` (`deadline_extended_by_user_id`),
+  ADD KEY `idx_deposit_refund_actor` (`refunded_by_user_id`);
+
+--
+-- Indexes for table `appointment_email_notifications`
+--
+ALTER TABLE `appointment_email_notifications`
+  ADD PRIMARY KEY (`notification_id`),
+  ADD UNIQUE KEY `uq_email_notification_deduplication` (`deduplication_key`),
+  ADD KEY `idx_email_notification_queue` (`delivery_status`,`scheduled_at`),
+  ADD KEY `idx_email_notification_appointment` (`appointment_id`),
+  ADD KEY `idx_email_notification_recipient` (`recipient_user_id`);
 
 --
 -- Indexes for table `appointment_services`
@@ -638,7 +905,22 @@ ALTER TABLE `password_resets`
 --
 ALTER TABLE `patients`
   ADD PRIMARY KEY (`patient_id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD UNIQUE KEY `uq_patients_identity_match` (`identity_match_key`),
+  ADD UNIQUE KEY `uq_patients_user_account` (`user_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_patients_profile_completion` (`profile_completed_at`),
+  ADD KEY `idx_patients_profile_completed_by` (`profile_completed_by_user_id`),
+  ADD KEY `idx_patients_possible_duplicate` (`firstname`,`lastname`,`birthdate`);
+
+--
+-- Indexes for table `patient_account_link_authorizations`
+--
+ALTER TABLE `patient_account_link_authorizations`
+  ADD PRIMARY KEY (`authorization_id`),
+  ADD KEY `idx_link_authorization_lookup` (`authorized_email`,`status`,`expires_at`),
+  ADD KEY `idx_link_authorization_patient` (`patient_id`),
+  ADD KEY `idx_link_authorization_actor` (`authorized_by_user_id`),
+  ADD KEY `idx_link_authorization_used_user` (`used_by_user_id`);
 
 --
 -- Indexes for table `patient_conditions`
@@ -652,6 +934,7 @@ ALTER TABLE `patient_conditions`
 --
 ALTER TABLE `patient_consent`
   ADD PRIMARY KEY (`consent_id`),
+  ADD UNIQUE KEY `uq_patient_consent_patient` (`patient_id`),
   ADD KEY `patient_id` (`patient_id`);
 
 --
@@ -659,13 +942,25 @@ ALTER TABLE `patient_consent`
 --
 ALTER TABLE `patient_dental_history`
   ADD PRIMARY KEY (`dental_history_id`),
+  ADD UNIQUE KEY `uq_patient_dental_history_patient` (`patient_id`),
   ADD KEY `patient_id` (`patient_id`);
+
+--
+-- Indexes for table `patient_duplicate_reviews`
+--
+ALTER TABLE `patient_duplicate_reviews`
+  ADD PRIMARY KEY (`duplicate_review_id`),
+  ADD UNIQUE KEY `uq_duplicate_review_pair` (`new_patient_id`,`possible_existing_patient_id`),
+  ADD KEY `idx_duplicate_review_queue` (`status`,`created_at`),
+  ADD KEY `idx_duplicate_review_actor` (`reviewed_by_user_id`),
+  ADD KEY `fk_duplicate_review_existing_patient` (`possible_existing_patient_id`);
 
 --
 -- Indexes for table `patient_medical_history`
 --
 ALTER TABLE `patient_medical_history`
   ADD PRIMARY KEY (`medical_history_id`),
+  ADD UNIQUE KEY `uq_patient_medical_history_patient` (`patient_id`),
   ADD KEY `patient_id` (`patient_id`);
 
 --
@@ -717,13 +1012,37 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+
+--
+-- AUTO_INCREMENT for table `appointment_billings`
+--
+ALTER TABLE `appointment_billings`
+  MODIFY `billing_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `appointment_checkins`
+--
+ALTER TABLE `appointment_checkins`
+  MODIFY `checkin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `appointment_deposits`
+--
+ALTER TABLE `appointment_deposits`
+  MODIFY `deposit_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `appointment_email_notifications`
+--
+ALTER TABLE `appointment_email_notifications`
+  MODIFY `notification_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `audit_log_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `audit_log_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `clinics`
@@ -735,7 +1054,7 @@ ALTER TABLE `clinics`
 -- AUTO_INCREMENT for table `email_verifications`
 --
 ALTER TABLE `email_verifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `password_resets`
@@ -747,7 +1066,13 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT for table `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+
+--
+-- AUTO_INCREMENT for table `patient_account_link_authorizations`
+--
+ALTER TABLE `patient_account_link_authorizations`
+  MODIFY `authorization_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `patient_conditions`
@@ -759,25 +1084,31 @@ ALTER TABLE `patient_conditions`
 -- AUTO_INCREMENT for table `patient_consent`
 --
 ALTER TABLE `patient_consent`
-  MODIFY `consent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `consent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `patient_dental_history`
 --
 ALTER TABLE `patient_dental_history`
-  MODIFY `dental_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `dental_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `patient_duplicate_reviews`
+--
+ALTER TABLE `patient_duplicate_reviews`
+  MODIFY `duplicate_review_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `patient_medical_history`
 --
 ALTER TABLE `patient_medical_history`
-  MODIFY `medical_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `medical_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `schedules`
 --
 ALTER TABLE `schedules`
-  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `schedule_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -801,7 +1132,7 @@ ALTER TABLE `staffs`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- Constraints for dumped tables
@@ -812,7 +1143,42 @@ ALTER TABLE `users`
 --
 ALTER TABLE `appointments`
   ADD CONSTRAINT `fk_appointment` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_appointments_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_appointments_reviewer` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_appointments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`schedule_id`);
+
+--
+-- Constraints for table `appointment_billings`
+--
+ALTER TABLE `appointment_billings`
+  ADD CONSTRAINT `fk_appointment_billing_actor` FOREIGN KEY (`recorded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_appointment_billing_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `appointment_checkins`
+--
+ALTER TABLE `appointment_checkins`
+  ADD CONSTRAINT `fk_checkin_override_actor` FOREIGN KEY (`date_override_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_checkins_actor` FOREIGN KEY (`checked_in_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_checkins_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `appointment_deposits`
+--
+ALTER TABLE `appointment_deposits`
+  ADD CONSTRAINT `fk_deposit_deadline_extension_actor` FOREIGN KEY (`deadline_extended_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_deposit_refund_actor` FOREIGN KEY (`refunded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_deposits_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_deposits_transfer_actor` FOREIGN KEY (`transferred_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_deposits_transfer_source` FOREIGN KEY (`transferred_from_appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_deposits_verifier` FOREIGN KEY (`verified_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `appointment_email_notifications`
+--
+ALTER TABLE `appointment_email_notifications`
+  ADD CONSTRAINT `fk_email_notification_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_email_notification_recipient` FOREIGN KEY (`recipient_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `appointment_services`
@@ -831,7 +1197,16 @@ ALTER TABLE `audit_logs`
 -- Constraints for table `patients`
 --
 ALTER TABLE `patients`
+  ADD CONSTRAINT `fk_patients_profile_completed_by` FOREIGN KEY (`profile_completed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `patients_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `patient_account_link_authorizations`
+--
+ALTER TABLE `patient_account_link_authorizations`
+  ADD CONSTRAINT `fk_link_authorization_actor` FOREIGN KEY (`authorized_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_link_authorization_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_link_authorization_used_user` FOREIGN KEY (`used_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `patient_conditions`
@@ -850,6 +1225,14 @@ ALTER TABLE `patient_consent`
 --
 ALTER TABLE `patient_dental_history`
   ADD CONSTRAINT `fk_dental_history_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `patient_duplicate_reviews`
+--
+ALTER TABLE `patient_duplicate_reviews`
+  ADD CONSTRAINT `fk_duplicate_review_actor` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_duplicate_review_existing_patient` FOREIGN KEY (`possible_existing_patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_duplicate_review_new_patient` FOREIGN KEY (`new_patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `patient_medical_history`

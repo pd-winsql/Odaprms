@@ -28,9 +28,9 @@ $clinicModel      = new Clinic($conn);
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
 $clinics  = $clinicModel->getAllClinics();
 
-// Derive initials for avatar from username
-$username = $_SESSION['username'] ?? 'User';
-$initials = strtoupper(implode('', array_map(fn($w) => $w[0], explode(' ', $username))));
+// Derive initials from the authenticated staff display name.
+$displayName = $_SESSION['display_name'] ?? $_SESSION['email'] ?? 'Administrator';
+$initials = strtoupper(implode('', array_map(fn($w) => $w[0], array_filter(explode(' ', $displayName)))));
 $initials = substr($initials, 0, 2);
 
 // Current date display
@@ -75,6 +75,9 @@ $today = date('l, F j Y');
         <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
             <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Payment Review
         </a>
+        <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Cash Billing
+        </a>
         <a href="#" class="vd-nav-item" data-page="logbook-content.php">
             <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
         </a>
@@ -117,7 +120,7 @@ $today = date('l, F j Y');
         <div class="vd-user-chip">
             <div class="vd-user-avatar"><?= htmlspecialchars($initials) ?></div>
             <div>
-            <div class="vd-user-name"><?= htmlspecialchars($username) ?></div>
+            <div class="vd-user-name"><?= htmlspecialchars($displayName) ?></div>
             <div class="vd-user-role"><?= htmlspecialchars($_SESSION['user_role']) ?></div>
             </div>
         </div>

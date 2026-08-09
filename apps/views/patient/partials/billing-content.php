@@ -40,7 +40,7 @@ function depositStatusClass($status) {
         <?php foreach ($deposits as $deposit): ?>
         <?php
             $canSubmit = in_array($deposit['deposit_status'], ['Awaiting Submission', 'Rejected'], true)
-                && $deposit['appointment_status'] === 'Awaiting Payment';
+                && $deposit['appointment_status'] === 'Awaiting Deposit';
             $deadline = $deposit['resubmission_deadline_at'] ?: $deposit['payment_deadline_at'];
         ?>
         <div class="vd-dash-card vd-payment-card" data-deposit-card="<?= (int) $deposit['deposit_id'] ?>">

@@ -25,7 +25,7 @@ class ReportModel
     {
         $filters = self::defaultFilters();
         $types = ['appointments', 'utilization'];
-        $statuses = ['Pending', 'Confirmed', 'Cancelled', 'Completed', 'Rejected'];
+        $statuses = ['Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed', 'Cancelled', 'No-show', 'Rejected'];
 
         $type = $input['report_type'] ?? $filters['report_type'];
         $filters['report_type'] = in_array($type, $types, true) ? $type : 'appointments';

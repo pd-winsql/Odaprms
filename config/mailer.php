@@ -128,7 +128,7 @@ function sendOTPEmail($toEmail, $toName, $otp, $type = 'register') {
 
 // ── Credentials email shell: same gold/cream look, but shows two rows
 //    (Username + Password) instead of the single big code box used by OTPs ──
-function buildCredentialsEmailHtml($toName, $template, $username, $password) {
+function buildCredentialsEmailHtml($toName, $template, $email, $password) {
     return '
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -147,8 +147,8 @@ function buildCredentialsEmailHtml($toName, $template, $username, $password) {
 
       <div style="background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 6px; padding: 20px 24px; margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #d9c9a8;">
-          <span style="font-size: 11px; letter-spacing: 0.15em; color: #b5924c; text-transform: uppercase;">Username</span>
-          <span style="font-size: 14px; font-weight: 600; color: #1a1612;">' . htmlspecialchars($username) . '</span>
+          <span style="font-size: 11px; letter-spacing: 0.15em; color: #b5924c; text-transform: uppercase;">Login Email</span>
+          <span style="font-size: 14px; font-weight: 600; color: #1a1612;">' . htmlspecialchars($email) . '</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 6px 0;">
           <span style="font-size: 11px; letter-spacing: 0.15em; color: #b5924c; text-transform: uppercase;">Password</span>
@@ -168,7 +168,7 @@ function buildCredentialsEmailHtml($toName, $template, $username, $password) {
 }
 
 // ── New: dental assistant account-created notification (used by Admin "New Account") ──
-function sendStaffAccountEmail($toEmail, $toName, $username, $password) {
+function sendStaffAccountEmail($toEmail, $toName, $password) {
     $template = getEmailTemplate('staff_account_created');
 
     if (!$template) {
@@ -195,12 +195,12 @@ function sendStaffAccountEmail($toEmail, $toName, $username, $password) {
         $mail->CharSet = 'UTF-8';
         $mail->isHTML(true);
         $mail->Subject = $template['subject'] . ' — Dr. Aprille Ventura Clinica Dental';
-        $mail->Body    = buildCredentialsEmailHtml($toName, $template, $username, $password);
+        $mail->Body    = buildCredentialsEmailHtml($toName, $template, $toEmail, $password);
         $mail->AltBody =
             "Dr. Aprille Ventura Clinica Dental\n\n" .
             "Hello $toName,\n\n" .
             $template['intro'] . "\n\n" .
-            "Username: $username\n" .
+            "Login email: $toEmail\n" .
             "Password: $password\n\n" .
             $template['instruction'] . "\n\n" .
             $template['footer'];
@@ -215,11 +215,13 @@ function sendStaffAccountEmail($toEmail, $toName, $username, $password) {
 }
 
 // ── New: appointment status notification (used by admin "Save & Notify") ──
-function sendAppointmentStatusEmail($toEmail, $toName, $status) {
+function sendAppointmentStatusEmail($toEmail, $toName, $status, $detail = '') {
     $map = [
         'Pending'   => 'appointment_pending',
         'Confirmed' => 'appointment_confirmed',
         'Cancelled' => 'appointment_cancelled',
+        'Awaiting Deposit' => 'appointment_awaiting_deposit',
+        'Rejected' => 'appointment_rejected',
     ];
 
     $templateKey = $map[$status] ?? null;
@@ -229,5 +231,13 @@ function sendAppointmentStatusEmail($toEmail, $toName, $status) {
         return ['success' => true, 'skipped' => true];
     }
 
-    return sendTemplateEmail($toEmail, $toName, $templateKey, $status);
+    return sendTemplateEmail($toEmail, $toName, $templateKey, $detail !== '' ? $detail : $status);
+}
+
+function sendPaymentRejectedEmail($toEmail, $toName, $reason) {
+    return sendTemplateEmail($toEmail, $toName, 'payment_rejected', $reason);
+}
+
+function sendAppointmentCodeEmail($toEmail, $toName, $code) {
+    return sendTemplateEmail($toEmail, $toName, 'appointment_confirmed_code', $code);
 }

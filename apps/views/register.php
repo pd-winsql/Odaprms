@@ -15,13 +15,13 @@ if (isset($_SESSION['user_id'])) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
-  <link rel="stylesheet" href="../../public/css/auth.css">
+  <link rel="stylesheet" href="../../public/css/auth.css?v=20260809-email-auth-2">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
 <body class="vd-auth-body">
 
-  <div class="vd-auth-split">
+  <div class="vd-auth-split vd-register-split">
 
     <!-- LEFT -->
     <div class="vd-auth-left">
@@ -44,7 +44,7 @@ if (isset($_SESSION['user_id'])) {
 
     <!-- RIGHT -->
     <div class="vd-auth-right">
-      <div class="vd-auth-form-wrap">
+      <div class="vd-auth-form-wrap vd-register-wrap">
 
         <div class="vd-auth-heading">
           <div class="vd-auth-title">Create account</div>
@@ -54,17 +54,17 @@ if (isset($_SESSION['user_id'])) {
         <div id="registerError"   class="vd-auth-error   d-none"></div>
         <div id="registerSuccess" class="vd-auth-success d-none"></div>
 
-        <form id="registerForm" class="vd-auth-form" novalidate>
-          <div class="vd-auth-group">
+        <form id="registerForm" class="vd-auth-form vd-register-grid" novalidate>
+          <div class="vd-auth-group"><label class="vd-label">First Name</label><input type="text" name="firstname" class="vd-auth-input" required autocomplete="given-name"></div>
+          <div class="vd-auth-group"><label class="vd-label">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" class="vd-auth-input" autocomplete="additional-name"></div>
+          <div class="vd-auth-group"><label class="vd-label">Last Name</label><input type="text" name="lastname" class="vd-auth-input" required autocomplete="family-name"></div>
+          <div class="vd-auth-group"><label class="vd-label">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" class="vd-auth-input" placeholder="Jr., Sr., III"></div>
+          <div class="vd-auth-group"><label class="vd-label">Birthdate</label><input type="date" name="birthdate" class="vd-auth-input" max="<?= date('Y-m-d') ?>" required autocomplete="bday"></div>
+          <div class="vd-auth-group"><label class="vd-label">Contact Number</label><input type="tel" name="phone_number" class="vd-auth-input" placeholder="09XXXXXXXXX" required autocomplete="tel"></div>
+          <div class="vd-auth-group vd-register-span-2">
             <label class="vd-label">Email Address</label>
             <input type="email" name="email" class="vd-auth-input"
               placeholder="email@example.com" required autocomplete="email">
-          </div>
-          <div class="vd-auth-group">
-            <label class="vd-label">Username</label>
-            <input type="text" name="username" class="vd-auth-input"
-              placeholder="Choose a username" required autocomplete="username">
-            <div class="vd-auth-hint">Letters, numbers, underscores, and periods only.</div>
           </div>
           <div class="vd-auth-group">
             <label class="vd-label">Password</label>
@@ -88,7 +88,7 @@ if (isset($_SESSION['user_id'])) {
             </div>
           </div>
 
-          <button type="submit" class="vd-auth-btn" id="registerBtn">
+          <button type="submit" class="vd-auth-btn vd-register-span-2" id="registerBtn">
             Create Account
           </button>
         </form>

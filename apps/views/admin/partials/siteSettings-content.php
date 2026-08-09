@@ -177,7 +177,7 @@ function sv($settings, $key) {
             <div class="alert alert-info small">The feature uses a fixed ₱400 deposit and a 30-minute receipt-submission deadline.</div>
             <div class="row g-3 mb-3">
                 <div class="col-md-3"><label class="vd-label form-label">Deposit</label><input class="form-control vd-input vd-field" data-field="deposit_amount" value="400.00" readonly></div>
-                <div class="col-md-3"><label class="vd-label form-label">Deadline</label><input class="form-control vd-input vd-field" data-field="payment_deadline_minutes" value="30" readonly></div>
+                <div class="col-md-3"><label class="vd-label form-label">Deadline</label><input class="form-control vd-input vd-field" data-field="payment_deadline_minutes" value="480 minutes (8 hours)" readonly></div>
                 <div class="col-md-3"><label class="vd-label form-label">GCash Account Name</label><input class="form-control vd-input vd-field" data-field="gcash_account_name" value="<?= sv($settings, 'gcash_account_name') ?>" maxlength="100"></div>
                 <div class="col-md-3"><label class="vd-label form-label">GCash Number</label><input class="form-control vd-input vd-field" data-field="gcash_account_number" value="<?= sv($settings, 'gcash_account_number') ?>" maxlength="30"></div>
             </div>

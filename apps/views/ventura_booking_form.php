@@ -1,5 +1,7 @@
 <?php
     if (session_status() === PHP_SESSION_NONE) session_start();
+    header('Location: login.php?next=booking');
+    exit;
     $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
     require_once '../../config/conn.php';
     require_once '../models/clinicModel.php';

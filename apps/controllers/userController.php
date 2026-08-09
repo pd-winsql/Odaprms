@@ -30,8 +30,10 @@ class UserController {
             exit;
         }
 
-        // Find user by email or username
-        $user = $this->userModel->findByEmailOrUsername($identity);
+        if (!filter_var($identity, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid email address.']); exit;
+        }
+        $user = $this->userModel->findByEmail($identity);
 
         if (!$user || !password_verify($password, $user['password'])) {
             echo json_encode(['success' => false, 'message' => 'Invalid credentials. Please try again.']);
@@ -41,7 +43,7 @@ class UserController {
         // Set session
         $_SESSION['user_id']   = $user['id'];
         $_SESSION['email']     = $user['email'];
-        $_SESSION['username']  = $user['username'];
+        $_SESSION['display_name'] = $user['display_name'] ?? $user['email'];
         $_SESSION['user_role'] = $user['user_role'];
 
         // Role-based redirect
@@ -51,6 +53,9 @@ class UserController {
             'Patient'         => 'patient/dashboard.php',
             default           => '../../index.php',
         };
+        if ($user['user_role'] === 'Patient' && ($_POST['next'] ?? '') === 'booking') {
+            $redirect = 'patient/dashboard.php#booking-content.php';
+        }
 
         echo json_encode(['success' => true, 'redirect' => $redirect]);
         exit;
@@ -65,21 +70,23 @@ class UserController {
         header('Content-Type: application/json');
 
         $email    = trim($_POST['email']    ?? '');
-        $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
+        $identity = [
+            'firstname' => trim($_POST['firstname'] ?? ''),
+            'middlename' => trim($_POST['middlename'] ?? ''),
+            'lastname' => trim($_POST['lastname'] ?? ''),
+            'suffix' => trim($_POST['suffix'] ?? ''),
+            'birthdate' => trim($_POST['birthdate'] ?? ''),
+            'phone_number' => trim($_POST['phone_number'] ?? ''),
+        ];
 
-        if (!$email || !$username || !$password) {
+        if (!$email || !$password || !$identity['firstname'] || !$identity['lastname'] || !$identity['birthdate'] || !$identity['phone_number']) {
             echo json_encode(['success' => false, 'message' => 'Please fill in all fields.']);
             exit;
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             echo json_encode(['success' => false, 'message' => 'Invalid email address.']);
-            exit;
-        }
-
-        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $username)) {
-            echo json_encode(['success' => false, 'message' => 'Username can only contain letters, numbers, underscores, and periods.']);
             exit;
         }
 
@@ -93,16 +100,35 @@ class UserController {
             exit;
         }
 
-        if ($this->userModel->usernameExists($username)) {
-            echo json_encode(['success' => false, 'message' => 'Username is already taken.']);
+        $birthdate = DateTimeImmutable::createFromFormat('Y-m-d', $identity['birthdate']);
+        if (!$birthdate || $birthdate->format('Y-m-d') !== $identity['birthdate'] || $birthdate > new DateTimeImmutable('today')) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a valid birthdate.']);
             exit;
         }
+        if (strlen(Patient::normalizePhone($identity['phone_number'])) < 10) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a valid contact number.']);
+            exit;
+        }
+
+        $exactPatient = $this->patientModel->findExactIdentity($identity);
+        $linkAuthorization = null;
+        if ($exactPatient) {
+            $linkAuthorization = $this->patientModel->getActiveLinkAuthorization((int) $exactPatient['patient_id'], $email);
+            if (!$linkAuthorization) {
+                echo json_encode(['success' => false, 'message' => 'An existing patient record may already match your information. Please contact the clinic so your account can be connected securely.']);
+                exit;
+            }
+        }
+        $possibleMatches = $exactPatient ? [] : $this->patientModel->findPossibleIdentityMatches($identity);
 
         // Store registration data in session temporarily
         $_SESSION['pending_registration'] = [
             'email'    => $email,
-            'username' => $username,
             'password' => password_hash($password, PASSWORD_DEFAULT),
+            'identity' => $identity,
+            'link_patient_id' => $exactPatient ? (int) $exactPatient['patient_id'] : null,
+            'link_authorization_id' => $linkAuthorization ? (int) $linkAuthorization['authorization_id'] : null,
+            'possible_match_ids' => $possibleMatches,
         ];
 
         // Generate and store OTP
@@ -117,7 +143,7 @@ class UserController {
         ");
         $stmt->execute([':email' => $email, ':otp' => $otp]);
 
-        $result = sendOTPEmail($email, $username, $otp, 'register');
+        $result = sendOTPEmail($email, trim($identity['firstname'] . ' ' . $identity['lastname']), $otp, 'register');
 
         if ($result['success']) {
             echo json_encode(['success' => true, 'message' => 'Verification code sent to your email.']);
@@ -139,7 +165,6 @@ class UserController {
         }
 
         $email    = $pending['email'];
-        $username = $pending['username'];
 
         $otp       = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
@@ -152,7 +177,7 @@ class UserController {
         ");
         $stmt->execute([':email' => $email, ':otp' => $otp]);
 
-        $result = sendOTPEmail($email, $username, $otp, 'register');
+        $result = sendOTPEmail($email, trim($pending['identity']['firstname'] . ' ' . $pending['identity']['lastname']), $otp, 'register');
 
         if ($result['success']) {
             echo json_encode(['success' => true, 'message' => 'New verification code sent.']);
@@ -194,36 +219,48 @@ class UserController {
             exit;
         }
 
-        // Insert into users
-        $result = $this->userModel->register(
-            $pending['email'],
-            $pending['username'],
-            $pending['password']
-        );
-
-        if (!$result) {
-            echo json_encode(['success' => false, 'message' => 'Failed to create account. Please try again.']);
+        try {
+            $this->conn->beginTransaction();
+            if (!$this->userModel->register($pending['email'], $pending['password'])) {
+                throw new RuntimeException('Unable to create the user account.');
+            }
+            $user_id = (int) $this->userModel->getLastInsertedId();
+            if (!empty($pending['link_patient_id'])) {
+                $authorization = $this->patientModel->getActiveLinkAuthorization((int) $pending['link_patient_id'], $pending['email']);
+                if (!$authorization || (int) $authorization['authorization_id'] !== (int) $pending['link_authorization_id']) {
+                    throw new RuntimeException('The account-link authorization expired.');
+                }
+                if (!$this->patientModel->linkUser((int) $pending['link_patient_id'], $user_id)) {
+                    throw new RuntimeException('Unable to link the patient record.');
+                }
+                $this->conn->prepare("UPDATE patients SET email = :email WHERE patient_id = :patient_id")
+                    ->execute([':email' => $pending['email'], ':patient_id' => $pending['link_patient_id']]);
+                $this->conn->prepare("
+                    UPDATE patient_account_link_authorizations
+                    SET status = 'Used', used_by_user_id = :user_id, used_at = NOW()
+                    WHERE authorization_id = :authorization_id
+                ")->execute([':user_id' => $user_id, ':authorization_id' => $authorization['authorization_id']]);
+            } else {
+                $patientId = $this->patientModel->createRegisteredPatient($user_id, $pending['identity'], $pending['email']);
+                $this->patientModel->flagPossibleDuplicates($patientId, $pending['possible_match_ids'] ?? []);
+            }
+            $this->conn->prepare("UPDATE email_verifications SET used = 1 WHERE id = :id")
+                ->execute([':id' => $record['id']]);
+            $this->conn->commit();
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('verifyRegisterOTP error: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Failed to create account. Please contact the clinic if the problem continues.']);
             exit;
         }
 
-        $user_id = $this->userModel->getLastInsertedId();
-
-        // Link or create patient record
-        $patient = $this->patientModel->getPatientByEmail($pending['email']);
-        if ($patient) {
-            $this->patientModel->linkUser($patient['patient_id'], $user_id);
-        } else {
-            $this->patientModel->createPatient(
-                $user_id, null, null, null, null, null, null, $pending['email']
-            );
-        }
-
-        // Mark OTP as used and clear session
-        $stmt = $this->conn->prepare("UPDATE email_verifications SET used = 1 WHERE id = :id");
-        $stmt->execute([':id' => $record['id']]);
+        $_SESSION['user_id'] = $user_id;
+        $_SESSION['email'] = $pending['email'];
+        $_SESSION['display_name'] = trim($pending['identity']['firstname'] . ' ' . $pending['identity']['lastname']);
+        $_SESSION['user_role'] = 'Patient';
         unset($_SESSION['pending_registration']);
 
-        echo json_encode(['success' => true, 'message' => 'Account created successfully!']);
+        echo json_encode(['success' => true, 'message' => 'Account created successfully!', 'redirect' => '/Capstone System/apps/views/patient/dashboard.php#booking-content.php']);
         exit;
     }
 
