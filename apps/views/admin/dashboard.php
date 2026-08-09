@@ -44,9 +44,10 @@ $today = date('l, F j Y');
     <title>Dashboard | Dr. Aprille Ventura Clinica Dental</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=12">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=13">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
 </head>
@@ -169,7 +170,7 @@ $today = date('l, F j Y');
     <script src="../../../public/js/bootstrap.bundle.min.js"></script>
     <script src="../../../public/js/action-modal.js?v=3"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
-    <script src="../../../public/js/dashboard-tables.js?v=4"></script>
+    <script src="../../../public/js/dashboard-tables.js?v=5"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
         window.showToast = function(message, success = true) {

@@ -21,6 +21,39 @@ class Appointment {
         )";
     }
 
+    public function getServiceDetailsForAppointments(array $appointmentIds): array {
+        $appointmentIds = array_values(array_unique(array_filter(array_map('intval', $appointmentIds))));
+        if (!$appointmentIds) return [];
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($appointmentIds), '?'));
+            $stmt = $this->conn->prepare("
+                SELECT
+                    aps.appointment_id,
+                    s.service_id,
+                    s.service_name,
+                    s.service_description,
+                    s.service_icon,
+                    c.category_name
+                FROM appointment_services aps
+                JOIN services s ON s.service_id = aps.service_id
+                LEFT JOIN service_categories c ON c.category_id = s.category_id
+                WHERE aps.appointment_id IN ({$placeholders})
+                ORDER BY aps.appointment_id, s.display_order, s.service_name
+            ");
+            $stmt->execute($appointmentIds);
+
+            $grouped = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $service) {
+                $grouped[(int) $service['appointment_id']][] = $service;
+            }
+            return $grouped;
+        } catch (PDOException $e) {
+            error_log('getServiceDetailsForAppointments error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $performedByUserId = null) {
         $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
         if (empty($service_ids)) return false;

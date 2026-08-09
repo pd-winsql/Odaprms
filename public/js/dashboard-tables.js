@@ -237,17 +237,19 @@
                 if (header.classList.contains('vd-table-actions-column')) cell.classList.add('vd-table-actions-column');
             });
 
-            const detailsButton = createDetailsButton(table, row);
-            if (actionIndex >= 0 && row.children[actionIndex]) {
-                const actionCell = row.children[actionIndex];
-                const actionGroup = actionCell.querySelector('.vd-action-group') || actionCell;
-                actionGroup.prepend(detailsButton);
-            } else {
-                const detailsCell = document.createElement('td');
-                detailsCell.className = 'vd-generated-details-cell vd-table-actions-column';
-                detailsCell.dataset.label = 'Details';
-                detailsCell.appendChild(detailsButton);
-                row.appendChild(detailsCell);
+            if (!row.querySelector('.vd-appointment-details-btn')) {
+                const detailsButton = createDetailsButton(table, row);
+                if (actionIndex >= 0 && row.children[actionIndex]) {
+                    const actionCell = row.children[actionIndex];
+                    const actionGroup = actionCell.querySelector('.vd-action-group') || actionCell;
+                    actionGroup.prepend(detailsButton);
+                } else {
+                    const detailsCell = document.createElement('td');
+                    detailsCell.className = 'vd-generated-details-cell vd-table-actions-column';
+                    detailsCell.dataset.label = 'Details';
+                    detailsCell.appendChild(detailsButton);
+                    row.appendChild(detailsCell);
+                }
             }
         });
 

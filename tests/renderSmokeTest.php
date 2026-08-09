@@ -13,6 +13,7 @@ $files = [
     'dashboard' => __DIR__ . '/../apps/views/admin/partials/dashboard-content.php',
     'payment-review' => __DIR__ . '/../apps/views/admin/partials/payment-review-content.php',
     'appointments' => __DIR__ . '/../apps/views/admin/partials/appointment-content.php',
+    'dental-appointments' => __DIR__ . '/../apps/views/dental_asst/partials/appointment-content.php',
     'clinics' => __DIR__ . '/../apps/views/admin/partials/clinic-content.php',
     'schedules' => __DIR__ . '/../apps/views/admin/partials/schedule-content.php',
     'dental-schedules' => __DIR__ . '/../apps/views/dental_asst/partials/schedule-content.php',

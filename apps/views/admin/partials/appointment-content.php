@@ -16,6 +16,11 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
 $past     = $appointmentModel->getAdminPastAppointments();
+$appointmentIds = array_merge(
+    array_column($upcoming, 'appointment_id'),
+    array_column($past, 'appointment_id')
+);
+$servicesByAppointment = $appointmentModel->getServiceDetailsForAppointments($appointmentIds);
 
 function allowedStatusOptions($current) {
     $transitions = [
@@ -77,6 +82,38 @@ function actorInitials($name) {
 
     return strtoupper($first . $last);
 }
+
+function appointmentDetailsPayload(array $appointment, array $services): string {
+    $fullName = trim(implode(' ', array_filter([
+        $appointment['firstname'] ?? '',
+        $appointment['middlename'] ?? '',
+        $appointment['lastname'] ?? '',
+    ])));
+
+    return htmlspecialchars(json_encode([
+        'appointmentId' => (int) $appointment['appointment_id'],
+        'patientName' => $fullName,
+        'email' => $appointment['email'] ?? '',
+        'phone' => $appointment['phone_number'] ?? '',
+        'age' => $appointment['age'] ?? '',
+        'gender' => $appointment['gender'] ?? '',
+        'clinic' => $appointment['clinic_name'] ?? '',
+        'date' => $appointment['date'] ?? '',
+        'status' => $appointment['status'] ?? '',
+        'services' => array_map(static fn($service) => [
+            'name' => $service['service_name'] ?? '',
+            'description' => $service['service_description'] ?? '',
+            'category' => $service['category_name'] ?? 'Dental Service',
+            'icon' => $service['service_icon'] ?? 'fa-solid fa-tooth',
+        ], $services),
+        'activity' => !empty($appointment['status_changed_by']) ? [
+            'name' => $appointment['status_changed_by'],
+            'role' => $appointment['status_changed_by_role'] ?? '',
+            'at' => $appointment['status_changed_at'] ?? '',
+            'status' => $appointment['status'] ?? '',
+        ] : null,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+}
 ?>
 
 <div class="d-flex flex-column gap-4">
@@ -132,7 +169,6 @@ function actorInitials($name) {
                 <thead>
                 <tr>
                     <th>Patient</th>
-                    <th>Service</th>
                     <th>Clinic</th>
                     <th>Date</th>
                     <th>Status</th>
@@ -149,7 +185,6 @@ function actorInitials($name) {
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                     </td>
-                    <td class="vd-appt-meta"><?= htmlspecialchars($appt['service_name']) ?></td>
                     <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
                     <td>
@@ -184,6 +219,10 @@ function actorInitials($name) {
                     </td>
                     <td>
                         <div class="vd-action-group">
+                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn"
+                            data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">
+                            <i class="ti ti-eye" aria-hidden="true"></i>
+                        </button>
                         <select class="vd-status-select"
                             data-id="<?= $appt['appointment_id'] ?>"
                             data-original="<?= htmlspecialchars($appt['status']) ?>"
@@ -264,11 +303,11 @@ function actorInitials($name) {
                 <thead>
                 <tr>
                     <th>Patient</th>
-                    <th>Service</th>
                     <th>Clinic</th>
                     <th>Date</th>
                     <th>Status</th>
                     <th>Latest Activity</th>
+                    <th>Action</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -280,7 +319,6 @@ function actorInitials($name) {
                         <div class="vd-appt-name"><?= htmlspecialchars($appt['lastname'] . ', ' . $appt['firstname']) ?></div>
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                     </td>
-                    <td class="vd-appt-meta"><?= htmlspecialchars($appt['service_name']) ?></td>
                     <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
                     <td>
@@ -313,6 +351,12 @@ function actorInitials($name) {
                             </div>
                         <?php endif; ?>
                     </td>
+                    <td>
+                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn"
+                            data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">
+                            <i class="ti ti-eye" aria-hidden="true"></i>
+                        </button>
+                    </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -322,6 +366,44 @@ function actorInitials($name) {
         </div>
     </div>
 
+</div>
+
+<div class="modal fade vd-appointment-details-modal" id="appointmentDetailsModal" tabindex="-1"
+    aria-labelledby="appointmentDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="vd-appointment-details-kicker">Appointment details</div>
+                    <h5 class="modal-title vd-modal-title" id="appointmentDetailsTitle">Patient appointment</h5>
+                    <p class="vd-appointment-details-subtitle mb-0" id="appointmentDetailsSubtitle"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <section aria-labelledby="appointmentInformationHeading">
+                    <h6 class="vd-appointment-details-section-title" id="appointmentInformationHeading">Appointment information</h6>
+                    <div class="vd-appointment-detail-grid" id="appointmentDetailGrid"></div>
+                </section>
+
+                <section class="vd-appointment-services-section" aria-labelledby="appointmentServicesHeading">
+                    <div class="vd-appointment-section-heading">
+                        <h6 class="vd-appointment-details-section-title mb-0" id="appointmentServicesHeading">Selected services</h6>
+                        <span class="vd-appointment-service-count" id="appointmentServiceCount"></span>
+                    </div>
+                    <div class="vd-appointment-service-list" id="appointmentServiceList"></div>
+                </section>
+
+                <section class="vd-appointment-activity-section" aria-labelledby="appointmentActivityHeading">
+                    <h6 class="vd-appointment-details-section-title" id="appointmentActivityHeading">Latest activity</h6>
+                    <div id="appointmentActivityDetail"></div>
+                </section>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -390,6 +472,124 @@ function actorInitials($name) {
         card.append(avatar, copy);
         cell.replaceChildren(card);
     }
+
+    function appendAppointmentDetail(container, label, value, valueClass = '') {
+        const item = document.createElement('div');
+        item.className = 'vd-appointment-detail-item';
+        const term = document.createElement('span');
+        term.textContent = label;
+        const description = document.createElement('strong');
+        if (valueClass) description.className = valueClass;
+        description.textContent = value || 'Not provided';
+        item.append(term, description);
+        container.appendChild(item);
+    }
+
+    function openAppointmentDetails(payload) {
+        const modalElement = document.getElementById('appointmentDetailsModal');
+        const title = document.getElementById('appointmentDetailsTitle');
+        const subtitle = document.getElementById('appointmentDetailsSubtitle');
+        const detailGrid = document.getElementById('appointmentDetailGrid');
+        const serviceList = document.getElementById('appointmentServiceList');
+        const serviceCount = document.getElementById('appointmentServiceCount');
+        const activityDetail = document.getElementById('appointmentActivityDetail');
+
+        title.textContent = payload.patientName || 'Patient appointment';
+        subtitle.textContent = [formatDateTime(payload.date, true), payload.clinic].filter(Boolean).join(' · ');
+        detailGrid.replaceChildren();
+        appendAppointmentDetail(detailGrid, 'Appointment number', `#${payload.appointmentId}`);
+        appendAppointmentDetail(detailGrid, 'Status', payload.status, 'vd-appointment-detail-status');
+        appendAppointmentDetail(detailGrid, 'Clinic', payload.clinic);
+        appendAppointmentDetail(detailGrid, 'Date', formatDateTime(payload.date, true));
+        appendAppointmentDetail(detailGrid, 'Email', payload.email);
+        appendAppointmentDetail(detailGrid, 'Contact number', payload.phone);
+        appendAppointmentDetail(detailGrid, 'Age', payload.age ? String(payload.age) : 'Not provided');
+        appendAppointmentDetail(detailGrid, 'Gender', payload.gender);
+
+        const services = Array.isArray(payload.services) ? payload.services : [];
+        serviceCount.textContent = `${services.length} service${services.length === 1 ? '' : 's'}`;
+        serviceList.replaceChildren();
+        if (!services.length) {
+            const empty = document.createElement('div');
+            empty.className = 'vd-empty-state vd-appointment-services-empty';
+            empty.textContent = 'No services are linked to this appointment.';
+            serviceList.appendChild(empty);
+        } else {
+            services.forEach(service => {
+                const card = document.createElement('article');
+                card.className = 'vd-appointment-service-card';
+
+                const icon = document.createElement('span');
+                icon.className = 'vd-appointment-service-icon';
+                const iconGlyph = document.createElement('i');
+                iconGlyph.className = service.icon || 'fa-solid fa-tooth';
+                iconGlyph.setAttribute('aria-hidden', 'true');
+                icon.appendChild(iconGlyph);
+
+                const copy = document.createElement('span');
+                copy.className = 'vd-appointment-service-copy';
+                const category = document.createElement('span');
+                category.className = 'vd-appointment-service-category';
+                category.textContent = service.category || 'Dental service';
+                const name = document.createElement('strong');
+                name.textContent = service.name || 'Service';
+                const description = document.createElement('small');
+                description.textContent = service.description || 'No service description provided.';
+                copy.append(category, name, description);
+
+                const included = document.createElement('span');
+                included.className = 'vd-appointment-service-included';
+                const includedIcon = document.createElement('i');
+                includedIcon.className = 'ti ti-check';
+                includedIcon.setAttribute('aria-hidden', 'true');
+                const includedText = document.createElement('span');
+                includedText.textContent = 'Included';
+                included.append(includedIcon, includedText);
+
+                card.append(icon, copy, included);
+                serviceList.appendChild(card);
+            });
+        }
+
+        activityDetail.replaceChildren();
+        if (payload.activity) {
+            renderActivityCard(activityDetail, {
+                performed_by_name: payload.activity.name,
+                performed_by_role: payload.activity.role,
+                performed_at: payload.activity.at
+            }, payload.activity.status || payload.status);
+        } else {
+            const emptyActivity = document.createElement('div');
+            emptyActivity.className = 'vd-activity-card vd-activity-empty';
+            const emptyAvatar = document.createElement('span');
+            emptyAvatar.className = 'vd-activity-avatar';
+            emptyAvatar.textContent = '—';
+            const emptyCopy = document.createElement('span');
+            emptyCopy.className = 'vd-activity-copy';
+            const emptyName = document.createElement('span');
+            emptyName.className = 'vd-activity-name';
+            emptyName.textContent = 'No audit history';
+            const emptyMeta = document.createElement('span');
+            emptyMeta.className = 'vd-activity-meta';
+            emptyMeta.textContent = 'No status change recorded';
+            emptyCopy.append(emptyName, emptyMeta);
+            emptyActivity.append(emptyAvatar, emptyCopy);
+            activityDetail.appendChild(emptyActivity);
+        }
+
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    }
+
+    document.querySelectorAll('.vd-appointment-details-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            try {
+                openAppointmentDetails(JSON.parse(button.dataset.appointmentDetails));
+            } catch (error) {
+                showToast('Unable to open appointment details.', false);
+                console.error(error);
+            }
+        });
+    });
 
     // ── Generic status + day-range filter, reused for Upcoming and Past tables ──
     // Date keys are 'YYYY-MM-DD' strings, which compare correctly with <= and >= directly.

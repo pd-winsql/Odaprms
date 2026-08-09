@@ -42,6 +42,8 @@ try {
 
     $booking=$appointments->bookAppointment($patientId,$todaySchedule['clinic_id'],[$serviceId],$todaySchedule['sched_date'],$todaySchedule['schedule_id']);
     expectTrue(($booking['status']??'')==='Pending Review', 'Booking starts in Pending Review without a deposit.'); $createdAppointments[]=(int)$booking['appointment_id'];
+    $appointmentServiceDetails=$appointments->getServiceDetailsForAppointments([(int)$booking['appointment_id']]);
+    expectTrue(count($appointmentServiceDetails[(int)$booking['appointment_id']]??[])===1,'Appointment details include the selected service card data.');
     $hasDeposit=(int)$conn->query('SELECT COUNT(*) FROM appointment_deposits WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn(); expectTrue($hasDeposit===0,'No deposit exists before staff acceptance.');
     $accepted=$appointments->updateAppointmentStatus($booking['appointment_id'],'Awaiting Deposit',$staffId); expectTrue($accepted['success'],'Staff accepts the request for payment.');
     $deposit=$conn->query('SELECT * FROM appointment_deposits WHERE appointment_id='.(int)$booking['appointment_id'])->fetch(PDO::FETCH_ASSOC);

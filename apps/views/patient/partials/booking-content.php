@@ -116,26 +116,22 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
 
                 <p class="vd-section-label mb-1">Services</p>
                 <p class="text-muted small">Select one or more services for this visit.</p>
-                <div class="vd-booking-service-list">
+                <div class="vd-booking-service-options">
                     <?php foreach ($serviceCategories as $category): ?>
-                    <div class="vd-booking-service-category">
-                        <div class="vd-booking-service-category-name"><?= htmlspecialchars($category['name']) ?></div>
-                        <div class="vd-booking-service-options">
-                            <?php foreach ($category['services'] as $service): ?>
-                            <label class="vd-booking-service-option">
-                                <input type="checkbox" name="service_ids[]" value="<?= (int) $service['service_id'] ?>">
-                                <span class="vd-booking-service-card">
-                                    <i class="ti ti-tooth"></i>
-                                    <span class="vd-booking-service-copy">
-                                        <strong><?= htmlspecialchars($service['service_name']) ?></strong>
-                                        <small><?= htmlspecialchars($service['service_description'] ?: 'Contact the clinic for more information about this service.') ?></small>
-                                    </span>
-                                    <i class="ti ti-check vd-booking-service-check" aria-hidden="true"></i>
+                        <?php foreach ($category['services'] as $service): ?>
+                        <label class="vd-booking-service-option">
+                            <input type="checkbox" name="service_ids[]" value="<?= (int) $service['service_id'] ?>">
+                            <span class="vd-booking-service-card">
+                                <span class="vd-booking-service-icon"><i class="<?= htmlspecialchars($service['service_icon'] ?: 'fa-solid fa-tooth', ENT_QUOTES) ?>" aria-hidden="true"></i></span>
+                                <span class="vd-booking-service-copy">
+                                    <span class="vd-booking-service-category-name"><?= htmlspecialchars($category['name']) ?></span>
+                                    <strong><?= htmlspecialchars($service['service_name']) ?></strong>
+                                    <small><?= htmlspecialchars($service['service_description'] ?: 'Contact the clinic for more information about this service.') ?></small>
                                 </span>
-                            </label>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
+                                <span class="vd-booking-service-check" aria-hidden="true"><i class="ti ti-check"></i></span>
+                            </span>
+                        </label>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                 </div>
 
