@@ -504,10 +504,81 @@
 }
 
 /* ── Schedule cards ── */
+.vd-schedule-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.vd-schedule-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white-bg);
+  box-shadow: var(--shadow-sm);
+}
+.vd-schedule-summary-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--gold-pale);
+  color: var(--gold);
+  font-size: 19px;
+}
+.vd-schedule-summary-card small,
+.vd-schedule-summary-card strong { display: block; }
+.vd-schedule-summary-card small {
+  color: var(--mid);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.vd-schedule-summary-card strong {
+  margin-top: 2px;
+  color: var(--dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1;
+}
+.vd-clinic-switch {
+  display: inline-flex;
+  align-self: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white-bg);
+  box-shadow: var(--shadow-sm);
+}
+.vd-clinic-switch-btn {
+  border: 0;
+  border-radius: 5px;
+  padding: 9px 14px;
+  background: transparent;
+  color: var(--mid);
+  font-size: 11px;
+  font-weight: 400;
+  transition: background 0.15s, color 0.15s;
+}
+.vd-clinic-switch-btn:hover { color: var(--gold); }
+.vd-clinic-switch-btn.active {
+  background: var(--gold-pale);
+  color: var(--gold);
+  font-weight: 500;
+}
+.vd-schedule-clinic-panel { overflow: hidden; }
+
 .vd-sched-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 12px;
   padding: 16px 20px;
 }
 
@@ -515,7 +586,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--white-bg);
-  padding: 12px 10px;
+  padding: 15px 13px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -566,6 +637,36 @@
   color: #3b6d11;
 }
 
+.vd-sched-capacity {
+  width: 100%;
+  color: var(--mid);
+  font-size: 10px;
+  text-align: left;
+}
+.vd-sched-capacity-track {
+  height: 5px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #eee8dc;
+}
+.vd-sched-capacity-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold);
+  transition: width 0.2s ease;
+}
+.vd-sched-card-edit { width: 100%; }
+.vd-sched-edit-help {
+  display: block;
+  margin-top: 5px;
+  color: var(--mid);
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .vd-sched-actions {
   display: flex;
   gap: 5px;
@@ -596,9 +697,28 @@
   border-color: #f0b8b8;
 }
 
+.vd-sched-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+.vd-sched-btn:disabled:hover {
+  background: transparent;
+  color: var(--mid);
+  border-color: var(--border);
+}
+
+@media (max-width: 991px) {
+  .vd-schedule-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 575px) {
+  .vd-schedule-summary-grid { grid-template-columns: 1fr 1fr; }
+  .vd-schedule-summary-card { padding: 12px; }
+  .vd-schedule-summary-icon { width: 32px; height: 32px; font-size: 16px; }
+  .vd-clinic-switch { width: 100%; }
+  .vd-clinic-switch-btn { flex: 1 1 130px; }
   .vd-sched-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   }
   .vd-sched-daynum { font-size: 28px; }
 }
@@ -1514,7 +1634,7 @@
   border-bottom: 2px solid transparent;
   color: var(--mid);
   font-family: 'Jost', sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.60rem;
   font-weight: 500;
   letter-spacing: 0.055em;
   padding: 0.65rem 0.8rem 0.75rem;

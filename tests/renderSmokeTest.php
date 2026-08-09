@@ -4,15 +4,18 @@ $case = $argv[1] ?? '';
 session_save_path(sys_get_temp_dir());
 session_start();
 $patientCase = str_starts_with($case, 'patient-');
+$dentalCase = str_starts_with($case, 'dental-');
 $_SESSION['user_id'] = $patientCase ? 14 : 7;
-$_SESSION['user_role'] = $patientCase ? 'Patient' : 'Admin';
-$_SESSION['display_name'] = $patientCase ? 'Patient' : 'Administrator';
+$_SESSION['user_role'] = $patientCase ? 'Patient' : ($dentalCase ? 'Dental Assistant' : 'Admin');
+$_SESSION['display_name'] = $patientCase ? 'Patient' : ($dentalCase ? 'Dental Assistant' : 'Administrator');
 
 $files = [
     'dashboard' => __DIR__ . '/../apps/views/admin/partials/dashboard-content.php',
     'payment-review' => __DIR__ . '/../apps/views/admin/partials/payment-review-content.php',
     'appointments' => __DIR__ . '/../apps/views/admin/partials/appointment-content.php',
     'clinics' => __DIR__ . '/../apps/views/admin/partials/clinic-content.php',
+    'schedules' => __DIR__ . '/../apps/views/admin/partials/schedule-content.php',
+    'dental-schedules' => __DIR__ . '/../apps/views/dental_asst/partials/schedule-content.php',
     'historical-logbook' => __DIR__ . '/../apps/views/admin/partials/logbook-content.php',
     'patient-billing' => __DIR__ . '/../apps/views/patient/partials/billing-content.php',
     'patient-booking' => __DIR__ . '/../apps/views/patient/partials/booking-content.php',

@@ -45,7 +45,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=11">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=12">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
 </head>
@@ -85,6 +85,12 @@ $today = date('l, F j Y');
         </a>
 
         <div class="vd-nav-section">Manage</div>
+                <a href="#" class="vd-nav-item" data-page="services-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Services
+        </a>
+        <a href="#" class="vd-nav-item" data-page="clinic-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Clinics
+        </a>
         <a href="#" class="vd-nav-item" data-page="schedule-content.php">
             <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
         </a>

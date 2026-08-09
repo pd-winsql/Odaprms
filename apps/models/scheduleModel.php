@@ -163,6 +163,21 @@ class Schedule {
         }
     }
 
+    public function getBookedCountForSchedule($schedule_id): int {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT COUNT(*) FROM appointments
+                WHERE schedule_id = :schedule_id
+                  AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
+            ");
+            $stmt->execute([':schedule_id' => $schedule_id]);
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('getBookedCountForSchedule error: ' . $e->getMessage());
+            return -1;
+        }
+    }
+
     public function getScheduleById($schedule_id) {
         try {
 

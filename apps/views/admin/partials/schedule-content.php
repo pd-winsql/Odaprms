@@ -15,40 +15,87 @@ $conn = $db->connect();
 $scheduleModel = new Schedule($conn);
 $clinicModel = new Clinic($conn);
 $clinics = $clinicModel->getAllClinics();
+$schedulesByClinic = [];
+$totalUpcomingSchedules = 0;
+$totalCapacity = 0;
+$totalBooked = 0;
+foreach ($clinics as $clinic) {
+    $clinicSchedules = $scheduleModel->getAvailableSchedulesByClinic($clinic['clinic_id']);
+    $schedulesByClinic[(int) $clinic['clinic_id']] = $clinicSchedules;
+    $totalUpcomingSchedules += count($clinicSchedules);
+    foreach ($clinicSchedules as $schedule) {
+        $totalCapacity += (int) $schedule['max_appointments'];
+        $totalBooked += (int) $schedule['total_appointments'];
+    }
+}
+$totalAvailable = max(0, $totalCapacity - $totalBooked);
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
 <div class="vd-content">
-        <div class="d-flex flex-column gap-4">
+    <div class="d-flex flex-column gap-4">
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="vd-welcome-greet">SCHEDULE MANAGEMENT</div>
+                <div class="vd-welcome-name">Clinic Availability</div>
+                <p class="text-muted small mb-0 mt-2">Create appointment dates, review remaining availability, and adjust each schedule’s capacity.</p>
+            </div>
+            <?php $firstClinic = $clinics[0] ?? null; ?>
+            <button type="button" class="btn vd-btn-gold align-self-start" id="addScheduleForActiveClinic"
+                data-bs-toggle="modal" data-bs-target="#addScheduleModal"
+                data-clinic-id="<?= (int) ($firstClinic['clinic_id'] ?? 0) ?>"
+                data-clinic-name="<?= htmlspecialchars($firstClinic['clinic_name'] ?? '', ENT_QUOTES) ?>"
+                <?= $firstClinic ? '' : 'disabled' ?>>
+                <i class="ti ti-calendar-plus me-1"></i> Add Schedule
+            </button>
+        </div>
+
+        <div class="vd-schedule-summary-grid">
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-calendar-event"></i></span><span><small>Upcoming Dates</small><strong><?= $totalUpcomingSchedules ?></strong></span></div>
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-users"></i></span><span><small>Total Capacity</small><strong><?= $totalCapacity ?></strong></span></div>
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-user-check"></i></span><span><small>Booked Slots</small><strong><?= $totalBooked ?></strong></span></div>
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-armchair"></i></span><span><small>Available Slots</small><strong><?= $totalAvailable ?></strong></span></div>
+        </div>
+
+        <div class="vd-clinic-switch" role="tablist" aria-label="Schedule clinic">
+            <?php foreach ($clinics as $index => $clinic): ?>
+            <button type="button" role="tab" aria-selected="<?= $index === 0 ? 'true' : 'false' ?>"
+                class="vd-clinic-switch-btn vd-schedule-clinic-btn <?= $index === 0 ? 'active' : '' ?>"
+                data-clinic-id="<?= (int) $clinic['clinic_id'] ?>"
+                data-clinic-name="<?= htmlspecialchars($clinic['clinic_name'], ENT_QUOTES) ?>">
+                <i class="ti ti-building-hospital"></i> <?= htmlspecialchars($clinic['clinic_name']) ?>
+            </button>
+            <?php endforeach; ?>
+        </div>
 
         <!-- Schedule Overview -->
-        <?php foreach ($clinics as $clinic): 
-            $schedules = $scheduleModel->getUpcomingSchedulesByClinic($clinic['clinic_id']);
+        <?php foreach ($clinics as $clinicIndex => $clinic):
+            $schedules = $schedulesByClinic[(int) $clinic['clinic_id']] ?? [];
         ?>
-        <div class="vd-dash-card">
+        <div role="tabpanel" class="vd-dash-card vd-schedule-clinic-panel <?= $clinicIndex === 0 ? '' : 'd-none' ?>" data-clinic-panel="<?= (int) $clinic['clinic_id'] ?>">
             <div class="vd-dash-card-header">
                 <span class="vd-dash-card-title">
                     <i class="ti ti-building me-1"></i>
                     <?= htmlspecialchars($clinic['clinic_name']) ?>
                 </span>
-                <button class="btn vd-btn-gold btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#addScheduleModal"
-                    data-clinic-id="<?= $clinic['clinic_id'] ?>"
-                    data-clinic-name="<?= htmlspecialchars($clinic['clinic_name']) ?>">
-                    <i class="ti ti-plus me-1"></i> Add Schedule
-                </button>
+                <span class="vd-topbar-date"><?= count($schedules) ?> upcoming date<?= count($schedules) === 1 ? '' : 's' ?></span>
             </div>
             <div class="vd-dash-card-body">
                 <?php if (empty($schedules)): ?>
                     <div class="vd-empty-state">No schedules yet.</div>
                 <?php else: ?>
                     <div class="vd-sched-grid">
-                        <?php foreach ($schedules as $sched): 
+                        <?php foreach ($schedules as $sched):
                             $d      = new DateTime($sched['sched_date']);
                             $isPast = $d < new DateTime('today');
+                            $booked = (int) $sched['total_appointments'];
+                            $capacity = (int) $sched['max_appointments'];
+                            $available = max(0, (int) $sched['available_slots']);
+                            $usagePercent = $capacity > 0 ? min(100, (int) round(($booked / $capacity) * 100)) : 0;
                         ?>
                         <div class="vd-sched-card <?= $isPast ? 'past' : '' ?>"
-                            id="schedCard-<?= $sched['schedule_id'] ?>">
+                            id="schedCard-<?= $sched['schedule_id'] ?>" data-booked="<?= $booked ?>">
 
                             <!-- Default view -->
                             <div class="vd-sched-card-view">
@@ -58,8 +105,12 @@ $clinics = $clinicModel->getAllClinics();
                                 <span class="vd-sched-month"><?= $d->format('M Y') ?></span>
                                 </div>
                                 <span class="vd-sched-slots" id="slots-<?= $sched['schedule_id'] ?>">
-                                <?= $sched['max_appointments'] ?> slots
+                                <?= $available ?> available
                                 </span>
+                                <div class="vd-sched-capacity">
+                                    <span id="usage-<?= $sched['schedule_id'] ?>"><?= $booked ?> booked of <?= $capacity ?></span>
+                                    <div class="vd-sched-capacity-track"><span id="progress-<?= $sched['schedule_id'] ?>" style="width:<?= $usagePercent ?>%"></span></div>
+                                </div>
                                 <?php if (!$isPast): ?>
                                 <div class="vd-sched-actions">
                                 <button class="vd-sched-btn vd-edit-sched-btn"
@@ -70,7 +121,8 @@ $clinics = $clinicModel->getAllClinics();
                                 </button>
                                 <button class="vd-sched-btn vd-delete-btn"
                                     data-id="<?= $sched['schedule_id'] ?>"
-                                    title="Delete">
+                                    <?= $booked > 0 ? 'disabled' : '' ?>
+                                    title="<?= $booked > 0 ? 'Schedules with bookings cannot be deleted' : 'Delete schedule' ?>">
                                     <i class="ti ti-trash"></i>
                                 </button>
                                 </div>
@@ -81,8 +133,9 @@ $clinics = $clinicModel->getAllClinics();
                             <div class="vd-sched-card-edit d-none">
                                 <label class="vd-label" style="font-size:8px;">Max Slots</label>
                                 <input type="number" class="form-control vd-input vd-edit-max-input"
-                                value="<?= $sched['max_appointments'] ?>" min="1" max="50"
+                                value="<?= $capacity ?>" min="<?= max(1, $booked) ?>" max="50"
                                 style="text-align:center; font-size:14px;">
+                                <small class="vd-sched-edit-help">Minimum: <?= max(1, $booked) ?> based on current bookings</small>
                                 <div class="vd-sched-actions mt-2">
                                 <button class="vd-sched-btn vd-save-sched-btn"
                                     data-id="<?= $sched['schedule_id'] ?>" title="Save">
@@ -126,10 +179,25 @@ $clinics = $clinicModel->getAllClinics();
 
 <script>
 (function () {
+    const csrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
     function refreshPage() {
         if (typeof loadpage === 'function') loadpage('schedule-content.php');
     }
     window.refreshSchedulePage = refreshPage;
+
+    const clinicButtons = Array.from(document.querySelectorAll('.vd-schedule-clinic-btn'));
+    const clinicPanels = Array.from(document.querySelectorAll('.vd-schedule-clinic-panel'));
+    const addScheduleButton = document.getElementById('addScheduleForActiveClinic');
+    clinicButtons.forEach(button => button.addEventListener('click', () => {
+        clinicButtons.forEach(item => {
+            const isActive = item === button;
+            item.classList.toggle('active', isActive);
+            item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        clinicPanels.forEach(panel => panel.classList.toggle('d-none', panel.dataset.clinicPanel !== button.dataset.clinicId));
+        addScheduleButton.dataset.clinicId = button.dataset.clinicId;
+        addScheduleButton.dataset.clinicName = button.dataset.clinicName;
+    }));
 
     // Show toast for query param results (e.g., edit conflict) — use global showToast if available
     (function () {
@@ -179,6 +247,7 @@ $clinics = $clinicModel->getAllClinics();
             fd.append('action',          'edit_schedule');
             fd.append('schedule_id',     id);
             fd.append('max_appointments', newMax);
+            fd.append('csrf_token', csrfToken);
             LoadingUI.setButton(btn, true, 'Saving…');
 
             try {
@@ -186,12 +255,16 @@ $clinics = $clinicModel->getAllClinics();
                 const result = await res.text();
 
                 if (result.trim() === 'success') {
-                    document.getElementById('slots-' + id).textContent = newMax + ' slots';
+                    const booked = Number(card.dataset.booked || 0);
+                    const capacity = Number(newMax);
+                    document.getElementById('slots-' + id).textContent = Math.max(0, capacity - booked) + ' available';
+                    document.getElementById('usage-' + id).textContent = booked + ' booked of ' + capacity;
+                    document.getElementById('progress-' + id).style.width = Math.min(100, Math.round((booked / capacity) * 100)) + '%';
                     card.querySelector('.vd-sched-card-view').classList.remove('d-none');
                     card.querySelector('.vd-sched-card-edit').classList.add('d-none');
                     showToast('Schedule updated.', true);
                 } else {
-                    showToast('Failed to update. Please try again.', false);
+                    showToast(result.trim() || 'Failed to update. Please try again.', false);
                 }
             } catch (err) {
                 showToast('Network error.', false);
@@ -222,6 +295,7 @@ $clinics = $clinicModel->getAllClinics();
         const formData = new FormData();
         formData.append('action', 'delete_schedule');
         formData.append('schedule_id', scheduleToDelete);
+        formData.append('csrf_token', csrfToken);
 
         let shouldRefresh = false;
         try {
@@ -253,4 +327,4 @@ $clinics = $clinicModel->getAllClinics();
 })();
 </script>
 
-<?php include '_add-schedule-modal.php'; ?>
+<?php include __DIR__ . '/_add-schedule-modal.php'; ?>
