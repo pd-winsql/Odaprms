@@ -44,8 +44,8 @@ $today = date('l, F j Y');
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../../../public/css/styles.css">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=8">
+    <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=11">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
 </head>
@@ -141,9 +141,12 @@ $today = date('l, F j Y');
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <?php include __DIR__ . '/../shared/staff-action-modal.php'; ?>
+
+    <script src="../../../public/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../public/js/action-modal.js?v=3"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
-    <script src="../../../public/js/dashboard-tables.js?v=3"></script>
+    <script src="../../../public/js/dashboard-tables.js?v=4"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
         window.showToast = function(message, success = true) {

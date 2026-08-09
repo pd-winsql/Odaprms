@@ -115,12 +115,13 @@ class Patient {
     public function createRegisteredPatient(int $userId, array $data, string $email): int {
         $stmt = $this->conn->prepare("
             INSERT INTO patients
-                (user_id, firstname, middlename, lastname, suffix, birthdate,
+                (user_id, firstname, middlename, lastname, suffix, birthdate, age, gender,
                  phone_number, email, profile_status, identity_match_key)
             VALUES
-                (:user_id, :firstname, :middlename, :lastname, :suffix, :birthdate,
+                (:user_id, :firstname, :middlename, :lastname, :suffix, :birthdate, :age, :gender,
                  :phone_number, :email, 'Incomplete', :identity_match_key)
         ");
+        $birthdate = new DateTimeImmutable($data['birthdate']);
         $stmt->execute([
             ':user_id' => $userId,
             ':firstname' => trim($data['firstname']),
@@ -128,6 +129,8 @@ class Patient {
             ':lastname' => trim($data['lastname']),
             ':suffix' => trim($data['suffix'] ?? '') ?: null,
             ':birthdate' => $data['birthdate'],
+            ':age' => $birthdate->diff(new DateTimeImmutable('today'))->y,
+            ':gender' => $data['gender'],
             ':phone_number' => self::normalizePhone($data['phone_number']),
             ':email' => $email,
             ':identity_match_key' => self::identityMatchKey($data),

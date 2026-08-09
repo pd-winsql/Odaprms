@@ -177,10 +177,12 @@
             tableWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
 
+        table.addEventListener('ventura:table-filtered', () => render(true));
+
         const card = table.closest('.vd-dash-card');
         if (card) {
             const refreshAfterFilter = (event) => {
-                if (!event.target.closest?.('.vd-filter-bar')) return;
+                if (!event.target.closest?.('.vd-filter-bar, .vd-status-filter-wrap')) return;
                 queueMicrotask(() => render(true));
             };
             card.addEventListener('input', refreshAfterFilter);

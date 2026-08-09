@@ -278,7 +278,17 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 	});
 
 	document.querySelectorAll('[data-authorize-link]').forEach(btn => btn.addEventListener('click', async function(){
-		const email=window.prompt('Enter the verified email this patient will use to register:')?.trim(); if(!email)return;
+		const response = await window.showActionModal({
+			title: 'Authorize Patient Account Link',
+			kicker: 'Patient record access',
+			message: 'Enter the verified email that may claim this patient record. The authorization will be logged for staff accountability.',
+			confirmText: 'Authorize Email',
+			icon: 'ti-user-link',
+			tone: 'warning',
+			fields: [{ name: 'email', label: 'Verified patient email', placeholder: 'patient@example.com', type: 'email', required: true }]
+		});
+		if (!response.confirmed) return;
+		const email = response.values.email;
 		const body=new FormData();body.append('action','authorizeAccountLink');body.append('csrf_token',<?= json_encode($_SESSION['csrf_token']) ?>);body.append('patient_id',this.dataset.authorizeLink);body.append('email',email);
 		try{const response=await fetch('../../controllers/patientController.php',{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);window.showToast(result.message,true);}catch(error){window.showToast(error.message||'Unable to authorize linking.',false);}
 	}));

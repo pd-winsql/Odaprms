@@ -111,8 +111,20 @@ function dashboardStatusClass($status) {
             if (!lookup.success || !lookup.matches?.length) throw new Error('No confirmed appointment for today matches that code or name.');
             if (lookup.matches.length > 1) throw new Error('More than one patient matched. Enter the appointment code or a more specific name.');
             const match = lookup.matches[0];
-            const summary = `${match.firstname} ${match.lastname}\n${match.service_name || 'Service not listed'}\n${match.clinic_name}`;
-            if (!confirm(`Confirm this patient has arrived?\n\n${summary}`)) return;
+            const confirmation = await window.showActionModal({
+                title: 'Confirm Patient Arrival',
+                kicker: 'Logbook check-in',
+                message: 'Verify the appointment details before recording this patient as arrived.',
+                confirmText: 'Check In Patient',
+                icon: 'ti-login-2',
+                tone: 'success',
+                details: [
+                    { label: 'Patient', value: `${match.firstname} ${match.lastname}` },
+                    { label: 'Service', value: match.service_name || 'Service not listed' },
+                    { label: 'Clinic', value: match.clinic_name }
+                ]
+            });
+            if (!confirmation.confirmed) return;
             const body = new FormData();
             body.append('action', 'checkIn');
             body.append('appointment_id', match.appointment_id);

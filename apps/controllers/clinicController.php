@@ -13,6 +13,69 @@ class clinicController {
         $this->clinics = new Clinic($conn);
     }
 
+    private function json(array $payload): void {
+        header('Content-Type: application/json');
+        echo json_encode($payload);
+        exit;
+    }
+
+    private function requireAdminPost(): void {
+        if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Admin') {
+            $this->json(['success' => false, 'message' => 'Forbidden.']);
+        }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Invalid request method.']);
+        }
+        $provided = (string) ($_POST['csrf_token'] ?? '');
+        $expected = (string) ($_SESSION['csrf_token'] ?? '');
+        if ($expected === '' || !hash_equals($expected, $provided)) {
+            $this->json(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
+        }
+    }
+
+    private function storeClinicImage(string $prefix): ?string {
+        if (empty($_FILES['image']['name'])) return null;
+        if (($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || ($_FILES['image']['size'] ?? 0) > 5 * 1024 * 1024) {
+            $this->json(['success' => false, 'message' => 'Upload a clinic image no larger than 5 MB.']);
+        }
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($_FILES['image']['tmp_name']);
+        $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        if (!isset($extensions[$mime])) {
+            $this->json(['success' => false, 'message' => 'Image must be JPG, PNG, or WEBP.']);
+        }
+        $filename = $prefix . '_' . bin2hex(random_bytes(8)) . '.' . $extensions[$mime];
+        $directory = dirname(__DIR__, 2) . '/public/assets/clinic-images';
+        if (!is_dir($directory) || !move_uploaded_file($_FILES['image']['tmp_name'], $directory . '/' . $filename)) {
+            $this->json(['success' => false, 'message' => 'Failed to upload image.']);
+        }
+        return $filename;
+    }
+
+    public function addClinic(): void {
+        $this->requireAdminPost();
+        $name = trim($_POST['name'] ?? '');
+        $address = trim($_POST['address'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+
+        if ($name === '' || $address === '' || $phone === '') {
+            $this->json(['success' => false, 'message' => 'Please fill in the clinic name, contact number, and address.']);
+        }
+        if (mb_strlen($name) > 100 || mb_strlen($address) > 100 || mb_strlen($phone) > 15) {
+            $this->json(['success' => false, 'message' => 'One or more clinic fields exceed the allowed length.']);
+        }
+        if ($this->clinics->clinicNameExists($name)) {
+            $this->json(['success' => false, 'message' => 'A clinic with this name already exists.']);
+        }
+
+        $image = $this->storeClinicImage('clinic_new');
+        $clinicId = $this->clinics->createClinic($name, $address, $phone, $image);
+        if (!$clinicId) {
+            if ($image) @unlink(dirname(__DIR__, 2) . '/public/assets/clinic-images/' . $image);
+            $this->json(['success' => false, 'message' => 'Failed to add clinic.']);
+        }
+        $this->json(['success' => true, 'message' => 'Clinic added successfully.', 'clinic_id' => $clinicId, 'image' => $image]);
+    }
+
     // Inline update from the admin dashboard (AJAX, returns JSON)
     public function updateClinicInline() {
         header('Content-Type: application/json');
@@ -86,4 +149,7 @@ class clinicController {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updateInline') {
     $controller = new clinicController();
     $controller->updateClinicInline();
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
+    $controller = new clinicController();
+    $controller->addClinic();
 }

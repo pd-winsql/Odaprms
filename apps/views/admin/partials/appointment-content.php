@@ -28,26 +28,34 @@ function allowedStatusOptions($current) {
     return array_values(array_unique(array_merge([$current], $transitions[$current] ?? [])));
 }
 
-// Build status options and date bounds for each table independently.
+// Build date bounds for each table independently.
 function buildFilterOptions($rows) {
-    $statusesFound = [];
     $dates         = [];
 
     foreach ($rows as $r) {
-        $statusesFound[$r['status']] = $r['status'];
-
         $dates[] = date('Y-m-d', strtotime($r['date']));
     }
 
-    ksort($statusesFound);
     sort($dates);
 
     return [
-        'statuses' => $statusesFound,
         'minDate' => $dates[0] ?? '',
         'maxDate' => $dates ? $dates[count($dates) - 1] : '',
     ];
 }
+
+$statusFilterOrder = [
+    'Pending Review',
+    'Awaiting Deposit',
+    'Payment Under Review',
+    'Confirmed',
+    'Checked In',
+    'In Progress',
+    'Completed',
+    'Cancelled',
+    'No-show',
+    'Rejected',
+];
 
 $upcomingFilters = buildFilterOptions($upcoming);
 $pastFilters     = buildFilterOptions($past);
@@ -87,17 +95,17 @@ function actorInitials($name) {
         <span class="vd-topbar-date" id="upcomingCountLabel"><?= count($upcoming) ?> of <?= count($upcoming) ?> total</span>
         </div>
 
-        <!-- Filter bar -->
-        <div class="vd-filter-bar">
-        <div class="vd-filter-group">
-            <label class="vd-label form-label">Status</label>
-            <select id="filterStatusUpcoming" class="form-select vd-input vd-filter-select">
-            <option value="">All Statuses</option>
-            <?php foreach ($upcomingFilters['statuses'] as $s): ?>
-                <option value="<?= htmlspecialchars($s) ?>"><?= htmlspecialchars($s) ?></option>
-            <?php endforeach; ?>
-            </select>
+        <div class="vd-status-filter-wrap">
+            <div class="vd-status-filter-toggle" id="upcomingStatusToggles" role="group" aria-label="Filter upcoming appointments by status">
+                <button type="button" class="vd-status-toggle-btn active" data-status="">All Status</button>
+                <?php foreach ($statusFilterOrder as $status): ?>
+                    <button type="button" class="vd-status-toggle-btn" data-status="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></button>
+                <?php endforeach; ?>
+            </div>
         </div>
+
+        <!-- Date filter bar -->
+        <div class="vd-filter-bar">
         <div class="vd-filter-group">
             <label class="vd-label form-label">Start Date</label>
             <input type="date" id="filterDateFromUpcoming" class="form-control vd-input vd-filter-select"
@@ -219,17 +227,17 @@ function actorInitials($name) {
         <span class="vd-topbar-date" id="pastCountLabel"><?= count($past) ?> of <?= count($past) ?> total</span>
         </div>
 
-        <!-- Filter bar -->
-        <div class="vd-filter-bar">
-        <div class="vd-filter-group">
-            <label class="vd-label form-label">Status</label>
-            <select id="filterStatusPast" class="form-select vd-input vd-filter-select">
-            <option value="">All Statuses</option>
-            <?php foreach ($pastFilters['statuses'] as $s): ?>
-                <option value="<?= htmlspecialchars($s) ?>"><?= htmlspecialchars($s) ?></option>
-            <?php endforeach; ?>
-            </select>
+        <div class="vd-status-filter-wrap">
+            <div class="vd-status-filter-toggle" id="pastStatusToggles" role="group" aria-label="Filter past appointments by status">
+                <button type="button" class="vd-status-toggle-btn active" data-status="">All Status</button>
+                <?php foreach ($statusFilterOrder as $status): ?>
+                    <button type="button" class="vd-status-toggle-btn" data-status="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></button>
+                <?php endforeach; ?>
+            </div>
         </div>
+
+        <!-- Date filter bar -->
+        <div class="vd-filter-bar">
         <div class="vd-filter-group">
             <label class="vd-label form-label">Start Date</label>
             <input type="date" id="filterDateFromPast" class="form-control vd-input vd-filter-select"
@@ -385,11 +393,11 @@ function actorInitials($name) {
 
     // ── Generic status + day-range filter, reused for Upcoming and Past tables ──
     // Date keys are 'YYYY-MM-DD' strings, which compare correctly with <= and >= directly.
-    function setupTableFilter(tableId, statusSelectId, dateFromId, dateToId, clearBtnId, countLabelId) {
+    function setupTableFilter(tableId, statusToggleId, dateFromId, dateToId, clearBtnId, countLabelId) {
         const table = document.getElementById(tableId);
         if (!table) return;
 
-        const statusSelect = document.getElementById(statusSelectId);
+        const statusToggle = document.getElementById(statusToggleId);
         const dateFrom      = document.getElementById(dateFromId);
         const dateTo        = document.getElementById(dateToId);
         const clearBtn       = document.getElementById(clearBtnId);
@@ -398,7 +406,7 @@ function actorInitials($name) {
         const totalCount       = rows.length;
 
         function applyFilter() {
-            const status = statusSelect.value;
+            const status = statusToggle.querySelector('.vd-status-toggle-btn.active')?.dataset.status || '';
             const from   = dateFrom.value;
             const to     = dateTo.value;
             let visible  = 0;
@@ -421,15 +429,22 @@ function actorInitials($name) {
             if (countLabel) {
                 countLabel.textContent = `${visible} of ${totalCount} total`;
             }
+            table.dispatchEvent(new CustomEvent('ventura:table-filtered'));
         }
 
-        statusSelect.addEventListener('change', applyFilter);
+        statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.remove('active'));
+                button.classList.add('active');
+                applyFilter();
+            });
+        });
         dateFrom.addEventListener('change', applyFilter);
         dateTo.addEventListener('change', applyFilter);
 
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                statusSelect.value = '';
+                statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.toggle('active', item.dataset.status === ''));
                 dateFrom.value    = '';
                 dateTo.value      = '';
                 applyFilter();
@@ -437,8 +452,8 @@ function actorInitials($name) {
         }
     }
 
-    setupTableFilter('upcomingApptTable', 'filterStatusUpcoming', 'filterDateFromUpcoming', 'filterDateToUpcoming', 'clearUpcomingFilters', 'upcomingCountLabel');
-    setupTableFilter('pastApptTable', 'filterStatusPast', 'filterDateFromPast', 'filterDateToPast', 'clearPastFilters', 'pastCountLabel');
+    setupTableFilter('upcomingApptTable', 'upcomingStatusToggles', 'filterDateFromUpcoming', 'filterDateToUpcoming', 'clearUpcomingFilters', 'upcomingCountLabel');
+    setupTableFilter('pastApptTable', 'pastStatusToggles', 'filterDateFromPast', 'filterDateToPast', 'clearPastFilters', 'pastCountLabel');
 
     // Toggle between Upcoming and Past views (uses same design as services-content)
     const toggleBtns = document.querySelectorAll('.vd-toggle-btn');
@@ -481,11 +496,27 @@ function actorInitials($name) {
         const name      = select.dataset.name;
         let reason = '';
         if (newStatus === 'Rejected') {
-            reason = window.prompt('Enter the reason for rejecting this appointment:')?.trim() || '';
-            if (!reason) {
-                showToast('A rejection reason is required.', false);
-                return;
-            }
+            const rejection = await window.showActionModal({
+                title: 'Reject Appointment Request',
+                kicker: 'Appointment review',
+                message: 'The patient will receive this reason by email. Please keep it clear and professional.',
+                confirmText: 'Reject Appointment',
+                icon: 'ti-calendar-x',
+                tone: 'danger',
+                details: [{ label: 'Patient', value: name }],
+                fields: [{
+                    name: 'reason',
+                    label: 'Reason for rejection',
+                    placeholder: 'Example: The selected schedule is no longer available.',
+                    multiline: true,
+                    rows: 3,
+                    required: true,
+                    minlength: 3,
+                    maxlength: 255
+                }]
+            });
+            if (!rejection.confirmed) return;
+            reason = rejection.values.reason;
         }
 
         LoadingUI.setButton(btn, true, 'Saving…');
@@ -526,9 +557,56 @@ function actorInitials($name) {
         const body=new FormData();body.append('action',action);body.append('csrf_token',<?= json_encode($_SESSION['csrf_token']) ?>);Object.entries(fields).forEach(([key,value])=>body.append(key,value));
         const response=await fetch('../../../apps/controllers/depositController.php',{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);showToast(result.message,true);return result;
     }
-    document.querySelectorAll('[data-extend-deadline]').forEach(button=>button.addEventListener('click',async()=>{const reason=prompt('Reason for extending the payment deadline:')?.trim();if(!reason)return;try{await depositAction('extend',{appointment_id:button.dataset.extendDeadline,reason});}catch(error){showToast(error.message,false);}}));
-    document.querySelectorAll('[data-transfer-deposit]').forEach(button=>button.addEventListener('click',async()=>{const source=prompt('Enter the original appointment number containing the verified deposit:')?.trim();if(!source)return;const reason=prompt('Transfer reason:')?.trim()||'Patient requested a new appointment.';try{await depositAction('transfer',{source_appointment_id:source,target_appointment_id:button.dataset.transferDeposit,reason});document.querySelector('[data-page="appointment-content.php"]')?.click();}catch(error){showToast(error.message,false);}}));
-    document.querySelectorAll('[data-record-refund]').forEach(button=>button.addEventListener('click',async()=>{const notes=prompt('Optional refund notes:')?.trim()||'';try{await depositAction('refund',{appointment_id:button.dataset.recordRefund,notes});}catch(error){showToast(error.message,false);}}));
+    document.querySelectorAll('[data-extend-deadline]').forEach(button => button.addEventListener('click', async () => {
+        const response = await window.showActionModal({
+            title: 'Extend Payment Deadline',
+            kicker: 'Deposit deadline',
+            message: 'Grant the patient another eight hours to submit the ₱400 deposit.',
+            confirmText: 'Extend Deadline',
+            icon: 'ti-clock-plus',
+            tone: 'warning',
+            fields: [{ name: 'reason', label: 'Reason for extension', placeholder: 'Enter the reason for granting more time.', multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255 }]
+        });
+        if (!response.confirmed) return;
+        try { await depositAction('extend', { appointment_id: button.dataset.extendDeadline, reason: response.values.reason }); }
+        catch (error) { showToast(error.message, false); }
+    }));
+
+    document.querySelectorAll('[data-transfer-deposit]').forEach(button => button.addEventListener('click', async () => {
+        const response = await window.showActionModal({
+            title: 'Transfer Verified Deposit',
+            kicker: 'Deposit adjustment',
+            message: 'Move an existing verified deposit to this appointment. Both appointments will retain an audit record of the transfer.',
+            confirmText: 'Transfer Deposit',
+            icon: 'ti-transfer',
+            tone: 'warning',
+            details: [{ label: 'New booking', value: `Appointment #${button.dataset.transferDeposit}` }],
+            fields: [
+                { name: 'source', label: 'Original appointment number', placeholder: 'Enter the appointment number with the verified deposit.', type: 'number', required: true },
+                { name: 'reason', label: 'Transfer reason', value: 'Patient requested a new appointment.', multiline: true, rows: 2, required: true, minlength: 3, maxlength: 255 }
+            ]
+        });
+        if (!response.confirmed) return;
+        try {
+            await depositAction('transfer', { source_appointment_id: response.values.source, target_appointment_id: button.dataset.transferDeposit, reason: response.values.reason });
+            document.querySelector('[data-page="appointment-content.php"]')?.click();
+        } catch (error) { showToast(error.message, false); }
+    }));
+
+    document.querySelectorAll('[data-record-refund]').forEach(button => button.addEventListener('click', async () => {
+        const response = await window.showActionModal({
+            title: 'Record Deposit Refund',
+            kicker: 'Manual refund record',
+            message: 'Use this only after the clinic has returned the deposit outside the system.',
+            confirmText: 'Record Refund',
+            icon: 'ti-cash-banknote-off',
+            tone: 'warning',
+            fields: [{ name: 'notes', label: 'Refund notes (optional)', placeholder: 'Add the refund method or other useful details.', multiline: true, rows: 3, maxlength: 255 }]
+        });
+        if (!response.confirmed) return;
+        try { await depositAction('refund', { appointment_id: button.dataset.recordRefund, notes: response.values.notes }); }
+        catch (error) { showToast(error.message, false); }
+    }));
 
 })();
 </script>

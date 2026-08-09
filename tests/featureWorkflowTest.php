@@ -5,17 +5,30 @@ require_once __DIR__ . '/../apps/models/depositModel.php';
 require_once __DIR__ . '/../apps/models/logbookModel.php';
 require_once __DIR__ . '/../apps/models/patientModel.php';
 require_once __DIR__ . '/../apps/models/billingModel.php';
+require_once __DIR__ . '/../apps/models/clinicModel.php';
 
 function expectTrue($condition, $message) { if (!$condition) throw new RuntimeException($message); echo "PASS: {$message}\n"; }
 $conn = (new Database())->connect();
 expectTrue($conn->query('SELECT DATABASE()')->fetchColumn() === 'av-clinica-dental-feature', 'Tests are isolated to the feature database.');
-$appointments = new Appointment($conn); $deposits = new DepositModel($conn); $logbook = new LogbookModel($conn); $patients = new Patient($conn); $billings = new BillingModel($conn);
-$createdAppointments = []; $createdSchedules = []; $patientId = null;
+$appointments = new Appointment($conn); $deposits = new DepositModel($conn); $logbook = new LogbookModel($conn); $patients = new Patient($conn); $billings = new BillingModel($conn); $clinics = new Clinic($conn);
+$createdAppointments = []; $createdSchedules = []; $patientId = null; $createdClinicId = null; $registeredPatientId = null; $registeredUserId = null;
 try {
     $clinicId = (int) $conn->query('SELECT clinic_id FROM clinics ORDER BY clinic_id LIMIT 1')->fetchColumn();
     $serviceId = (int) $conn->query('SELECT service_id FROM services WHERE is_active=1 ORDER BY service_id LIMIT 1')->fetchColumn();
     $staffId = (int) $conn->query("SELECT id FROM users WHERE user_role IN ('Admin','Dental Assistant') ORDER BY id LIMIT 1")->fetchColumn();
     expectTrue($clinicId && $serviceId && $staffId, 'Clinic, service, and staff fixtures are available.');
+    $testClinicName = 'Workflow Clinic ' . bin2hex(random_bytes(4));
+    $createdClinicId = $clinics->createClinic($testClinicName, 'Workflow Test Address', '09123456789', null);
+    expectTrue($createdClinicId > 0 && $clinics->getClinicById($createdClinicId)['clinic_name'] === $testClinicName, 'Clinic creation stores the new clinic details.');
+    $registrationEmail = 'registration-' . bin2hex(random_bytes(4)) . '@example.invalid';
+    $conn->prepare("INSERT INTO users (email,password,email_verified_at,user_role) VALUES (:email,:password,NOW(),'Patient')")
+        ->execute([':email'=>$registrationEmail, ':password'=>password_hash('Workflow123', PASSWORD_DEFAULT)]);
+    $registeredUserId = (int) $conn->lastInsertId();
+    $registeredIdentity = ['firstname'=>'Registered','middlename'=>'','lastname'=>'Patient','suffix'=>'','birthdate'=>'2005-04-09','gender'=>'Female','phone_number'=>'09999999999'];
+    $registeredPatientId = $patients->createRegisteredPatient($registeredUserId, $registeredIdentity, $registrationEmail);
+    $registeredPatient = $patients->getPatient($registeredPatientId);
+    $expectedAge = (new DateTimeImmutable('2005-04-09'))->diff(new DateTimeImmutable('today'))->y;
+    expectTrue($registeredPatient['gender'] === 'Female' && (int)$registeredPatient['age'] === $expectedAge, 'Registration stores gender and calculates age from birthdate.');
     $getSchedule = function(string $date) use ($conn, $clinicId, &$createdSchedules) {
         $stmt=$conn->prepare('SELECT schedule_id,clinic_id,sched_date FROM schedules WHERE sched_date=:date LIMIT 1'); $stmt->execute([':date'=>$date]); $row=$stmt->fetch(PDO::FETCH_ASSOC);
         if (!$row) { $stmt=$conn->prepare('INSERT INTO schedules(clinic_id,sched_date,max_appointments) VALUES(:clinic,:date,50)'); $stmt->execute([':clinic'=>$clinicId,':date'=>$date]); $id=(int)$conn->lastInsertId(); $createdSchedules[]=$id; return ['schedule_id'=>$id,'clinic_id'=>$clinicId,'sched_date'=>$date]; }
@@ -52,5 +65,8 @@ try {
     foreach(array_reverse($createdAppointments) as $id){$conn->prepare("DELETE FROM audit_logs WHERE entity_type='appointment' AND entity_id=:id")->execute([':id'=>$id]);foreach(['appointment_billings','appointment_checkins','appointment_deposits','appointment_services'] as $table)$conn->prepare("DELETE FROM {$table} WHERE appointment_id=:id")->execute([':id'=>$id]);$conn->prepare('DELETE FROM appointments WHERE appointment_id=:id')->execute([':id'=>$id]);}
     if($patientId){$conn->prepare("DELETE FROM audit_logs WHERE entity_type='patient' AND entity_id=:id")->execute([':id'=>$patientId]);foreach(['patient_duplicate_reviews','patient_conditions','patient_consent','patient_dental_history','patient_medical_history'] as $table){$column=$table==='patient_duplicate_reviews'?'new_patient_id':'patient_id';$conn->prepare("DELETE FROM {$table} WHERE {$column}=:id")->execute([':id'=>$patientId]);}$conn->prepare('DELETE FROM patients WHERE patient_id=:id')->execute([':id'=>$patientId]);}
     foreach($createdSchedules as $id)$conn->prepare('DELETE FROM schedules WHERE schedule_id=:id')->execute([':id'=>$id]);
+    if($createdClinicId)$conn->prepare('DELETE FROM clinics WHERE clinic_id=:id')->execute([':id'=>$createdClinicId]);
+    if($registeredPatientId)$conn->prepare('DELETE FROM patients WHERE patient_id=:id')->execute([':id'=>$registeredPatientId]);
+    if($registeredUserId)$conn->prepare('DELETE FROM users WHERE id=:id')->execute([':id'=>$registeredUserId]);
 }
 echo "Feature workflow test completed.\n";

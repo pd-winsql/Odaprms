@@ -77,11 +77,17 @@ class UserController {
             'lastname' => trim($_POST['lastname'] ?? ''),
             'suffix' => trim($_POST['suffix'] ?? ''),
             'birthdate' => trim($_POST['birthdate'] ?? ''),
+            'gender' => trim($_POST['gender'] ?? ''),
             'phone_number' => trim($_POST['phone_number'] ?? ''),
         ];
 
-        if (!$email || !$password || !$identity['firstname'] || !$identity['lastname'] || !$identity['birthdate'] || !$identity['phone_number']) {
+        if (!$email || !$password || !$identity['firstname'] || !$identity['lastname'] || !$identity['birthdate'] || !$identity['gender'] || !$identity['phone_number']) {
             echo json_encode(['success' => false, 'message' => 'Please fill in all fields.']);
+            exit;
+        }
+
+        if (!in_array($identity['gender'], ['Male', 'Female', 'Prefer not to say'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Please select a valid gender option.']);
             exit;
         }
 
@@ -235,6 +241,17 @@ class UserController {
                 }
                 $this->conn->prepare("UPDATE patients SET email = :email WHERE patient_id = :patient_id")
                     ->execute([':email' => $pending['email'], ':patient_id' => $pending['link_patient_id']]);
+                $birthdate = new DateTimeImmutable($pending['identity']['birthdate']);
+                $age = $birthdate->diff(new DateTimeImmutable('today'))->y;
+                $this->conn->prepare("
+                    UPDATE patients
+                    SET age = :age, gender = COALESCE(NULLIF(gender, ''), :gender)
+                    WHERE patient_id = :patient_id
+                ")->execute([
+                    ':age' => $age,
+                    ':gender' => $pending['identity']['gender'],
+                    ':patient_id' => $pending['link_patient_id'],
+                ]);
                 $this->conn->prepare("
                     UPDATE patient_account_link_authorizations
                     SET status = 'Used', used_by_user_id = :user_id, used_at = NOW()

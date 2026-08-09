@@ -45,4 +45,29 @@ class Clinic {
         }
     }
 
+    public function clinicNameExists(string $name): bool {
+        $stmt = $this->conn->prepare("SELECT 1 FROM clinics WHERE LOWER(TRIM(clinic_name)) = LOWER(TRIM(:name)) LIMIT 1");
+        $stmt->execute([':name' => $name]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function createClinic(string $name, string $address, string $phone, ?string $image): int {
+        try {
+            $stmt = $this->conn->prepare("
+                INSERT INTO clinics (clinic_name, clinic_address, clinic_contact, clinic_image)
+                VALUES (:name, :address, :phone, :image)
+            ");
+            $stmt->execute([
+                ':name' => $name,
+                ':address' => $address,
+                ':phone' => $phone,
+                ':image' => $image,
+            ]);
+            return (int) $this->conn->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('createClinic error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
 }

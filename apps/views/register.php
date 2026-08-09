@@ -15,7 +15,7 @@ if (isset($_SESSION['user_id'])) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
-  <link rel="stylesheet" href="../../public/css/auth.css?v=20260809-email-auth-2">
+  <link rel="stylesheet" href="../../public/css/auth.css?v=20260809-email-auth-3">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
@@ -60,8 +60,17 @@ if (isset($_SESSION['user_id'])) {
           <div class="vd-auth-group"><label class="vd-label">Last Name</label><input type="text" name="lastname" class="vd-auth-input" required autocomplete="family-name"></div>
           <div class="vd-auth-group"><label class="vd-label">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" class="vd-auth-input" placeholder="Jr., Sr., III"></div>
           <div class="vd-auth-group"><label class="vd-label">Birthdate</label><input type="date" name="birthdate" class="vd-auth-input" max="<?= date('Y-m-d') ?>" required autocomplete="bday"></div>
+          <div class="vd-auth-group">
+            <label class="vd-label">Gender</label>
+            <select name="gender" class="vd-auth-input" required>
+              <option value="" selected disabled>Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </div>
           <div class="vd-auth-group"><label class="vd-label">Contact Number</label><input type="tel" name="phone_number" class="vd-auth-input" placeholder="09XXXXXXXXX" required autocomplete="tel"></div>
-          <div class="vd-auth-group vd-register-span-2">
+          <div class="vd-auth-group">
             <label class="vd-label">Email Address</label>
             <input type="email" name="email" class="vd-auth-input"
               placeholder="email@example.com" required autocomplete="email">

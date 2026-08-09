@@ -53,10 +53,11 @@ $csrfToken = $_SESSION['csrf_token'];
                                 <div class="vd-appt-meta"><?= date('M d, Y g:i A', strtotime($review['submitted_at'])) ?></div>
                             </td>
                             <td>
-                                <a class="btn vd-btn-outline btn-sm" target="_blank" rel="noopener"
-                                   href="../../controllers/depositController.php?action=receipt&amp;deposit_id=<?= (int) $review['deposit_id'] ?>">
+                                <button type="button" class="btn vd-btn-outline btn-sm" data-view-receipt
+                                   data-receipt-url="../../controllers/depositController.php?action=receipt&amp;deposit_id=<?= (int) $review['deposit_id'] ?>"
+                                   data-receipt-label="Receipt for appointment #<?= (int) $review['appointment_id'] ?>">
                                     View Receipt
-                                </a>
+                                </button>
                             </td>
                             <td>
                                 <div class="d-flex flex-wrap gap-2">
@@ -70,6 +71,30 @@ $csrfToken = $_SESSION['csrf_token'];
                 </table>
             </div>
         <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="receiptPreviewModal" tabindex="-1" aria-labelledby="receiptPreviewTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl vd-receipt-preview-dialog">
+        <div class="modal-content vd-modal-content vd-receipt-preview-modal">
+            <div class="modal-header">
+                <div>
+                    <div class="vd-action-modal-kicker">Payment proof</div>
+                    <h5 class="modal-title vd-modal-title mb-0" id="receiptPreviewTitle">Receipt Preview</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="vd-receipt-preview-loading" id="receiptPreviewLoading">
+                    <span class="vd-spinner" aria-hidden="true"></span>
+                    <span>Loading receipt…</span>
+                </div>
+                <iframe id="receiptPreviewFrame" class="vd-receipt-preview-frame" title="GCash receipt preview"></iframe>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close Preview</button>
+            </div>
         </div>
     </div>
 </div>
@@ -96,6 +121,37 @@ $csrfToken = $_SESSION['csrf_token'];
     const csrfToken = <?= json_encode($csrfToken) ?>;
     const controller = '../../controllers/depositController.php';
     let rejectionDepositId = null;
+    const receiptModalElement = document.getElementById('receiptPreviewModal');
+    const receiptModal = receiptModalElement ? bootstrap.Modal.getOrCreateInstance(receiptModalElement) : null;
+    const receiptFrame = document.getElementById('receiptPreviewFrame');
+    const receiptLoading = document.getElementById('receiptPreviewLoading');
+    let receiptButton = null;
+
+    document.querySelectorAll('[data-view-receipt]').forEach(button => {
+        button.addEventListener('click', () => {
+            receiptButton = button;
+            document.getElementById('receiptPreviewTitle').textContent = button.dataset.receiptLabel || 'Receipt Preview';
+            receiptLoading.classList.remove('d-none');
+            receiptFrame.classList.remove('is-ready');
+            LoadingUI.setButton(button, true, 'Loading…');
+            receiptFrame.src = button.dataset.receiptUrl;
+            receiptModal.show();
+        });
+    });
+
+    receiptFrame?.addEventListener('load', () => {
+        receiptLoading.classList.add('d-none');
+        receiptFrame.classList.add('is-ready');
+        if (receiptButton) LoadingUI.setButton(receiptButton, false);
+    });
+
+    receiptModalElement?.addEventListener('hidden.bs.modal', () => {
+        if (receiptButton) LoadingUI.setButton(receiptButton, false);
+        receiptButton = null;
+        receiptFrame.removeAttribute('src');
+        receiptFrame.classList.remove('is-ready');
+        receiptLoading.classList.remove('d-none');
+    });
 
     async function sendAction(action, depositId, reason = '') {
         const body = new FormData();
@@ -112,10 +168,18 @@ $csrfToken = $_SESSION['csrf_token'];
 
     document.querySelectorAll('[data-verify-deposit]').forEach(button => {
         button.addEventListener('click', async () => {
-            if (!confirm('Approve this GCash payment and confirm the appointment?')) return;
-            button.disabled = true;
+            const confirmation = await window.showActionModal({
+                title: 'Approve GCash Deposit',
+                kicker: 'Payment verification',
+                message: 'Confirm that the payment appears in the clinic’s GCash account. This will confirm the appointment and generate the patient code.',
+                confirmText: 'Approve Payment',
+                icon: 'ti-receipt-check',
+                tone: 'success'
+            });
+            if (!confirmation.confirmed) return;
+            LoadingUI.setButton(button, true, 'Approving…');
             try { await sendAction('verify', button.dataset.verifyDeposit); }
-            catch (error) { window.showToast(error.message, false); button.disabled = false; }
+            catch (error) { window.showToast(error.message, false); LoadingUI.setButton(button, false); }
         });
     });
 
@@ -135,9 +199,9 @@ $csrfToken = $_SESSION['csrf_token'];
             errorBox.classList.remove('d-none');
             return;
         }
-        this.disabled = true;
+        LoadingUI.setButton(this, true, 'Rejecting…');
         try { await sendAction('reject', rejectionDepositId, reason); }
-        catch (error) { errorBox.textContent = error.message; errorBox.classList.remove('d-none'); this.disabled = false; }
+        catch (error) { errorBox.textContent = error.message; errorBox.classList.remove('d-none'); LoadingUI.setButton(this, false); }
     });
 })();
 </script>

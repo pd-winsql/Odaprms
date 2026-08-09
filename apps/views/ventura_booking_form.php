@@ -470,12 +470,16 @@
             });
             window.location.href = `payment.php?${params.toString()}`;
         } else {
-            alert(result.message);
+            bookingError.textContent = result.message || 'Unable to submit your booking.';
+            bookingError.classList.remove('d-none');
+            bookingError.scrollIntoView({ behavior: 'smooth', block: 'center' });
             LoadingUI.setButton(button, false);
         }
         } catch (error) {
             LoadingUI.setButton(button, false);
-            alert('Unable to submit your booking. Please try again.');
+            bookingError.textContent = 'Unable to submit your booking. Please try again.';
+            bookingError.classList.remove('d-none');
+            bookingError.scrollIntoView({ behavior: 'smooth', block: 'center' });
             console.error(error);
         }
         }

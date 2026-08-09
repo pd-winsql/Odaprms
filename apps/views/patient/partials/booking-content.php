@@ -37,10 +37,19 @@ foreach ($serviceRows as $row) {
     $serviceCategories[$categoryId]['services'][] = $row;
 }
 
+$calculatedAge = $patient['age'] ?? '';
+if (!empty($patient['birthdate'])) {
+    $birthdate = DateTimeImmutable::createFromFormat('Y-m-d', $patient['birthdate']);
+    $today = new DateTimeImmutable('today');
+    if ($birthdate && $birthdate->format('Y-m-d') === $patient['birthdate'] && $birthdate <= $today) {
+        $calculatedAge = $birthdate->diff($today)->y;
+    }
+}
+
 $profileFields = [
     'Name' => trim(($patient['firstname'] ?? '') . ' ' . ($patient['middlename'] ?? '') . ' ' . ($patient['lastname'] ?? '')),
     'Birthdate' => !empty($patient['birthdate']) ? date('F j, Y', strtotime($patient['birthdate'])) : '',
-    'Age' => $patient['age'] ?? '',
+    'Age' => $calculatedAge,
     'Gender' => $patient['gender'] ?? '',
     'Phone' => $patient['phone_number'] ?? '',
     'Email' => $patient['email'] ?? '',

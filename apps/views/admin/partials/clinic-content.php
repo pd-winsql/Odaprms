@@ -14,9 +14,21 @@ $conn = $db->connect();
 $clinicModel = new Clinic($conn);
 
 $clinics = $clinicModel->getAllClinics();
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
 <div class="d-flex flex-column gap-4">
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+        <div>
+            <div class="vd-welcome-greet">CLINIC MANAGEMENT</div>
+            <div class="vd-welcome-name">Clinic Locations</div>
+            <p class="text-muted small mb-0 mt-2">Add a clinic or update its contact details, address, and display image.</p>
+        </div>
+        <button type="button" class="btn vd-btn-gold align-self-start" data-bs-toggle="modal" data-bs-target="#addClinicModal">
+            <i class="ti ti-plus me-1"></i> Add Clinic
+        </button>
+    </div>
 
     <?php if (empty($clinics)): ?>
         <div class="vd-empty-state">No clinics found.</div>
@@ -82,9 +94,52 @@ $clinics = $clinicModel->getAllClinics();
 
 </div>
 
+<div class="modal fade" id="addClinicModal" tabindex="-1" aria-labelledby="addClinicModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content vd-modal-content">
+            <form id="addClinicForm" enctype="multipart/form-data" novalidate>
+                <div class="modal-header">
+                    <div>
+                        <div class="vd-action-modal-kicker">Clinic management</div>
+                        <h5 class="modal-title vd-modal-title mb-0" id="addClinicModalTitle">Add New Clinic</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="addClinicError" class="alert alert-danger d-none" role="alert"></div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="vd-label form-label" for="newClinicImage">Clinic Image <span class="text-muted">(optional)</span></label>
+                            <input type="file" class="form-control vd-input" id="newClinicImage" name="image" accept="image/jpeg,image/png,image/webp">
+                            <div class="form-text">JPG, PNG, or WEBP, up to 5 MB.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="vd-label form-label" for="newClinicName">Clinic Name</label>
+                            <input type="text" class="form-control vd-input" id="newClinicName" name="name" maxlength="100" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="vd-label form-label" for="newClinicPhone">Contact Number</label>
+                            <input type="tel" class="form-control vd-input" id="newClinicPhone" name="phone" maxlength="15" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="vd-label form-label" for="newClinicAddress">Address</label>
+                            <input type="text" class="form-control vd-input" id="newClinicAddress" name="address" maxlength="100" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn vd-btn-gold" id="addClinicSubmit">Add Clinic</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/clinicController.php';
+    const csrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
 
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
@@ -102,6 +157,7 @@ $clinics = $clinicModel->getAllClinics();
 
             const formData = new FormData();
             formData.append('action', 'updateInline');
+            formData.append('csrf_token', csrfToken);
             formData.append('clinic_id', id);
             formData.append('name', nameInput.value.trim());
             formData.append('phone', phoneInput.value.trim());
@@ -156,6 +212,49 @@ $clinics = $clinicModel->getAllClinics();
                 this.textContent = originalText;
             }
         });
+    });
+
+    const addClinicModalElement = document.getElementById('addClinicModal');
+    const addClinicModal = bootstrap.Modal.getOrCreateInstance(addClinicModalElement);
+    const addClinicForm = document.getElementById('addClinicForm');
+    const addClinicError = document.getElementById('addClinicError');
+
+    addClinicModalElement.addEventListener('hidden.bs.modal', () => {
+        addClinicForm.reset();
+        addClinicError.classList.add('d-none');
+        addClinicError.textContent = '';
+    });
+
+    addClinicForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const submitButton = document.getElementById('addClinicSubmit');
+        addClinicError.classList.add('d-none');
+
+        if (!this.checkValidity()) {
+            this.reportValidity();
+            return;
+        }
+
+        const formData = new FormData(this);
+        formData.append('action', 'add');
+        formData.append('csrf_token', csrfToken);
+        LoadingUI.setButton(submitButton, true, 'Adding…');
+
+        try {
+            const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Failed to add clinic.');
+
+            showToast(result.message, true);
+            addClinicModalElement.addEventListener('hidden.bs.modal', () => {
+                document.querySelector('[data-page="clinic-content.php"]')?.click();
+            }, { once: true });
+            addClinicModal.hide();
+        } catch (error) {
+            addClinicError.textContent = error.message || 'Unable to add clinic.';
+            addClinicError.classList.remove('d-none');
+            LoadingUI.setButton(submitButton, false);
+        }
     });
 })();
 </script>
