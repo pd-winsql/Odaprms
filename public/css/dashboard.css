@@ -2478,3 +2478,53 @@
   font-size: 17px !important;
   line-height: 1;
 }
+
+/* Password visibility control inside dashboard forms */
+.vd-change-password-form {
+  max-width: 320px;
+  width: 100%;
+}
+
+.vd-auth-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.vd-auth-input-wrap .vd-auth-input {
+  box-sizing: border-box;
+  display: block;
+  padding-right: 44px;
+  width: 100%;
+}
+
+.vd-auth-input-wrap .vd-pw-toggle {
+  align-items: center;
+  appearance: none;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--mid);
+  cursor: pointer;
+  display: flex;
+  height: 36px;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+}
+
+.vd-auth-input-wrap .vd-pw-toggle:hover {
+  color: var(--gold);
+}
+
+.vd-auth-input-wrap .vd-pw-toggle:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.vd-auth-input-wrap .vd-pw-toggle:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -5px;
+}
