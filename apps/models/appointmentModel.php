@@ -83,7 +83,8 @@ class Appointment {
             $activePatient = $this->conn->prepare("
                 SELECT appointment_id FROM appointments
                 WHERE patient_id = :patient_id
-                  AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress')
+                    AND date >= CURDATE()
+                    AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress')
                 LIMIT 1 FOR UPDATE
             ");
             $activePatient->execute([':patient_id' => $patient_id]);

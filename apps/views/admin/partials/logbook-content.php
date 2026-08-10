@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../../models/logbookModel.php';
 
 $selectedDate = trim($_GET['date'] ?? '');
 $validDate = $selectedDate !== '' && DateTime::createFromFormat('Y-m-d', $selectedDate)?->format('Y-m-d') === $selectedDate;
+$isToday = $validDate && $selectedDate === date('Y-m-d');
 $entries = [];
 if ($validDate) {
     $db = new Database();
@@ -47,7 +48,7 @@ if ($validDate) {
             <?php else: ?>
                 <div class="vd-appt-table-wrap">
                     <table class="vd-appt-table w-100">
-                        <thead><tr><th>Patient</th><th>Clinic / Services</th><th>Arrival</th><th>Profile at Arrival</th><th>Checked In By</th><th>Outcome</th></tr></thead>
+                        <thead><tr><th>Patient</th><th>Clinic / Services</th><th>Arrival</th><th>Profile at Arrival</th><th>Checked In By</th><th>Outcome</th><th>Action</th></tr></thead>
                         <tbody>
                         <?php foreach ($entries as $entry): ?>
                             <tr>
@@ -57,6 +58,21 @@ if ($validDate) {
                                 <td class="vd-appt-meta"><?= $entry['checkin_id'] ? ($entry['profile_required_at_arrival'] ? 'Profile required' : 'Complete') : '—' ?></td>
                                 <td class="vd-appt-meta"><?= htmlspecialchars($entry['checked_in_by'] ?: '—') ?></td>
                                 <td><span class="vd-status vd-status-<?= htmlspecialchars(strtolower(str_replace(' ', '-', $entry['appointment_status']))) ?>"><?= htmlspecialchars($entry['appointment_status']) ?></span></td>
+                                <td>
+                                    <?php if ($isToday && $entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready'): ?>
+                                        <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
+                                            <i class="ti ti-player-play me-1"></i>Start Treatment
+                                        </button>
+                                    <?php elseif ($isToday && $entry['appointment_status'] === 'In Progress'): ?>
+                                        <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="Completed" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
+                                            <i class="ti ti-check me-1"></i>Complete Visit
+                                        </button>
+                                    <?php elseif ($entry['appointment_status'] === 'Completed'): ?>
+                                        <span class="vd-appt-meta">Visit completed</span>
+                                    <?php else: ?>
+                                        <span class="vd-appt-meta">—</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
@@ -87,6 +103,44 @@ if ($validDate) {
             });
         } catch (error) { content.innerHTML = `<div class="vd-empty-state">${error.message}</div>`; }
         finally { LoadingUI.finishContent(content); }
+    });
+
+    document.querySelectorAll('[data-visit-status]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const status = button.dataset.visitStatus;
+            const appointmentId = button.dataset.appointmentId;
+            const label = status === 'In Progress' ? 'start treatment' : 'complete this visit';
+
+            if (typeof window.showActionModal === 'function') {
+                const confirmation = await window.showActionModal({
+                    title: status === 'In Progress' ? 'Start Treatment' : 'Complete Visit',
+                    kicker: 'Appointment workflow',
+                    message: `Are you sure you want to ${label}?`,
+                    confirmText: status === 'In Progress' ? 'Start Treatment' : 'Complete Visit',
+                    icon: status === 'In Progress' ? 'ti-player-play' : 'ti-check',
+                    tone: 'primary'
+                });
+                if (!confirmation.confirmed) return;
+            }
+
+            const body = new FormData();
+            body.append('action', 'updateVisitStatus');
+            body.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
+            body.append('appointment_id', appointmentId);
+            body.append('status', status);
+
+            LoadingUI.setButton(button, true, status === 'In Progress' ? 'Starting…' : 'Completing…');
+            try {
+                const response = await fetch('../../controllers/logbookController.php', { method: 'POST', body });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to update the visit.');
+                window.showToast(result.message || `Visit updated to ${status}.`, true);
+                document.getElementById('loadHistoricalLogbook')?.click();
+            } catch (error) {
+                window.showToast(error.message || 'Unable to update the visit.', false);
+                LoadingUI.setButton(button, false);
+            }
+        });
     });
 })();
 </script>

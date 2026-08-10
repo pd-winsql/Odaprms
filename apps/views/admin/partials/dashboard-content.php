@@ -69,6 +69,16 @@ function dashboardStatusClass($status) {
                                     <span class="text-muted small">Awaiting patient code</span>
                                 <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?>
                                     <button type="button" class="btn vd-btn-outline btn-sm" data-complete-profile="<?= (int) $entry['patient_id'] ?>">Complete Patient Form</button>
+                                <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready'): ?>
+                                    <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
+                                        <i class="ti ti-player-play me-1"></i>Start Treatment
+                                    </button>
+                                <?php elseif ($entry['appointment_status'] === 'In Progress'): ?>
+                                    <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="Completed" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
+                                        <i class="ti ti-check me-1"></i>Complete Visit
+                                    </button>
+                                <?php elseif ($entry['appointment_status'] === 'Completed'): ?>
+                                    <span class="text-muted small">Visit completed</span>
                                 <?php else: ?><span class="text-muted small"><?= htmlspecialchars($entry['checked_in_by'] ?: '—') ?></span><?php endif; ?>
                             </td>
                         </tr>
@@ -154,6 +164,42 @@ function dashboardStatusClass($status) {
                 });
             } catch (error) { content.innerHTML = `<div class="vd-empty-state">${error.message}</div>`; }
             finally { LoadingUI.finishContent(content); }
+        });
+    });
+
+    document.querySelectorAll('[data-visit-status]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const status = button.dataset.visitStatus;
+            const isStarting = status === 'In Progress';
+            const confirmation = await window.showActionModal({
+                title: isStarting ? 'Start Treatment' : 'Complete Visit',
+                kicker: "Today's logbook",
+                message: isStarting
+                    ? 'Confirm that the patient is ready and treatment is beginning.'
+                    : 'Confirm that treatment for this visit has been completed.',
+                confirmText: isStarting ? 'Start Treatment' : 'Complete Visit',
+                icon: isStarting ? 'ti-player-play' : 'ti-check',
+                tone: 'success'
+            });
+            if (!confirmation.confirmed) return;
+
+            const body = new FormData();
+            body.append('action', 'updateVisitStatus');
+            body.append('appointment_id', button.dataset.appointmentId);
+            body.append('status', status);
+            body.append('csrf_token', csrfToken);
+
+            LoadingUI.setButton(button, true, isStarting ? 'Starting…' : 'Completing…');
+            try {
+                const response = await fetch('../../controllers/logbookController.php', { method: 'POST', body });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to update the visit.');
+                window.showToast(isStarting ? 'Treatment started.' : 'Visit completed.', true);
+                document.querySelector('[data-page="dashboard-content.php"]')?.click();
+            } catch (error) {
+                window.showToast(error.message || 'Unable to update the visit.', false);
+                LoadingUI.setButton(button, false);
+            }
         });
     });
 })();
