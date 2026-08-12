@@ -280,6 +280,44 @@ class DepositModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getAllRecords(): array {
+        $stmt = $this->conn->query("
+            SELECT
+                d.deposit_id,
+                d.appointment_id,
+                d.amount,
+                d.gcash_reference,
+                d.status AS deposit_status,
+                d.submitted_at,
+                d.verified_at,
+                d.rejection_reason,
+                d.refunded_at,
+                CASE WHEN d.receipt_path IS NULL THEN 0 ELSE 1 END AS has_receipt,
+                a.date,
+                a.status AS appointment_status,
+                a.appointment_code,
+                p.firstname,
+                p.lastname,
+                p.email,
+                c.clinic_name,
+                verifier.email AS verified_by,
+                verifier.user_role AS verified_by_role,
+                (
+                    SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order, s.service_name SEPARATOR ', ')
+                    FROM appointment_services aps
+                    JOIN services s ON s.service_id = aps.service_id
+                    WHERE aps.appointment_id = a.appointment_id
+                ) AS service_name
+            FROM appointment_deposits d
+            JOIN appointments a ON a.appointment_id = d.appointment_id
+            JOIN patients p ON p.patient_id = a.patient_id
+            JOIN clinics c ON c.clinic_id = a.clinic_id
+            LEFT JOIN users verifier ON verifier.id = d.verified_by_user_id
+            ORDER BY COALESCE(d.submitted_at, d.created_at) DESC, d.deposit_id DESC
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getPendingReviewCount(): int {
         return (int) $this->conn->query("
             SELECT COUNT(*)

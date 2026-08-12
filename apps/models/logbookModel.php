@@ -28,6 +28,15 @@ class LogbookModel {
                 ci.checkin_status,
                 ci.profile_required_at_arrival,
                 ci.ready_at,
+                COALESCE(d.amount, 0) AS verified_deposit,
+                b.billing_id,
+                b.actual_service_amount,
+                b.deposit_applied,
+                b.remaining_balance,
+                b.cash_received,
+                b.payment_status,
+                b.recorded_at AS billing_recorded_at,
+                b.notes AS billing_notes,
                 COALESCE(
                     NULLIF(TRIM(CONCAT_WS(' ', st.firstname, st.middlename, st.lastname)), ''),
                     u.email,
@@ -43,6 +52,9 @@ class LogbookModel {
             JOIN patients p ON p.patient_id = a.patient_id
             JOIN clinics c ON c.clinic_id = a.clinic_id
             LEFT JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
+            LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
+                AND d.status IN ('Verified', 'Transferred')
+            LEFT JOIN appointment_billings b ON b.appointment_id = a.appointment_id
             LEFT JOIN users u ON u.id = ci.checked_in_by_user_id
             LEFT JOIN staffs st ON st.user_id = u.id
         ";

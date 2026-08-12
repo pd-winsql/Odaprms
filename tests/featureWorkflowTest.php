@@ -50,14 +50,24 @@ try {
     expectTrue((float)$deposit['amount']===400.0 && $deposit['status']==='Awaiting Submission','Acceptance creates the fixed ₱400 deposit and deadline.');
     $reference='TEST'.date('YmdHis').random_int(100,999);
     $submitted=$deposits->submitReceipt($booking['appointment_id'],$reference,'storage/payment_receipts/test.jpg','image/jpeg'); expectTrue($submitted['success'],'Receipt submission pauses expiry and enters payment review.');
+    $staffAppointment=array_values(array_filter($appointments->getAllUpcomingWithStatus(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
+    expectTrue($staffAppointment&&$staffAppointment['deposit_status']==='Under Review'&&!empty($staffAppointment['has_receipt']),'The appointment workspace includes the submitted deposit and receipt context.');
+    $depositRecord=array_values(array_filter($deposits->getAllRecords(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
+    expectTrue($depositRecord&&$depositRecord['deposit_status']==='Under Review','The read-only deposit records query includes the pending payment.');
     $verified=$deposits->verify((int)$deposit['deposit_id'],$staffId); expectTrue($verified['success'] && str_starts_with($verified['appointment_code'],'AVC-'),'Verification confirms the appointment and generates its code.');
     $matches=$logbook->lookupToday($verified['appointment_code']); expectTrue(count($matches)===1,'The appointment code finds today’s confirmed appointment.');
     $checkin=$logbook->checkIn($booking['appointment_id'],$staffId,'Code'); expectTrue($checkin['success'] && $checkin['status']==='Profile Required','First-time patient is checked in with Profile Required.');
     $profile=['firstname'=>'Workflow','lastname'=>'Patient','middlename'=>'','birthdate'=>'2000-01-01','age'=>26,'gender'=>'Prefer not to say','civil_status'=>'Single','phone_number'=>'09123456789','email'=>'workflow-test@example.invalid','home_address'=>'Test','work_address'=>'','occupation'=>'Tester','office_contact'=>'','fb_account'=>'','guardian_name'=>'','guardian_contact'=>'','physician_name'=>'','physician_contact'=>'','physician_address'=>'','previous_dentist'=>'','last_dental_visit'=>'','treatment_done'=>'','reason_for_visit'=>'Checkup','referred_by'=>'','good_health'=>1,'medical_condition'=>0,'medical_condition_detail'=>'','serious_illness'=>0,'serious_illness_detail'=>'','hospitalized'=>0,'hospitalized_detail'=>'','medication'=>0,'medication_detail'=>'','smoke'=>0,'alcohol'=>0,'drugs'=>0,'allergy'=>0,'allergy_detail'=>'','pregnant'=>0,'nursing'=>0,'birth_control'=>0,'blood_type'=>'','blood_pressure'=>'','cond_others'=>'','conditions'=>[],'consent_name'=>'Workflow Patient','consent_for'=>'myself'];
     expectTrue($patients->completeProfileByStaff($patientId,$profile,$staffId)['success'],'Staff completes the entire patient profile.');
     expectTrue($appointments->updateAppointmentStatus($booking['appointment_id'],'In Progress',$staffId)['success'],'Ready checked-in appointment can start treatment.');
-    expectTrue($appointments->updateAppointmentStatus($booking['appointment_id'],'Completed',$staffId)['success'],'In-progress appointment can be completed.');
-    expectTrue($billings->recordCashPayment($booking['appointment_id'],2000,1600,$staffId)['payment_status']==='Paid','Final cash billing deducts the verified deposit.');
+    $shortPayment=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1500,$staffId);
+    expectTrue(!$shortPayment['success']&&$conn->query('SELECT status FROM appointments WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()==='In Progress','Insufficient cash leaves the visit in progress and creates no billing.');
+    $settled=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,2000,$staffId,'Paid at the front desk.');
+    expectTrue($settled['success']&&$settled['payment_status']==='Paid'&&(float)$settled['deposit_applied']===400.0&&(float)$settled['amount_due']===1600.0&&(float)$settled['change']===400.0,'Final billing deducts the deposit, calculates change, and records full payment.');
+    expectTrue($conn->query('SELECT status FROM appointments WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()==='Completed','Payment and visit completion are committed together.');
+    expectTrue(!$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1600,$staffId)['success'],'A completed visit cannot be billed twice.');
+    $billingRecord=array_values(array_filter($billings->getStaffBillings(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
+    expectTrue($billingRecord&&$billingRecord['payment_status']==='Paid','The read-only billing records query includes the completed settlement.');
 
     $expiring=$appointments->bookAppointment($patientId,$futureSchedule['clinic_id'],[$serviceId],$futureSchedule['sched_date'],$futureSchedule['schedule_id']); $createdAppointments[]=(int)$expiring['appointment_id'];
     $appointments->updateAppointmentStatus($expiring['appointment_id'],'Awaiting Deposit',$staffId);

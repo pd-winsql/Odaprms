@@ -22,17 +22,6 @@ $appointmentIds = array_merge(
 );
 $servicesByAppointment = $appointmentModel->getServiceDetailsForAppointments($appointmentIds);
 
-function allowedStatusOptions($current) {
-    $transitions = [
-        'Pending Review' => ['Awaiting Deposit', 'Rejected'],
-        'Awaiting Deposit' => ['Cancelled'],
-        'Confirmed' => ['Cancelled', 'No-show'],
-        'Checked In' => ['In Progress'],
-        'In Progress' => ['Completed'],
-    ];
-    return array_values(array_unique(array_merge([$current], $transitions[$current] ?? [])));
-}
-
 // Build date bounds for each table independently.
 function buildFilterOptions($rows) {
     $dates         = [];
@@ -100,6 +89,25 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         'clinic' => $appointment['clinic_name'] ?? '',
         'date' => $appointment['date'] ?? '',
         'status' => $appointment['status'] ?? '',
+        'deposit' => !empty($appointment['deposit_id']) ? [
+            'id' => (int) $appointment['deposit_id'],
+            'amount' => $appointment['deposit_amount'] ?? '',
+            'status' => $appointment['deposit_status'] ?? '',
+            'reference' => $appointment['gcash_reference'] ?? '',
+            'submittedAt' => $appointment['submitted_at'] ?? '',
+            'verifiedAt' => $appointment['verified_at'] ?? '',
+            'verifiedBy' => $appointment['payment_verified_by'] ?? '',
+            'verifiedByRole' => $appointment['payment_verified_by_role'] ?? '',
+            'deadlineAt' => $appointment['resubmission_deadline_at'] ?: ($appointment['payment_deadline_at'] ?? ''),
+            'rejectionReason' => $appointment['payment_rejection_reason'] ?? '',
+            'refundReason' => $appointment['refund_reason'] ?? '',
+            'refundedAt' => $appointment['refunded_at'] ?? '',
+            'hasReceipt' => (bool) ($appointment['has_receipt'] ?? false),
+            'receiptUrl' => !empty($appointment['has_receipt'])
+                ? '../../controllers/depositController.php?action=receipt&deposit_id=' . (int) $appointment['deposit_id']
+                : '',
+        ] : null,
+        'appointmentCode' => $appointment['appointment_code'] ?? '',
         'services' => array_map(static fn($service) => [
             'name' => $service['service_name'] ?? '',
             'description' => $service['service_description'] ?? '',
@@ -220,29 +228,45 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     <td>
                         <div class="vd-action-group">
                         <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn"
+                            title="View appointment details"
                             data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">
                             <i class="ti ti-eye" aria-hidden="true"></i>
                         </button>
-                        <select class="vd-status-select"
-                            data-id="<?= $appt['appointment_id'] ?>"
-                            data-original="<?= htmlspecialchars($appt['status']) ?>"
+                        <?php if ($appt['status'] === 'Pending Review'): ?>
+                        <button type="button" class="btn vd-btn-gold btn-sm" data-status-action="Awaiting Deposit"
+                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
-                            <?php foreach (allowedStatusOptions($appt['status']) as $s): ?>
-                            <option value="<?= $s ?>" <?= $appt['status'] === $s ? 'selected' : '' ?>>
-                                <?= $s ?>
-                            </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <button class="btn vd-btn-gold btn-sm vd-save-btn"
-                            data-id="<?= $appt['appointment_id'] ?>"
-                            disabled>
-                            Save & Notify
-                        </button>
-                        <?php if ($appt['status'] === 'Awaiting Deposit'): ?>
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Accept</button>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="Rejected"
+                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
+                            data-email="<?= htmlspecialchars($appt['email']) ?>"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Reject</button>
+                        <?php elseif ($appt['status'] === 'Payment Under Review'): ?>
+                        <button type="button" class="btn vd-btn-gold btn-sm vd-appointment-details-btn vd-review-payment-btn"
+                            data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">Review Payment</button>
+                        <?php elseif ($appt['status'] === 'Awaiting Deposit'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm" data-extend-deadline="<?= (int)$appt['appointment_id'] ?>">Extend 8h</button>
                         <button type="button" class="btn vd-btn-outline btn-sm" data-transfer-deposit="<?= (int)$appt['appointment_id'] ?>">Transfer Deposit</button>
-                        <?php elseif ($appt['status'] === 'Cancelled'): ?>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="Cancelled"
+                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
+                            data-email="<?= htmlspecialchars($appt['email']) ?>"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Cancel</button>
+                        <?php elseif ($appt['status'] === 'Confirmed'): ?>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="Cancelled"
+                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Cancel</button>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="No-show"
+                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">No-show</button>
+                        <?php elseif ($appt['status'] === 'Checked In'): ?>
+                        <button type="button" class="btn vd-btn-gold btn-sm" data-status-action="In Progress"
+                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Start Treatment</button>
+                        <?php elseif ($appt['status'] === 'In Progress'): ?>
+                        <button type="button" class="btn vd-btn-gold btn-sm" data-status-action="Completed"
+                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Complete</button>
+                        <?php elseif ($appt['status'] === 'Cancelled' && ($appt['deposit_status'] ?? '') === 'For Refund'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm" data-record-refund="<?= (int)$appt['appointment_id'] ?>">Record Refund</button>
                         <?php endif; ?>
                         </div>
@@ -394,12 +418,34 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     <div class="vd-appointment-service-list" id="appointmentServiceList"></div>
                 </section>
 
+                <section class="vd-appointment-payment-section" aria-labelledby="appointmentPaymentHeading">
+                    <div class="vd-appointment-section-heading">
+                        <h6 class="vd-appointment-details-section-title mb-0" id="appointmentPaymentHeading">Deposit and payment</h6>
+                        <span class="vd-status" id="appointmentDepositStatus"></span>
+                    </div>
+                    <div class="vd-appointment-detail-grid" id="appointmentPaymentGrid"></div>
+                    <div class="vd-appointment-payment-note d-none" id="appointmentPaymentNote"></div>
+                    <div class="vd-appointment-receipt-wrap d-none" id="appointmentReceiptWrap">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                            <strong>Submitted receipt</strong>
+                            <button type="button" class="btn vd-btn-outline btn-sm" id="toggleAppointmentReceipt">View Receipt</button>
+                        </div>
+                        <div class="vd-appointment-receipt-preview d-none" id="appointmentReceiptPreview">
+                            <div class="vd-receipt-preview-loading" id="appointmentReceiptLoading">
+                                <span class="vd-spinner" aria-hidden="true"></span><span>Loading receipt...</span>
+                            </div>
+                            <iframe id="appointmentReceiptFrame" class="vd-receipt-preview-frame" title="Payment receipt preview"></iframe>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="vd-appointment-activity-section" aria-labelledby="appointmentActivityHeading">
                     <h6 class="vd-appointment-details-section-title" id="appointmentActivityHeading">Latest activity</h6>
                     <div id="appointmentActivityDetail"></div>
                 </section>
             </div>
             <div class="modal-footer">
+                <div class="d-flex flex-wrap gap-2 me-auto" id="appointmentModalActions"></div>
                 <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -409,6 +455,9 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/appointmentController.php';
+    const DEPOSIT_CONTROLLER = '../../../apps/controllers/depositController.php';
+    const CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token']) ?>;
+    let activeAppointmentPayload = null;
 
     function showToast(msg, success) {
         // Prefer the global showToast provided by the dashboard shell.
@@ -485,6 +534,90 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         container.appendChild(item);
     }
 
+    function reloadAppointments() {
+        const link = document.querySelector('[data-page="appointment-content.php"]');
+        if (link) link.click();
+        else window.location.reload();
+    }
+
+    function makeActionButton(label, className, handler) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.textContent = label;
+        button.addEventListener('click', () => handler(button));
+        return button;
+    }
+
+    function renderPaymentDetails(payload) {
+        const deposit = payload.deposit;
+        const statusPill = document.getElementById('appointmentDepositStatus');
+        const grid = document.getElementById('appointmentPaymentGrid');
+        const note = document.getElementById('appointmentPaymentNote');
+        const receiptWrap = document.getElementById('appointmentReceiptWrap');
+        const receiptPreview = document.getElementById('appointmentReceiptPreview');
+        const receiptFrame = document.getElementById('appointmentReceiptFrame');
+        const receiptToggle = document.getElementById('toggleAppointmentReceipt');
+
+        grid.replaceChildren();
+        note.classList.add('d-none');
+        note.textContent = '';
+        receiptWrap.classList.add('d-none');
+        receiptPreview.classList.add('d-none');
+        receiptFrame.removeAttribute('src');
+        receiptFrame.classList.remove('is-ready');
+        receiptToggle.textContent = 'View Receipt';
+
+        if (!deposit) {
+            statusPill.className = 'vd-status';
+            statusPill.textContent = 'No deposit yet';
+            note.textContent = payload.status === 'Pending Review'
+                ? 'Accept this appointment request before the patient can submit a deposit.'
+                : 'No deposit record is linked to this appointment.';
+            note.classList.remove('d-none');
+            return;
+        }
+
+        statusPill.className = 'vd-status vd-status-' + String(deposit.status).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        statusPill.textContent = deposit.status || 'Unknown';
+        const amount = Number(deposit.amount || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+        appendAppointmentDetail(grid, 'Deposit amount', amount);
+        appendAppointmentDetail(grid, 'GCash reference', deposit.reference || 'Not submitted');
+        appendAppointmentDetail(grid, 'Submitted', deposit.submittedAt ? formatDateTime(deposit.submittedAt) : 'Not submitted');
+        appendAppointmentDetail(grid, 'Payment deadline', deposit.deadlineAt ? formatDateTime(deposit.deadlineAt) : 'Not applicable');
+        if (deposit.verifiedAt) appendAppointmentDetail(grid, 'Reviewed', formatDateTime(deposit.verifiedAt));
+        if (deposit.verifiedBy) appendAppointmentDetail(grid, 'Reviewed by', [deposit.verifiedBy, deposit.verifiedByRole].filter(Boolean).join(' · '));
+        if (payload.appointmentCode) appendAppointmentDetail(grid, 'Appointment code', payload.appointmentCode);
+
+        const noteText = deposit.rejectionReason || deposit.refundReason || '';
+        if (noteText) {
+            note.textContent = noteText;
+            note.classList.remove('d-none');
+        }
+        if (deposit.hasReceipt && deposit.receiptUrl) {
+            receiptWrap.classList.remove('d-none');
+            receiptToggle.dataset.receiptUrl = deposit.receiptUrl;
+        } else {
+            delete receiptToggle.dataset.receiptUrl;
+        }
+    }
+
+    function renderModalActions(payload) {
+        const actions = document.getElementById('appointmentModalActions');
+        actions.replaceChildren();
+        if (payload.status === 'Pending Review') {
+            actions.append(
+                makeActionButton('Accept', 'btn vd-btn-gold', button => runStatusAction(button, payload, 'Awaiting Deposit')),
+                makeActionButton('Reject', 'btn vd-btn-outline', button => runStatusAction(button, payload, 'Rejected'))
+            );
+        } else if (payload.status === 'Payment Under Review' && payload.deposit?.id) {
+            actions.append(
+                makeActionButton('Approve Payment', 'btn vd-btn-gold', button => runPaymentReview(button, payload, 'verify')),
+                makeActionButton('Reject Payment', 'btn vd-btn-outline', button => runPaymentReview(button, payload, 'reject'))
+            );
+        }
+    }
+
     function openAppointmentDetails(payload) {
         const modalElement = document.getElementById('appointmentDetailsModal');
         const title = document.getElementById('appointmentDetailsTitle');
@@ -493,6 +626,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const serviceList = document.getElementById('appointmentServiceList');
         const serviceCount = document.getElementById('appointmentServiceCount');
         const activityDetail = document.getElementById('appointmentActivityDetail');
+        activeAppointmentPayload = payload;
 
         title.textContent = payload.patientName || 'Patient appointment';
         subtitle.textContent = [formatDateTime(payload.date, true), payload.clinic].filter(Boolean).join(' · ');
@@ -505,6 +639,8 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         appendAppointmentDetail(detailGrid, 'Contact number', payload.phone);
         appendAppointmentDetail(detailGrid, 'Age', payload.age ? String(payload.age) : 'Not provided');
         appendAppointmentDetail(detailGrid, 'Gender', payload.gender);
+        renderPaymentDetails(payload);
+        renderModalActions(payload);
 
         const services = Array.isArray(payload.services) ? payload.services : [];
         serviceCount.textContent = `${services.length} service${services.length === 1 ? '' : 's'}`;
@@ -654,6 +790,11 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 
     setupTableFilter('upcomingApptTable', 'upcomingStatusToggles', 'filterDateFromUpcoming', 'filterDateToUpcoming', 'clearUpcomingFilters', 'upcomingCountLabel');
     setupTableFilter('pastApptTable', 'pastStatusToggles', 'filterDateFromPast', 'filterDateToPast', 'clearPastFilters', 'pastCountLabel');
+    const requestedStatusFilter = sessionStorage.getItem('venturaAppointmentStatusFilter');
+    if (requestedStatusFilter) {
+        sessionStorage.removeItem('venturaAppointmentStatusFilter');
+        document.querySelector(`#upcomingStatusToggles [data-status="${CSS.escape(requestedStatusFilter)}"]`)?.click();
+    }
 
     // Toggle between Upcoming and Past views (uses same design as services-content)
     const toggleBtns = document.querySelectorAll('.vd-toggle-btn');
@@ -676,13 +817,121 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         });
     }
 
-    // Enable/disable Save & Notify button based on whether status changed
-    document.querySelectorAll('.vd-status-select').forEach(select => {
-        select.addEventListener('change', function () {
-        const row    = this.closest('tr');
-        const saveBtn = row.querySelector('.vd-save-btn');
-        saveBtn.disabled = this.value === this.dataset.original;
+    async function runStatusAction(button, payload, newStatus) {
+        const id = payload.appointmentId;
+        const name = payload.patientName || `Appointment #${id}`;
+        let reason = '';
+        if (newStatus === 'Rejected') {
+            const rejection = await window.showActionModal({
+                title: 'Reject Appointment Request', kicker: 'Appointment review',
+                message: 'The patient will receive this reason by email. Please keep it clear and professional.',
+                confirmText: 'Reject Appointment', icon: 'ti-calendar-x', tone: 'danger',
+                details: [{ label: 'Patient', value: name }],
+                fields: [{ name: 'reason', label: 'Reason for rejection', placeholder: 'Example: The selected schedule is no longer available.', multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255 }]
+            });
+            if (!rejection.confirmed) return;
+            reason = rejection.values.reason;
+        } else {
+            const labels = {
+                'Awaiting Deposit': ['Accept Appointment Request', 'Accept Appointment', 'The patient will be asked to submit the required deposit.'],
+                'Cancelled': ['Cancel Appointment', 'Cancel Appointment', 'This action updates the appointment and notifies the patient.'],
+                'No-show': ['Mark Patient as No-show', 'Mark No-show', 'The verified deposit will be marked as forfeited.'],
+                'In Progress': ['Start Treatment', 'Start Treatment', 'Confirm that the patient profile and check-in are ready.'],
+                'Completed': ['Complete Appointment', 'Mark Completed', 'Confirm that treatment for this appointment is complete.']
+            };
+            const copy = labels[newStatus] || ['Update Appointment', 'Confirm', `Change this appointment to ${newStatus}.`];
+            const confirmation = await window.showActionModal({
+                title: copy[0], kicker: 'Appointment action', message: copy[2], confirmText: copy[1],
+                icon: newStatus === 'Awaiting Deposit' ? 'ti-calendar-check' : 'ti-calendar-cog',
+                tone: ['Cancelled', 'No-show'].includes(newStatus) ? 'warning' : 'success',
+                details: [{ label: 'Patient', value: name }]
+            });
+            if (!confirmation.confirmed) return;
+        }
+
+        LoadingUI.setButton(button, true, 'Saving...');
+        const formData = new FormData();
+        formData.append('action', 'updateStatus');
+        formData.append('csrf_token', CSRF_TOKEN);
+        formData.append('appointment_id', id);
+        formData.append('status', newStatus);
+        formData.append('reason', reason);
+        if (['Awaiting Deposit', 'Rejected', 'Cancelled'].includes(newStatus)) {
+            formData.append('email', payload.email || '');
+            formData.append('name', name);
+        }
+        try {
+            const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Failed to update the appointment.');
+            bootstrap.Modal.getInstance(document.getElementById('appointmentDetailsModal'))?.hide();
+            showToast(result.message || `Status updated to ${newStatus}.`, true);
+            reloadAppointments();
+        } catch (error) {
+            LoadingUI.setButton(button, false);
+            showToast(error.message || 'Unable to update the appointment.', false);
+        }
+    }
+
+    async function runPaymentReview(button, payload, action) {
+        const approving = action === 'verify';
+        const confirmation = await window.showActionModal({
+            title: approving ? 'Approve GCash Deposit' : 'Reject Payment Receipt',
+            kicker: 'Payment verification',
+            message: approving
+                ? 'Confirm that this payment appears in the clinic’s GCash account. The appointment will be confirmed and receive a check-in code.'
+                : 'The patient will see the reason and receive more time to submit a replacement receipt.',
+            confirmText: approving ? 'Approve Payment' : 'Reject Payment',
+            icon: approving ? 'ti-receipt-check' : 'ti-receipt-off',
+            tone: approving ? 'success' : 'danger',
+            fields: approving ? [] : [{ name: 'reason', label: 'Reason shown to the patient', multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255 }]
         });
+        if (!confirmation.confirmed) return;
+        LoadingUI.setButton(button, true, approving ? 'Approving...' : 'Rejecting...');
+        try {
+            const fields = { deposit_id: payload.deposit.id };
+            if (!approving) fields.reason = confirmation.values.reason;
+            await depositAction(action, fields);
+            bootstrap.Modal.getInstance(document.getElementById('appointmentDetailsModal'))?.hide();
+            reloadAppointments();
+        } catch (error) {
+            LoadingUI.setButton(button, false);
+            showToast(error.message, false);
+        }
+    }
+
+    document.querySelectorAll('[data-status-action]').forEach(button => {
+        button.addEventListener('click', () => runStatusAction(button, {
+            appointmentId: button.dataset.appointmentId,
+            patientName: button.dataset.name,
+            email: button.dataset.email
+        }, button.dataset.statusAction));
+    });
+
+    document.getElementById('toggleAppointmentReceipt')?.addEventListener('click', function () {
+        const preview = document.getElementById('appointmentReceiptPreview');
+        const frame = document.getElementById('appointmentReceiptFrame');
+        const loading = document.getElementById('appointmentReceiptLoading');
+        const opening = preview.classList.contains('d-none');
+        preview.classList.toggle('d-none', !opening);
+        this.textContent = opening ? 'Hide Receipt' : 'View Receipt';
+        if (opening && !frame.getAttribute('src') && this.dataset.receiptUrl) {
+            loading.classList.remove('d-none');
+            frame.classList.remove('is-ready');
+            frame.src = this.dataset.receiptUrl;
+        }
+    });
+
+    document.getElementById('appointmentReceiptFrame')?.addEventListener('load', function () {
+        document.getElementById('appointmentReceiptLoading')?.classList.add('d-none');
+        this.classList.add('is-ready');
+    });
+
+    document.getElementById('appointmentDetailsModal')?.addEventListener('hidden.bs.modal', () => {
+        const frame = document.getElementById('appointmentReceiptFrame');
+        frame?.removeAttribute('src');
+        frame?.classList.remove('is-ready');
+        activeAppointmentPayload = null;
     });
 
     // Save & Notify button click
@@ -754,8 +1003,8 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     });
 
     async function depositAction(action, fields) {
-        const body=new FormData();body.append('action',action);body.append('csrf_token',<?= json_encode($_SESSION['csrf_token']) ?>);Object.entries(fields).forEach(([key,value])=>body.append(key,value));
-        const response=await fetch('../../../apps/controllers/depositController.php',{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);showToast(result.message,true);return result;
+        const body=new FormData();body.append('action',action);body.append('csrf_token',CSRF_TOKEN);Object.entries(fields).forEach(([key,value])=>body.append(key,value));
+        const response=await fetch(DEPOSIT_CONTROLLER,{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);showToast(result.message,true);return result;
     }
     document.querySelectorAll('[data-extend-deadline]').forEach(button => button.addEventListener('click', async () => {
         const response = await window.showActionModal({

@@ -10,11 +10,11 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Ad
 if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
     echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']); exit;
 }
-if (($_POST['action'] ?? '') !== 'recordCash') {
+if (($_POST['action'] ?? '') !== 'settleAndComplete') {
     echo json_encode(['success' => false, 'message' => 'Invalid request.']); exit;
 }
 $model = new BillingModel((new Database())->connect());
-echo json_encode($model->recordCashPayment(
+echo json_encode($model->settleAndCompleteVisit(
     (int) ($_POST['appointment_id'] ?? 0),
     (float) ($_POST['service_amount'] ?? -1),
     (float) ($_POST['cash_received'] ?? -1),

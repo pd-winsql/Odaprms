@@ -47,7 +47,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=13">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=15">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
 </head>
@@ -74,10 +74,10 @@ $today = date('l, F j Y');
             <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
         </a>
         <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Payment Review
+            <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
         </a>
         <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Cash Billing
+            <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
         </a>
         <a href="#" class="vd-nav-item" data-page="logbook-content.php">
             <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook

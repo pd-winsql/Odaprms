@@ -267,13 +267,22 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
                     p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
-                    a.date, a.status,
+                    a.date, a.status, a.payment_deadline_at, a.appointment_code,
+                    d.deposit_id, d.amount AS deposit_amount, d.gcash_reference,
+                    d.status AS deposit_status, d.submitted_at, d.verified_at,
+                    d.rejection_reason AS payment_rejection_reason,
+                    d.resubmission_deadline_at, d.refund_reason, d.refunded_at,
+                    CASE WHEN d.receipt_path IS NULL THEN 0 ELSE 1 END AS has_receipt,
+                    vu.email AS payment_verified_by,
+                    vu.user_role AS payment_verified_by_role,
                     al.performed_by_name AS status_changed_by,
                     al.performed_by_role AS status_changed_by_role,
                     al.performed_at AS status_changed_at
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
+                LEFT JOIN users vu ON vu.id = d.verified_by_user_id
                 LEFT JOIN audit_logs al ON al.audit_log_id = (
                     SELECT al2.audit_log_id
                     FROM audit_logs al2
@@ -284,14 +293,7 @@ class Appointment {
                     LIMIT 1
                 )
                 WHERE a.date < CURDATE()
-                  AND (
-                    a.deposit_required = 0
-                    OR EXISTS (
-                        SELECT 1 FROM appointment_deposits ad
-                        WHERE ad.appointment_id = a.appointment_id
-                          AND ad.status IN ('Verified', 'Transferred')
-                    )
-                  )
+                  AND a.status NOT IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
                 ORDER BY a.date DESC
             ");
             $stmt->execute();
@@ -341,13 +343,22 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
                     p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
-                    a.date, a.status,
+                    a.date, a.status, a.payment_deadline_at, a.appointment_code,
+                    d.deposit_id, d.amount AS deposit_amount, d.gcash_reference,
+                    d.status AS deposit_status, d.submitted_at, d.verified_at,
+                    d.rejection_reason AS payment_rejection_reason,
+                    d.resubmission_deadline_at, d.refund_reason, d.refunded_at,
+                    CASE WHEN d.receipt_path IS NULL THEN 0 ELSE 1 END AS has_receipt,
+                    vu.email AS payment_verified_by,
+                    vu.user_role AS payment_verified_by_role,
                     al.performed_by_name AS status_changed_by,
                     al.performed_by_role AS status_changed_by_role,
                     al.performed_at AS status_changed_at
                 FROM appointments a
                 JOIN patients p ON a.patient_id = p.patient_id
                 LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
+                LEFT JOIN users vu ON vu.id = d.verified_by_user_id
                 LEFT JOIN audit_logs al ON al.audit_log_id = (
                     SELECT al2.audit_log_id
                     FROM audit_logs al2
@@ -358,6 +369,7 @@ class Appointment {
                     LIMIT 1
                 )
                 WHERE a.date >= CURDATE()
+                   OR a.status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
             $stmt->execute();
