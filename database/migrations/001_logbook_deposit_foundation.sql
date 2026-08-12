@@ -1,5 +1,5 @@
 -- Logbook and simplified GCash deposit foundation
--- Target: av-clinica-dental-feature
+-- Target: db-oaprms-system
 -- Existing appointments remain deposit-exempt; new appointments require payment.
 
 START TRANSACTION;

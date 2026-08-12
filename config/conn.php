@@ -1,8 +1,7 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// Load environment-specific settings while keeping the current database as
-// the safe default when the feature-database switch is missing or disabled.
+// Load environment-specific settings.
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'Asia/Manila');
@@ -14,14 +13,7 @@ class Database {
     private $dbname;
 
     public function __construct() {
-        $useFeatureDatabase = filter_var(
-            $_ENV['USE_FEATURE_DATABASE'] ?? false,
-            FILTER_VALIDATE_BOOLEAN
-        );
-
-        $this->dbname = $useFeatureDatabase
-            ? ($_ENV['FEATURE_DATABASE_NAME'] ?? 'av-clinica-dental-feature')
-            : ($_ENV['CURRENT_DATABASE_NAME'] ?? 'av-clinica-dental');
+        $this->dbname = $_ENV['DATABASE_NAME'] ?? 'db-oaprms-system';
     }
 
     public function connect() {

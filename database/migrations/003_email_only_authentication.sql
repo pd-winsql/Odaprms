@@ -1,7 +1,7 @@
 -- Remove usernames and use unique email addresses for every login.
--- Target database only: av-clinica-dental-feature
+-- Target database only: db-oaprms-system
 
-USE `av-clinica-dental-feature`;
+USE `db-oaprms-system`;
 
 ALTER TABLE users
     DROP INDEX username,

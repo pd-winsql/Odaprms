@@ -1,8 +1,8 @@
 -- Review-first booking, appointment-code check-in, and final cash settlement
--- Target database only: av-clinica-dental-feature
+-- Target database only: db-oaprms-system
 -- Run this after 001_logbook_deposit_foundation.sql.
 
-USE `av-clinica-dental-feature`;
+USE `db-oaprms-system`;
 
 -- Registration remains OTP-verified. Existing accounts are treated as verified
 -- because the current application creates patient accounts only after OTP validation.

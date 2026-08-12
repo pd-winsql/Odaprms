@@ -9,7 +9,7 @@ require_once __DIR__ . '/../apps/models/clinicModel.php';
 
 function expectTrue($condition, $message) { if (!$condition) throw new RuntimeException($message); echo "PASS: {$message}\n"; }
 $conn = (new Database())->connect();
-expectTrue($conn->query('SELECT DATABASE()')->fetchColumn() === 'av-clinica-dental-feature', 'Tests are isolated to the feature database.');
+expectTrue($conn->query('SELECT DATABASE()')->fetchColumn() === 'db-oaprms-system', 'Tests are isolated to the application database.');
 $appointments = new Appointment($conn); $deposits = new DepositModel($conn); $logbook = new LogbookModel($conn); $patients = new Patient($conn); $billings = new BillingModel($conn); $clinics = new Clinic($conn);
 $createdAppointments = []; $createdSchedules = []; $patientId = null; $createdClinicId = null; $registeredPatientId = null; $registeredUserId = null;
 try {
