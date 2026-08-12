@@ -62,7 +62,9 @@ function dashboardBillingPayload(array $entry): string {
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">Today's Logbook</span><span class="vd-topbar-date"><?= date('F j, Y') ?></span></div>
         <div class="vd-dash-card-body">
         <div class="d-flex flex-wrap gap-2 mb-4">
-            <input type="text" class="form-control vd-input flex-grow-1" id="checkinLookup" placeholder="Enter appointment code (AVC-XXXXXX) or patient name">
+            <input type="text" class="form-control vd-input flex-grow-1" id="checkinLookup"
+                placeholder="Enter appointment code (AVC-XXXXXX)" aria-label="Appointment code"
+                autocomplete="off" autocapitalize="characters">
             <button type="button" class="btn vd-btn-gold" id="findCheckinAppointment">Find Appointment</button>
         </div>
         <?php if (!$todayLogbook): ?>
@@ -289,7 +291,7 @@ function dashboardBillingPayload(array $entry): string {
     }));
     document.getElementById('findCheckinAppointment')?.addEventListener('click', async () => {
         const term = document.getElementById('checkinLookup').value.trim();
-        if (!term) { window.showToast('Enter the patient appointment code or name.', false); return; }
+        if (!/^AVC-[A-Z0-9]+$/i.test(term)) { window.showToast('Enter a valid appointment code, such as AVC-XXXXXX.', false); return; }
         const lookupBody = new FormData();
         lookupBody.append('action', 'lookup');
         lookupBody.append('term', term);
@@ -297,8 +299,7 @@ function dashboardBillingPayload(array $entry): string {
         try {
             const lookupResponse = await fetch('../../controllers/logbookController.php', { method: 'POST', body: lookupBody });
             const lookup = await lookupResponse.json();
-            if (!lookup.success || !lookup.matches?.length) throw new Error('No confirmed appointment for today matches that code or name.');
-            if (lookup.matches.length > 1) throw new Error('More than one patient matched. Enter the appointment code or a more specific name.');
+            if (!lookup.success || !lookup.matches?.length) throw new Error('No confirmed appointment for today matches that code.');
             const match = lookup.matches[0];
             const confirmation = await window.showActionModal({
                 title: 'Confirm Patient Arrival',

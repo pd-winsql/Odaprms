@@ -109,6 +109,9 @@ $today = date('l, F j Y');
         <?php endif; ?>
 
         <div class="vd-nav-section">Account</div>
+        <a href="#" class="vd-nav-item" data-page="change-password-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
+        </a>
         <a href="#" class="vd-nav-item" data-page="siteSettings-content.php">
             <span class="vd-nav-icon"><i class="ti ti-settings"></i></span> Settings
         </a>

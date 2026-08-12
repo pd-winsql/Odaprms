@@ -83,20 +83,18 @@ class LogbookModel {
     }
 
     public function lookupToday(string $term): array {
-        $term = trim($term);
-        if ($term === '') return [];
-        $byCode = str_starts_with(strtoupper($term), 'AVC-');
+        $term = strtoupper(trim($term));
+        if (!preg_match('/^AVC-[A-Z0-9]+$/', $term)) return [];
         $sql = $this->baseLogbookQuery() . "
-            WHERE a.date = CURDATE() AND a.status = 'Confirmed' AND " .
-            ($byCode
-                ? "UPPER(a.appointment_code) = UPPER(:term)"
-                : "CONCAT_WS(' ', p.firstname, p.middlename, p.lastname) LIKE :term") . "
+            WHERE a.date = CURDATE()
+              AND a.status = 'Confirmed'
+              AND UPPER(a.appointment_code) = :term
             ORDER BY a.created_at ASC LIMIT 10
         ";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':term' => $byCode ? $term : '%' . $term . '%']);
+        $stmt->execute([':term' => $term]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($rows as &$row) $row['lookup_method'] = $byCode ? 'Code' : 'Patient Search';
+        foreach ($rows as &$row) $row['lookup_method'] = 'Code';
         return $rows;
     }
 

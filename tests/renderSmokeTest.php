@@ -22,6 +22,9 @@ $files = [
     'patient-booking' => __DIR__ . '/../apps/views/patient/partials/booking-content.php',
     'staff-patient-form' => __DIR__ . '/../apps/views/admin/partials/_patient-form.php',
     'cash-billing' => __DIR__ . '/../apps/views/admin/partials/cash-billing-content.php',
+    'admin-change-password' => __DIR__ . '/../apps/views/admin/partials/change-password-content.php',
+    'dental-change-password' => __DIR__ . '/../apps/views/dental_asst/partials/change-password-content.php',
+    'patient-change-password' => __DIR__ . '/../apps/views/patient/partials/change-password-content.php',
 ];
 
 if (!isset($files[$case])) {
