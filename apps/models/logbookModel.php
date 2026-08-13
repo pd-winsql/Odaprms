@@ -18,43 +18,35 @@ class LogbookModel {
                 a.patient_id,
                 a.date,
                 a.status AS appointment_status,
-                p.firstname,
-                p.lastname,
-                p.email,
-                p.profile_completed_at,
-                c.clinic_name,
+                a.firstname,
+                a.lastname,
+                a.email,
+                a.profile_completed_at,
+                a.clinic_name,
                 ci.checkin_id,
                 ci.arrived_at,
                 ci.checkin_status,
                 ci.profile_required_at_arrival,
                 ci.ready_at,
-                COALESCE(d.amount, 0) AS verified_deposit,
-                b.billing_id,
-                b.actual_service_amount,
-                b.deposit_applied,
-                b.remaining_balance,
-                b.cash_received,
-                b.payment_status,
-                b.recorded_at AS billing_recorded_at,
-                b.notes AS billing_notes,
+                payment.verified_deposit,
+                payment.billing_id,
+                payment.actual_service_amount,
+                payment.deposit_applied,
+                payment.remaining_balance,
+                payment.cash_received,
+                payment.payment_status,
+                payment.billing_recorded_at,
+                payment.billing_notes,
                 COALESCE(
                     NULLIF(TRIM(CONCAT_WS(' ', st.firstname, st.middlename, st.lastname)), ''),
                     u.email,
                     '—'
                 ) AS checked_in_by,
-                (
-                    SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order, s.service_name SEPARATOR ', ')
-                    FROM appointment_services aps
-                    JOIN services s ON s.service_id = aps.service_id
-                    WHERE aps.appointment_id = a.appointment_id
-                ) AS service_name
-            FROM appointments a
-            JOIN patients p ON p.patient_id = a.patient_id
-            JOIN clinics c ON c.clinic_id = a.clinic_id
+                a.service_name
+            FROM vw_appointment_overview a
             LEFT JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
-            LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
-                AND d.status IN ('Verified', 'Transferred')
-            LEFT JOIN appointment_billings b ON b.appointment_id = a.appointment_id
+            LEFT JOIN vw_appointment_payment_summary payment
+                ON payment.appointment_id = a.appointment_id
             LEFT JOIN users u ON u.id = ci.checked_in_by_user_id
             LEFT JOIN staffs st ON st.user_id = u.id
         ";
@@ -65,11 +57,7 @@ class LogbookModel {
             WHERE a.date = :date
               AND (
                 a.deposit_required = 0
-                OR EXISTS (
-                    SELECT 1 FROM appointment_deposits d
-                    WHERE d.appointment_id = a.appointment_id
-                      AND d.status IN ('Verified', 'Transferred')
-                )
+                OR payment.deposit_status IN ('Verified', 'Transferred')
               )
               AND a.status IN ('Confirmed', 'Checked In', 'In Progress', 'Completed', 'No-show', 'Cancelled')
             ORDER BY ci.arrived_at IS NULL, ci.arrived_at ASC, a.created_at ASC

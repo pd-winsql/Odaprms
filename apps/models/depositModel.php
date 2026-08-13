@@ -110,29 +110,26 @@ class DepositModel {
                 a.date,
                 a.status AS appointment_status,
                 a.payment_deadline_at,
-                p.firstname,
-                p.lastname,
-                p.email,
-                c.clinic_name,
-                d.deposit_id,
-                d.amount,
-                d.gcash_reference,
-                d.receipt_path,
-                d.status AS deposit_status,
-                d.submitted_at,
-                d.verified_at,
-                d.rejection_reason,
-                d.resubmission_deadline_at,
-                (
-                    SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order, s.service_name SEPARATOR ', ')
-                    FROM appointment_services aps
-                    JOIN services s ON s.service_id = aps.service_id
-                    WHERE aps.appointment_id = a.appointment_id
-                ) AS service_name
+                overview.firstname,
+                overview.lastname,
+                overview.email,
+                overview.clinic_name,
+                payment.deposit_id,
+                payment.deposit_amount AS amount,
+                payment.gcash_reference,
+                payment.receipt_path,
+                payment.deposit_status,
+                payment.submitted_at,
+                payment.verified_at,
+                payment.payment_rejection_reason AS rejection_reason,
+                payment.resubmission_deadline_at,
+                overview.service_name
             FROM appointments a
-            JOIN patients p ON p.patient_id = a.patient_id
-            JOIN clinics c ON c.clinic_id = a.clinic_id
-            JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
+            JOIN vw_appointment_overview overview
+                ON overview.appointment_id = a.appointment_id
+            JOIN vw_appointment_payment_summary payment
+                ON payment.appointment_id = a.appointment_id
+                AND payment.deposit_id IS NOT NULL
             WHERE " . implode(' AND ', $conditions) . "
             LIMIT 1
         ");
@@ -147,24 +144,20 @@ class DepositModel {
                 a.date,
                 a.status AS appointment_status,
                 a.payment_deadline_at,
-                c.clinic_name,
-                d.deposit_id,
-                d.amount,
-                d.gcash_reference,
-                d.status AS deposit_status,
-                d.submitted_at,
-                d.verified_at,
-                d.rejection_reason,
-                d.resubmission_deadline_at,
-                (
-                    SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order, s.service_name SEPARATOR ', ')
-                    FROM appointment_services aps
-                    JOIN services s ON s.service_id = aps.service_id
-                    WHERE aps.appointment_id = a.appointment_id
-                ) AS service_name
-            FROM appointments a
-            JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
-            JOIN clinics c ON c.clinic_id = a.clinic_id
+                a.clinic_name,
+                payment.deposit_id,
+                payment.deposit_amount AS amount,
+                payment.gcash_reference,
+                payment.deposit_status,
+                payment.submitted_at,
+                payment.verified_at,
+                payment.payment_rejection_reason AS rejection_reason,
+                payment.resubmission_deadline_at,
+                a.service_name
+            FROM vw_appointment_overview a
+            JOIN vw_appointment_payment_summary payment
+                ON payment.appointment_id = a.appointment_id
+                AND payment.deposit_id IS NOT NULL
             WHERE a.patient_id = :patient_id
             ORDER BY a.created_at DESC
         ");
@@ -252,30 +245,24 @@ class DepositModel {
     public function getPendingReviews(): array {
         $stmt = $this->conn->query("
             SELECT
-                d.deposit_id,
-                d.appointment_id,
-                d.amount,
-                d.gcash_reference,
-                d.receipt_mime,
-                d.submitted_at,
-                p.firstname,
-                p.lastname,
-                p.email,
-                c.clinic_name,
+                payment.deposit_id,
+                a.appointment_id,
+                payment.deposit_amount AS amount,
+                payment.gcash_reference,
+                payment.receipt_mime,
+                payment.submitted_at,
+                a.firstname,
+                a.lastname,
+                a.email,
+                a.clinic_name,
                 a.date,
-                (
-                    SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order, s.service_name SEPARATOR ', ')
-                    FROM appointment_services aps
-                    JOIN services s ON s.service_id = aps.service_id
-                    WHERE aps.appointment_id = a.appointment_id
-                ) AS service_name
-            FROM appointment_deposits d
-            JOIN appointments a ON a.appointment_id = d.appointment_id
-            JOIN patients p ON p.patient_id = a.patient_id
-            JOIN clinics c ON c.clinic_id = a.clinic_id
-            WHERE d.status = 'Under Review'
+                a.service_name
+            FROM vw_appointment_overview a
+            JOIN vw_appointment_payment_summary payment
+                ON payment.appointment_id = a.appointment_id
+            WHERE payment.deposit_status = 'Under Review'
               AND a.status = 'Payment Under Review'
-            ORDER BY d.submitted_at ASC
+            ORDER BY payment.submitted_at ASC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -283,37 +270,31 @@ class DepositModel {
     public function getAllRecords(): array {
         $stmt = $this->conn->query("
             SELECT
-                d.deposit_id,
-                d.appointment_id,
-                d.amount,
-                d.gcash_reference,
-                d.status AS deposit_status,
-                d.submitted_at,
-                d.verified_at,
-                d.rejection_reason,
-                d.refunded_at,
-                CASE WHEN d.receipt_path IS NULL THEN 0 ELSE 1 END AS has_receipt,
+                payment.deposit_id,
+                a.appointment_id,
+                payment.deposit_amount AS amount,
+                payment.gcash_reference,
+                payment.deposit_status,
+                payment.submitted_at,
+                payment.verified_at,
+                payment.payment_rejection_reason AS rejection_reason,
+                payment.refunded_at,
+                payment.has_receipt,
                 a.date,
                 a.status AS appointment_status,
                 a.appointment_code,
-                p.firstname,
-                p.lastname,
-                p.email,
-                c.clinic_name,
-                verifier.email AS verified_by,
-                verifier.user_role AS verified_by_role,
-                (
-                    SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order, s.service_name SEPARATOR ', ')
-                    FROM appointment_services aps
-                    JOIN services s ON s.service_id = aps.service_id
-                    WHERE aps.appointment_id = a.appointment_id
-                ) AS service_name
-            FROM appointment_deposits d
-            JOIN appointments a ON a.appointment_id = d.appointment_id
-            JOIN patients p ON p.patient_id = a.patient_id
-            JOIN clinics c ON c.clinic_id = a.clinic_id
-            LEFT JOIN users verifier ON verifier.id = d.verified_by_user_id
-            ORDER BY COALESCE(d.submitted_at, d.created_at) DESC, d.deposit_id DESC
+                a.firstname,
+                a.lastname,
+                a.email,
+                a.clinic_name,
+                payment.payment_verified_by AS verified_by,
+                payment.payment_verified_by_role AS verified_by_role,
+                a.service_name
+            FROM vw_appointment_overview a
+            JOIN vw_appointment_payment_summary payment
+                ON payment.appointment_id = a.appointment_id
+                AND payment.deposit_id IS NOT NULL
+            ORDER BY COALESCE(payment.submitted_at, a.created_at) DESC, payment.deposit_id DESC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

@@ -14,29 +14,19 @@ class BillingModel {
     public function getStaffBillings(): array {
         $stmt = $this->conn->query("
             SELECT a.appointment_id, a.date, a.status AS appointment_status,
-                   p.firstname, p.lastname, c.clinic_name,
-                   COALESCE(d.amount, 0) AS verified_deposit,
-                   b.actual_service_amount, b.deposit_applied, b.remaining_balance,
-                   b.cash_received, COALESCE(b.payment_status, 'Unpaid') AS payment_status,
-                   b.billing_id, b.recorded_at, b.paid_at, b.notes,
-                   COALESCE(
-                       NULLIF(TRIM(CONCAT_WS(' ', st.firstname, st.middlename, st.lastname)), ''),
-                       recorder.email,
-                       'Staff'
-                   ) AS recorded_by,
-                   (SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order SEPARATOR ', ')
-                    FROM appointment_services aps JOIN services s ON s.service_id = aps.service_id
-                    WHERE aps.appointment_id = a.appointment_id) AS service_name
-            FROM appointments a
-            JOIN patients p ON p.patient_id = a.patient_id
-            JOIN clinics c ON c.clinic_id = a.clinic_id
-            LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
-                AND d.status IN ('Verified', 'Transferred')
-            LEFT JOIN appointment_billings b ON b.appointment_id = a.appointment_id
-            LEFT JOIN users recorder ON recorder.id = b.recorded_by_user_id
-            LEFT JOIN staffs st ON st.user_id = recorder.id
-            WHERE b.billing_id IS NOT NULL
-            ORDER BY b.recorded_at DESC, a.appointment_id DESC
+                   a.firstname, a.lastname, a.clinic_name,
+                   payment.verified_deposit,
+                   payment.actual_service_amount, payment.deposit_applied, payment.remaining_balance,
+                   payment.cash_received, payment.payment_status,
+                   payment.billing_id, payment.billing_recorded_at AS recorded_at,
+                   payment.paid_at, payment.billing_notes AS notes,
+                   payment.billing_recorded_by AS recorded_by,
+                   a.service_name
+            FROM vw_appointment_overview a
+            JOIN vw_appointment_payment_summary payment
+                ON payment.appointment_id = a.appointment_id
+            WHERE payment.billing_id IS NOT NULL
+            ORDER BY payment.billing_recorded_at DESC, a.appointment_id DESC
         ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

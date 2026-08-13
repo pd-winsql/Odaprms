@@ -102,21 +102,12 @@ class ReportModel
         $sql = "
             SELECT
                 a.appointment_id,
-                CONCAT(p.lastname, ', ', p.firstname,
-                    CASE WHEN p.middlename IS NULL OR p.middlename = '' THEN '' ELSE CONCAT(' ', LEFT(p.middlename, 1), '.') END
-                ) AS patient_name,
-                COALESCE(c.clinic_name, 'Unassigned') AS clinic_name,
-                COALESCE((
-                    SELECT GROUP_CONCAT(s.service_name ORDER BY s.display_order, s.service_name SEPARATOR ', ')
-                    FROM appointment_services aps
-                    JOIN services s ON s.service_id = aps.service_id
-                    WHERE aps.appointment_id = a.appointment_id
-                ), 'No service') AS service_name,
+                a.patient_name,
+                COALESCE(a.clinic_name, 'Unassigned') AS clinic_name,
+                COALESCE(a.service_name, 'No service') AS service_name,
                 a.date,
                 a.status
-            FROM appointments a
-            JOIN patients p ON p.patient_id = a.patient_id
-            LEFT JOIN clinics c ON c.clinic_id = a.clinic_id
+            FROM vw_appointment_overview a
             WHERE " . implode(' AND ', $conditions) . "
             ORDER BY a.date DESC, a.appointment_id DESC
         ";
@@ -159,21 +150,9 @@ class ReportModel
                     )
                 END AS utilization_rate
             FROM clinics c
-            LEFT JOIN (
-                SELECT
-                    s.schedule_id,
-                    s.clinic_id,
-                    s.max_appointments AS capacity,
-                    COUNT(DISTINCT CASE
-                        WHEN a.status NOT IN ('Cancelled', 'Rejected') THEN a.appointment_id
-                    END) AS booked,
-                    COUNT(DISTINCT CASE WHEN a.status = 'Completed' THEN a.appointment_id END) AS completed,
-                    COUNT(DISTINCT CASE WHEN a.status IN ('Cancelled', 'Rejected') THEN a.appointment_id END) AS cancelled
-                FROM schedules s
-                LEFT JOIN appointments a ON a.schedule_id = s.schedule_id
-                WHERE s.sched_date BETWEEN :date_from AND :date_to
-                GROUP BY s.schedule_id, s.clinic_id, s.max_appointments
-            ) schedule_totals ON schedule_totals.clinic_id = c.clinic_id
+            LEFT JOIN vw_schedule_utilization schedule_totals
+                ON schedule_totals.clinic_id = c.clinic_id
+                AND schedule_totals.sched_date BETWEEN :date_from AND :date_to
             {$clinicCondition}
             GROUP BY c.clinic_id, c.clinic_name
             ORDER BY utilization_rate DESC, c.clinic_name

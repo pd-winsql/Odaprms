@@ -12,15 +12,6 @@ class Appointment {
         $this->auditLog = new AuditLog($conn);
     }
 
-    private function serviceNameSelect() {
-        return "(
-            SELECT GROUP_CONCAT(ms.service_name ORDER BY ms.display_order, ms.service_name SEPARATOR ', ')
-            FROM appointment_services aps
-            JOIN services ms ON ms.service_id = aps.service_id
-            WHERE aps.appointment_id = a.appointment_id
-        )";
-    }
-
     public function getServiceDetailsForAppointments(array $appointmentIds): array {
         $appointmentIds = array_values(array_unique(array_filter(array_map('intval', $appointmentIds))));
         if (!$appointmentIds) return [];
@@ -178,15 +169,9 @@ class Appointment {
     // Patient: view upcoming appointments
     public function getPatientUpcomingAppointments($patient_id) {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
-                SELECT
-                a.*,
-                {$serviceName} AS service_name,
-                c.clinic_name
-                FROM appointments a
-                LEFT JOIN clinics c
-                ON a.clinic_id = c.clinic_id
+                SELECT a.*
+                FROM vw_appointment_overview a
                 WHERE a.patient_id = :patient_id
                 AND a.date >= CURDATE()
 
@@ -204,15 +189,9 @@ class Appointment {
     // Patient: view past appointments
     public function getPatientPastAppointments($patient_id) {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
-                SELECT
-                a.*,
-                {$serviceName} AS service_name,
-                c.clinic_name
-                FROM appointments a
-                LEFT JOIN clinics c
-                ON a.clinic_id = c.clinic_id
+                SELECT a.*
+                FROM vw_appointment_overview a
                 WHERE a.patient_id = :patient_id
                 AND a.date < CURDATE()
 
@@ -230,22 +209,17 @@ class Appointment {
     // Patient: view upcoming appointments with status
     public function getUpcomingWithStatus($email) {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT
-                    p.lastname,
-                    p.firstname,
-                    p.email,
-                    c.clinic_name,
-                    {$serviceName} AS service_name,
+                    a.lastname,
+                    a.firstname,
+                    a.email,
+                    a.clinic_name,
+                    a.service_name,
                     a.date,
                     a.status
-                FROM appointments a
-                LEFT JOIN patients p
-                ON a.patient_id = p.patient_id
-                LEFT JOIN clinics c
-                ON a.clinic_id = c.clinic_id
-                WHERE p.email = :email
+                FROM vw_appointment_overview a
+                WHERE a.email = :email
                 AND a.date >= CURDATE()
                 ORDER BY a.date ASC
             ");
@@ -263,35 +237,25 @@ class Appointment {
     // Admin: view all past appointments
     public function getAdminPastAppointments() {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
-                SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
+                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
+                    a.phone_number, a.email, a.clinic_name, a.service_name,
                     a.date, a.status, a.payment_deadline_at, a.appointment_code,
-                    d.deposit_id, d.amount AS deposit_amount, d.gcash_reference,
-                    d.status AS deposit_status, d.submitted_at, d.verified_at,
-                    d.rejection_reason AS payment_rejection_reason,
-                    d.resubmission_deadline_at, d.refund_reason, d.refunded_at,
-                    CASE WHEN d.receipt_path IS NULL THEN 0 ELSE 1 END AS has_receipt,
-                    vu.email AS payment_verified_by,
-                    vu.user_role AS payment_verified_by_role,
-                    al.performed_by_name AS status_changed_by,
-                    al.performed_by_role AS status_changed_by_role,
-                    al.performed_at AS status_changed_at
-                FROM appointments a
-                JOIN patients p ON a.patient_id = p.patient_id
-                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
-                LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
-                LEFT JOIN users vu ON vu.id = d.verified_by_user_id
-                LEFT JOIN audit_logs al ON al.audit_log_id = (
-                    SELECT al2.audit_log_id
-                    FROM audit_logs al2
-                    WHERE al2.entity_type = 'appointment'
-                    AND al2.entity_id = a.appointment_id
-                    AND al2.action = 'status_changed'
-                    ORDER BY al2.audit_log_id DESC
-                    LIMIT 1
-                )
+                    payment.deposit_id, payment.deposit_amount, payment.gcash_reference,
+                    payment.deposit_status, payment.submitted_at, payment.verified_at,
+                    payment.payment_rejection_reason,
+                    payment.resubmission_deadline_at, payment.refund_reason, payment.refunded_at,
+                    payment.has_receipt,
+                    payment.payment_verified_by,
+                    payment.payment_verified_by_role,
+                    status_change.status_changed_by,
+                    status_change.status_changed_by_role,
+                    status_change.status_changed_at
+                FROM vw_appointment_overview a
+                LEFT JOIN vw_appointment_payment_summary payment
+                    ON payment.appointment_id = a.appointment_id
+                LEFT JOIN vw_appointment_latest_status_change status_change
+                    ON status_change.appointment_id = a.appointment_id
                 WHERE a.date < CURDATE()
                   AND a.status NOT IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
                 ORDER BY a.date DESC
@@ -308,15 +272,11 @@ class Appointment {
     // Admin: view past appointments per clinic
     public function getAdminPastAppointmentsByClinic($clinic) {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
-                SELECT a.*, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name
-                FROM appointments a
-                JOIN patients p ON a.patient_id = p.patient_id
-                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                SELECT a.*
+                FROM vw_appointment_overview a
                 WHERE a.date < CURDATE()
-                AND c.clinic_name = :clinic
+                AND a.clinic_name = :clinic
                 AND (
                     a.deposit_required = 0
                     OR EXISTS (
@@ -339,35 +299,25 @@ class Appointment {
     // Admin: view all upcoming appointments with status
     public function getAllUpcomingWithStatus() {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
-                SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name,
+                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
+                    a.phone_number, a.email, a.clinic_name, a.service_name,
                     a.date, a.status, a.payment_deadline_at, a.appointment_code,
-                    d.deposit_id, d.amount AS deposit_amount, d.gcash_reference,
-                    d.status AS deposit_status, d.submitted_at, d.verified_at,
-                    d.rejection_reason AS payment_rejection_reason,
-                    d.resubmission_deadline_at, d.refund_reason, d.refunded_at,
-                    CASE WHEN d.receipt_path IS NULL THEN 0 ELSE 1 END AS has_receipt,
-                    vu.email AS payment_verified_by,
-                    vu.user_role AS payment_verified_by_role,
-                    al.performed_by_name AS status_changed_by,
-                    al.performed_by_role AS status_changed_by_role,
-                    al.performed_at AS status_changed_at
-                FROM appointments a
-                JOIN patients p ON a.patient_id = p.patient_id
-                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
-                LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
-                LEFT JOIN users vu ON vu.id = d.verified_by_user_id
-                LEFT JOIN audit_logs al ON al.audit_log_id = (
-                    SELECT al2.audit_log_id
-                    FROM audit_logs al2
-                    WHERE al2.entity_type = 'appointment'
-                    AND al2.entity_id = a.appointment_id
-                    AND al2.action = 'status_changed'
-                    ORDER BY al2.audit_log_id DESC
-                    LIMIT 1
-                )
+                    payment.deposit_id, payment.deposit_amount, payment.gcash_reference,
+                    payment.deposit_status, payment.submitted_at, payment.verified_at,
+                    payment.payment_rejection_reason,
+                    payment.resubmission_deadline_at, payment.refund_reason, payment.refunded_at,
+                    payment.has_receipt,
+                    payment.payment_verified_by,
+                    payment.payment_verified_by_role,
+                    status_change.status_changed_by,
+                    status_change.status_changed_by_role,
+                    status_change.status_changed_at
+                FROM vw_appointment_overview a
+                LEFT JOIN vw_appointment_payment_summary payment
+                    ON payment.appointment_id = a.appointment_id
+                LEFT JOIN vw_appointment_latest_status_change status_change
+                    ON status_change.appointment_id = a.appointment_id
                 WHERE a.date >= CURDATE()
                    OR a.status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
@@ -552,13 +502,10 @@ class Appointment {
 
     public function getAppointmentsByStatus($status) {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
-                SELECT a.appointment_id, p.lastname, p.firstname, p.middlename, p.age, p.gender,
-                    p.phone_number, p.email, c.clinic_name, {$serviceName} AS service_name, a.date, a.status
-                FROM appointments a
-                JOIN patients p ON a.patient_id = p.patient_id
-                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
+                    a.phone_number, a.email, a.clinic_name, a.service_name, a.date, a.status
+                FROM vw_appointment_overview a
                 WHERE a.date >= CURDATE()
                 AND a.status = :status
                 ORDER BY a.date ASC
@@ -578,16 +525,14 @@ class Appointment {
 
     public function getPatientTransactionHistory($patient_id) {
         try {
-            $serviceName = $this->serviceNameSelect();
             $stmt = $this->conn->prepare("
                 SELECT
                     a.appointment_id,
-                    {$serviceName} AS service_name,
+                    a.service_name,
                     a.date,
                     a.status,
-                    c.clinic_name
-                FROM appointments a
-                LEFT JOIN clinics c ON a.clinic_id = c.clinic_id
+                    a.clinic_name
+                FROM vw_appointment_overview a
                 WHERE a.patient_id = :patient_id
                 ORDER BY a.date DESC
             ");

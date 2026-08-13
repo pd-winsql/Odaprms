@@ -28,7 +28,11 @@ class Schedule {
 
     public function getAllSchedules() {
         try {
-            $stmt = $this->conn->prepare("SELECT s.*, c.clinic_name FROM schedules s JOIN clinics c ON s.clinic_id = c.clinic_id ORDER BY s.sched_date ASC");
+            $stmt = $this->conn->prepare("
+                SELECT schedule_id, clinic_id, sched_date, capacity AS max_appointments, clinic_name
+                FROM vw_schedule_utilization
+                ORDER BY sched_date ASC
+            ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -52,31 +56,16 @@ class Schedule {
         try {
             $stmt = $this->conn->prepare("
                 SELECT
-                    s.schedule_id,
-                    s.clinic_id,
-                    s.sched_date,
-                    s.max_appointments,
-
-                    COUNT(a.appointment_id) AS total_appointments,
-
-                    (s.max_appointments - COUNT(a.appointment_id)) AS available_slots
-
-                FROM schedules s
-
-                LEFT JOIN appointments a
-                    ON s.schedule_id = a.schedule_id
-                    AND a.status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
-
-                WHERE s.clinic_id = :clinic_id
-                    AND s.sched_date >= CURDATE()
-
-                GROUP BY
-                    s.schedule_id,
-                    s.clinic_id,
-                    s.sched_date,
-                    s.max_appointments
-
-                ORDER BY s.sched_date ASC
+                    schedule_id,
+                    clinic_id,
+                    sched_date,
+                    capacity AS max_appointments,
+                    booked AS total_appointments,
+                    available_slots
+                FROM vw_schedule_utilization
+                WHERE clinic_id = :clinic_id
+                  AND sched_date >= CURDATE()
+                ORDER BY sched_date ASC
             ");
             $stmt->execute([':clinic_id' => $clinic_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -166,9 +155,9 @@ class Schedule {
     public function getBookedCountForSchedule($schedule_id): int {
         try {
             $stmt = $this->conn->prepare("
-                SELECT COUNT(*) FROM appointments
+                SELECT booked
+                FROM vw_schedule_utilization
                 WHERE schedule_id = :schedule_id
-                  AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
             ");
             $stmt->execute([':schedule_id' => $schedule_id]);
             return (int) $stmt->fetchColumn();
