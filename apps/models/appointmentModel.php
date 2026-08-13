@@ -52,6 +52,21 @@ class Appointment {
         try {
             $this->conn->beginTransaction();
 
+            // Serialize bookings for the same patient. This makes the
+            // one-appointment-per-day rule reliable even when two booking
+            // requests for different clinics arrive at the same time.
+            $patientStmt = $this->conn->prepare("
+                SELECT patient_id
+                FROM patients
+                WHERE patient_id = :patient_id
+                FOR UPDATE
+            ");
+            $patientStmt->execute([':patient_id' => $patient_id]);
+            if (!$patientStmt->fetchColumn()) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'Patient profile not found.'];
+            }
+
             // Lock the schedule so concurrent requests cannot take the final
             // slot at the same time.
             $scheduleStmt = $this->conn->prepare("
@@ -71,17 +86,28 @@ class Appointment {
                 return false;
             }
 
-            $activePatient = $this->conn->prepare("
-                SELECT appointment_id FROM appointments
+            $sameDayAppointment = $this->conn->prepare("
+                SELECT appointment_id
+                FROM appointments
                 WHERE patient_id = :patient_id
-                    AND date >= CURDATE()
-                    AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress')
-                LIMIT 1 FOR UPDATE
+                  AND date = :appointment_date
+                  AND status IN (
+                      'Pending Review', 'Awaiting Deposit', 'Payment Under Review',
+                      'Confirmed', 'Checked In', 'In Progress', 'Completed',
+                      'Pending', 'Awaiting Payment'
+                  )
+                LIMIT 1
             ");
-            $activePatient->execute([':patient_id' => $patient_id]);
-            if ($activePatient->fetchColumn()) {
+            $sameDayAppointment->execute([
+                ':patient_id' => $patient_id,
+                ':appointment_date' => $date,
+            ]);
+            if ($sameDayAppointment->fetchColumn()) {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'You already have an active appointment request.'];
+                return [
+                    'success' => false,
+                    'message' => 'You already have an appointment on this date. Please choose a different schedule.',
+                ];
             }
 
             $capacityStmt = $this->conn->prepare("

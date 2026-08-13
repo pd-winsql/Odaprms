@@ -42,6 +42,10 @@ try {
 
     $booking=$appointments->bookAppointment($patientId,$todaySchedule['clinic_id'],[$serviceId],$todaySchedule['sched_date'],$todaySchedule['schedule_id']);
     expectTrue(($booking['status']??'')==='Pending Review', 'Booking starts in Pending Review without a deposit.'); $createdAppointments[]=(int)$booking['appointment_id'];
+    $sameDayBooking=$appointments->bookAppointment($patientId,$todaySchedule['clinic_id'],[$serviceId],$todaySchedule['sched_date'],$todaySchedule['schedule_id']);
+    expectTrue(!($sameDayBooking['success']??false) && str_contains($sameDayBooking['message']??'', 'different schedule'), 'A patient cannot book another appointment on the same date.');
+    $differentDayBooking=$appointments->bookAppointment($patientId,$futureSchedule['clinic_id'],[$serviceId],$futureSchedule['sched_date'],$futureSchedule['schedule_id']);
+    expectTrue(($differentDayBooking['success']??false), 'A patient can book another active appointment on a different date.'); $createdAppointments[]=(int)$differentDayBooking['appointment_id'];
     $appointmentServiceDetails=$appointments->getServiceDetailsForAppointments([(int)$booking['appointment_id']]);
     expectTrue(count($appointmentServiceDetails[(int)$booking['appointment_id']]??[])===1,'Appointment details include the selected service card data.');
     $hasDeposit=(int)$conn->query('SELECT COUNT(*) FROM appointment_deposits WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn(); expectTrue($hasDeposit===0,'No deposit exists before staff acceptance.');
@@ -70,9 +74,8 @@ try {
     $billingRecord=array_values(array_filter($billings->getStaffBillings(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
     expectTrue($billingRecord&&$billingRecord['payment_status']==='Paid','The read-only billing records query includes the completed settlement.');
 
-    $expiring=$appointments->bookAppointment($patientId,$futureSchedule['clinic_id'],[$serviceId],$futureSchedule['sched_date'],$futureSchedule['schedule_id']); $createdAppointments[]=(int)$expiring['appointment_id'];
-    $appointments->updateAppointmentStatus($expiring['appointment_id'],'Awaiting Deposit',$staffId);
-    $conn->prepare('UPDATE appointments SET payment_deadline_at=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE appointment_id=:id')->execute([':id'=>$expiring['appointment_id']]);
+    $appointments->updateAppointmentStatus($differentDayBooking['appointment_id'],'Awaiting Deposit',$staffId);
+    $conn->prepare('UPDATE appointments SET payment_deadline_at=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE appointment_id=:id')->execute([':id'=>$differentDayBooking['appointment_id']]);
     expectTrue($deposits->expireUnpaidAppointments()>=1,'Unpaid accepted request expires after its deadline.');
 } finally {
     foreach(array_reverse($createdAppointments) as $id){$conn->prepare("DELETE FROM audit_logs WHERE entity_type='appointment' AND entity_id=:id")->execute([':id'=>$id]);foreach(['appointment_billings','appointment_checkins','appointment_deposits','appointment_services'] as $table)$conn->prepare("DELETE FROM {$table} WHERE appointment_id=:id")->execute([':id'=>$id]);$conn->prepare('DELETE FROM appointments WHERE appointment_id=:id')->execute([':id'=>$id]);}
