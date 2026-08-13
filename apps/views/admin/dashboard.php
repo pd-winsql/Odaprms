@@ -3,6 +3,7 @@ session_start();
 require_once '../../../config/conn.php';
 require_once '../../models/appointmentModel.php';
 require_once '../../models/clinicModel.php';
+require_once '../../helpers/siteBranding.php';
 
 // Prevent browser from caching protected pages
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -27,6 +28,7 @@ $clinicModel      = new Clinic($conn);
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
 $clinics  = $clinicModel->getAllClinics();
+$branding = vdLoadSiteBranding($conn);
 
 // Derive initials from the authenticated staff display name.
 $displayName = $_SESSION['display_name'] ?? $_SESSION['email'] ?? 'Administrator';
@@ -47,7 +49,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=15">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260813-brand-logo-2">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
 </head>
@@ -60,9 +62,7 @@ $today = date('l, F j Y');
     <aside class="vd-sidebar" id="sidebar">
 
         <div class="vd-sidebar-brand">
-        <div class="vd-logo-name">Dr. Aprille</div>
-        <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
-        <div class="vd-logo-sub">Clinica Dental</div>
+            <?= vdRenderSiteBranding($branding, '../../../public/assets', 'sidebar') ?>
         </div>
 
         <nav class="vd-sidebar-nav">

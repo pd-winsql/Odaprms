@@ -25,7 +25,7 @@ function sv($settings, $key) {
 
     <div class="vd-empty-state" style="background: var(--gold-pale); border: 1px solid var(--border); color: var(--mid); text-align: left; padding: 14px 18px;">
         <i class="ti ti-info-circle me-1"></i>
-        Changes here update the public homepage (<code>index.php</code>) immediately after saving. Each section below saves independently.
+        Changes here update branding and public-facing content across the system. Each section below saves independently.
     </div>
 
     <!-- ── BRAND & LOGO ── -->
@@ -35,8 +35,8 @@ function sv($settings, $key) {
         </div>
         <div class="vd-dash-card-body">
             <p class="vd-appt-meta mb-3">
-                The stylized "VEN✚URA" wordmark itself stays fixed for now — the text below it is editable,
-                and uploading a logo image will replace the whole wordmark automatically.
+                The stylized "VEN✚URA" wordmark is used as a fallback. Uploading a logo image replaces it across
+                the homepage, dashboards, account pages, reports, and supported email clients.
             </p>
 
             <div class="row g-3 mb-3">
@@ -75,6 +75,7 @@ function sv($settings, $key) {
                         <button class="btn vd-btn-outline btn-sm text-danger" id="removeLogoBtn">Remove Logo</button>
                     <?php endif; ?>
                 </div>
+                <div class="vd-appt-meta mt-2">PNG or JPG is recommended for the widest email-client compatibility. WEBP and SVG use the text fallback in email.</div>
             </div>
         </div>
     </div>
@@ -230,7 +231,7 @@ function sv($settings, $key) {
     }
 
     function refreshPage() {
-        if (typeof loadpage === 'function') loadpage('siteSettings-content.php');
+        window.location.reload();
     }
 
     const confirmModalEl = document.getElementById('settingsConfirmModal');
@@ -280,7 +281,7 @@ function sv($settings, $key) {
             const saveButton = this;
 
             askForSaveConfirmation(
-                `Save changes to the "${label}" section? This will update what visitors see on the homepage right away.`,
+                `Save changes to the "${label}" section? The update will take effect across applicable parts of the system.`,
                 async function () {
                     const card   = saveButton.closest('.vd-dash-card');
                     const fields = card.querySelectorAll('.vd-field');
@@ -328,7 +329,7 @@ function sv($settings, $key) {
 
             const uploadButton = this;
             askForSaveConfirmation(
-                'Upload this logo and replace the current wordmark on the homepage?',
+                'Upload this logo and replace the current wordmark across the system?',
                 async function () {
                     const formData = new FormData();
                     formData.append('action', 'updateLogo');

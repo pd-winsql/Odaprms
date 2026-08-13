@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Admin') 
 
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/reportModel.php';
+require_once __DIR__ . '/../../../helpers/siteBranding.php';
 
 function reportEscape($value)
 {
@@ -29,6 +30,7 @@ if (!$conn) {
     echo '<div class="vd-empty-state">The report database is unavailable.</div>';
     exit;
 }
+$branding = vdLoadSiteBranding($conn);
 
 $reportModel = new ReportModel($conn);
 $clinics = $reportModel->getClinics();
@@ -74,7 +76,7 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
 
 <section class="vd-report-page" id="reportPage">
     <div class="vd-report-print-header">
-        <div class="vd-report-brand">Dr. Aprille Ventura Clinica Dental</div>
+        <?= vdRenderSiteBranding($branding, '../../../public/assets', 'report') ?>
         <h1><?= reportEscape($reportTitle) ?></h1>
         <div><?= reportEscape($periodLabel) ?> &middot; <?= reportEscape($clinicLabel) ?></div>
     </div>

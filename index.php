@@ -5,6 +5,7 @@
   require_once 'apps/models/clinicModel.php';
   require_once 'apps/models/serviceModel.php';
   require_once 'apps/models/siteSettingsModel.php';
+  require_once 'apps/helpers/siteBranding.php';
 
   $db = new Database();
   $conn = $db->connect();
@@ -94,12 +95,7 @@
   <nav class="navbar navbar-expand-lg vd-navbar sticky-top">
     <div class="container-fluid px-4 px-lg-5">
       <a class="navbar-brand vd-navbar-brand-wrap" href="#hero-section">
-        <?php if (!empty($settings['site_logo'])): ?>
-          <img src="public/assets/<?= htmlspecialchars($settings['site_logo']) ?>" alt="<?= sv($settings, 'brand_name_top', 'Dr. Aprille') ?>" class="vd-navbar-logo-img">
-        <?php else: ?>
-          <div class="vd-logo-name"><?= sv($settings, 'brand_name_top', 'Dr. Aprille') ?></div>
-          <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
-        <?php endif; ?>
+        <?= vdRenderSiteBranding($settings, 'public/assets', 'navbar') ?>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
         <span class="navbar-toggler-icon"></span>

@@ -51,6 +51,18 @@
   padding: 24px 22px 18px;
   flex-shrink: 0;
   position: relative;
+  min-height: 86px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.vd-sidebar-logo-img {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
 }
 .vd-sidebar-brand::after {
   content: '';

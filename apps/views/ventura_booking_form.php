@@ -6,6 +6,7 @@
     require_once '../../config/conn.php';
     require_once '../models/clinicModel.php';
     require_once '../models/serviceModel.php';
+    require_once '../helpers/siteBranding.php';
 
     $db = new Database();
     $conn = $db->connect();
@@ -13,6 +14,7 @@
     $clinics = $clinicModel->getAllClinics();
 
     $serviceModel = new ServiceModel($conn);
+    $branding = vdLoadSiteBranding($conn);
     $serviceRows = $serviceModel->getHomepageServices();
 
     $serviceCategories = [];
@@ -46,7 +48,7 @@
     <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../../public/css/styles.css">
+    <link rel="stylesheet" href="../../public/css/styles.css?v=20260813-brand-logo-2">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
@@ -66,9 +68,7 @@
             <!-- HEADER -->
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-3 pb-4 mb-4" style="border-bottom:1px solid #d9c9a8;">
                 <div>
-                <div class="vd-logo-name">Dr. Aprille</div>
-                <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
-                <div class="vd-logo-sub">Clinica Dental</div>
+                <?= vdRenderSiteBranding($branding, '../../public/assets', 'form') ?>
                 </div>
                 <div class="text-sm-end vd-clinic-meta">
                 <strong>DR. APRILLE CABAYU VENTURA</strong><br>

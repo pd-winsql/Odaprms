@@ -1,5 +1,7 @@
 <?php
 session_start();
+require_once '../helpers/siteBranding.php';
+$branding = vdLoadSiteBranding();
 if (isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
@@ -20,7 +22,7 @@ if (!$email) {
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
-  <link rel="stylesheet" href="../../public/css/auth.css">
+  <link rel="stylesheet" href="../../public/css/auth.css?v=20260813-inverse-logo">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
@@ -36,11 +38,7 @@ if (!$email) {
       <div class="vd-auth-sq vd-sq-1"></div>
       <div class="vd-auth-sq vd-sq-2"></div>
       <div class="vd-auth-brand">
-        <div class="vd-logo-name">Dr. Aprille</div>
-        <div class="vd-logo-ventura vd-auth-ventura">
-          VEN<span class="vd-cross vd-auth-cross">✚</span>URA
-        </div>
-        <div class="vd-logo-sub">Clinica Dental</div>
+        <?= vdRenderSiteBranding($branding, '../../public/assets', 'auth') ?>
         <div class="vd-auth-tagline">
           Check your email<br>for the reset code.
         </div>

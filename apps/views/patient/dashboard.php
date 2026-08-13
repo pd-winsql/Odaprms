@@ -2,6 +2,7 @@
 session_start();
 require_once '../../../config/conn.php';
 require_once '../../models/patientModel.php';
+require_once '../../helpers/siteBranding.php';
 
 // Prevent browser from caching protected pages
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -21,6 +22,7 @@ if ($_SESSION['user_role'] !== 'Patient') {
 $db   = new Database();
 $conn = $db->connect();
 $patientModel = new Patient($conn);
+$branding = vdLoadSiteBranding($conn);
 
 // Get patient record linked to this user
 $patient = $patientModel->getPatientByUserId($_SESSION['user_id']);
@@ -47,7 +49,7 @@ $today    = date('l, F j Y');
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=17">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260813-brand-logo-2">
     <link rel="stylesheet" href="../../../public/css/patient-dashboard.css?v=3">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
@@ -60,9 +62,7 @@ $today    = date('l, F j Y');
     <!-- SIDEBAR -->
     <aside class="vd-sidebar" id="sidebar">
         <div class="vd-sidebar-brand">
-        <div class="vd-logo-name">Dr. Aprille</div>
-        <div class="vd-logo-ventura">VEN<span class="vd-cross">✚</span>URA</div>
-        <div class="vd-logo-sub">Clinica Dental</div>
+            <?= vdRenderSiteBranding($branding, '../../../public/assets', 'sidebar') ?>
         </div>
 
         <nav class="vd-sidebar-nav">

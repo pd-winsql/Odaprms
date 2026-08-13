@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ .  '/../vendor/autoload.php'; // Ensure PHPMailer + phpdotenv are loaded via Composer
+require_once __DIR__ . '/../apps/helpers/siteBranding.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
@@ -35,16 +36,63 @@ function getEmailTemplate($key) {
     return $templates[$key] ?? null;
 }
 
+function getEmailBranding(): array {
+    static $branding;
+    return $branding ??= vdLoadSiteBranding();
+}
+
+function getEmbeddableEmailLogo(array $branding): ?array {
+    $filename = vdSiteLogoFilename($branding);
+    if ($filename === '') return null;
+
+    $mimeTypes = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+    ];
+    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    if (!isset($mimeTypes[$extension])) return null;
+
+    return [
+        'path' => vdSiteLogoPath($filename),
+        'filename' => $filename,
+        'mime' => $mimeTypes[$extension],
+    ];
+}
+
+function addEmailBrandLogo(PHPMailer $mail, array $branding): bool {
+    $logo = getEmbeddableEmailLogo($branding);
+    if (!$logo) return false;
+
+    try {
+        return $mail->addEmbeddedImage($logo['path'], 'site-logo', $logo['filename'], 'base64', $logo['mime']);
+    } catch (Exception $e) {
+        error_log('Email logo embed error: ' . $e->getMessage());
+        return false;
+    }
+}
+
+function buildEmailBrandHeader(array $branding, bool $hasEmbeddedLogo): string {
+    if ($hasEmbeddedLogo) {
+        $alt = htmlspecialchars(vdBrandFullName($branding), ENT_QUOTES, 'UTF-8');
+        return '<img src="cid:site-logo" alt="' . $alt . '" style="display:block; max-width:240px; max-height:100px; width:auto; height:auto; margin:0 auto;">';
+    }
+
+    $top = htmlspecialchars((string) ($branding['brand_name_top'] ?? 'Dr. Aprille'), ENT_QUOTES, 'UTF-8');
+    $sub = htmlspecialchars((string) ($branding['brand_name_sub'] ?? 'Clinica Dental'), ENT_QUOTES, 'UTF-8');
+    return '<div style="font-size:11px; letter-spacing:0.22em; color:#b5924c; font-style:italic;">' . $top . '</div>'
+        . '<div style="font-size:32px; font-weight:300; letter-spacing:0.12em; color:#1a1612;">'
+        . 'VEN<span style="display:inline-block; background:#b5924c; color:#fff; font-size:18px; font-weight:600; padding:2px 6px; border-radius:2px; margin:0 2px;">✚</span>URA</div>'
+        . '<div style="font-size:9px; letter-spacing:0.28em; color:#b5924c; margin-top:4px;">' . strtoupper($sub) . '</div>';
+}
+
 // ── Shared gold/cream email HTML shell ──
-function buildEmailHtml($toName, $template, $value) {
+function buildEmailHtml($toName, $template, $value, ?array $branding = null, bool $hasEmbeddedLogo = false) {
+    $branding ??= getEmailBranding();
     return '
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <div style="font-size: 11px; letter-spacing: 0.22em; color: #b5924c; font-style: italic;">Dr. Aprille</div>
-        <div style="font-size: 32px; font-weight: 300; letter-spacing: 0.12em; color: #1a1612;">
-          VEN<span style="display:inline-block; background:#b5924c; color:#fff; font-size:18px; font-weight:600; padding:2px 6px; border-radius:2px; margin:0 2px;">✚</span>URA
-        </div>
-        <div style="font-size: 9px; letter-spacing: 0.28em; color: #b5924c; margin-top: 4px;">CLINICA DENTAL</div>
+        ' . buildEmailBrandHeader($branding, $hasEmbeddedLogo) . '
       </div>
 
       <p style="font-size: 14px; color: #4a3f30; margin-bottom: 8px;">Hello, <strong>' . htmlspecialchars($toName) . '</strong></p>
@@ -80,6 +128,7 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value) {
 
     $config = getMailConfig();
     $mail   = new PHPMailer(true);
+    $branding = getEmailBranding();
 
     try {
         // SMTP Configuration — switches between Mailtrap (dev) and Gmail (prod) via USE_MAILTRAP
@@ -97,8 +146,9 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value) {
 
         $mail->CharSet = 'UTF-8';
         $mail->isHTML(true);
+        $hasEmbeddedLogo = addEmailBrandLogo($mail, $branding);
         $mail->Subject = $template['subject'] . ' — Dr. Aprille Ventura Clinica Dental';
-        $mail->Body    = buildEmailHtml($toName, $template, $value);
+        $mail->Body    = buildEmailHtml($toName, $template, $value, $branding, $hasEmbeddedLogo);
         $mail->AltBody =
             "Dr. Aprille Ventura Clinica Dental\n\n" .
             "Hello $toName,\n\n" .
@@ -128,15 +178,12 @@ function sendOTPEmail($toEmail, $toName, $otp, $type = 'register') {
 
 // ── Credentials email shell: same gold/cream look, but shows two rows
 //    (Username + Password) instead of the single big code box used by OTPs ──
-function buildCredentialsEmailHtml($toName, $template, $email, $password) {
+function buildCredentialsEmailHtml($toName, $template, $email, $password, ?array $branding = null, bool $hasEmbeddedLogo = false) {
+    $branding ??= getEmailBranding();
     return '
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <div style="font-size: 11px; letter-spacing: 0.22em; color: #b5924c; font-style: italic;">Dr. Aprille</div>
-        <div style="font-size: 32px; font-weight: 300; letter-spacing: 0.12em; color: #1a1612;">
-          VEN<span style="display:inline-block; background:#b5924c; color:#fff; font-size:18px; font-weight:600; padding:2px 6px; border-radius:2px; margin:0 2px;">✚</span>URA
-        </div>
-        <div style="font-size: 9px; letter-spacing: 0.28em; color: #b5924c; margin-top: 4px;">CLINICA DENTAL</div>
+        ' . buildEmailBrandHeader($branding, $hasEmbeddedLogo) . '
       </div>
 
       <p style="font-size: 14px; color: #4a3f30; margin-bottom: 8px;">Hello, <strong>' . htmlspecialchars($toName) . '</strong></p>
@@ -178,6 +225,7 @@ function sendStaffAccountEmail($toEmail, $toName, $password) {
 
     $config = getMailConfig();
     $mail   = new PHPMailer(true);
+    $branding = getEmailBranding();
 
     try {
         $mail->isSMTP();
@@ -194,8 +242,9 @@ function sendStaffAccountEmail($toEmail, $toName, $password) {
 
         $mail->CharSet = 'UTF-8';
         $mail->isHTML(true);
+        $hasEmbeddedLogo = addEmailBrandLogo($mail, $branding);
         $mail->Subject = $template['subject'] . ' — Dr. Aprille Ventura Clinica Dental';
-        $mail->Body    = buildCredentialsEmailHtml($toName, $template, $toEmail, $password);
+        $mail->Body    = buildCredentialsEmailHtml($toName, $template, $toEmail, $password, $branding, $hasEmbeddedLogo);
         $mail->AltBody =
             "Dr. Aprille Ventura Clinica Dental\n\n" .
             "Hello $toName,\n\n" .
