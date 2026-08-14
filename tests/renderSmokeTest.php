@@ -18,6 +18,7 @@ $files = [
     'schedules' => __DIR__ . '/../apps/views/admin/partials/schedule-content.php',
     'dental-schedules' => __DIR__ . '/../apps/views/dental_asst/partials/schedule-content.php',
     'historical-logbook' => __DIR__ . '/../apps/views/admin/partials/logbook-content.php',
+    'analytics' => __DIR__ . '/../apps/views/admin/partials/analytics-content.php',
     'patient-billing' => __DIR__ . '/../apps/views/patient/partials/billing-content.php',
     'patient-booking' => __DIR__ . '/../apps/views/patient/partials/booking-content.php',
     'staff-patient-form' => __DIR__ . '/../apps/views/admin/partials/_patient-form.php',

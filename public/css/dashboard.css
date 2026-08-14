@@ -2599,3 +2599,372 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
   outline: 2px solid var(--gold);
   outline-offset: -5px;
 }
+/* Admin analytics */
+.vd-analytics-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.vd-analytics-controls .vd-dash-card-header {
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.vd-analytics-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(170px, .9fr) minmax(320px, 1.6fr) minmax(180px, 1fr) auto;
+    gap: 1rem;
+    align-items: end;
+    padding: 1.25rem;
+}
+
+.vd-analytics-custom-dates {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.vd-analytics-filter-action {
+    display: flex;
+    gap: .55rem;
+}
+
+.vd-analytics-filter-action .btn {
+    white-space: nowrap;
+}
+
+.vd-analytics-loading {
+    min-height: 0;
+    padding: .7rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .65rem;
+    color: var(--mid, #776b5e);
+}
+
+.vd-analytics-loading.d-none {
+    display: none !important;
+}
+
+.vd-analytics-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.vd-analytics-period {
+    color: var(--mid, #776b5e);
+    font-size: .88rem;
+}
+
+.vd-analytics-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vd-analytics-kpi {
+    position: relative;
+    border: 1px solid var(--border, #e1d7c5);
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .2s ease;
+}
+
+.vd-analytics-kpi:hover,
+.vd-analytics-kpi:focus-visible {
+    border-color: var(--gold, #b5924c);
+    box-shadow: 0 9px 24px rgba(71, 54, 28, .1);
+    transform: translateY(-2px);
+}
+
+.vd-analytics-kpi:focus-visible {
+    outline: 3px solid rgba(181, 146, 76, .22);
+    outline-offset: 2px;
+}
+
+.vd-analytics-open-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    margin-top: .65rem;
+    color: var(--gold, #b5924c);
+    font-size: .72rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(3px);
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.vd-analytics-kpi:hover .vd-analytics-open-hint,
+.vd-analytics-kpi:focus-visible .vd-analytics-open-hint {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.vd-analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.vd-analytics-section-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: .35rem;
+    padding: .25rem .1rem 0;
+}
+
+.vd-analytics-section-kicker {
+    color: var(--gold, #b5924c);
+    font-size: .7rem;
+    font-weight: 500;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.vd-analytics-section-header h2 {
+    margin: .15rem 0 .2rem;
+    color: var(--dark, #241f1a);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.45rem;
+    font-weight: 600;
+}
+
+.vd-analytics-section-header p {
+    margin: 0;
+    color: var(--mid, #776b5e);
+    font-size: .78rem;
+}
+
+.vd-analytics-section-header-static {
+    margin-top: .7rem;
+}
+
+.vd-analytics-group-toggle {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--border, #e1d7c5);
+    border-radius: 8px;
+    background: #f7f2e9;
+}
+
+.vd-analytics-group-toggle button {
+    min-width: 78px;
+    padding: .48rem .8rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--mid, #776b5e);
+    font: inherit;
+    font-size: .78rem;
+    cursor: pointer;
+}
+
+.vd-analytics-group-toggle button.active {
+    background: #fff;
+    color: var(--dark, #241f1a);
+    box-shadow: 0 2px 8px rgba(67, 49, 22, .1);
+    font-weight: 500;
+}
+
+.vd-analytics-group-toggle button:focus-visible {
+    outline: 2px solid rgba(181, 146, 76, .45);
+    outline-offset: 1px;
+}
+
+.vd-analytics-chart-wide {
+    grid-column: span 2;
+}
+
+.vd-analytics-chart .vd-dash-card-header {
+    padding-bottom: .75rem;
+}
+
+.vd-analytics-canvas {
+    position: relative;
+    min-height: 310px;
+    padding: .5rem 1.25rem 1.25rem;
+}
+
+.vd-analytics-canvas canvas {
+    opacity: 1;
+    transition: opacity .22s ease;
+}
+
+.vd-chart-skeleton {
+    display: none;
+    position: absolute;
+    inset: .75rem 1.25rem 1.25rem;
+    border-radius: 7px;
+    background:
+        linear-gradient(90deg, transparent, rgba(255, 255, 255, .7), transparent),
+        repeating-linear-gradient(to top, #f3ede3 0, #f3ede3 2px, transparent 2px, transparent 58px);
+    background-size: 220px 100%, 100% 100%;
+    animation: vdAnalyticsShimmer 1.25s linear infinite;
+}
+
+.vd-analytics-page.is-loading .vd-chart-skeleton {
+    display: block;
+}
+
+.vd-analytics-page.is-loading .vd-analytics-canvas canvas {
+    opacity: .08;
+}
+
+.vd-analytics-page.is-loading .vd-analytics-kpi {
+    opacity: .72;
+    pointer-events: none;
+}
+
+.vd-analytics-page.is-loading .vd-analytics-skeleton-line {
+    color: transparent;
+    width: 4.5rem;
+    min-height: 2.2rem;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #eee5d8 25%, #faf6ee 50%, #eee5d8 75%);
+    background-size: 200% 100%;
+    animation: vdAnalyticsShimmer 1.25s linear infinite;
+}
+
+@keyframes vdAnalyticsShimmer {
+    from { background-position: 200% 0, 0 0; }
+    to { background-position: -200% 0, 0 0; }
+}
+
+.vd-chart-definition {
+    margin: 0 1.25rem 1.15rem;
+    padding-top: .75rem;
+    border-top: 1px solid var(--border, #e1d7c5);
+    color: var(--mid, #776b5e);
+    font-size: .78rem;
+}
+
+.vd-chart-definition summary {
+    color: var(--gold-dark, #8d6d31);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.vd-chart-definition p {
+    margin: .55rem 0 0;
+    line-height: 1.55;
+}
+
+.vd-analytics-drill-loading {
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    color: var(--mid, #776b5e);
+}
+
+.vd-analytics-drill-loading.d-none {
+    display: none !important;
+}
+
+.vd-analytics-pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: .65rem;
+}
+
+.vd-analytics-pagination.d-none {
+    display: none !important;
+}
+
+.vd-analytics-pagination span {
+    min-width: 86px;
+    color: var(--mid, #776b5e);
+    font-size: .78rem;
+    text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vd-analytics-kpi,
+    .vd-analytics-open-hint,
+    .vd-analytics-canvas canvas {
+        transition: none;
+    }
+
+    .vd-chart-skeleton,
+    .vd-analytics-page.is-loading .vd-analytics-skeleton-line {
+        animation: none;
+    }
+}
+
+@media (max-width: 1100px) {
+    .vd-analytics-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vd-analytics-filter-action {
+        grid-column: span 2;
+        justify-content: flex-end;
+    }
+
+    .vd-analytics-custom-dates {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 760px) {
+    .vd-analytics-controls .vd-dash-card-header {
+        flex-direction: column;
+    }
+
+    .vd-analytics-filter-grid,
+    .vd-analytics-kpis,
+    .vd-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .vd-analytics-filter-action,
+    .vd-analytics-chart-wide {
+        grid-column: auto;
+    }
+
+    .vd-analytics-custom-dates {
+        grid-column: auto;
+        grid-template-columns: 1fr;
+    }
+
+    .vd-analytics-section-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .vd-analytics-group-toggle {
+        align-self: stretch;
+    }
+
+    .vd-analytics-group-toggle button {
+        flex: 1;
+    }
+
+    .vd-analytics-drill-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .vd-analytics-pagination {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .vd-analytics-filter-action .btn,
+    .vd-analytics-controls #analyticsExport {
+        width: 100%;
+    }
+
+    .vd-analytics-canvas {
+        min-height: 280px;
+        padding-inline: .75rem;
+    }
+
+}
