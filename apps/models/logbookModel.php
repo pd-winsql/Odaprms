@@ -29,7 +29,10 @@ class LogbookModel {
                 ci.profile_required_at_arrival,
                 ci.ready_at,
                 ci.queue_status,
-                ci.queue_priority,
+                /* Serve Next is a one-time staff override; these fields explain who changed the order and why. */
+                ci.serve_next_at,
+                ci.serve_next_reason,
+                ci.serve_next_by_user_id,
                 ci.queue_entered_at,
                 ci.queue_reason,
                 ci.queue_updated_at,
@@ -70,11 +73,13 @@ class LogbookModel {
                     WHEN a.status = 'In Progress' THEN 0
                     WHEN a.status = 'Checked In' AND ci.checkin_status = 'Ready' AND ci.queue_status = 'Waiting' THEN 1
                     WHEN a.status = 'Checked In' AND ci.checkin_status = 'Profile Required' THEN 2
-                    WHEN a.status = 'Checked In' AND ci.queue_status = 'Deferred' THEN 3
+                    WHEN a.status = 'Checked In' AND ci.queue_status = 'On Hold' THEN 3
                     WHEN ci.arrived_at IS NOT NULL THEN 4
                     ELSE 5
                 END,
-                CASE WHEN ci.queue_priority = 'Emergency' THEN 0 ELSE 1 END,
+                /* A staff-selected patient is first; everyone else keeps FIFO order. */
+                CASE WHEN ci.serve_next_at IS NOT NULL THEN 0 ELSE 1 END,
+                ci.serve_next_at DESC,
                 COALESCE(ci.queue_entered_at, ci.arrived_at, a.created_at) ASC,
                 ci.arrived_at ASC,
                 a.created_at ASC
@@ -113,7 +118,9 @@ class LogbookModel {
               AND ci.checkin_status = 'Ready'
               AND ci.queue_status = 'Waiting'
             ORDER BY
-              CASE WHEN ci.queue_priority = 'Emergency' THEN 0 ELSE 1 END,
+              /* Keep the treatment-start decision identical to the displayed queue. */
+              CASE WHEN ci.serve_next_at IS NOT NULL THEN 0 ELSE 1 END,
+              ci.serve_next_at DESC,
               COALESCE(ci.queue_entered_at, ci.arrived_at) ASC,
               ci.arrived_at ASC,
               ci.checkin_id ASC
@@ -133,7 +140,7 @@ class LogbookModel {
         $stmt = $this->conn->prepare("
             SELECT a.appointment_id, a.status AS appointment_status, a.date,
                    p.firstname, p.lastname, p.profile_status,
-                   ci.checkin_status, ci.queue_status, ci.queue_priority
+                   ci.checkin_status, ci.queue_status, ci.serve_next_at
             FROM appointments a
             JOIN patients p ON p.patient_id = a.patient_id
             JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
@@ -151,9 +158,9 @@ class LogbookModel {
         return substr($reason, 0, 255);
     }
 
-    public function deferNextPatient(int $appointmentId, int $userId, string $reason): array {
+    public function placeOnHold(int $appointmentId, int $userId, string $reason): array {
         $reason = $this->validateQueueReason($reason);
-        if ($reason === null) return ['success' => false, 'message' => 'A short reason is required to defer the patient.'];
+        if ($reason === null) return ['success' => false, 'message' => 'A short reason is required to place the patient on hold.'];
 
         try {
             $this->conn->beginTransaction();
@@ -161,31 +168,33 @@ class LogbookModel {
             if (!$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
                 || $record['checkin_status'] !== 'Ready' || $record['queue_status'] !== 'Waiting') {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'Only a ready patient in today\'s active queue can be deferred.'];
+                return ['success' => false, 'message' => 'Only a ready patient in today\'s active queue can be placed on hold.'];
             }
             if ($this->getNextReadyAppointmentId(true) !== $appointmentId) {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'Only the next patient can be deferred.'];
+                return ['success' => false, 'message' => 'Only the next patient can be placed on hold.'];
             }
 
+            /* On Hold removes the patient from the active queue and cancels any pending Serve Next override. */
             $this->conn->prepare("
                 UPDATE appointment_checkins
-                SET queue_status = 'Deferred', queue_reason = :reason,
+                SET queue_status = 'On Hold', queue_reason = :reason,
+                    serve_next_at = NULL, serve_next_reason = NULL, serve_next_by_user_id = NULL,
                     queue_updated_by_user_id = :user_id, queue_updated_at = NOW()
                 WHERE appointment_id = :appointment_id
             ")->execute([':reason' => $reason, ':user_id' => $userId, ':appointment_id' => $appointmentId]);
 
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
-            $this->auditLog->record('appointment', $appointmentId, 'queue_deferred',
-                "Deferred appointment #{$appointmentId} in the patient queue.",
-                ['queue_status' => 'Waiting'], ['queue_status' => 'Deferred', 'reason' => $reason], $actor);
+            $this->auditLog->record('appointment', $appointmentId, 'queue_placed_on_hold',
+                "Placed appointment #{$appointmentId} on hold in the patient queue.",
+                ['queue_status' => 'Waiting'], ['queue_status' => 'On Hold', 'reason' => $reason], $actor);
             $this->conn->commit();
             return ['success' => true, 'message' => 'Patient placed on hold. The next ready patient is now first in queue.'];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
-            error_log('deferNextPatient error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Unable to defer the patient.'];
+            error_log('placeOnHold error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to place the patient on hold.'];
         }
     }
 
@@ -194,14 +203,14 @@ class LogbookModel {
             $this->conn->beginTransaction();
             $record = $this->queueRecordForUpdate($appointmentId);
             if (!$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
-                || $record['queue_status'] !== 'Deferred') {
+                || $record['queue_status'] !== 'On Hold') {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'Only a deferred patient from today can return to the queue.'];
+                return ['success' => false, 'message' => 'Only an on-hold patient from today can return to the queue.'];
             }
 
             $this->conn->prepare("
                 UPDATE appointment_checkins
-                SET queue_status = 'Waiting', queue_priority = 'Normal', queue_entered_at = NOW(),
+                SET queue_status = 'Waiting', queue_entered_at = NOW(),
                     queue_reason = NULL, queue_updated_by_user_id = :user_id, queue_updated_at = NOW()
                 WHERE appointment_id = :appointment_id
             ")->execute([':user_id' => $userId, ':appointment_id' => $appointmentId]);
@@ -210,7 +219,7 @@ class LogbookModel {
             if (!$actor) throw new RuntimeException('Staff account not found.');
             $this->auditLog->record('appointment', $appointmentId, 'queue_returned',
                 "Returned appointment #{$appointmentId} to the patient queue.",
-                ['queue_status' => 'Deferred'], ['queue_status' => 'Waiting', 'queue_priority' => 'Normal'], $actor);
+                ['queue_status' => 'On Hold'], ['queue_status' => 'Waiting'], $actor);
             $this->conn->commit();
             return ['success' => true, 'message' => 'Patient returned to the end of the normal queue.'];
         } catch (Throwable $e) {
@@ -220,9 +229,9 @@ class LogbookModel {
         }
     }
 
-    public function prioritizeEmergency(int $appointmentId, int $userId, string $reason): array {
+    public function serveNext(int $appointmentId, int $userId, string $reason): array {
         $reason = $this->validateQueueReason($reason);
-        if ($reason === null) return ['success' => false, 'message' => 'An emergency reason is required.'];
+        if ($reason === null) return ['success' => false, 'message' => 'A reason is required to serve this patient next.'];
 
         try {
             $this->conn->beginTransaction();
@@ -230,31 +239,38 @@ class LogbookModel {
             if (!$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
                 || $record['checkin_status'] !== 'Ready' || $record['queue_status'] !== 'Waiting') {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'Only a ready patient in today\'s queue can receive emergency priority.'];
+                return ['success' => false, 'message' => 'Only a ready patient in today\'s active queue can be served next.'];
             }
-            if ($record['queue_priority'] === 'Emergency') {
+            if ($record['serve_next_at'] !== null) {
                 $this->conn->rollBack();
-                return ['success' => true, 'changed' => false, 'message' => 'This patient already has emergency priority.'];
+                return ['success' => true, 'changed' => false, 'message' => 'This patient is already selected to be served next.'];
             }
 
+            /* Only one patient can own the one-time Serve Next override for today's queue. */
+            $this->conn->exec("
+                UPDATE appointment_checkins ci
+                JOIN appointments a ON a.appointment_id = ci.appointment_id
+                SET ci.serve_next_at = NULL, ci.serve_next_reason = NULL, ci.serve_next_by_user_id = NULL
+                WHERE a.date = CURDATE() AND ci.serve_next_at IS NOT NULL
+            ");
             $this->conn->prepare("
                 UPDATE appointment_checkins
-                SET queue_priority = 'Emergency', queue_reason = :reason,
+                SET serve_next_at = NOW(), serve_next_reason = :reason, serve_next_by_user_id = :user_id,
                     queue_updated_by_user_id = :user_id, queue_updated_at = NOW()
                 WHERE appointment_id = :appointment_id
             ")->execute([':reason' => $reason, ':user_id' => $userId, ':appointment_id' => $appointmentId]);
 
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
-            $this->auditLog->record('appointment', $appointmentId, 'queue_emergency_priority',
-                "Gave appointment #{$appointmentId} emergency queue priority.",
-                ['queue_priority' => 'Normal'], ['queue_priority' => 'Emergency', 'reason' => $reason], $actor);
+            $this->auditLog->record('appointment', $appointmentId, 'queue_serve_next',
+                "Selected appointment #{$appointmentId} to be served next.",
+                null, ['serve_next' => true, 'reason' => $reason], $actor);
             $this->conn->commit();
-            return ['success' => true, 'message' => 'Emergency priority applied. The queue has been updated.'];
+            return ['success' => true, 'message' => 'Patient selected to be served next.'];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
-            error_log('prioritizeEmergency error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Unable to prioritize the patient.'];
+            error_log('serveNext error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to select the patient to be served next.'];
         }
     }
 
@@ -328,7 +344,6 @@ class LogbookModel {
                     profile_required_at_arrival,
                     ready_at,
                     queue_status,
-                    queue_priority,
                     queue_entered_at,
                     lookup_method
                 ) VALUES (
@@ -339,7 +354,6 @@ class LogbookModel {
                     :profile_required,
                     CASE WHEN :ready_status = 'Ready' THEN NOW() ELSE NULL END,
                     'Waiting',
-                    'Normal',
                     NOW(),
                     :lookup_method
                 )

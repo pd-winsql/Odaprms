@@ -412,7 +412,7 @@ class Appointment {
             if ($status === 'In Progress') {
                 $readiness = $this->conn->prepare("
                     SELECT a.date, p.profile_status, ci.checkin_status,
-                           ci.queue_status, ci.queue_priority
+                           ci.queue_status, ci.serve_next_at
                     FROM appointments a JOIN patients p ON p.patient_id=a.patient_id
                     LEFT JOIN appointment_checkins ci ON ci.appointment_id=a.appointment_id
                     WHERE a.appointment_id=:id
@@ -452,7 +452,9 @@ class Appointment {
                       AND ci.checkin_status = 'Ready'
                       AND ci.queue_status = 'Waiting'
                     ORDER BY
-                      CASE WHEN ci.queue_priority = 'Emergency' THEN 0 ELSE 1 END,
+                      /* Serve Next is checked inside this transaction so two staff actions cannot bypass each other. */
+                      CASE WHEN ci.serve_next_at IS NOT NULL THEN 0 ELSE 1 END,
+                      ci.serve_next_at DESC,
                       COALESCE(ci.queue_entered_at, ci.arrived_at) ASC,
                       ci.arrived_at ASC,
                       ci.checkin_id ASC
@@ -463,6 +465,13 @@ class Appointment {
                     $this->conn->rollBack();
                     return ['success'=>false,'message'=>'This patient is not next in the queue. Use Today\'s Logbook to adjust the queue first.'];
                 }
+
+                /* Starting treatment consumes the one-time override; normal FIFO resumes afterward. */
+                $this->conn->prepare("
+                    UPDATE appointment_checkins
+                    SET serve_next_at = NULL, serve_next_reason = NULL, serve_next_by_user_id = NULL
+                    WHERE appointment_id = :id
+                ")->execute([':id' => $appointment_id]);
             }
 
             $actor = $this->auditLog->getUserActor($performedByUserId);

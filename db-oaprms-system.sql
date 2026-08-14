@@ -109,10 +109,12 @@ CREATE TABLE `appointment_checkins` (
   `checkin_status` enum('Profile Required','Ready') NOT NULL,
   `profile_required_at_arrival` tinyint(1) NOT NULL DEFAULT 0,
   `ready_at` datetime DEFAULT NULL,
-  `queue_status` enum('Waiting','Deferred') NOT NULL DEFAULT 'Waiting',
-  `queue_priority` enum('Normal','Emergency') NOT NULL DEFAULT 'Normal',
+  `queue_status` enum('Waiting','On Hold') NOT NULL DEFAULT 'Waiting',
   `queue_entered_at` datetime DEFAULT NULL,
   `queue_reason` varchar(255) DEFAULT NULL,
+  `serve_next_at` datetime DEFAULT NULL,
+  `serve_next_reason` varchar(255) DEFAULT NULL,
+  `serve_next_by_user_id` int(11) DEFAULT NULL,
   `queue_updated_by_user_id` int(11) DEFAULT NULL,
   `queue_updated_at` datetime DEFAULT NULL,
   `notes` varchar(255) DEFAULT NULL,
@@ -126,8 +128,8 @@ CREATE TABLE `appointment_checkins` (
 -- Dumping data for table `appointment_checkins`
 --
 
-INSERT INTO `appointment_checkins` (`checkin_id`, `appointment_id`, `arrived_at`, `checked_in_by_user_id`, `lookup_method`, `checkin_status`, `profile_required_at_arrival`, `ready_at`, `queue_status`, `queue_priority`, `queue_entered_at`, `queue_reason`, `queue_updated_by_user_id`, `queue_updated_at`, `notes`, `date_override_reason`, `date_override_by_user_id`, `created_at`, `updated_at`) VALUES
-(5, 39, '2026-08-05 14:56:39', 7, 'Code', 'Profile Required', 1, NULL, 'Waiting', 'Normal', '2026-08-05 14:56:39', NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:56:39', '2026-08-05 06:56:39');
+INSERT INTO `appointment_checkins` (`checkin_id`, `appointment_id`, `arrived_at`, `checked_in_by_user_id`, `lookup_method`, `checkin_status`, `profile_required_at_arrival`, `ready_at`, `queue_status`, `queue_entered_at`, `queue_reason`, `serve_next_at`, `serve_next_reason`, `serve_next_by_user_id`, `queue_updated_by_user_id`, `queue_updated_at`, `notes`, `date_override_reason`, `date_override_by_user_id`, `created_at`, `updated_at`) VALUES
+(5, 39, '2026-08-05 14:56:39', 7, 'Code', 'Profile Required', 1, NULL, 'Waiting', '2026-08-05 14:56:39', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:56:39', '2026-08-05 06:56:39');
 
 -- --------------------------------------------------------
 
@@ -844,7 +846,8 @@ ALTER TABLE `appointment_checkins`
   ADD UNIQUE KEY `uq_appointment_checkins_appointment` (`appointment_id`),
   ADD KEY `idx_appointment_checkins_arrival` (`arrived_at`),
   ADD KEY `idx_appointment_checkins_actor` (`checked_in_by_user_id`),
-  ADD KEY `idx_checkins_queue` (`queue_status`,`queue_priority`,`queue_entered_at`),
+  ADD KEY `idx_checkins_queue` (`queue_status`,`serve_next_at`,`queue_entered_at`),
+  ADD KEY `idx_checkins_serve_next_actor` (`serve_next_by_user_id`),
   ADD KEY `idx_checkins_queue_actor` (`queue_updated_by_user_id`),
   ADD KEY `idx_checkin_override_actor` (`date_override_by_user_id`);
 
@@ -1170,6 +1173,7 @@ ALTER TABLE `appointment_checkins`
   ADD CONSTRAINT `fk_checkin_override_actor` FOREIGN KEY (`date_override_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_checkins_actor` FOREIGN KEY (`checked_in_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_checkins_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_checkins_serve_next_actor` FOREIGN KEY (`serve_next_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_checkins_queue_actor` FOREIGN KEY (`queue_updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --

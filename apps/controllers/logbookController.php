@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'lookup') {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['deferNext', 'returnToQueue', 'prioritizeEmergency'], true)) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['placeOnHold', 'returnToQueue', 'serveNext'], true)) {
     $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
     if ($appointmentId <= 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid appointment.']);
@@ -44,12 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['deferNext', 're
 
     $userId = (int) $_SESSION['user_id'];
     $reason = trim($_POST['reason'] ?? '');
-    if ($action === 'deferNext') {
-        echo json_encode($model->deferNextPatient($appointmentId, $userId, $reason));
+    if ($action === 'placeOnHold') {
+        echo json_encode($model->placeOnHold($appointmentId, $userId, $reason));
     } elseif ($action === 'returnToQueue') {
         echo json_encode($model->returnToQueue($appointmentId, $userId));
     } else {
-        echo json_encode($model->prioritizeEmergency($appointmentId, $userId, $reason));
+        echo json_encode($model->serveNext($appointmentId, $userId, $reason));
     }
     exit;
 }

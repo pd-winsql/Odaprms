@@ -1357,7 +1357,7 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
 .vd-queue-next { background: var(--gold-pale); border-color: #ddc78d; color: #765b1d; }
 .vd-queue-hold { background: #f5eee2; border-color: #dbc7a8; color: #76582f; }
 .vd-queue-blocked { background: #f1efe8; color: #77736c; }
-.vd-queue-emergency { color: #a32d2d; font-size: 10px; font-weight: 600; margin-top: 5px; white-space: nowrap; }
+.vd-queue-priority { color: #8a5a00; font-size: 10px; font-weight: 600; margin-top: 5px; white-space: nowrap; }
 
 @media (max-width: 800px) {
   .vd-queue-overview { grid-template-columns: 1fr; }
