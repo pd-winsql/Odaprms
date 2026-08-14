@@ -343,13 +343,19 @@
 /* ── Forgot password link ── */
 .vd-auth-forgot {
   text-align: right;
-  margin-top: 0px;
+  margin-top: 0;
 }
 .vd-auth-forgot a {
-  font-size: 11px;
   color: var(--gold);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   text-decoration: none;
-  letter-spacing: 0.04em;
   transition: color 0.15s;
 }
-.vd-auth-forgot a:hover { color: var(--mid); }
+.vd-auth-forgot a:hover,
+.vd-auth-forgot a:focus-visible {
+  color: var(--mid);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

@@ -25,7 +25,7 @@ if (isset($_SESSION['user_id'])) {
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 	<link rel="stylesheet" href="../../public/css/bootstrap.min.css">
 	<link rel="stylesheet" href="../../public/css/styles.css">
-	<link rel="stylesheet" href="../../public/css/auth.css?v=20260813-inverse-logo">
+	<link rel="stylesheet" href="../../public/css/auth.css?v=20260814-link-visibility">
 	<link rel="stylesheet" href="../../public/css/loading.css">
 	<script src="../../public/js/loading.js" defer></script>
 </head>

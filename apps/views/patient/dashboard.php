@@ -50,7 +50,7 @@ $today    = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css">
     <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260813-brand-logo-2">
-    <link rel="stylesheet" href="../../../public/css/patient-dashboard.css?v=3">
+    <link rel="stylesheet" href="../../../public/css/patient-dashboard.css?v=5">
     <link rel="stylesheet" href="../../../public/css/loading.css">
     <script src="../../../public/js/loading.js" defer></script>
 </head>
