@@ -259,9 +259,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
                             data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">No-show</button>
                         <?php elseif ($appt['status'] === 'Checked In'): ?>
-                        <button type="button" class="btn vd-btn-gold btn-sm" data-status-action="In Progress"
-                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Start Treatment</button>
+                        <button type="button" class="btn vd-btn-outline btn-sm" data-open-today-queue>Manage Queue</button>
                         <?php elseif ($appt['status'] === 'In Progress'): ?>
                         <button type="button" class="btn vd-btn-gold btn-sm" data-status-action="Completed"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
@@ -907,6 +905,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             email: button.dataset.email
         }, button.dataset.statusAction));
     });
+
+    document.querySelectorAll('[data-open-today-queue]').forEach(button => button.addEventListener('click', () => {
+        document.querySelector('[data-page="dashboard-content.php"]')?.click();
+    }));
 
     document.getElementById('toggleAppointmentReceipt')?.addEventListener('click', function () {
         const preview = document.getElementById('appointmentReceiptPreview');

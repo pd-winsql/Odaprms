@@ -1293,6 +1293,77 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
   }
 }
 
+.vd-queue-overview {
+  align-items: stretch;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.vd-queue-focus,
+.vd-queue-counts {
+  background: #fbf8f1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.vd-queue-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.vd-queue-focus-current { border-left: 4px solid #375a67; }
+.vd-queue-focus-next { border-left: 4px solid var(--gold); }
+.vd-queue-focus strong { color: var(--dark); font-size: 15px; }
+.vd-queue-focus > span:last-child { color: #6d6255; font-size: 12px; }
+
+.vd-queue-kicker {
+  color: var(--mid);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.vd-queue-counts {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 110px;
+}
+
+.vd-queue-counts span { color: #6d6255; font-size: 12px; }
+.vd-queue-counts strong { color: var(--dark); font-size: 18px; margin-right: 3px; }
+
+.vd-queue-badge {
+  align-items: center;
+  background: #f1efe8;
+  border: 1px solid #d8d2c6;
+  border-radius: 999px;
+  color: #5f5e5a;
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 700;
+  justify-content: center;
+  min-width: 42px;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vd-queue-now { background: #e7f0f3; border-color: #b6cbd2; color: #294a55; }
+.vd-queue-next { background: var(--gold-pale); border-color: #ddc78d; color: #765b1d; }
+.vd-queue-hold { background: #f5eee2; border-color: #dbc7a8; color: #76582f; }
+.vd-queue-blocked { background: #f1efe8; color: #77736c; }
+.vd-queue-emergency { color: #a32d2d; font-size: 10px; font-weight: 600; margin-top: 5px; white-space: nowrap; }
+
+@media (max-width: 800px) {
+  .vd-queue-overview { grid-template-columns: 1fr; }
+  .vd-queue-counts { flex-direction: row; gap: 18px; }
+}
+
 .vd-appt-table {
   border-collapse: separate;
   border-spacing: 0;

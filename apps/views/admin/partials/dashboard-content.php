@@ -22,6 +22,14 @@ $clinics = (new Clinic($conn))->getAllClinics();
 $todayLogbook = $logbookModel->getToday();
 $arrivedCount = count(array_filter($todayLogbook, static fn($row) => !empty($row['arrived_at'])));
 $readyCount = count(array_filter($todayLogbook, static fn($row) => $row['checkin_status'] === 'Ready'));
+$currentPatient = null;
+$nextPatient = null;
+foreach ($todayLogbook as $queueEntry) {
+    if ($queueEntry['is_in_treatment'] && $currentPatient === null) $currentPatient = $queueEntry;
+    if ($queueEntry['is_next'] && $nextPatient === null) $nextPatient = $queueEntry;
+}
+$queueCount = count(array_filter($todayLogbook, static fn($row) => $row['queue_position'] !== null));
+$deferredCount = count(array_filter($todayLogbook, static fn($row) => $row['queue_status'] === 'Deferred' && $row['appointment_status'] === 'Checked In'));
 $reviewCount = $depositModel->getPendingReviewCount();
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 $csrfToken = $_SESSION['csrf_token'];
@@ -67,15 +75,40 @@ function dashboardBillingPayload(array $entry): string {
                 autocomplete="off" autocapitalize="characters">
             <button type="button" class="btn vd-btn-gold" id="findCheckinAppointment">Find Appointment</button>
         </div>
+        <div class="vd-queue-overview mb-4">
+            <div class="vd-queue-focus vd-queue-focus-current">
+                <span class="vd-queue-kicker">Now treating</span>
+                <strong><?= $currentPatient ? htmlspecialchars(trim($currentPatient['firstname'] . ' ' . $currentPatient['lastname'])) : 'No active treatment' ?></strong>
+                <span><?= $currentPatient ? htmlspecialchars($currentPatient['service_name'] ?: 'Service not listed') : 'Start the next ready patient when the dentist is available.' ?></span>
+            </div>
+            <div class="vd-queue-focus vd-queue-focus-next">
+                <span class="vd-queue-kicker">Next patient</span>
+                <strong><?= $nextPatient ? htmlspecialchars(trim($nextPatient['firstname'] . ' ' . $nextPatient['lastname'])) : 'Queue is clear' ?></strong>
+                <span><?= $nextPatient ? (($nextPatient['queue_priority'] === 'Emergency' ? 'Emergency priority · ' : '') . htmlspecialchars($nextPatient['service_name'] ?: 'Service not listed')) : 'No ready patients are waiting.' ?></span>
+            </div>
+            <div class="vd-queue-counts">
+                <span><strong><?= $queueCount ?></strong> waiting</span>
+                <span><strong><?= $deferredCount ?></strong> on hold</span>
+            </div>
+        </div>
         <?php if (!$todayLogbook): ?>
             <div class="vd-empty-state">No confirmed appointments scheduled for today.</div>
         <?php else: ?>
             <div class="vd-appt-table-wrap">
                 <table class="vd-appt-table w-100">
-                    <thead><tr><th>Patient</th><th>Services</th><th>Clinic</th><th>Arrival</th><th>Profile</th><th>Check-in</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Queue</th><th>Patient</th><th>Services</th><th>Clinic</th><th>Arrival</th><th>Profile</th><th>Check-in</th><th>Action</th></tr></thead>
                     <tbody>
                     <?php foreach ($todayLogbook as $entry): ?>
                         <tr>
+                            <td>
+                                <?php if ($entry['is_in_treatment']): ?><span class="vd-queue-badge vd-queue-now">Now</span>
+                                <?php elseif ($entry['is_next']): ?><span class="vd-queue-badge vd-queue-next">Next</span>
+                                <?php elseif ($entry['queue_position'] !== null): ?><span class="vd-queue-badge">#<?= (int) $entry['queue_position'] ?></span>
+                                <?php elseif ($entry['queue_status'] === 'Deferred' && $entry['appointment_status'] === 'Checked In'): ?><span class="vd-queue-badge vd-queue-hold">On hold</span>
+                                <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?><span class="vd-queue-badge vd-queue-blocked">Not ready</span>
+                                <?php else: ?><span class="text-muted small">—</span><?php endif; ?>
+                                <?php if ($entry['queue_priority'] === 'Emergency' && $entry['appointment_status'] === 'Checked In'): ?><div class="vd-queue-emergency"><i class="ti ti-first-aid-kit"></i> Emergency</div><?php endif; ?>
+                            </td>
                             <td><div class="vd-appt-name"><?= htmlspecialchars($entry['lastname'] . ', ' . $entry['firstname']) ?></div><div class="vd-appt-meta"><?= htmlspecialchars($entry['email']) ?></div></td>
                             <td class="vd-appt-meta"><?= htmlspecialchars($entry['service_name'] ?: '—') ?></td>
                             <td class="vd-appt-meta"><?= htmlspecialchars($entry['clinic_name']) ?></td>
@@ -90,10 +123,17 @@ function dashboardBillingPayload(array $entry): string {
                                     <span class="text-muted small">Awaiting patient code</span>
                                 <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?>
                                     <button type="button" class="btn vd-btn-outline btn-sm" data-complete-profile="<?= (int) $entry['patient_id'] ?>">Complete Patient Form</button>
-                                <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready'): ?>
+                                <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready' && $entry['is_next']): ?>
                                     <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
-                                        <i class="ti ti-player-play me-1"></i>Start Treatment
+                                        <i class="ti ti-player-play me-1"></i>Start Next
                                     </button>
+                                    <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="deferNext" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Defer</button>
+                                <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['queue_status'] === 'Deferred'): ?>
+                                    <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="returnToQueue" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Return to Queue</button>
+                                <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready'): ?>
+                                    <?php if ($entry['queue_priority'] !== 'Emergency'): ?>
+                                    <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="prioritizeEmergency" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Emergency</button>
+                                    <?php else: ?><span class="text-muted small">Waiting with priority</span><?php endif; ?>
                                 <?php elseif ($entry['appointment_status'] === 'In Progress'): ?>
                                     <button type="button" class="btn vd-btn-gold btn-sm" data-complete-with-billing
                                         data-appointment-id="<?= (int) $entry['appointment_id'] ?>"
@@ -344,6 +384,45 @@ function dashboardBillingPayload(array $entry): string {
                 });
             } catch (error) { content.innerHTML = `<div class="vd-empty-state">${error.message}</div>`; }
             finally { LoadingUI.finishContent(content); }
+        });
+    });
+
+    document.querySelectorAll('[data-queue-action]').forEach(button => {
+        button.addEventListener('click', async () => {
+            const action = button.dataset.queueAction;
+            const patient = button.dataset.patient || 'this patient';
+            const needsReason = action !== 'returnToQueue';
+            const emergency = action === 'prioritizeEmergency';
+            const confirmation = await window.showActionModal({
+                title: emergency ? 'Prioritize Emergency' : (action === 'deferNext' ? 'Place Patient on Hold' : 'Return Patient to Queue'),
+                kicker: 'Patient queue',
+                message: emergency
+                    ? 'This patient will move ahead of normal-priority patients.'
+                    : (action === 'deferNext' ? 'The patient will be removed from the active queue until staff returns them.' : 'The patient will return at the end of the normal queue.'),
+                confirmText: emergency ? 'Apply Priority' : (action === 'deferNext' ? 'Place on Hold' : 'Return to Queue'),
+                icon: emergency ? 'ti-first-aid-kit' : (action === 'deferNext' ? 'ti-player-skip-forward' : 'ti-arrow-back-up'),
+                tone: emergency ? 'warning' : 'info',
+                details: [{ label: 'Patient', value: patient }],
+                fields: needsReason ? [{ name: 'reason', label: emergency ? 'Emergency reason' : 'Reason for deferral', multiline: true, rows: 2, required: true, minlength: 3, maxlength: 255 }] : []
+            });
+            if (!confirmation.confirmed) return;
+
+            const body = new FormData();
+            body.append('action', action);
+            body.append('appointment_id', button.dataset.appointmentId);
+            body.append('csrf_token', csrfToken);
+            if (needsReason) body.append('reason', confirmation.values.reason);
+            LoadingUI.setButton(button, true, 'Updating…');
+            try {
+                const response = await fetch('../../controllers/logbookController.php', { method: 'POST', body });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to update the queue.');
+                window.showToast(result.message, true);
+                document.querySelector('[data-page="dashboard-content.php"]')?.click();
+            } catch (error) {
+                window.showToast(error.message || 'Unable to update the queue.', false);
+                LoadingUI.setButton(button, false);
+            }
         });
     });
 

@@ -4,6 +4,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Ad
     echo '<div class="vd-empty-state">Unauthorized.</div>';
     exit;
 }
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/logbookModel.php';
@@ -48,10 +49,18 @@ if ($validDate) {
             <?php else: ?>
                 <div class="vd-appt-table-wrap">
                     <table class="vd-appt-table w-100">
-                        <thead><tr><th>Patient</th><th>Clinic / Services</th><th>Arrival</th><th>Profile at Arrival</th><th>Checked In By</th><th>Outcome</th><th>Action</th></tr></thead>
+                        <thead><tr><th>Queue</th><th>Patient</th><th>Clinic / Services</th><th>Arrival</th><th>Profile at Arrival</th><th>Checked In By</th><th>Outcome</th><th>Action</th></tr></thead>
                         <tbody>
                         <?php foreach ($entries as $entry): ?>
                             <tr>
+                                <td>
+                                    <?php if ($entry['is_in_treatment']): ?><span class="vd-queue-badge vd-queue-now">Now</span>
+                                    <?php elseif ($entry['is_next']): ?><span class="vd-queue-badge vd-queue-next">Next</span>
+                                    <?php elseif ($entry['queue_position'] !== null): ?><span class="vd-queue-badge">#<?= (int) $entry['queue_position'] ?></span>
+                                    <?php elseif ($entry['queue_status'] === 'Deferred' && $entry['appointment_status'] === 'Checked In'): ?><span class="vd-queue-badge vd-queue-hold">On hold</span>
+                                    <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?><span class="vd-queue-badge vd-queue-blocked">Not ready</span>
+                                    <?php else: ?><span class="text-muted small">—</span><?php endif; ?>
+                                </td>
                                 <td><div class="vd-appt-name"><?= htmlspecialchars($entry['lastname'] . ', ' . $entry['firstname']) ?></div><div class="vd-appt-meta"><?= htmlspecialchars($entry['email']) ?></div></td>
                                 <td><div class="vd-appt-name"><?= htmlspecialchars($entry['clinic_name']) ?></div><div class="vd-appt-meta"><?= htmlspecialchars($entry['service_name'] ?: '—') ?></div></td>
                                 <td class="vd-appt-meta"><?= $entry['arrived_at'] ? date('g:i A', strtotime($entry['arrived_at'])) : 'Did not arrive' ?></td>
@@ -59,10 +68,12 @@ if ($validDate) {
                                 <td class="vd-appt-meta"><?= htmlspecialchars($entry['checked_in_by'] ?: '—') ?></td>
                                 <td><span class="vd-status vd-status-<?= htmlspecialchars(strtolower(str_replace(' ', '-', $entry['appointment_status']))) ?>"><?= htmlspecialchars($entry['appointment_status']) ?></span></td>
                                 <td>
-                                    <?php if ($isToday && $entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready'): ?>
+                                    <?php if ($isToday && $entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready' && $entry['is_next']): ?>
                                         <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
-                                            <i class="ti ti-player-play me-1"></i>Start Treatment
+                                            <i class="ti ti-player-play me-1"></i>Start Next
                                         </button>
+                                    <?php elseif ($isToday && $entry['appointment_status'] === 'Checked In'): ?>
+                                        <button type="button" class="btn vd-btn-outline btn-sm" data-open-today-queue>Manage Queue</button>
                                     <?php elseif ($isToday && $entry['appointment_status'] === 'In Progress'): ?>
                                         <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="Completed" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
                                             <i class="ti ti-check me-1"></i>Complete Visit
@@ -142,5 +153,8 @@ if ($validDate) {
             }
         });
     });
+    document.querySelectorAll('[data-open-today-queue]').forEach(button => button.addEventListener('click', () => {
+        document.querySelector('[data-page="dashboard-content.php"]')?.click();
+    }));
 })();
 </script>

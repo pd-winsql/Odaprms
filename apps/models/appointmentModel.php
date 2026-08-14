@@ -411,16 +411,57 @@ class Appointment {
             }
             if ($status === 'In Progress') {
                 $readiness = $this->conn->prepare("
-                    SELECT p.profile_status, ci.checkin_status
+                    SELECT a.date, p.profile_status, ci.checkin_status,
+                           ci.queue_status, ci.queue_priority
                     FROM appointments a JOIN patients p ON p.patient_id=a.patient_id
                     LEFT JOIN appointment_checkins ci ON ci.appointment_id=a.appointment_id
                     WHERE a.appointment_id=:id
+                    FOR UPDATE
                 ");
                 $readiness->execute([':id'=>$appointment_id]);
                 $ready=$readiness->fetch(PDO::FETCH_ASSOC);
                 if(!$ready || $ready['profile_status']!=='Complete' || $ready['checkin_status']!=='Ready'){
                     $this->conn->rollBack();
                     return ['success'=>false,'message'=>'Complete the entire patient profile before starting treatment.'];
+                }
+                if ($ready['date'] !== date('Y-m-d') || $ready['queue_status'] !== 'Waiting') {
+                    $this->conn->rollBack();
+                    return ['success'=>false,'message'=>'Only a waiting patient in today\'s queue can start treatment.'];
+                }
+
+                $active = $this->conn->prepare("
+                    SELECT appointment_id
+                    FROM appointments
+                    WHERE status = 'In Progress' AND appointment_id <> :id
+                    FOR UPDATE
+                ");
+                $active->execute([':id' => $appointment_id]);
+                if ($active->fetchColumn() !== false) {
+                    $this->conn->rollBack();
+                    return ['success'=>false,'message'=>'Complete the current patient\'s visit before starting the next patient.'];
+                }
+
+                $next = $this->conn->query("
+                    SELECT a.appointment_id
+                    FROM appointments a
+                    JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
+                    JOIN patients p ON p.patient_id = a.patient_id
+                    WHERE a.date = CURDATE()
+                      AND a.status = 'Checked In'
+                      AND p.profile_status = 'Complete'
+                      AND ci.checkin_status = 'Ready'
+                      AND ci.queue_status = 'Waiting'
+                    ORDER BY
+                      CASE WHEN ci.queue_priority = 'Emergency' THEN 0 ELSE 1 END,
+                      COALESCE(ci.queue_entered_at, ci.arrived_at) ASC,
+                      ci.arrived_at ASC,
+                      ci.checkin_id ASC
+                    LIMIT 1
+                    FOR UPDATE
+                ")->fetchColumn();
+                if ($next === false || (int) $next !== (int) $appointment_id) {
+                    $this->conn->rollBack();
+                    return ['success'=>false,'message'=>'This patient is not next in the queue. Use Today\'s Logbook to adjust the queue first.'];
                 }
             }
 
@@ -489,7 +530,9 @@ class Appointment {
             return [
                 'success' => true,
                 'changed' => true,
-                'message' => $status === 'Awaiting Deposit' ? 'Appointment accepted. The patient now has eight hours to submit the deposit.' : 'Status updated successfully.',
+                'message' => $status === 'Awaiting Deposit'
+                    ? 'Appointment accepted. The patient now has eight hours to submit the deposit.'
+                    : ($status === 'In Progress' ? 'Treatment started for the next patient.' : 'Status updated successfully.'),
                 'audit' => [
                     'performed_by_name' => $actor['name'],
                     'performed_by_role' => $actor['role'],
