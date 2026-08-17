@@ -6,6 +6,7 @@
   require_once 'apps/models/serviceModel.php';
   require_once 'apps/models/siteSettingsModel.php';
   require_once 'apps/helpers/siteBranding.php';
+  require_once 'apps/helpers/csrf.php';
 
   $db = new Database();
   $conn = $db->connect();

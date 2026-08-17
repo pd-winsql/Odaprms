@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../../config/conn.php';
 require_once '../models/depositModel.php';
 require_once '../models/patientModel.php';
+require_once '../helpers/csrf.php';
 require_once '../../config/mailer.php';
 
 class DepositController {
@@ -33,9 +34,7 @@ class DepositController {
     }
 
     private function requireCsrf(): void {
-        $provided = (string) ($_POST['csrf_token'] ?? '');
-        $expected = (string) ($_SESSION['csrf_token'] ?? '');
-        if ($expected === '' || !hash_equals($expected, $provided)) {
+        if (!validate_csrf()) {
             $this->json(['success' => false, 'message' => 'Your session expired. Refresh the page and try again.']);
         }
     }

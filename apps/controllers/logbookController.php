@@ -4,6 +4,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../../config/conn.php';
 require_once '../models/logbookModel.php';
 require_once '../models/appointmentModel.php';
+require_once '../helpers/csrf.php';
 
 header('Content-Type: application/json');
 
@@ -12,9 +13,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Ad
     exit;
 }
 
-$providedToken = (string) ($_POST['csrf_token'] ?? '');
-$expectedToken = (string) ($_SESSION['csrf_token'] ?? '');
-if ($expectedToken === '' || !hash_equals($expectedToken, $providedToken)) {
+if (!validate_csrf()) {
     echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
     exit;
 }

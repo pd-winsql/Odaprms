@@ -46,15 +46,20 @@ class Appointment {
     }
 
     public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $performedByUserId = null) {
+        // Normalize and validate service IDs: cast to ints, remove falsy values,
+        // deduplicate and reindex the array. If no services remain, abort.
         $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
         if (empty($service_ids)) return false;
 
         try {
             $this->conn->beginTransaction();
 
-            // Serialize bookings for the same patient. This makes the
-            // one-appointment-per-day rule reliable even when two booking
-            // requests for different clinics arrive at the same time.
+            // -----------------------------------------------------------------
+            // Block bookings for this patient to serialize concurrent requests.
+            // This uses SELECT ... FOR UPDATE to obtain a row lock on the
+            // patient record. It prevents two simultaneous booking requests
+            // from both passing the "one appointment per day" check.
+            // -----------------------------------------------------------------
             $patientStmt = $this->conn->prepare("
                 SELECT patient_id
                 FROM patients
@@ -63,12 +68,17 @@ class Appointment {
             ");
             $patientStmt->execute([':patient_id' => $patient_id]);
             if (!$patientStmt->fetchColumn()) {
+                // If the patient doesn't exist, rollback and return an error.
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Patient profile not found.'];
             }
 
-            // Lock the schedule so concurrent requests cannot take the final
-            // slot at the same time.
+            // -----------------------------------------------------------------
+            // Lock the schedule row to prevent two requests consuming the same
+            // final slot simultaneously. Then validate the schedule belongs to
+            // the requested clinic, matches the requested date, and is not in
+            // the past.
+            // -----------------------------------------------------------------
             $scheduleStmt = $this->conn->prepare("
                 SELECT schedule_id, clinic_id, sched_date, max_appointments
                 FROM schedules
@@ -82,20 +92,26 @@ class Appointment {
                 || (int) $schedule['clinic_id'] !== (int) $clinic_id
                 || $schedule['sched_date'] !== $date
                 || $schedule['sched_date'] < date('Y-m-d')) {
+                // Invalid schedule (mismatch or past date) — rollback and abort.
                 $this->conn->rollBack();
                 return false;
             }
 
+            // -----------------------------------------------------------------
+            // Prevent the patient from having more than one active appointment
+            // on the same date. The status filter covers all states that should
+            // be considered a "conflicting" appointment.
+            // -----------------------------------------------------------------
             $sameDayAppointment = $this->conn->prepare("
                 SELECT appointment_id
                 FROM appointments
                 WHERE patient_id = :patient_id
-                  AND date = :appointment_date
-                  AND status IN (
-                      'Pending Review', 'Awaiting Deposit', 'Payment Under Review',
-                      'Confirmed', 'Checked In', 'In Progress', 'Completed',
-                      'Pending', 'Awaiting Payment'
-                  )
+                    AND date = :appointment_date
+                    AND status IN (
+                        'Pending Review', 'Awaiting Deposit', 'Payment Under Review',
+                        'Confirmed', 'Checked In', 'In Progress', 'Completed',
+                        'Pending', 'Awaiting Payment'
+                    )
                 LIMIT 1
             ");
             $sameDayAppointment->execute([
@@ -103,6 +119,8 @@ class Appointment {
                 ':appointment_date' => $date,
             ]);
             if ($sameDayAppointment->fetchColumn()) {
+                // Found an existing appointment on the same date — rollback and
+                // notify the caller so they can pick another date/schedule.
                 $this->conn->rollBack();
                 return [
                     'success' => false,
@@ -110,11 +128,15 @@ class Appointment {
                 ];
             }
 
+            // -----------------------------------------------------------------
+            // Enforce schedule capacity: count active appointments for this
+            // schedule and compare with max_appointments. If full, abort.
+            // -----------------------------------------------------------------
             $capacityStmt = $this->conn->prepare("
                 SELECT COUNT(*)
                 FROM appointments
                 WHERE schedule_id = :schedule_id
-                  AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
+                    AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
             ");
             $capacityStmt->execute([':schedule_id' => $schedule_id]);
             if ((int) $capacityStmt->fetchColumn() >= (int) $schedule['max_appointments']) {
@@ -122,6 +144,11 @@ class Appointment {
                 return ['success' => false, 'message' => 'No available slots remain for this schedule.'];
             }
 
+            // -----------------------------------------------------------------
+            // Create the appointment record with initial status 'Pending Review'.
+            // deposit_required is set to 1 by default here and payment_deadline
+            // left NULL until a deposit workflow is triggered.
+            // -----------------------------------------------------------------
             $stmt = $this->conn->prepare("
                 INSERT INTO appointments
                 (
@@ -152,10 +179,12 @@ class Appointment {
             ]);
 
             if (!$inserted) {
+                // Failed to insert appointment — rollback and return false.
                 $this->conn->rollBack();
                 return false;
             }
 
+            // Attach each requested service to the newly created appointment.
             $appointment_id = (int) $this->conn->lastInsertId();
             $link = $this->conn->prepare("
                 INSERT INTO appointment_services (appointment_id, service_id)
@@ -168,6 +197,9 @@ class Appointment {
                 ]);
             }
 
+            // Record an audit entry describing the submitted appointment.
+            // If a staff user triggered the booking, include their actor info,
+            // otherwise attribute it to the patient.
             $actor = $performedByUserId ? $this->auditLog->getUserActor($performedByUserId) : null;
             $this->auditLog->record(
                 'appointment', $appointment_id, 'appointment_requested',
@@ -176,6 +208,7 @@ class Appointment {
                 $actor ?: ['user_id' => null, 'name' => 'Patient', 'role' => 'Patient', 'source' => 'User']
             );
 
+            // Commit the transaction and return success + created appointment id.
             $this->conn->commit();
             return [
                 'success' => true,
@@ -184,6 +217,7 @@ class Appointment {
                 'message' => 'Appointment request submitted for clinic review.',
             ];
         } catch(Throwable $e){
+            // Ensure the transaction is rolled back on any error and log it.
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log("bookAppointment error: ".$e->getMessage());
             return ['success' => false, 'message' => 'Booking failed. Please try again.'];
@@ -283,7 +317,7 @@ class Appointment {
                 LEFT JOIN vw_appointment_latest_status_change status_change
                     ON status_change.appointment_id = a.appointment_id
                 WHERE a.date < CURDATE()
-                  AND a.status NOT IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
+                    AND a.status NOT IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
                 ORDER BY a.date DESC
             ");
             $stmt->execute();
@@ -308,7 +342,7 @@ class Appointment {
                     OR EXISTS (
                         SELECT 1 FROM appointment_deposits ad
                         WHERE ad.appointment_id = a.appointment_id
-                          AND ad.status IN ('Verified', 'Transferred')
+                            AND ad.status IN ('Verified', 'Transferred')
                     )
                 )
                 ORDER BY a.date DESC
@@ -345,7 +379,7 @@ class Appointment {
                 LEFT JOIN vw_appointment_latest_status_change status_change
                     ON status_change.appointment_id = a.appointment_id
                 WHERE a.date >= CURDATE()
-                   OR a.status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
+                    OR a.status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
             $stmt->execute();
@@ -359,6 +393,8 @@ class Appointment {
 
     // Admin: update appointment status
     public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '') {
+        // Define allowed state transitions for appointments. This map drives
+        // validation so only permitted transitions are accepted.
         $allowedTransitions = [
             'Pending Review' => ['Awaiting Deposit', 'Rejected'],
             'Awaiting Deposit' => ['Cancelled'],
@@ -372,13 +408,18 @@ class Appointment {
             'Rejected' => [],
         ];
 
+        // Quick validation: ensure the requested target status is one of the
+        // statuses known to the system (appears in allowedTransitions values).
         if (!in_array($status, array_merge(...array_values($allowedTransitions)), true)) {
             return ['success' => false, 'message' => 'Invalid appointment status.'];
         }
 
         try {
+            // Start a DB transaction so the multi-step status update is atomic.
             $this->conn->beginTransaction();
 
+            // Lock the appointment row to read the current status and prevent
+            // concurrent status changes from racing with this update.
             $currentStmt = $this->conn->prepare("
                 SELECT status
                 FROM appointments
@@ -388,16 +429,21 @@ class Appointment {
             $currentStmt->execute([':id' => $appointment_id]);
             $oldStatus = $currentStmt->fetchColumn();
 
+            // If appointment not found, rollback and return an error.
             if ($oldStatus === false) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Appointment not found.'];
             }
 
+            // If no change is necessary, rollback the transaction and return
+            // a success response indicating nothing changed.
             if ($oldStatus === $status) {
                 $this->conn->rollBack();
                 return ['success' => true, 'changed' => false, 'message' => 'The appointment already has this status.'];
             }
 
+            // Validate that the transition from oldStatus -> status is allowed
+            // according to the allowedTransitions map.
             if (!in_array($status, $allowedTransitions[$oldStatus] ?? [], true)) {
                 $this->conn->rollBack();
                 return [
@@ -405,14 +451,21 @@ class Appointment {
                     'message' => "Status cannot be changed from {$oldStatus} to {$status}.",
                 ];
             }
+
+            // If rejecting an appointment, require a non-empty reason.
             if ($status === 'Rejected' && trim($reason) === '') {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'A rejection reason is required.'];
             }
+
+            // Additional readiness checks when transitioning to 'In Progress'.
+            // These ensure the patient profile and check-in state are correct,
+            // that the appointment is for today and the patient is actually
+            // next in the queue (respecting any one-time "serve next" override).
             if ($status === 'In Progress') {
                 $readiness = $this->conn->prepare("
                     SELECT a.date, p.profile_status, ci.checkin_status,
-                           ci.queue_status, ci.serve_next_at
+                        ci.queue_status, ci.serve_next_at
                     FROM appointments a JOIN patients p ON p.patient_id=a.patient_id
                     LEFT JOIN appointment_checkins ci ON ci.appointment_id=a.appointment_id
                     WHERE a.appointment_id=:id
@@ -420,15 +473,21 @@ class Appointment {
                 ");
                 $readiness->execute([':id'=>$appointment_id]);
                 $ready=$readiness->fetch(PDO::FETCH_ASSOC);
+
+                // Ensure patient profile is complete and check-in status is 'Ready'.
                 if(!$ready || $ready['profile_status']!=='Complete' || $ready['checkin_status']!=='Ready'){
                     $this->conn->rollBack();
                     return ['success'=>false,'message'=>'Complete the entire patient profile before starting treatment.'];
                 }
+
+                // Appointment must be scheduled for today and be in the 'Waiting' queue state.
                 if ($ready['date'] !== date('Y-m-d') || $ready['queue_status'] !== 'Waiting') {
                     $this->conn->rollBack();
                     return ['success'=>false,'message'=>'Only a waiting patient in today\'s queue can start treatment.'];
                 }
 
+                // Prevent two patients being 'In Progress' at once: lock and check
+                // for any other appointment already in progress.
                 $active = $this->conn->prepare("
                     SELECT appointment_id
                     FROM appointments
@@ -441,26 +500,31 @@ class Appointment {
                     return ['success'=>false,'message'=>'Complete the current patient\'s visit before starting the next patient.'];
                 }
 
+                // Determine who is next in the queue using consistent ordering.
+                // This query respects a one-time 'serve_next_at' override and
+                // then falls back to FIFO by arrival/queue_entered time.
                 $next = $this->conn->query("
                     SELECT a.appointment_id
                     FROM appointments a
                     JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
                     JOIN patients p ON p.patient_id = a.patient_id
                     WHERE a.date = CURDATE()
-                      AND a.status = 'Checked In'
-                      AND p.profile_status = 'Complete'
-                      AND ci.checkin_status = 'Ready'
-                      AND ci.queue_status = 'Waiting'
+                        AND a.status = 'Checked In'
+                        AND p.profile_status = 'Complete'
+                        AND ci.checkin_status = 'Ready'
+                        AND ci.queue_status = 'Waiting'
                     ORDER BY
                       /* Serve Next is checked inside this transaction so two staff actions cannot bypass each other. */
-                      CASE WHEN ci.serve_next_at IS NOT NULL THEN 0 ELSE 1 END,
-                      ci.serve_next_at DESC,
-                      COALESCE(ci.queue_entered_at, ci.arrived_at) ASC,
-                      ci.arrived_at ASC,
-                      ci.checkin_id ASC
+                        CASE WHEN ci.serve_next_at IS NOT NULL THEN 0 ELSE 1 END,
+                        ci.serve_next_at DESC,
+                        COALESCE(ci.queue_entered_at, ci.arrived_at) ASC,
+                        ci.arrived_at ASC,
+                        ci.checkin_id ASC
                     LIMIT 1
                     FOR UPDATE
                 ")->fetchColumn();
+
+                // If this appointment is not the current next patient, abort.
                 if ($next === false || (int) $next !== (int) $appointment_id) {
                     $this->conn->rollBack();
                     return ['success'=>false,'message'=>'This patient is not next in the queue. Use Today\'s Logbook to adjust the queue first.'];
@@ -474,12 +538,19 @@ class Appointment {
                 ")->execute([':id' => $appointment_id]);
             }
 
+            // Resolve the actor (the user performing the status change) for
+            // audit logging. Throwing here causes the transaction to rollback
+            // in the catch block below.
             $actor = $this->auditLog->getUserActor($performedByUserId);
             if (!$actor) {
                 throw new RuntimeException('The authenticated user could not be found.');
             }
 
+            // Business rules related to deposits and payment when accepting
+            // an appointment for payment or marking a no-show/cancellation.
             if ($oldStatus === 'Pending Review' && $status === 'Awaiting Deposit') {
+                // Create or update a deposit record with the configured amount
+                // and payment deadline minutes (defaults used when missing).
                 $settings = $this->conn->query("SELECT deposit_amount, payment_deadline_minutes FROM site_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC) ?: [];
                 $amount = (float) ($settings['deposit_amount'] ?? 400);
                 $minutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 480));
@@ -490,10 +561,13 @@ class Appointment {
                 ")->execute([':appointment_id' => $appointment_id, ':amount' => $amount]);
             }
             if ($status === 'No-show') {
+                // Forfeiture: if the deposit was already verified, mark it forfeited.
                 $this->conn->prepare("UPDATE appointment_deposits SET status='Forfeited', refund_reason='Patient did not attend the confirmed appointment.' WHERE appointment_id=:id AND status='Verified'")
                     ->execute([':id'=>$appointment_id]);
             }
             if ($status === 'Cancelled') {
+                // When clinic cancels, mark verified deposits as 'For Refund',
+                // and otherwise mark them expired.
                 $this->conn->prepare("
                     UPDATE appointment_deposits SET
                         status = CASE WHEN status='Verified' THEN 'For Refund' ELSE 'Expired' END,
@@ -502,6 +576,9 @@ class Appointment {
                 ")->execute([':id'=>$appointment_id]);
             }
 
+            // Update the appointment row. Use CASE WHEN to set reviewer and
+            // timestamps only for specific status transitions while preserving
+            // existing values for other transitions.
             $stmt = $this->conn->prepare("
                 UPDATE appointments SET
                     status = :status,
@@ -524,6 +601,8 @@ class Appointment {
                 ':id'     => $appointment_id,
             ]);
 
+            // Create an audit record for the status change. The audit contains
+            // the old and new statuses and who performed the change.
             $audit = $this->auditLog->record(
                 'appointment',
                 (int) $appointment_id,
@@ -534,8 +613,11 @@ class Appointment {
                 $actor
             );
 
+            // Commit the transaction now that all updates and side-effects are done.
             $this->conn->commit();
 
+            // Return a contextual success message depending on the new status,
+            // along with basic audit info for the caller to display.
             return [
                 'success' => true,
                 'changed' => true,
@@ -550,6 +632,7 @@ class Appointment {
             ];
 
         } catch (Throwable $e) {
+            // On any error, roll back the transaction and log the exception.
             if ($this->conn->inTransaction()) {
                 $this->conn->rollBack();
             }
@@ -568,7 +651,7 @@ class Appointment {
             SELECT COUNT(*) AS total
             FROM appointments
             WHERE schedule_id = :schedule_id
-              AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
+                AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
         ");
 
         $stmt->execute([

@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../models/userModel.php';
+require_once '../helpers/csrf.php';
 
 header('Content-Type: application/json');
 
@@ -12,15 +13,14 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', $all
     echo json_encode(['success' => false, 'message' => 'Forbidden.']);
     exit;
 }
+//checks if action is changePassword and if the request method is POST, otherwise returns a 405 error
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['action'] ?? '') !== 'changePassword') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Invalid request.']);
     exit;
 }
 
-$expectedToken = (string) ($_SESSION['csrf_token'] ?? '');
-$providedToken = (string) ($_POST['csrf_token'] ?? '');
-if ($expectedToken === '' || !hash_equals($expectedToken, $providedToken)) {
+if (!validate_csrf()) {
     echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
     exit;
 }

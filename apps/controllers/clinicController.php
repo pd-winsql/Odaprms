@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../models/clinicModel.php';
+require_once '../helpers/csrf.php';
 
 class clinicController {
     private $clinics;
@@ -26,9 +27,7 @@ class clinicController {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['success' => false, 'message' => 'Invalid request method.']);
         }
-        $provided = (string) ($_POST['csrf_token'] ?? '');
-        $expected = (string) ($_SESSION['csrf_token'] ?? '');
-        if ($expected === '' || !hash_equals($expected, $provided)) {
+        if (!validate_csrf()) {
             $this->json(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
         }
     }

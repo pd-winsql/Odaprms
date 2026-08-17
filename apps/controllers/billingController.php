@@ -2,12 +2,13 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../../config/conn.php';
 require_once '../models/billingModel.php';
+require_once '../helpers/csrf.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
     echo json_encode(['success' => false, 'message' => 'Forbidden.']); exit;
 }
-if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+if (!validate_csrf()) {
     echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']); exit;
 }
 if (($_POST['action'] ?? '') !== 'settleAndComplete') {

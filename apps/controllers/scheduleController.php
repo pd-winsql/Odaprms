@@ -1,6 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../models/scheduleModel.php';
+require_once '../helpers/csrf.php';
 require_once '../../config/conn.php';
 
 class ScheduleController {
@@ -17,9 +18,7 @@ class ScheduleController {
             http_response_code(403);
             exit('Forbidden.');
         }
-        $provided = (string) ($_POST['csrf_token'] ?? '');
-        $expected = (string) ($_SESSION['csrf_token'] ?? '');
-        if ($expected === '' || !hash_equals($expected, $provided)) {
+        if (!validate_csrf()) {
             http_response_code(419);
             exit('Your session expired. Refresh and try again.');
         }

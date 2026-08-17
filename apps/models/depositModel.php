@@ -31,8 +31,8 @@ class DepositModel {
                 FROM appointments a
                 JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
                 WHERE a.status = 'Awaiting Deposit'
-                  AND d.status IN ('Awaiting Submission', 'Rejected')
-                  AND COALESCE(d.resubmission_deadline_at, a.payment_deadline_at) <= NOW()
+                    AND d.status IN ('Awaiting Submission', 'Rejected')
+                    AND COALESCE(d.resubmission_deadline_at, a.payment_deadline_at) <= NOW()
                 FOR UPDATE
             ");
             $expired = $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -2,6 +2,7 @@
 require_once '../models/appointmentModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
+require_once '../helpers/csrf.php';
 require_once '../../config/mailer.php';
 
 session_start();
@@ -110,7 +111,7 @@ class AppointmentController {
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+            if (!validate_csrf()) {
                 echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
                 exit;
             }
@@ -139,6 +140,7 @@ class AppointmentController {
                 if (($result['changed'] ?? false) && $email && $name) {
                     $emailResult = sendAppointmentStatusEmail($email, $name, $status, $reason);
                     if (!$emailResult['success']) {
+                        // inform the caller that the status was updated but notification failed.
                         $message = 'Status updated, but the notification email failed to send.';
                     }
                 }
@@ -165,7 +167,7 @@ class AppointmentController {
                 echo json_encode(['success' => false, 'message' => 'Please sign in with a patient account before booking.']);
                 exit;
             }
-            if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+            if (!validate_csrf()) {
                 echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
                 exit;
             }

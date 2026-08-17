@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../models/siteSettingsModel.php';
+require_once '../helpers/csrf.php';
 
 class SiteSettingsController {
     private $settings;
@@ -19,7 +20,7 @@ class SiteSettingsController {
             echo json_encode(['success' => false, 'message' => 'Forbidden.']);
             exit;
         }
-        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], (string) ($_POST['csrf_token'] ?? ''))) {
+        if (!validate_csrf()) {
             echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
             exit;
         }
