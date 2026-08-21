@@ -32,24 +32,6 @@ class clinicController {
         }
     }
 
-    private function storeClinicImage(string $prefix): ?string {
-        if (empty($_FILES['image']['name'])) return null;
-        if (($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || ($_FILES['image']['size'] ?? 0) > 5 * 1024 * 1024) {
-            $this->json(['success' => false, 'message' => 'Upload a clinic image no larger than 5 MB.']);
-        }
-        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($_FILES['image']['tmp_name']);
-        $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-        if (!isset($extensions[$mime])) {
-            $this->json(['success' => false, 'message' => 'Image must be JPG, PNG, or WEBP.']);
-        }
-        $filename = $prefix . '_' . bin2hex(random_bytes(8)) . '.' . $extensions[$mime];
-        $directory = dirname(__DIR__, 2) . '/public/assets/clinic-images';
-        if (!is_dir($directory) || !move_uploaded_file($_FILES['image']['tmp_name'], $directory . '/' . $filename)) {
-            $this->json(['success' => false, 'message' => 'Failed to upload image.']);
-        }
-        return $filename;
-    }
-
     private function normalizeEmbedUrl(string $rawEmbed): ?string {
         $rawEmbed = trim($rawEmbed);
         if ($rawEmbed === '') {
@@ -96,13 +78,11 @@ class clinicController {
             $this->json(['success' => false, 'message' => 'A clinic with this name already exists.']);
         }
 
-        $image = $this->storeClinicImage('clinic_new');
-        $clinicId = $this->clinics->createClinic($name, $address, $phone, $embedUrl, $image);
+        $clinicId = $this->clinics->createClinic($name, $address, $phone, $embedUrl);
         if (!$clinicId) {
-            if ($image) @unlink(dirname(__DIR__, 2) . '/public/assets/clinic-images/' . $image);
             $this->json(['success' => false, 'message' => 'Failed to add clinic.']);
         }
-        $this->json(['success' => true, 'message' => 'Clinic added successfully.', 'clinic_id' => $clinicId, 'image' => $image]);
+        $this->json(['success' => true, 'message' => 'Clinic added successfully.', 'clinic_id' => $clinicId]);
     }
 
     // Inline update from the admin dashboard (AJAX, returns JSON)
@@ -124,35 +104,12 @@ class clinicController {
             $this->json(['success' => false, 'message' => 'Clinic not found.']);
         }
 
-        $image = $existingClinic['clinic_image'];
-
-        // Only touch the image if a new one was actually uploaded
-        if (!empty($_FILES['image']['name'])) {
-            $allowed = ['jpg', 'jpeg', 'png', 'webp'];
-            $ext     = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-
-            if (!in_array($ext, $allowed)) {
-                $this->json(['success' => false, 'message' => 'Image must be JPG, PNG, or WEBP.']);
-            }
-
-            $newImageName = 'clinic_' . $id . '_' . time() . '.' . $ext;
-            $target_dir   = "../../public/assets/clinic-images/";
-            $target_file  = $target_dir . $newImageName;
-
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
-                $image = $newImageName;
-            } else {
-                $this->json(['success' => false, 'message' => 'Failed to upload image.']);
-            }
-        }
-
-        $result = $this->clinics->updateClinic($id, $name, $address, $phone, $embedUrl, $image);
+        $result = $this->clinics->updateClinic($id, $name, $address, $phone, $embedUrl);
 
         if ($result) {
             $this->json([
                 'success' => true,
                 'message' => 'Clinic updated successfully.',
-                'image'   => $image,
             ]);
         } else {
             $this->json(['success' => false, 'message' => 'Failed to update clinic.']);
