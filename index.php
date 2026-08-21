@@ -127,8 +127,9 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
   <section id="hero-section" class="vd-hero d-flex align-items-center">
     <div class="container">
       <div class="row align-items-center g-5">
+        <div class="d-none d-lg-block col-lg-6"></div>
         <div class="col-12 col-lg-6">
-          <div class="vd-hero-card">
+          <div class="vd-hero-card ms-lg-auto">
             <div class="vd-hero-system-tag"><?= sv($settings, 'hero_system_tag', 'Online Dental Appointment & Patient Records Management System') ?></div>
             <div class="vd-hero-eyebrow"><?= sv($settings, 'hero_eyebrow', 'Two Clinics in Cagayan · Alcala & Tuguegarao') ?></div>
             <h1 class="vd-hero-title"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
@@ -139,33 +140,13 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
             </div>
           </div>
         </div>
-        <div class="col-12 col-lg-6">
-          <div class="vd-hero-feature-grid">
-            <div class="vd-feature-tile">
-              <div class="vd-feature-icon"><i class="fa-solid fa-tooth"></i></div>
-              <div class="vd-feature-label"><?= (int)$activeServiceCount ?> Dental Services</div>
-            </div>
-            <div class="vd-feature-tile">
-              <div class="vd-feature-icon"><i class="fa-solid fa-location-dot"></i></div>
-              <div class="vd-feature-label">2 Branches in Cagayan</div>
-            </div>
-            <div class="vd-feature-tile">
-              <div class="vd-feature-icon"><i class="fa-solid fa-calendar-check"></i></div>
-              <div class="vd-feature-label">Easy Online Booking</div>
-            </div>
-            <div class="vd-feature-tile">
-              <div class="vd-feature-icon"><i class="fa-solid fa-hand-holding-medical"></i></div>
-              <div class="vd-feature-label">Patient-Centered Care</div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
     <!-- Signature smile-curve divider into the next section -->
     <div class="vd-arc-divider">
       <svg viewBox="0 0 1440 100" preserveAspectRatio="none">
-        <path class="vd-arc-fill-white" d="M0,100 Q720,-400 1440,100 Z"></path>
+        <path class="vd-arc-fill-white" d="M0,100 Q720,-100 1440,100 Z"></path>
       </svg>
     </div>
   </section>
