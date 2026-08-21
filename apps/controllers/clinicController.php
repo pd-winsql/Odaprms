@@ -50,11 +50,41 @@ class clinicController {
         return $filename;
     }
 
+    private function normalizeEmbedUrl(string $rawEmbed): ?string {
+        $rawEmbed = trim($rawEmbed);
+        if ($rawEmbed === '') {
+            return null;
+        }
+
+        if (stripos($rawEmbed, '<iframe') !== false) {
+            if (!preg_match('/src=["\']([^"\']+)["\']/i', $rawEmbed, $matches)) {
+                $this->json(['success' => false, 'message' => 'Invalid map embed iframe.']);
+            }
+            $rawEmbed = trim($matches[1]);
+        }
+
+        if (!filter_var($rawEmbed, FILTER_VALIDATE_URL)) {
+            $this->json(['success' => false, 'message' => 'Map embed URL must be a valid URL.']);
+        }
+
+        $parsedUrl = parse_url($rawEmbed);
+        $host = strtolower($parsedUrl['host'] ?? '');
+        $path = strtolower($parsedUrl['path'] ?? '');
+        $isGoogleMapsHost = in_array($host, ['www.google.com', 'google.com', 'maps.google.com'], true);
+
+        if (!$isGoogleMapsHost || !str_starts_with($path, '/maps/embed')) {
+            $this->json(['success' => false, 'message' => 'Use a valid Google Maps embed URL.']);
+        }
+
+        return $rawEmbed;
+    }
+
     public function addClinic(): void {
         $this->requireAdminPost();
         $name = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
         $phone = trim($_POST['phone'] ?? '');
+        $embedUrl = $this->normalizeEmbedUrl($_POST['embed_url'] ?? '');
 
         if ($name === '' || $address === '' || $phone === '') {
             $this->json(['success' => false, 'message' => 'Please fill in the clinic name, contact number, and address.']);
@@ -67,7 +97,7 @@ class clinicController {
         }
 
         $image = $this->storeClinicImage('clinic_new');
-        $clinicId = $this->clinics->createClinic($name, $address, $phone, $image);
+        $clinicId = $this->clinics->createClinic($name, $address, $phone, $embedUrl, $image);
         if (!$clinicId) {
             if ($image) @unlink(dirname(__DIR__, 2) . '/public/assets/clinic-images/' . $image);
             $this->json(['success' => false, 'message' => 'Failed to add clinic.']);
@@ -77,32 +107,21 @@ class clinicController {
 
     // Inline update from the admin dashboard (AJAX, returns JSON)
     public function updateClinicInline() {
-        header('Content-Type: application/json');
-
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
-            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
-            exit;
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-            exit;
-        }
+        $this->requireAdminPost();
 
         $id      = $_POST['clinic_id'] ?? '';
         $name    = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
         $phone   = trim($_POST['phone'] ?? '');
+        $embedUrl = $this->normalizeEmbedUrl($_POST['embed_url'] ?? '');
 
         if (!$id || !$name || !$address || !$phone) {
-            echo json_encode(['success' => false, 'message' => 'Please fill in all fields.']);
-            exit;
+            $this->json(['success' => false, 'message' => 'Please fill in all fields.']);
         }
 
         $existingClinic = $this->clinics->getClinicById($id);
         if (!$existingClinic) {
-            echo json_encode(['success' => false, 'message' => 'Clinic not found.']);
-            exit;
+            $this->json(['success' => false, 'message' => 'Clinic not found.']);
         }
 
         $image = $existingClinic['clinic_image'];
@@ -113,8 +132,7 @@ class clinicController {
             $ext     = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
 
             if (!in_array($ext, $allowed)) {
-                echo json_encode(['success' => false, 'message' => 'Image must be JPG, PNG, or WEBP.']);
-                exit;
+                $this->json(['success' => false, 'message' => 'Image must be JPG, PNG, or WEBP.']);
             }
 
             $newImageName = 'clinic_' . $id . '_' . time() . '.' . $ext;
@@ -124,23 +142,21 @@ class clinicController {
             if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
                 $image = $newImageName;
             } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to upload image.']);
-                exit;
+                $this->json(['success' => false, 'message' => 'Failed to upload image.']);
             }
         }
 
-        $result = $this->clinics->updateClinic($id, $name, $address, $phone, $image);
+        $result = $this->clinics->updateClinic($id, $name, $address, $phone, $embedUrl, $image);
 
         if ($result) {
-            echo json_encode([
+            $this->json([
                 'success' => true,
                 'message' => 'Clinic updated successfully.',
                 'image'   => $image,
             ]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to update clinic.']);
+            $this->json(['success' => false, 'message' => 'Failed to update clinic.']);
         }
-        exit;
     }
 
 }

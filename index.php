@@ -232,6 +232,16 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
                 <h5 class="card-title"><?= htmlspecialchars($clinic['clinic_name']) ?></h5>
                 <p class="card-text small text-muted"><?= htmlspecialchars($clinic['clinic_address']) ?></p>
                 <p class="card-text small text-muted">Phone: <?= htmlspecialchars($clinic['clinic_contact']) ?></p>
+                <?php if (!empty($clinic['embed_url'])): ?>
+                  <div class="ratio ratio-4x3 mt-3">
+                    <iframe
+                      src="<?= htmlspecialchars($clinic['embed_url']) ?>"
+                      style="border:0;"
+                      allowfullscreen=""
+                      loading="lazy"
+                      referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                  </div>
+                <?php endif; ?>
               </div>
             </div>
           </div>

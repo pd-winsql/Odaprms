@@ -80,6 +80,10 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                         <input type="text" class="form-control vd-input vd-clinic-field" data-field="address"
                                value="<?= htmlspecialchars($clinic['clinic_address']) ?>">
                     </div>
+                    <div class="col-12">
+                        <label class="vd-label form-label">Google Maps Embed URL</label>
+                        <textarea class="form-control vd-input vd-clinic-field" data-field="embed_url" rows="2" placeholder="Paste Google Maps embed URL or full iframe"><?= htmlspecialchars($clinic['embed_url'] ?? '') ?></textarea>
+                    </div>
                     <div class="col-12 d-flex justify-content-end">
                         <button class="btn vd-btn-gold btn-sm vd-save-clinic-btn" data-id="<?= $clinic['clinic_id'] ?>">
                             Save Changes
@@ -125,6 +129,10 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             <label class="vd-label form-label" for="newClinicAddress">Address</label>
                             <input type="text" class="form-control vd-input" id="newClinicAddress" name="address" maxlength="100" required>
                         </div>
+                        <div class="col-12">
+                            <label class="vd-label form-label" for="newClinicEmbedUrl">Google Maps Embed URL <span class="text-muted">(optional)</span></label>
+                            <textarea class="form-control vd-input" id="newClinicEmbedUrl" name="embed_url" rows="2" placeholder="Paste Google Maps embed URL or full iframe"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -153,6 +161,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             const nameInput    = card.querySelector('[data-field="name"]');
             const phoneInput   = card.querySelector('[data-field="phone"]');
             const addressInput = card.querySelector('[data-field="address"]');
+            const embedInput   = card.querySelector('[data-field="embed_url"]');
             const fileInput    = card.querySelector('.vd-clinic-image-input');
 
             const formData = new FormData();
@@ -162,6 +171,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             formData.append('name', nameInput.value.trim());
             formData.append('phone', phoneInput.value.trim());
             formData.append('address', addressInput.value.trim());
+            formData.append('embed_url', embedInput.value.trim());
 
             if (fileInput.files[0]) {
                 formData.append('image', fileInput.files[0]);
