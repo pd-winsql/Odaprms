@@ -1,83 +1,85 @@
 <?php
-  if (session_status() === PHP_SESSION_NONE) session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 
-  require_once 'config/conn.php';
-  require_once 'apps/models/clinicModel.php';
-  require_once 'apps/models/serviceModel.php';
-  require_once 'apps/models/siteSettingsModel.php';
-  require_once 'apps/helpers/siteBranding.php';
-  require_once 'apps/helpers/csrf.php';
+require_once 'config/conn.php';
+require_once 'apps/models/clinicModel.php';
+require_once 'apps/models/serviceModel.php';
+require_once 'apps/models/siteSettingsModel.php';
+require_once 'apps/helpers/siteBranding.php';
+require_once 'apps/helpers/csrf.php';
 
-  $db = new Database();
-  $conn = $db->connect();
-  $clinicModel = new Clinic($conn);
-  $clinics = $clinicModel->getAllClinics();
+$db = new Database();
+$conn = $db->connect();
+$clinicModel = new Clinic($conn);
+$clinics = $clinicModel->getAllClinics();
 
-  $settingsModel = new SiteSettingsModel($conn);
-  $settings = $settingsModel->getSettings();
+$settingsModel = new SiteSettingsModel($conn);
+$settings = $settingsModel->getSettings();
 
-  function sv($settings, $key, $fallback = '') {
-      return htmlspecialchars($settings[$key] ?? $fallback);
+function sv($settings, $key, $fallback = '')
+{
+  return htmlspecialchars($settings[$key] ?? $fallback);
+}
+
+$serviceModel = new ServiceModel($conn);
+$allCategories = $serviceModel->getAllCategories();
+$allServices   = $serviceModel->getAllServices();
+
+// Build category_id => [service_id, ...] from services.category_id
+$categoryServiceIds = [];
+foreach ($allServices as $service) {
+  $serviceId = (int)($service['service_id'] ?? 0);
+  $categoryId = (int)($service['category_id'] ?? 0);
+
+  if ($serviceId <= 0 || $categoryId <= 0) {
+    continue;
   }
 
-  $serviceModel = new ServiceModel($conn);
-  $allCategories = $serviceModel->getAllCategories();
-  $allServices   = $serviceModel->getAllServices();
+  $categoryServiceIds[$categoryId][] = $serviceId;
+}
+$servicesById = array_column($allServices, null, 'service_id');
 
-  // Build category_id => [service_id, ...] from services.category_id
-  $categoryServiceIds = [];
-  foreach ($allServices as $service) {
-      $serviceId = (int)($service['service_id'] ?? 0);
-      $categoryId = (int)($service['category_id'] ?? 0);
+// Reshape into the same [title, description, services[]] structure the
+// template below already expects, so the markup itself didn't need to change.
+// Only active services are shown on the public landing page.
+$serviceCategories = [];
+$activeServiceCount = 0;
+foreach ($allCategories as $cat) {
+  $serviceIds = $categoryServiceIds[$cat['category_id']] ?? [];
+  $categoryServices = [];
 
-      if ($serviceId <= 0 || $categoryId <= 0) {
-          continue;
-      }
-
-      $categoryServiceIds[$categoryId][] = $serviceId;
-  }
-  $servicesById = array_column($allServices, null, 'service_id');
-
-  // Reshape into the same [title, description, services[]] structure the
-  // template below already expects, so the markup itself didn't need to change.
-  // Only active services are shown on the public landing page.
-  $serviceCategories = [];
-  $activeServiceCount = 0;
-  foreach ($allCategories as $cat) {
-      $serviceIds = $categoryServiceIds[$cat['category_id']] ?? [];
-      $categoryServices = [];
-
-      foreach ($serviceIds as $sid) {
-          if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
-          $categoryServices[] = [
-              'name' => $servicesById[$sid]['service_name'],
-              'icon' => $servicesById[$sid]['service_icon'],
-              'desc' => $servicesById[$sid]['service_description'],
-          ];
-          $activeServiceCount++;
-      }
-
-      if (empty($categoryServices)) continue; // skip empty categories on the public page
-
-      $serviceCategories[] = [
-          'title' => $cat['category_name'],
-          'description' => $cat['category_description'],
-          'services' => $categoryServices,
-      ];
+  foreach ($serviceIds as $sid) {
+    if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
+    $categoryServices[] = [
+      'name' => $servicesById[$sid]['service_name'],
+      'icon' => $servicesById[$sid]['service_icon'],
+      'desc' => $servicesById[$sid]['service_description'],
+    ];
+    $activeServiceCount++;
   }
 
-  $isLoggedIn = isset($_SESSION['user_id']);
+  if (empty($categoryServices)) continue; // skip empty categories on the public page
 
-  $dashboardUrl = match($_SESSION['user_role'] ?? '') {
-      'Admin'            => 'apps/views/admin/dashboard.php',
-      'Dental Assistant' => 'apps/views/dental_asst/dashboard.php',
-      'Patient'          => 'apps/views/patient/dashboard.php',
-      default            => 'index.php',
-  };
+  $serviceCategories[] = [
+    'title' => $cat['category_name'],
+    'description' => $cat['category_description'],
+    'services' => $categoryServices,
+  ];
+}
+
+$isLoggedIn = isset($_SESSION['user_id']);
+
+$dashboardUrl = match ($_SESSION['user_role'] ?? '') {
+  'Admin'            => 'apps/views/admin/dashboard.php',
+  'Dental Assistant' => 'apps/views/dental_asst/dashboard.php',
+  'Patient'          => 'apps/views/patient/dashboard.php',
+  default            => 'index.php',
+};
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -86,10 +88,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="public/css/styles.css">
-  <link rel="stylesheet" href="public/css/index.css?v=20260802-2">
+  <link rel="stylesheet" href="public/css/index.css?v=20260821-1">
   <link rel="stylesheet" href="public/css/loading.css">
   <script src="public/js/loading.js" defer></script>
 </head>
+
 <body>
 
   <!-- NAVBAR -->
@@ -162,7 +165,7 @@
     <!-- Signature smile-curve divider into the next section -->
     <div class="vd-arc-divider">
       <svg viewBox="0 0 1440 100" preserveAspectRatio="none">
-        <path class="vd-arc-fill-white" d="M0,0 C360,100 1080,100 1440,0 L1440,100 L0,100 Z"></path>
+        <path class="vd-arc-fill-white" d="M0,100 Q720,-400 1440,100 Z"></path>
       </svg>
     </div>
   </section>
@@ -177,25 +180,25 @@
       </div>
 
       <?php foreach ($serviceCategories as $category): ?>
-      <div class="vd-service-category">
-        <div class="vd-service-category-header">
-          <h3 class="vd-service-category-title"><?= htmlspecialchars($category['title']) ?></h3>
-          <p class="vd-service-category-desc"><?= htmlspecialchars($category['description']) ?></p>
-        </div>
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-          <?php foreach ($category['services'] as $service): ?>
-          <div class="col">
-            <div class="vd-service-item h-100">
-              <div class="vd-service-icon"><i class="<?= htmlspecialchars($service['icon']) ?>"></i></div>
-              <div>
-                <div class="vd-service-name"><?= htmlspecialchars($service['name']) ?></div>
-                <div class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></div>
-              </div>
-            </div>
+        <div class="vd-service-category">
+          <div class="vd-service-category-header">
+            <h3 class="vd-service-category-title"><?= htmlspecialchars($category['title']) ?></h3>
+            <p class="vd-service-category-desc"><?= htmlspecialchars($category['description']) ?></p>
           </div>
-          <?php endforeach; ?>
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+            <?php foreach ($category['services'] as $service): ?>
+              <div class="col">
+                <div class="vd-service-item h-100">
+                  <div class="vd-service-icon"><i class="<?= htmlspecialchars($service['icon']) ?>"></i></div>
+                  <div>
+                    <div class="vd-service-name"><?= htmlspecialchars($service['name']) ?></div>
+                    <div class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></div>
+                  </div>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
         </div>
-      </div>
       <?php endforeach; ?>
     </div>
   </section>
@@ -238,20 +241,20 @@
         <h2 class="vd-section-heading mb-2">Our Clinics</h2>
       </div>
       <div class="row justify-content-center g-4">
-      <?php foreach ($clinics as $clinic): ?>
-        <div class="col-12 col-sm-6 col-md-4">
-          <div class="card vd-clinic-card-index h-100 text-center border">
-            <div class="card-body">
-              <div class="vd-clinic-icon-badge mx-auto">
-                <i class="fa-solid fa-location-dot"></i>
+        <?php foreach ($clinics as $clinic): ?>
+          <div class="col-12 col-sm-6 col-md-4">
+            <div class="card vd-clinic-card-index h-100 text-center border">
+              <div class="card-body">
+                <div class="vd-clinic-icon-badge mx-auto">
+                  <i class="fa-solid fa-location-dot"></i>
+                </div>
+                <h5 class="card-title"><?= htmlspecialchars($clinic['clinic_name']) ?></h5>
+                <p class="card-text small text-muted"><?= htmlspecialchars($clinic['clinic_address']) ?></p>
+                <p class="card-text small text-muted">Phone: <?= htmlspecialchars($clinic['clinic_contact']) ?></p>
               </div>
-              <h5 class="card-title"><?= htmlspecialchars($clinic['clinic_name']) ?></h5>
-              <p class="card-text small text-muted"><?= htmlspecialchars($clinic['clinic_address']) ?></p>
-              <p class="card-text small text-muted">Phone: <?= htmlspecialchars($clinic['clinic_contact']) ?></p>
             </div>
           </div>
-        </div>
-      <?php endforeach; ?>
+        <?php endforeach; ?>
       </div>
     </div>
   </section>
@@ -297,12 +300,13 @@
         href="#systemTermsModal"
         class="vd-footer-link"
         data-bs-toggle="modal"
-        aria-label="Read the system terms and conditions"
-      >
+        aria-label="Read the system terms and conditions">
         <span>System Terms and Conditions</span>
       </a>
       <p class="mb-0 mt-2 small text-white">
-        &copy; <script>document.write(new Date().getFullYear())</script> Dr. Aprille Ventura Clinica Dental. All rights reserved.
+        &copy; <script>
+          document.write(new Date().getFullYear())
+        </script> Dr. Aprille Ventura Clinica Dental. All rights reserved.
       </p>
     </div>
   </footer>
@@ -312,4 +316,5 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
