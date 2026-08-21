@@ -16,7 +16,8 @@ $settingsModel = new SiteSettingsModel($conn);
 $settings = $settingsModel->getSettings();
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
-function sv($settings, $key) {
+function sv($settings, $key)
+{
     return htmlspecialchars($settings[$key] ?? '');
 }
 ?>
@@ -62,7 +63,7 @@ function sv($settings, $key) {
                 <?php if (!empty($settings['site_logo'])): ?>
                     <div class="mb-2">
                         <img src="../../../public/assets/<?= htmlspecialchars($settings['site_logo']) ?>"
-                                                     alt="Current logo" style="height:32px; border-radius:6px; border:1px solid var(--border);">
+                            alt="Current logo" style="height:32px; border-radius:6px; border:1px solid var(--border);">
                         <span class="vd-appt-meta ms-2">Currently in use</span>
                     </div>
                 <?php else: ?>
@@ -123,18 +124,18 @@ function sv($settings, $key) {
             </div>
 
             <?php for ($i = 1; $i <= 3; $i++): ?>
-            <div class="row g-3 mb-3 align-items-start">
-                <div class="col-md-4">
-                    <label class="vd-label form-label">Pillar <?= $i ?> Title</label>
-                    <input type="text" class="form-control vd-input vd-field" data-field="pillar<?= $i ?>_title"
-                        maxlength="100" value="<?= sv($settings, "pillar{$i}_title") ?>">
+                <div class="row g-3 mb-3 align-items-start">
+                    <div class="col-md-4">
+                        <label class="vd-label form-label">Pillar <?= $i ?> Title</label>
+                        <input type="text" class="form-control vd-input vd-field" data-field="pillar<?= $i ?>_title"
+                            maxlength="100" value="<?= sv($settings, "pillar{$i}_title") ?>">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="vd-label form-label">Pillar <?= $i ?> Description</label>
+                        <input type="text" class="form-control vd-input vd-field" data-field="pillar<?= $i ?>_desc"
+                            maxlength="255" value="<?= sv($settings, "pillar{$i}_desc") ?>">
+                    </div>
                 </div>
-                <div class="col-md-8">
-                    <label class="vd-label form-label">Pillar <?= $i ?> Description</label>
-                    <input type="text" class="form-control vd-input vd-field" data-field="pillar<?= $i ?>_desc"
-                        maxlength="255" value="<?= sv($settings, "pillar{$i}_desc") ?>">
-                </div>
-            </div>
             <?php endfor; ?>
 
             <div class="d-flex justify-content-end">
@@ -156,9 +157,9 @@ function sv($settings, $key) {
                         maxlength="255" value="<?= sv($settings, 'contact_address') ?>">
                 </div>
                 <div class="col-md-4">
-                    <label class="vd-label form-label">Phone</label>
-                    <input type="text" class="form-control vd-input vd-field" data-field="contact_phone"
-                        maxlength="20" value="<?= sv($settings, 'contact_phone') ?>">
+                    <label class="vd-label form-label">Phone Numbers</label>
+                    <textarea class="form-control vd-input vd-field" data-field="contact_phone" rows="3"
+                        placeholder="One phone number per line"><?= sv($settings, 'contact_phone') ?></textarea>
                 </div>
                 <div class="col-md-4">
                     <label class="vd-label form-label">Email</label>
@@ -213,202 +214,225 @@ function sv($settings, $key) {
 </div>
 
 <script>
-(function () {
-    const CONTROLLER = '../../../apps/controllers/siteSettingsController.php';
-    const settingsCsrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
+    (function() {
+        const CONTROLLER = '../../../apps/controllers/siteSettingsController.php';
+        const settingsCsrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
 
-    const groupLabels = {
-        brand: 'Brand Text',
-        hero: 'Hero Section',
-        about: 'About Section',
-        contact: 'Contact Information',
-        payment: 'GCash Deposit Settings',
-    };
+        const groupLabels = {
+            brand: 'Brand Text',
+            hero: 'Hero Section',
+            about: 'About Section',
+            contact: 'Contact Information',
+            payment: 'GCash Deposit Settings',
+        };
 
-    function showToast(msg, success) {
-        if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        console.warn('showToast not available:', msg);
-    }
-
-    function refreshPage() {
-        window.location.reload();
-    }
-
-    const confirmModalEl = document.getElementById('settingsConfirmModal');
-    const confirmMessageEl = document.getElementById('settingsConfirmMessage');
-    const confirmBtn = document.getElementById('settingsConfirmBtn');
-    const confirmModal = new bootstrap.Modal(confirmModalEl);
-    let pendingConfirmAction = null;
-
-    function askForSaveConfirmation(message, onConfirm) {
-        pendingConfirmAction = onConfirm;
-        confirmMessageEl.textContent = message;
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Confirm & Save';
-        confirmModal.show();
-    }
-
-    confirmBtn.addEventListener('click', async function () {
-        if (!pendingConfirmAction) return;
-
-        this.disabled = true;
-        this.textContent = 'Saving…';
-
-        LoadingUI.setButton(this, true, 'Saving…');
-        try {
-            const shouldRefresh = await pendingConfirmAction();
-            if (shouldRefresh) {
-                confirmModalEl.addEventListener('hidden.bs.modal', refreshPage, { once: true });
-            }
-            confirmModal.hide();
-        } catch (err) {
-            console.error(err);
-            this.disabled = false;
-            this.textContent = 'Confirm & Save';
-        } finally {
-            LoadingUI.setButton(this, false);
-            this.disabled = false;
-            this.textContent = 'Confirm & Save';
-            pendingConfirmAction = null;
-        }
-    });
-
-    // ── Save a text/textarea group ──
-    document.querySelectorAll('.vd-save-group-btn').forEach(btn => {
-        btn.addEventListener('click', async function () {
-            const group = this.dataset.group;
-            const label = groupLabels[group] || group;
-            const saveButton = this;
-
-            askForSaveConfirmation(
-                `Save changes to the "${label}" section? The update will take effect across applicable parts of the system.`,
-                async function () {
-                    const card   = saveButton.closest('.vd-dash-card');
-                    const fields = card.querySelectorAll('.vd-field');
-
-                    const formData = new FormData();
-                    formData.append('action', 'updateGroup');
-                    formData.append('csrf_token', settingsCsrfToken);
-                    formData.append('group', group);
-                    fields.forEach(field => {
-                        formData.append(field.dataset.field, field.value.trim());
-                    });
-
-                    const originalText = saveButton.textContent;
-                    saveButton.disabled = true;
-                    saveButton.textContent = 'Saving…';
-
-                    LoadingUI.setButton(saveButton, true, 'Saving…');
-                    try {
-                        const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
-                        const result   = await response.json();
-                        showToast(result.message || (result.success ? 'Saved.' : 'Failed to save.'), result.success);
-                    } catch (err) {
-                        showToast('Network error. Please try again.', false);
-                        console.error(err);
-                    } finally {
-                        LoadingUI.setButton(saveButton, false);
-                        saveButton.disabled = false;
-                        saveButton.textContent = originalText;
-                    }
-                }
-            );
-        });
-    });
-
-    // ── Upload logo ──
-    const uploadLogoBtn = document.getElementById('uploadLogoBtn');
-    const logoInput     = document.getElementById('logoInput');
-
-    if (uploadLogoBtn) {
-        uploadLogoBtn.addEventListener('click', async function () {
-            if (!logoInput.files[0]) {
-                showToast('Please choose an image first.', false);
+        function showToast(msg, success) {
+            if (typeof window.showToast === 'function') {
+                window.showToast(msg, success);
                 return;
             }
+            console.warn('showToast not available:', msg);
+        }
 
-            const uploadButton = this;
-            askForSaveConfirmation(
-                'Upload this logo and replace the current wordmark across the system?',
-                async function () {
+        function refreshPage() {
+            window.location.reload();
+        }
+
+        const confirmModalEl = document.getElementById('settingsConfirmModal');
+        const confirmMessageEl = document.getElementById('settingsConfirmMessage');
+        const confirmBtn = document.getElementById('settingsConfirmBtn');
+        const confirmModal = new bootstrap.Modal(confirmModalEl);
+        let pendingConfirmAction = null;
+
+        function askForSaveConfirmation(message, onConfirm) {
+            pendingConfirmAction = onConfirm;
+            confirmMessageEl.textContent = message;
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm & Save';
+            confirmModal.show();
+        }
+
+        confirmBtn.addEventListener('click', async function() {
+            if (!pendingConfirmAction) return;
+
+            this.disabled = true;
+            this.textContent = 'Saving…';
+
+            LoadingUI.setButton(this, true, 'Saving…');
+            try {
+                const shouldRefresh = await pendingConfirmAction();
+                if (shouldRefresh) {
+                    confirmModalEl.addEventListener('hidden.bs.modal', refreshPage, {
+                        once: true
+                    });
+                }
+                confirmModal.hide();
+            } catch (err) {
+                console.error(err);
+                this.disabled = false;
+                this.textContent = 'Confirm & Save';
+            } finally {
+                LoadingUI.setButton(this, false);
+                this.disabled = false;
+                this.textContent = 'Confirm & Save';
+                pendingConfirmAction = null;
+            }
+        });
+
+        // ── Save a text/textarea group ──
+        document.querySelectorAll('.vd-save-group-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const group = this.dataset.group;
+                const label = groupLabels[group] || group;
+                const saveButton = this;
+
+                askForSaveConfirmation(
+                    `Save changes to the "${label}" section? The update will take effect across applicable parts of the system.`,
+                    async function() {
+                        const card = saveButton.closest('.vd-dash-card');
+                        const fields = card.querySelectorAll('.vd-field');
+
+                        const formData = new FormData();
+                        formData.append('action', 'updateGroup');
+                        formData.append('csrf_token', settingsCsrfToken);
+                        formData.append('group', group);
+                        fields.forEach(field => {
+                            formData.append(field.dataset.field, field.value.trim());
+                        });
+
+                        const originalText = saveButton.textContent;
+                        saveButton.disabled = true;
+                        saveButton.textContent = 'Saving…';
+
+                        LoadingUI.setButton(saveButton, true, 'Saving…');
+                        try {
+                            const response = await fetch(CONTROLLER, {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const result = await response.json();
+                            showToast(result.message || (result.success ? 'Saved.' : 'Failed to save.'), result.success);
+                        } catch (err) {
+                            showToast('Network error. Please try again.', false);
+                            console.error(err);
+                        } finally {
+                            LoadingUI.setButton(saveButton, false);
+                            saveButton.disabled = false;
+                            saveButton.textContent = originalText;
+                        }
+                    }
+                );
+            });
+        });
+
+        // ── Upload logo ──
+        const uploadLogoBtn = document.getElementById('uploadLogoBtn');
+        const logoInput = document.getElementById('logoInput');
+
+        if (uploadLogoBtn) {
+            uploadLogoBtn.addEventListener('click', async function() {
+                if (!logoInput.files[0]) {
+                    showToast('Please choose an image first.', false);
+                    return;
+                }
+
+                const uploadButton = this;
+                askForSaveConfirmation(
+                    'Upload this logo and replace the current wordmark across the system?',
+                    async function() {
+                        const formData = new FormData();
+                        formData.append('action', 'updateLogo');
+                        formData.append('csrf_token', settingsCsrfToken);
+                        formData.append('logo', logoInput.files[0]);
+
+                        const originalText = uploadButton.textContent;
+                        uploadButton.disabled = true;
+                        uploadButton.textContent = 'Uploading…';
+
+                        LoadingUI.setButton(uploadButton, true, 'Uploading…');
+                        try {
+                            const response = await fetch(CONTROLLER, {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const result = await response.json();
+                            showToast(result.message || (result.success ? 'Logo updated.' : 'Failed to upload.'), result.success);
+                            return result.success;
+                        } catch (err) {
+                            showToast('Network error. Please try again.', false);
+                            console.error(err);
+                        } finally {
+                            LoadingUI.setButton(uploadButton, false);
+                            uploadButton.disabled = false;
+                            uploadButton.textContent = originalText;
+                        }
+                    }
+                );
+            });
+        }
+        // ── Remove logo ──
+        const removeLogoBtn = document.getElementById('removeLogoBtn');
+        if (removeLogoBtn) {
+            removeLogoBtn.addEventListener('click', function() {
+                const btn = this;
+                askForSaveConfirmation('Remove the current logo and revert to the text wordmark?', async function() {
                     const formData = new FormData();
-                    formData.append('action', 'updateLogo');
+                    formData.append('action', 'removeLogo');
                     formData.append('csrf_token', settingsCsrfToken);
-                    formData.append('logo', logoInput.files[0]);
 
-                    const originalText = uploadButton.textContent;
-                    uploadButton.disabled = true;
-                    uploadButton.textContent = 'Uploading…';
+                    const originalText = btn.textContent;
+                    btn.disabled = true;
+                    btn.textContent = 'Removing…';
 
-                    LoadingUI.setButton(uploadButton, true, 'Uploading…');
+                    LoadingUI.setButton(btn, true, 'Removing…');
                     try {
-                        const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
-                        const result   = await response.json();
-                        showToast(result.message || (result.success ? 'Logo updated.' : 'Failed to upload.'), result.success);
+                        const response = await fetch(CONTROLLER, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const result = await response.json();
+                        showToast(result.message || (result.success ? 'Logo removed.' : 'Failed to remove.'), result.success);
                         return result.success;
                     } catch (err) {
                         showToast('Network error. Please try again.', false);
                         console.error(err);
                     } finally {
-                        LoadingUI.setButton(uploadButton, false);
-                        uploadButton.disabled = false;
-                        uploadButton.textContent = originalText;
+                        LoadingUI.setButton(btn, false);
+                        btn.disabled = false;
+                        btn.textContent = originalText;
                     }
-                }
-            );
-        });
-    }
-    // ── Remove logo ──
-    const removeLogoBtn = document.getElementById('removeLogoBtn');
-    if (removeLogoBtn) {
-        removeLogoBtn.addEventListener('click', function () {
-            const btn = this;
-            askForSaveConfirmation('Remove the current logo and revert to the text wordmark?', async function () {
+                });
+            });
+        }
+
+        const uploadGcashQrBtn = document.getElementById('uploadGcashQrBtn');
+        const gcashQrInput = document.getElementById('gcashQrInput');
+        uploadGcashQrBtn?.addEventListener('click', function() {
+            if (!gcashQrInput.files[0]) {
+                showToast('Choose a QR image first.', false);
+                return;
+            }
+            const button = this;
+            askForSaveConfirmation('Upload this GCash QR code for patient deposit payments?', async function() {
                 const formData = new FormData();
-                formData.append('action', 'removeLogo');
+                formData.append('action', 'updateGcashQr');
                 formData.append('csrf_token', settingsCsrfToken);
-
-                const originalText = btn.textContent;
-                btn.disabled = true;
-                btn.textContent = 'Removing…';
-
-                LoadingUI.setButton(btn, true, 'Removing…');
+                formData.append('gcash_qr', gcashQrInput.files[0]);
+                LoadingUI.setButton(button, true, 'Uploading…');
                 try {
-                    const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
-                    const result   = await response.json();
-                    showToast(result.message || (result.success ? 'Logo removed.' : 'Failed to remove.'), result.success);
+                    const response = await fetch(CONTROLLER, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    showToast(result.message, result.success);
                     return result.success;
-                } catch (err) {
-                    showToast('Network error. Please try again.', false);
-                    console.error(err);
+                } catch (error) {
+                    showToast('Unable to upload the QR code.', false);
                 } finally {
-                    LoadingUI.setButton(btn, false);
-                    btn.disabled = false;
-                    btn.textContent = originalText;
+                    LoadingUI.setButton(button, false);
                 }
             });
         });
-    }
-
-    const uploadGcashQrBtn = document.getElementById('uploadGcashQrBtn');
-    const gcashQrInput = document.getElementById('gcashQrInput');
-    uploadGcashQrBtn?.addEventListener('click', function () {
-        if (!gcashQrInput.files[0]) { showToast('Choose a QR image first.', false); return; }
-        const button = this;
-        askForSaveConfirmation('Upload this GCash QR code for patient deposit payments?', async function () {
-            const formData = new FormData();
-            formData.append('action', 'updateGcashQr');
-            formData.append('csrf_token', settingsCsrfToken);
-            formData.append('gcash_qr', gcashQrInput.files[0]);
-            LoadingUI.setButton(button, true, 'Uploading…');
-            try {
-                const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
-                const result = await response.json();
-                showToast(result.message, result.success);
-                return result.success;
-            } catch (error) { showToast('Unable to upload the QR code.', false); }
-            finally { LoadingUI.setButton(button, false); }
-        });
-    });
-})();
+    })();
 </script>

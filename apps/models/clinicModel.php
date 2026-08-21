@@ -29,14 +29,13 @@ class Clinic {
         }
     }
 
-    public function updateClinic($id, $name, $address, $phone, $embedUrl) {
+    public function updateClinic($id, $name, $address, $embedUrl) {
         try {
-            $stmt = $this->conn->prepare("UPDATE clinics SET clinic_name = :name, clinic_address = :address, clinic_contact = :phone, embed_url = :embed_url WHERE clinic_id = :id");
+            $stmt = $this->conn->prepare("UPDATE clinics SET clinic_name = :name, clinic_address = :address, embed_url = :embed_url WHERE clinic_id = :id");
             return $stmt->execute([
                 ':id' => $id,
                 ':name' => $name,
                 ':address' => $address,
-                ':phone' => $phone,
                 ':embed_url' => $embedUrl
             ]);
         } catch (PDOException $e) {
@@ -51,16 +50,15 @@ class Clinic {
         return (bool) $stmt->fetchColumn();
     }
 
-    public function createClinic(string $name, string $address, string $phone, ?string $embedUrl): int {
+    public function createClinic(string $name, string $address, ?string $embedUrl): int {
         try {
             $stmt = $this->conn->prepare("
                 INSERT INTO clinics (clinic_name, clinic_address, clinic_contact, embed_url)
-                VALUES (:name, :address, :phone, :embed_url)
+                VALUES (:name, :address, '', :embed_url)
             ");
             $stmt->execute([
                 ':name' => $name,
                 ':address' => $address,
-                ':phone' => $phone,
                 ':embed_url' => $embedUrl,
             ]);
             return (int) $this->conn->lastInsertId();

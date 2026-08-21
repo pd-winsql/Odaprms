@@ -212,7 +212,6 @@
                             <div class="vd-clinic-card-inner p-3 rounded">
                                 <div class="vd-clinic-tag"><?= htmlspecialchars($clinic['clinic_name']) ?></div>
                                 <div class="vd-clinic-address"><?= htmlspecialchars($clinic['clinic_address']) ?></div>
-                                <div class="vd-clinic-address">📞 <?= htmlspecialchars($clinic['clinic_contact']) ?></div>
                             </div>
                             </label>
                         </div>

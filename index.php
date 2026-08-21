@@ -21,6 +21,18 @@ function sv($settings, $key, $fallback = '')
   return htmlspecialchars($settings[$key] ?? $fallback);
 }
 
+function contactPhones($settings): array
+{
+  $raw = trim((string)($settings['contact_phone'] ?? ''));
+  if ($raw === '') {
+    return ['0912-345-6789'];
+  }
+
+  $phones = preg_split('/[\r\n,;]+/', $raw) ?: [];
+  $phones = array_values(array_filter(array_map('trim', $phones), fn($value) => $value !== ''));
+  return $phones ?: ['0912-345-6789'];
+}
+
 $serviceModel = new ServiceModel($conn);
 $allCategories = $serviceModel->getAllCategories();
 $allServices   = $serviceModel->getAllServices();
@@ -231,7 +243,6 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
                 </div>
                 <h5 class="card-title"><?= htmlspecialchars($clinic['clinic_name']) ?></h5>
                 <p class="card-text small text-muted"><?= htmlspecialchars($clinic['clinic_address']) ?></p>
-                <p class="card-text small text-muted">Phone: <?= htmlspecialchars($clinic['clinic_contact']) ?></p>
                 <?php if (!empty($clinic['embed_url'])): ?>
                   <div class="ratio ratio-4x3 mt-3">
                     <iframe
@@ -258,7 +269,9 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
           <div class="vd-eyebrow mb-2">Get In Touch</div>
           <h2 class="vd-contact-heading mb-3">We'd Love to Hear From You</h2>
           <p class="text-muted mb-1">Address: <?= sv($settings, 'contact_address', 'Alcala & Tuguegarao, Cagayan') ?></p>
-          <p class="text-muted mb-1">Phone: <?= sv($settings, 'contact_phone', '0912-345-6789') ?></p>
+          <?php foreach (contactPhones($settings) as $phone): ?>
+            <p class="text-muted mb-1">Phone: <?= htmlspecialchars($phone) ?></p>
+          <?php endforeach; ?>
           <p class="text-muted">Email: <a href="mailto:<?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?>" class="vd-link"><?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?></a></p>
         </div>
         <div class="col-12 col-md-5">

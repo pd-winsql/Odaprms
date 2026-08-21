@@ -23,7 +23,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         <div>
             <div class="vd-welcome-greet">CLINIC MANAGEMENT</div>
             <div class="vd-welcome-name">Clinic Locations</div>
-            <p class="text-muted small mb-0 mt-2">Add a clinic or update its contact details, address, and map embed URL.</p>
+            <p class="text-muted small mb-0 mt-2">Add a clinic or update its address and map embed URL.</p>
         </div>
         <button type="button" class="btn vd-btn-gold align-self-start" data-bs-toggle="modal" data-bs-target="#addClinicModal">
             <i class="ti ti-plus me-1"></i> Add Clinic
@@ -46,11 +46,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             <label class="vd-label form-label">Clinic Name</label>
                             <input type="text" class="form-control vd-input vd-clinic-field" data-field="name"
                                 value="<?= htmlspecialchars($clinic['clinic_name']) ?>">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="vd-label form-label">Contact Number</label>
-                            <input type="text" class="form-control vd-input vd-clinic-field" data-field="phone"
-                                value="<?= htmlspecialchars($clinic['clinic_contact']) ?>">
                         </div>
                         <div class="col-12">
                             <label class="vd-label form-label">Address</label>
@@ -91,10 +86,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             <label class="vd-label form-label" for="newClinicName">Clinic Name</label>
                             <input type="text" class="form-control vd-input" id="newClinicName" name="name" maxlength="100" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="vd-label form-label" for="newClinicPhone">Contact Number</label>
-                            <input type="tel" class="form-control vd-input" id="newClinicPhone" name="phone" maxlength="15" required>
-                        </div>
                         <div class="col-12">
                             <label class="vd-label form-label" for="newClinicAddress">Address</label>
                             <input type="text" class="form-control vd-input" id="newClinicAddress" name="address" maxlength="100" required>
@@ -132,7 +123,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 const card = this.closest('.vd-dash-card');
                 const id = this.dataset.id;
                 const nameInput = card.querySelector('[data-field="name"]');
-                const phoneInput = card.querySelector('[data-field="phone"]');
                 const addressInput = card.querySelector('[data-field="address"]');
                 const embedInput = card.querySelector('[data-field="embed_url"]');
 
@@ -141,7 +131,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 formData.append('csrf_token', csrfToken);
                 formData.append('clinic_id', id);
                 formData.append('name', nameInput.value.trim());
-                formData.append('phone', phoneInput.value.trim());
                 formData.append('address', addressInput.value.trim());
                 formData.append('embed_url', embedInput.value.trim());
 

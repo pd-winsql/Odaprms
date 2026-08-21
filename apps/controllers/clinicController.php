@@ -65,20 +65,19 @@ class clinicController {
         $this->requireAdminPost();
         $name = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
         $embedUrl = $this->normalizeEmbedUrl($_POST['embed_url'] ?? '');
 
-        if ($name === '' || $address === '' || $phone === '') {
-            $this->json(['success' => false, 'message' => 'Please fill in the clinic name, contact number, and address.']);
+        if ($name === '' || $address === '') {
+            $this->json(['success' => false, 'message' => 'Please fill in the clinic name and address.']);
         }
-        if (mb_strlen($name) > 100 || mb_strlen($address) > 100 || mb_strlen($phone) > 15) {
+        if (mb_strlen($name) > 100 || mb_strlen($address) > 100) {
             $this->json(['success' => false, 'message' => 'One or more clinic fields exceed the allowed length.']);
         }
         if ($this->clinics->clinicNameExists($name)) {
             $this->json(['success' => false, 'message' => 'A clinic with this name already exists.']);
         }
 
-        $clinicId = $this->clinics->createClinic($name, $address, $phone, $embedUrl);
+        $clinicId = $this->clinics->createClinic($name, $address, $embedUrl);
         if (!$clinicId) {
             $this->json(['success' => false, 'message' => 'Failed to add clinic.']);
         }
@@ -92,10 +91,9 @@ class clinicController {
         $id      = $_POST['clinic_id'] ?? '';
         $name    = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
-        $phone   = trim($_POST['phone'] ?? '');
         $embedUrl = $this->normalizeEmbedUrl($_POST['embed_url'] ?? '');
 
-        if (!$id || !$name || !$address || !$phone) {
+        if (!$id || !$name || !$address) {
             $this->json(['success' => false, 'message' => 'Please fill in all fields.']);
         }
 
@@ -104,7 +102,7 @@ class clinicController {
             $this->json(['success' => false, 'message' => 'Clinic not found.']);
         }
 
-        $result = $this->clinics->updateClinic($id, $name, $address, $phone, $embedUrl);
+        $result = $this->clinics->updateClinic($id, $name, $address, $embedUrl);
 
         if ($result) {
             $this->json([
