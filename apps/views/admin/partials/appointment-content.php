@@ -496,9 +496,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         updateStatusAudit(id, audit);
 
         const detailsButton = row.querySelector('.vd-action-group > .vd-appointment-details-btn[title]');
+        let details = null;
         if (detailsButton?.dataset.appointmentDetails) {
             try {
-                const details = JSON.parse(detailsButton.dataset.appointmentDetails);
+                details = JSON.parse(detailsButton.dataset.appointmentDetails);
                 details.status = newStatus;
                 details.activity = audit ? {
                     name: audit.performed_by_name,
@@ -507,26 +508,71 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     status: newStatus
                 } : details.activity;
                 if (updates.appointmentCode) details.appointmentCode = updates.appointmentCode;
-                if (details.deposit && updates.depositStatus) details.deposit.status = updates.depositStatus;
+                if (updates.depositStatus) {
+                    details.deposit ??= { id: updates.depositId || null };
+                    details.deposit.status = updates.depositStatus;
+                } else if (newStatus === 'Cancelled' && details.deposit?.status === 'Verified') {
+                    // A clinic cancellation moves a verified deposit to refund.
+                    details.deposit.status = 'For Refund';
+                }
                 detailsButton.dataset.appointmentDetails = JSON.stringify(details);
             } catch (error) {
                 console.warn('Unable to refresh cached appointment details.', error);
             }
         }
 
-        // Remove action buttons that belong to the old state. The persistent
-        // details button remains available; a normal refresh restores all new
-        // state-specific actions when the staff member needs another action.
+        // Replace actions from the old state with the actions allowed by the
+        // newly confirmed state, without refreshing the appointment content.
         const actionGroup = row.querySelector('.vd-action-group');
-        actionGroup?.querySelectorAll('button').forEach(actionButton => {
-            if (actionButton !== detailsButton) actionButton.remove();
-        });
+        if (actionGroup && detailsButton && details) {
+            actionGroup.replaceChildren(detailsButton);
+            renderRowActions(actionGroup, details);
+        }
 
         // Reapply the current client-side filter so a row whose status changed
         // disappears when it no longer matches, without a server reload.
         const table = row.closest('table');
         const toggleId = table?.id === 'upcomingApptTable' ? 'upcomingStatusToggles' : 'pastStatusToggles';
         document.querySelector(`#${toggleId} .vd-status-toggle-btn.active`)?.click();
+    }
+
+    function renderRowActions(actionGroup, details) {
+        const statusPayload = {
+            appointmentId: details.appointmentId,
+            patientName: details.patientName,
+            email: details.email,
+            deposit: details.deposit
+        };
+        const addStatusAction = (label, className, status) => {
+            actionGroup.append(makeActionButton(label, className, button => runStatusAction(button, statusPayload, status)));
+        };
+        const addDepositAction = (label, className, dataKey, handler) => {
+            const button = makeActionButton(label, className, handler);
+            button.dataset[dataKey] = details.appointmentId;
+            actionGroup.append(button);
+        };
+
+        // This mirrors the server-rendered action map so each row remains fully
+        // usable immediately after its status changes.
+        if (details.status === 'Pending Review') {
+            addStatusAction('Accept', 'btn vd-btn-gold btn-sm', 'Awaiting Deposit');
+            addStatusAction('Reject', 'btn vd-btn-outline btn-sm', 'Rejected');
+        } else if (details.status === 'Awaiting Deposit') {
+            addDepositAction('Extend 8h', 'btn vd-btn-outline btn-sm', 'extendDeadline', button => runExtendDeadline(button));
+            addDepositAction('Transfer Deposit', 'btn vd-btn-outline btn-sm', 'transferDeposit', button => runTransferDeposit(button));
+            addStatusAction('Cancel', 'btn vd-btn-outline btn-sm', 'Cancelled');
+        } else if (details.status === 'Confirmed') {
+            addStatusAction('Cancel', 'btn vd-btn-outline btn-sm', 'Cancelled');
+            addStatusAction('No-show', 'btn vd-btn-outline btn-sm', 'No-show');
+        } else if (details.status === 'Checked In') {
+            actionGroup.append(makeActionButton('Manage Queue', 'btn vd-btn-outline btn-sm', () => {
+                document.querySelector('[data-page="dashboard-content.php"]')?.click();
+            }));
+        } else if (details.status === 'In Progress') {
+            addStatusAction('Complete', 'btn vd-btn-gold btn-sm', 'Completed');
+        } else if (details.status === 'Cancelled' && details.deposit?.status === 'For Refund') {
+            addDepositAction('Record Refund', 'btn vd-btn-outline btn-sm', 'recordRefund', button => runRecordRefund(button));
+        }
     }
 
     function formatDateTime(value, dateOnly = false) {
@@ -582,12 +628,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         description.textContent = value || 'Not provided';
         item.append(term, description);
         container.appendChild(item);
-    }
-
-    function reloadAppointments() {
-        const link = document.querySelector('[data-page="appointment-content.php"]');
-        if (link) link.click();
-        else window.location.reload();
     }
 
     function makeActionButton(label, className, handler) {
@@ -1000,80 +1040,11 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         activeAppointmentPayload = null;
     });
 
-    // Save & Notify button click
-    document.querySelectorAll('.vd-save-btn').forEach(btn => {
-        btn.addEventListener('click', async function () {
-        const id     = this.dataset.id;
-        const row    = this.closest('tr');
-        const select = row.querySelector('.vd-status-select');
-        const newStatus = select.value;
-        const email     = select.dataset.email;
-        const name      = select.dataset.name;
-        let reason = '';
-        if (newStatus === 'Rejected') {
-            const rejection = await window.showActionModal({
-                title: 'Reject Appointment Request',
-                kicker: 'Appointment review',
-                message: 'The patient will receive this reason by email. Please keep it clear and professional.',
-                confirmText: 'Reject Appointment',
-                icon: 'ti-calendar-x',
-                tone: 'danger',
-                details: [{ label: 'Patient', value: name }],
-                fields: [{
-                    name: 'reason',
-                    label: 'Reason for rejection',
-                    placeholder: 'Example: The selected schedule is no longer available.',
-                    multiline: true,
-                    rows: 3,
-                    required: true,
-                    minlength: 3,
-                    maxlength: 255
-                }]
-            });
-            if (!rejection.confirmed) return;
-            reason = rejection.values.reason;
-        }
-
-        LoadingUI.setButton(btn, true, 'Saving…');
-        const formData = new FormData();
-        formData.append('action', 'updateStatus');
-        formData.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
-        formData.append('appointment_id', id);
-        formData.append('status', newStatus);
-        formData.append('email', email);
-        formData.append('name', name);
-        formData.append('reason', reason);
-
-        try {
-            const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
-            const result   = await response.json();
-
-            if (result.success) {
-            deliverQueuedNotification(result.notification);
-            updateStatusPill(id, newStatus);
-            updateStatusAudit(id, result.audit);
-            row.dataset.status = newStatus;
-            select.dataset.original = newStatus;
-            LoadingUI.setButton(btn, false);
-            btn.disabled = true;
-            showToast('Status updated to ' + newStatus, true);
-            } else {
-            LoadingUI.setButton(btn, false);
-            showToast(result.message || 'Failed to update.', false);
-            }
-        } catch (err) {
-            LoadingUI.setButton(btn, false);
-            showToast('Network error. Please try again.', false);
-            console.error(err);
-        }
-        });
-    });
-
     async function depositAction(action, fields, showSuccess = true) {
         const body=new FormData();body.append('action',action);body.append('csrf_token',CSRF_TOKEN);Object.entries(fields).forEach(([key,value])=>body.append(key,value));
         const response=await fetch(DEPOSIT_CONTROLLER,{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);deliverQueuedNotification(result.notification);if(showSuccess)showToast(result.message,true);return result;
     }
-    document.querySelectorAll('[data-extend-deadline]').forEach(button => button.addEventListener('click', async () => {
+    async function runExtendDeadline(button) {
         const response = await window.showActionModal({
             title: 'Extend Payment Deadline',
             kicker: 'Deposit deadline',
@@ -1086,9 +1057,9 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         if (!response.confirmed) return;
         try { await depositAction('extend', { appointment_id: button.dataset.extendDeadline, reason: response.values.reason }); }
         catch (error) { showToast(error.message, false); }
-    }));
+    }
 
-    document.querySelectorAll('[data-transfer-deposit]').forEach(button => button.addEventListener('click', async () => {
+    async function runTransferDeposit(button) {
         const response = await window.showActionModal({
             title: 'Transfer Verified Deposit',
             kicker: 'Deposit adjustment',
@@ -1104,12 +1075,17 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         });
         if (!response.confirmed) return;
         try {
-            await depositAction('transfer', { source_appointment_id: response.values.source, target_appointment_id: button.dataset.transferDeposit, reason: response.values.reason });
-            document.querySelector('[data-page="appointment-content.php"]')?.click();
+            const result = await depositAction('transfer', { source_appointment_id: response.values.source, target_appointment_id: button.dataset.transferDeposit, reason: response.values.reason });
+            applyAppointmentResult(
+                button.dataset.transferDeposit,
+                result.appointment?.status || 'Confirmed',
+                result.audit,
+                { appointmentCode: result.appointment_code, depositStatus: result.deposit_status }
+            );
         } catch (error) { showToast(error.message, false); }
-    }));
+    }
 
-    document.querySelectorAll('[data-record-refund]').forEach(button => button.addEventListener('click', async () => {
+    async function runRecordRefund(button) {
         const response = await window.showActionModal({
             title: 'Record Deposit Refund',
             kicker: 'Manual refund record',
@@ -1120,9 +1096,16 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             fields: [{ name: 'notes', label: 'Refund notes (optional)', placeholder: 'Add the refund method or other useful details.', multiline: true, rows: 3, maxlength: 255 }]
         });
         if (!response.confirmed) return;
-        try { await depositAction('refund', { appointment_id: button.dataset.recordRefund, notes: response.values.notes }); }
+        try {
+            await depositAction('refund', { appointment_id: button.dataset.recordRefund, notes: response.values.notes });
+            button.remove();
+        }
         catch (error) { showToast(error.message, false); }
-    }));
+    }
+
+    document.querySelectorAll('[data-extend-deadline]').forEach(button => button.addEventListener('click', () => runExtendDeadline(button)));
+    document.querySelectorAll('[data-transfer-deposit]').forEach(button => button.addEventListener('click', () => runTransferDeposit(button)));
+    document.querySelectorAll('[data-record-refund]').forEach(button => button.addEventListener('click', () => runRecordRefund(button)));
 
 })();
 </script>

@@ -521,7 +521,7 @@ class DepositModel {
                 'audit:'.$audit['audit_log_id'].':appointment_confirmed_code'
             );
 
-            $this->conn->commit();return ['success'=>true,'message'=>'Deposit transferred and the new appointment confirmed.','appointment_code'=>$code,'deposit_id'=>(int)$target['deposit_id'],'appointment'=>['id'=>$targetAppointmentId,'status'=>'Confirmed'],'notification'=>$notification];
+            $this->conn->commit();return ['success'=>true,'message'=>'Deposit transferred and the new appointment confirmed.','appointment_code'=>$code,'deposit_id'=>(int)$target['deposit_id'],'deposit_status'=>'Verified','appointment'=>['id'=>$targetAppointmentId,'status'=>'Confirmed'],'notification'=>$notification,'audit'=>['performed_by_name'=>$actor['name'],'performed_by_role'=>$actor['role'],'performed_at'=>$audit['performed_at']]];
         }catch(Throwable $e){if($this->conn->inTransaction())$this->conn->rollBack();error_log('transferDeposit error: '.$e->getMessage());return ['success'=>false,'message'=>'Unable to transfer the deposit.'];}
     }
 
