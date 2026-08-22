@@ -50,24 +50,225 @@
 
 .vd-skeleton {
     display: grid;
-    gap: 0.75rem;
+    gap: 1.25rem;
+    width: 100%;
 }
 
+.vd-skeleton__item,
 .vd-skeleton__line,
 .vd-skeleton__block {
     animation: vd-skeleton-pulse 1.35s ease-in-out infinite;
     background: linear-gradient(90deg, #e8edf2 25%, #f6f8fa 50%, #e8edf2 75%);
     background-size: 200% 100%;
     border-radius: 0.5rem;
+    display: block;
 }
 
 .vd-skeleton__line {
     height: 0.9rem;
+    width: 100%;
 }
 
 .vd-skeleton__line--short { width: 42%; }
 .vd-skeleton__line--medium { width: 68%; }
 .vd-skeleton__block { height: 4.5rem; }
+
+.vd-skeleton__heading,
+.vd-skeleton__panel-head {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.vd-skeleton__heading > div {
+    display: grid;
+    gap: 0.65rem;
+    width: min(25rem, 65%);
+}
+
+.vd-skeleton__eyebrow {
+    height: 0.55rem;
+    width: 6.5rem;
+}
+
+.vd-skeleton__title {
+    height: 1.75rem;
+    width: min(18rem, 85%);
+}
+
+.vd-skeleton__title--small {
+    height: 1.1rem;
+    width: 11rem;
+}
+
+.vd-skeleton__button {
+    border-radius: 0.55rem;
+    height: 2.35rem;
+    width: 7.5rem;
+}
+
+.vd-skeleton__button--small {
+    height: 1.9rem;
+    width: 5rem;
+}
+
+.vd-skeleton__badge {
+    border-radius: 999px;
+    height: 1.45rem;
+    width: 5.5rem;
+}
+
+.vd-skeleton__avatar {
+    border-radius: 0.65rem;
+    height: 2.6rem;
+    width: 2.6rem;
+}
+
+.vd-skeleton__number {
+    height: 2rem;
+    width: 4rem;
+}
+
+.vd-skeleton__stats,
+.vd-skeleton__card-grid,
+.vd-skeleton__chart-grid {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.vd-skeleton__stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.vd-skeleton--analytics .vd-skeleton__stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vd-skeleton__stat,
+.vd-skeleton__card,
+.vd-skeleton__panel,
+.vd-skeleton__chart {
+    background: var(--white-bg, #fff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
+}
+
+.vd-skeleton__stat {
+    display: grid;
+    gap: 0.7rem;
+    min-height: 8.5rem;
+    padding: 1.25rem 1.35rem;
+}
+
+.vd-skeleton__card {
+    display: grid;
+    gap: 0.8rem;
+    min-height: 8rem;
+    padding: 1.25rem;
+}
+
+.vd-skeleton__panel {
+    overflow: hidden;
+}
+
+.vd-skeleton__panel-head {
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    min-height: 3.7rem;
+    padding: 0.9rem 1.3rem;
+}
+
+.vd-skeleton__filters {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(4, minmax(8rem, 1fr));
+    padding: 1rem 1.3rem;
+}
+
+.vd-skeleton__control {
+    border-radius: 0.55rem;
+    height: 2.5rem;
+    width: 100%;
+}
+
+.vd-skeleton__table {
+    border-top: 1px solid var(--border, #e5e7eb);
+    display: grid;
+}
+
+.vd-skeleton__table-row {
+    align-items: center;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 2.6rem minmax(9rem, 1.4fr) minmax(7rem, 1fr) 5.5rem 5rem;
+    min-height: 4.7rem;
+    padding: 0.75rem 1.3rem;
+}
+
+.vd-skeleton__table-row:last-child {
+    border-bottom: 0;
+}
+
+.vd-skeleton__table-row > div {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.vd-skeleton__card-grid,
+.vd-skeleton__chart-grid,
+.vd-skeleton__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vd-skeleton__list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.vd-skeleton__panel.vd-skeleton__list {
+    padding: 1rem;
+}
+
+.vd-skeleton__hero {
+    background: var(--gold-pale, #fbf7ec);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 1rem;
+    display: grid;
+    gap: 0.85rem;
+    min-height: 10rem;
+    padding: 1.6rem;
+}
+
+.vd-skeleton__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.vd-skeleton__form {
+    display: grid;
+    gap: 1.15rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 1.35rem;
+}
+
+.vd-skeleton__form > div {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.vd-skeleton__chart {
+    display: grid;
+    gap: 1rem;
+    padding: 1.2rem;
+}
+
+.vd-skeleton__chart-block {
+    height: 15rem;
+    width: 100%;
+}
 
 @keyframes vd-spin {
     to { transform: rotate(360deg); }
@@ -80,8 +281,75 @@
 
 @media (prefers-reduced-motion: reduce) {
     .vd-spinner,
+    .vd-skeleton__item,
     .vd-skeleton__line,
     .vd-skeleton__block {
-        animation-duration: 1.8s;
+        animation: none;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .vd-skeleton__stats,
+    .vd-skeleton--analytics .vd-skeleton__stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vd-skeleton__filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vd-skeleton__table-row {
+        grid-template-columns: 2.6rem minmax(8rem, 1fr) 5.5rem;
+    }
+
+    .vd-skeleton__table-row > :nth-child(3),
+    .vd-skeleton__table-row > :nth-child(5) {
+        display: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vd-content-loading {
+        padding-top: 0.25rem;
+    }
+
+    .vd-skeleton {
+        gap: 1rem;
+    }
+
+    .vd-skeleton__heading {
+        align-items: flex-start;
+    }
+
+    .vd-skeleton__heading > div {
+        width: 70%;
+    }
+
+    .vd-skeleton__heading > .vd-skeleton__button {
+        width: 5.5rem;
+    }
+
+    .vd-skeleton__stats,
+    .vd-skeleton--analytics .vd-skeleton__stats,
+    .vd-skeleton__card-grid,
+    .vd-skeleton__chart-grid,
+    .vd-skeleton__list,
+    .vd-skeleton__form {
+        grid-template-columns: 1fr;
+    }
+
+    .vd-skeleton__filters {
+        grid-template-columns: 1fr 1fr;
+        padding: 0.9rem;
+    }
+
+    .vd-skeleton__table-row {
+        gap: 0.75rem;
+        grid-template-columns: 2.6rem minmax(0, 1fr) 4.5rem;
+        padding-inline: 0.9rem;
+    }
+
+    .vd-skeleton__chart-block {
+        height: 11rem;
     }
 }

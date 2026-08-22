@@ -10,7 +10,8 @@ use PHPMailer\PHPMailer\Exception;
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
-function getMailConfig() {
+function getMailConfig()
+{
     $useMailtrap = filter_var($_ENV['USE_MAILTRAP'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
     if ($useMailtrap) {
@@ -31,16 +32,19 @@ function getMailConfig() {
 }
 
 // ── Load a single template from emailTemplates.php ──
-function getEmailTemplate($key) {
+function getEmailTemplate($key)
+{
     $templates = require __DIR__ . '/emailTemplates.php';
     return $templates[$key] ?? null;
 }
-function getEmailBranding(): array {
+function getEmailBranding(): array
+{
     static $branding;
     return $branding ??= vdLoadSiteBranding();
 }
 
-function getEmbeddableEmailLogo(array $branding): ?array {
+function getEmbeddableEmailLogo(array $branding): ?array
+{
     $filename = vdSiteLogoFilename($branding);
     if ($filename === '') return null;
 
@@ -59,7 +63,8 @@ function getEmbeddableEmailLogo(array $branding): ?array {
     ];
 }
 
-function addEmailBrandLogo(PHPMailer $mail, array $branding): bool {
+function addEmailBrandLogo(PHPMailer $mail, array $branding): bool
+{
     $logo = getEmbeddableEmailLogo($branding);
     if (!$logo) return false;
 
@@ -71,7 +76,8 @@ function addEmailBrandLogo(PHPMailer $mail, array $branding): bool {
     }
 }
 
-function buildEmailBrandHeader(array $branding, bool $hasEmbeddedLogo): string {
+function buildEmailBrandHeader(array $branding, bool $hasEmbeddedLogo): string
+{
     if ($hasEmbeddedLogo) {
         $alt = htmlspecialchars(vdBrandFullName($branding), ENT_QUOTES, 'UTF-8');
         return '<img src="cid:site-logo" alt="' . $alt . '" style="display:block; max-width:240px; max-height:100px; width:auto; height:auto; margin:0 auto;">';
@@ -86,7 +92,8 @@ function buildEmailBrandHeader(array $branding, bool $hasEmbeddedLogo): string {
 }
 
 // ── Shared gold/cream email HTML shell ──
-function buildEmailHtml($toName, $template, $value, ?array $branding = null, bool $hasEmbeddedLogo = false) {
+function buildEmailHtml($toName, $template, $value, ?array $branding = null, bool $hasEmbeddedLogo = false)
+{
     $branding ??= getEmailBranding();
     return '
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
@@ -117,7 +124,8 @@ function buildEmailHtml($toName, $template, $value, ?array $branding = null, boo
 }
 
 // ── Generic sender: looks up a template by key, sends it with $value as the highlighted code/status ──
-function sendTemplateEmail($toEmail, $toName, $templateKey, $value) {
+function sendTemplateEmail($toEmail, $toName, $templateKey, $value)
+{
     $template = getEmailTemplate($templateKey);
 
     if (!$template) {
@@ -166,7 +174,6 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value) {
 
         $mail->send();
         return ['success' => true];
-
     } catch (Exception $e) {
         error_log("Mailer error ($templateKey): " . $mail->ErrorInfo);
         return ['success' => false, 'message' => $mail->ErrorInfo];
@@ -174,14 +181,16 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value) {
 }
 
 // ── Backward-compatible wrapper: existing register / forgot-password OTP calls keep working unchanged ──
-function sendOTPEmail($toEmail, $toName, $otp, $type = 'register') {
+function sendOTPEmail($toEmail, $toName, $otp, $type = 'register')
+{
     $templateKey = $type === 'register' ? 'register' : 'forgot_password';
     return sendTemplateEmail($toEmail, $toName, $templateKey, $otp);
 }
 
 // ── Credentials email shell: same gold/cream look, but shows two rows
 //    (Username + Password) instead of the single big code box used by OTPs ──
-function buildCredentialsEmailHtml($toName, $template, $email, $password, ?array $branding = null, bool $hasEmbeddedLogo = false) {
+function buildCredentialsEmailHtml($toName, $template, $email, $password, ?array $branding = null, bool $hasEmbeddedLogo = false)
+{
     $branding ??= getEmailBranding();
     return '
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
@@ -218,7 +227,8 @@ function buildCredentialsEmailHtml($toName, $template, $email, $password, ?array
 }
 
 // ── New: dental assistant account-created notification (used by Admin "New Account") ──
-function sendStaffAccountEmail($toEmail, $toName, $password) {
+function sendStaffAccountEmail($toEmail, $toName, $password)
+{
     $template = getEmailTemplate('staff_account_created');
 
     if (!$template) {
@@ -259,7 +269,6 @@ function sendStaffAccountEmail($toEmail, $toName, $password) {
 
         $mail->send();
         return ['success' => true];
-
     } catch (Exception $e) {
         error_log("Mailer error (staff_account_created): " . $mail->ErrorInfo);
         return ['success' => false, 'message' => $mail->ErrorInfo];
