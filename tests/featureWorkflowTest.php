@@ -50,6 +50,7 @@ try {
     expectTrue(count($appointmentServiceDetails[(int)$booking['appointment_id']]??[])===1,'Appointment details include the selected service card data.');
     $hasDeposit=(int)$conn->query('SELECT COUNT(*) FROM appointment_deposits WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn(); expectTrue($hasDeposit===0,'No deposit exists before staff acceptance.');
     $accepted=$appointments->updateAppointmentStatus($booking['appointment_id'],'Awaiting Deposit',$staffId); expectTrue($accepted['success'],'Staff accepts the request for payment.');
+    expectTrue(($accepted['notification']['status'] ?? '') === 'Pending','Acceptance queues the patient email without contacting SMTP.');
     $deposit=$conn->query('SELECT * FROM appointment_deposits WHERE appointment_id='.(int)$booking['appointment_id'])->fetch(PDO::FETCH_ASSOC);
     expectTrue((float)$deposit['amount']===400.0 && $deposit['status']==='Awaiting Submission','Acceptance creates the fixed ₱400 deposit and deadline.');
     $reference='TEST'.date('YmdHis').random_int(100,999);
@@ -59,6 +60,7 @@ try {
     $depositRecord=array_values(array_filter($deposits->getAllRecords(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
     expectTrue($depositRecord&&$depositRecord['deposit_status']==='Under Review','The read-only deposit records query includes the pending payment.');
     $verified=$deposits->verify((int)$deposit['deposit_id'],$staffId); expectTrue($verified['success'] && str_starts_with($verified['appointment_code'],'AVC-'),'Verification confirms the appointment and generates its code.');
+    expectTrue(($verified['notification']['status'] ?? '') === 'Pending','Verification queues the appointment-code email.');
     $matches=$logbook->lookupToday($verified['appointment_code']); expectTrue(count($matches)===1,'The appointment code finds today’s confirmed appointment.');
     expectTrue(count($logbook->lookupToday('Workflow Patient'))===0,'Patient names cannot be used to search Today’s Logbook for check-in.');
     $checkin=$logbook->checkIn($booking['appointment_id'],$staffId,'Code'); expectTrue($checkin['success'] && $checkin['status']==='Profile Required','First-time patient is checked in with Profile Required.');

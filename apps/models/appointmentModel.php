@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/auditLogModel.php';
+require_once __DIR__ . '/emailNotificationModel.php';
 
 class Appointment {
     private $conn;
     private $auditLog;
+    private $emailNotifications;
 
     public function __construct($conn) 
     {
         $this->conn = $conn;
         $this->auditLog = new AuditLog($conn);
+        $this->emailNotifications = new EmailNotificationModel($conn);
     }
 
     public function getServiceDetailsForAppointments(array $appointmentIds): array {
@@ -613,6 +616,23 @@ class Appointment {
                 $actor
             );
 
+            // Queue notification inside the same transaction as the status
+            // change. A separate browser request handles the slow SMTP call.
+            $notification = null;
+            $notificationTemplates = [
+                'Awaiting Deposit' => 'appointment_awaiting_deposit',
+                'Rejected' => 'appointment_rejected',
+                'Cancelled' => 'appointment_cancelled',
+            ];
+            if (isset($notificationTemplates[$status])) {
+                $notification = $this->emailNotifications->enqueueAppointmentTemplate(
+                    (int) $appointment_id,
+                    $notificationTemplates[$status],
+                    trim($reason) !== '' ? trim($reason) : $status,
+                    'audit:' . $audit['audit_log_id'] . ':' . $notificationTemplates[$status]
+                );
+            }
+
             // Commit the transaction now that all updates and side-effects are done.
             $this->conn->commit();
 
@@ -629,6 +649,11 @@ class Appointment {
                     'performed_by_role' => $actor['role'],
                     'performed_at' => $audit['performed_at'],
                 ],
+                'appointment' => [
+                    'id' => (int) $appointment_id,
+                    'status' => $status,
+                ],
+                'notification' => $notification,
             ];
 
         } catch (Throwable $e) {

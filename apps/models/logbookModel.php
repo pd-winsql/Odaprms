@@ -2,16 +2,19 @@
 
 require_once __DIR__ . '/auditLogModel.php';
 
-class LogbookModel {
+class LogbookModel
+{
     private $conn;
     private $auditLog;
 
-    public function __construct($conn) {
+    public function __construct($conn)
+    {
         $this->conn = $conn;
         $this->auditLog = new AuditLog($conn);
     }
 
-    private function baseLogbookQuery(): string {
+    private function baseLogbookQuery(): string
+    {
         return "
             SELECT
                 a.appointment_id,
@@ -60,7 +63,8 @@ class LogbookModel {
         ";
     }
 
-    public function getForDate($date): array {
+    public function getForDate($date): array
+    {
         $stmt = $this->conn->prepare($this->baseLogbookQuery() . "
             WHERE a.date = :date
               AND (
@@ -88,11 +92,13 @@ class LogbookModel {
         return $this->annotateQueue($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    public function getToday(): array {
+    public function getToday(): array
+    {
         return $this->getForDate(date('Y-m-d'));
     }
 
-    private function annotateQueue(array $rows): array {
+    private function annotateQueue(array $rows): array
+    {
         $position = 0;
         foreach ($rows as &$row) {
             $eligible = $row['appointment_status'] === 'Checked In'
@@ -106,7 +112,8 @@ class LogbookModel {
         return $rows;
     }
 
-    private function getNextReadyAppointmentId(bool $forUpdate = false): ?int {
+    private function getNextReadyAppointmentId(bool $forUpdate = false): ?int
+    {
         $sql = "
             SELECT a.appointment_id
             FROM appointments a
@@ -129,14 +136,16 @@ class LogbookModel {
         return $value === false ? null : (int) $value;
     }
 
-    public function getNextPatient(): ?array {
+    public function getNextPatient(): ?array
+    {
         foreach ($this->getToday() as $row) {
             if ($row['is_next']) return $row;
         }
         return null;
     }
 
-    private function queueRecordForUpdate(int $appointmentId): ?array {
+    private function queueRecordForUpdate(int $appointmentId): ?array
+    {
         $stmt = $this->conn->prepare("
             SELECT a.appointment_id, a.status AS appointment_status, a.date,
                    p.firstname, p.lastname, p.profile_status,
@@ -152,21 +161,25 @@ class LogbookModel {
         return $row ?: null;
     }
 
-    private function validateQueueReason(string $reason): ?string {
+    private function validateQueueReason(string $reason): ?string
+    {
         $reason = trim($reason);
         if (strlen($reason) < 3) return null;
         return substr($reason, 0, 255);
     }
 
-    public function placeOnHold(int $appointmentId, int $userId, string $reason): array {
+    public function placeOnHold(int $appointmentId, int $userId, string $reason): array
+    {
         $reason = $this->validateQueueReason($reason);
         if ($reason === null) return ['success' => false, 'message' => 'A short reason is required to place the patient on hold.'];
 
         try {
             $this->conn->beginTransaction();
             $record = $this->queueRecordForUpdate($appointmentId);
-            if (!$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
-                || $record['checkin_status'] !== 'Ready' || $record['queue_status'] !== 'Waiting') {
+            if (
+                !$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
+                || $record['checkin_status'] !== 'Ready' || $record['queue_status'] !== 'Waiting'
+            ) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Only a ready patient in today\'s active queue can be placed on hold.'];
             }
@@ -186,9 +199,15 @@ class LogbookModel {
 
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
-            $this->auditLog->record('appointment', $appointmentId, 'queue_placed_on_hold',
+            $this->auditLog->record(
+                'appointment',
+                $appointmentId,
+                'queue_placed_on_hold',
                 "Placed appointment #{$appointmentId} on hold in the patient queue.",
-                ['queue_status' => 'Waiting'], ['queue_status' => 'On Hold', 'reason' => $reason], $actor);
+                ['queue_status' => 'Waiting'],
+                ['queue_status' => 'On Hold', 'reason' => $reason],
+                $actor
+            );
             $this->conn->commit();
             return ['success' => true, 'message' => 'Patient placed on hold. The next ready patient is now first in queue.'];
         } catch (Throwable $e) {
@@ -198,12 +217,15 @@ class LogbookModel {
         }
     }
 
-    public function returnToQueue(int $appointmentId, int $userId): array {
+    public function returnToQueue(int $appointmentId, int $userId): array
+    {
         try {
             $this->conn->beginTransaction();
             $record = $this->queueRecordForUpdate($appointmentId);
-            if (!$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
-                || $record['queue_status'] !== 'On Hold') {
+            if (
+                !$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
+                || $record['queue_status'] !== 'On Hold'
+            ) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Only an on-hold patient from today can return to the queue.'];
             }
@@ -217,9 +239,15 @@ class LogbookModel {
 
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
-            $this->auditLog->record('appointment', $appointmentId, 'queue_returned',
+            $this->auditLog->record(
+                'appointment',
+                $appointmentId,
+                'queue_returned',
                 "Returned appointment #{$appointmentId} to the patient queue.",
-                ['queue_status' => 'On Hold'], ['queue_status' => 'Waiting'], $actor);
+                ['queue_status' => 'On Hold'],
+                ['queue_status' => 'Waiting'],
+                $actor
+            );
             $this->conn->commit();
             return ['success' => true, 'message' => 'Patient returned to the end of the normal queue.'];
         } catch (Throwable $e) {
@@ -229,15 +257,18 @@ class LogbookModel {
         }
     }
 
-    public function serveNext(int $appointmentId, int $userId, string $reason): array {
+    public function serveNext(int $appointmentId, int $userId, string $reason): array
+    {
         $reason = $this->validateQueueReason($reason);
         if ($reason === null) return ['success' => false, 'message' => 'A reason is required to serve this patient next.'];
 
         try {
             $this->conn->beginTransaction();
             $record = $this->queueRecordForUpdate($appointmentId);
-            if (!$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
-                || $record['checkin_status'] !== 'Ready' || $record['queue_status'] !== 'Waiting') {
+            if (
+                !$record || $record['date'] !== date('Y-m-d') || $record['appointment_status'] !== 'Checked In'
+                || $record['checkin_status'] !== 'Ready' || $record['queue_status'] !== 'Waiting'
+            ) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Only a ready patient in today\'s active queue can be served next.'];
             }
@@ -262,9 +293,15 @@ class LogbookModel {
 
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
-            $this->auditLog->record('appointment', $appointmentId, 'queue_serve_next',
+            $this->auditLog->record(
+                'appointment',
+                $appointmentId,
+                'queue_serve_next',
                 "Selected appointment #{$appointmentId} to be served next.",
-                null, ['serve_next' => true, 'reason' => $reason], $actor);
+                null,
+                ['serve_next' => true, 'reason' => $reason],
+                $actor
+            );
             $this->conn->commit();
             return ['success' => true, 'message' => 'Patient selected to be served next.'];
         } catch (Throwable $e) {
@@ -274,7 +311,8 @@ class LogbookModel {
         }
     }
 
-    public function lookupToday(string $term): array {
+    public function lookupToday(string $term): array
+    {
         $term = strtoupper(trim($term));
         if (!preg_match('/^AVC-[A-Z0-9]+$/', $term)) return [];
         $sql = $this->baseLogbookQuery() . "
@@ -290,7 +328,8 @@ class LogbookModel {
         return $rows;
     }
 
-    public function checkIn($appointmentId, $userId, string $lookupMethod = 'Code'): array {
+    public function checkIn($appointmentId, $userId, string $lookupMethod = 'Code'): array
+    {
         try {
             $this->conn->beginTransaction();
             $stmt = $this->conn->prepare("
@@ -319,8 +358,10 @@ class LogbookModel {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Only confirmed appointments can be checked in.'];
             }
-            if ((int) $appointment['deposit_required'] === 1
-                && !in_array($appointment['deposit_status'], ['Verified', 'Transferred'], true)) {
+            if (
+                (int) $appointment['deposit_required'] === 1
+                && !in_array($appointment['deposit_status'], ['Verified', 'Transferred'], true)
+            ) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'The appointment deposit has not been verified.'];
             }
@@ -398,7 +439,8 @@ class LogbookModel {
         }
     }
 
-    public function markReadyAfterProfile($patientId): void {
+    public function markReadyAfterProfile($patientId): void
+    {
         $stmt = $this->conn->prepare("
             UPDATE appointment_checkins ci
             JOIN appointments a ON a.appointment_id = ci.appointment_id

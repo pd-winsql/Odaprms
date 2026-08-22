@@ -35,7 +35,6 @@ function getEmailTemplate($key) {
     $templates = require __DIR__ . '/emailTemplates.php';
     return $templates[$key] ?? null;
 }
-
 function getEmailBranding(): array {
     static $branding;
     return $branding ??= vdLoadSiteBranding();
@@ -140,6 +139,10 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value) {
         $mail->Password   = $config['password'];
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = $config['port'];
+        // Browser-triggered delivery should fail quickly and retry later instead
+        // of holding a background request for minutes when SMTP is unavailable.
+        $mail->Timeout    = 15;
+        $mail->Timelimit  = 20;
 
         $mail->setFrom($_ENV['MAIL_FROM_ADDRESS'], $_ENV['MAIL_FROM_NAME']);
         $mail->addAddress($toEmail, $toName);
@@ -261,32 +264,4 @@ function sendStaffAccountEmail($toEmail, $toName, $password) {
         error_log("Mailer error (staff_account_created): " . $mail->ErrorInfo);
         return ['success' => false, 'message' => $mail->ErrorInfo];
     }
-}
-
-// ── New: appointment status notification (used by admin "Save & Notify") ──
-function sendAppointmentStatusEmail($toEmail, $toName, $status, $detail = '') {
-    $map = [
-        'Pending'   => 'appointment_pending',
-        'Confirmed' => 'appointment_confirmed',
-        'Cancelled' => 'appointment_cancelled',
-        'Awaiting Deposit' => 'appointment_awaiting_deposit',
-        'Rejected' => 'appointment_rejected',
-    ];
-
-    $templateKey = $map[$status] ?? null;
-
-    if (!$templateKey) {
-        // e.g. 'Completed' has no email template yet — don't error, just skip sending
-        return ['success' => true, 'skipped' => true];
-    }
-
-    return sendTemplateEmail($toEmail, $toName, $templateKey, $detail !== '' ? $detail : $status);
-}
-
-function sendPaymentRejectedEmail($toEmail, $toName, $reason) {
-    return sendTemplateEmail($toEmail, $toName, 'payment_rejected', $reason);
-}
-
-function sendAppointmentCodeEmail($toEmail, $toName, $code) {
-    return sendTemplateEmail($toEmail, $toName, 'appointment_confirmed_code', $code);
 }

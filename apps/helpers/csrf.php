@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // apps/helpers/csrf.php
 // Simple CSRF helper functions. Keep these intentionally small and easy to read.
 

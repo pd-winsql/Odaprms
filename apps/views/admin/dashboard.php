@@ -20,6 +20,8 @@ if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
     exit;
 }
 
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
+
 $db   = new Database();
 $conn = $db->connect();
 
@@ -181,7 +183,7 @@ $today = date('l, F j Y');
     <script src="../../../public/js/admin-analytics.js?v=5"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
-        window.showToast = function(message, success = true) {
+        window.showToast = function(message, success = true, duration = 4000) {
             const toast = document.getElementById('globalToast');
             const msgEl = document.getElementById('globalToastMsg');
             if (!toast || !msgEl) return;
@@ -192,7 +194,7 @@ $today = date('l, F j Y');
             window._globalToastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.classList.add('d-none'), 250);
-            }, 3000);
+            }, duration);
         };
 
         const sidebar        = document.getElementById('sidebar');
@@ -292,6 +294,14 @@ $today = date('l, F j Y');
             }
         });
     </script>
+
+    <script>
+        window.emailNotificationDeliveryConfig = {
+            endpoint: '../../controllers/emailNotificationController.php',
+            csrfToken: <?= json_encode($_SESSION['csrf_token']) ?>
+        };
+    </script>
+    <script src="../../../public/js/email-notification-delivery.js?v=1"></script>
 
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

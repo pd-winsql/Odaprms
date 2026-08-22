@@ -3,9 +3,10 @@ require_once '../models/appointmentModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../helpers/csrf.php';
-require_once '../../config/mailer.php';
 
-session_start();
+// The CSRF helper may have already opened the session. Starting it only when
+// needed keeps PHP notices out of JSON responses consumed by fetch().
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 class AppointmentController {
     private $appointmentModel;
@@ -117,8 +118,6 @@ class AppointmentController {
             }
             $appointment_id = $_POST['appointment_id'] ?? '';
             $status         = $_POST['status'] ?? '';
-            $email          = trim($_POST['email'] ?? '');
-            $name           = trim($_POST['name'] ?? '');
             $reason         = trim($_POST['reason'] ?? '');
 
             if (!$appointment_id || !$status) {
@@ -136,13 +135,10 @@ class AppointmentController {
             if ($result['success']) {
                 $message = $result['message'];
 
-                // Notify the patient of their new status, if we have their email on hand
-                if (($result['changed'] ?? false) && $email && $name) {
-                    $emailResult = sendAppointmentStatusEmail($email, $name, $status, $reason);
-                    if (!$emailResult['success']) {
-                        // inform the caller that the status was updated but notification failed.
-                        $message = 'Status updated, but the notification email failed to send.';
-                    }
+                // Email is now queued by the model inside the status transaction,
+                // so this response is not delayed by the SMTP connection.
+                if (!empty($result['notification'])) {
+                    $message .= ' Patient notification scheduled.';
                 }
 
                 echo json_encode([
@@ -150,6 +146,8 @@ class AppointmentController {
                     'changed' => $result['changed'] ?? false,
                     'message' => $message,
                     'audit' => $result['audit'] ?? null,
+                    'appointment' => $result['appointment'] ?? null,
+                    'notification' => $result['notification'] ?? null,
                 ]);
             } else {
                 echo json_encode(['success' => false, 'message' => $result['message']]);

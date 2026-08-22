@@ -464,6 +464,14 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         console.warn('showToast not available:', msg);
     }
 
+    function deliverQueuedNotification(notification) {
+        // Status/payment requests finish first. This separate browser request
+        // sends the queued email without delaying the visible staff action.
+        if (notification?.id) {
+            window.EmailNotificationDelivery?.deliver(notification.id);
+        }
+    }
+
     function updateStatusPill(id, newStatus) {
         const pill = document.getElementById('pill-' + id);
         if (!pill) return;
@@ -475,6 +483,50 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const cell = document.getElementById('audit-' + id);
         if (!cell || !audit) return;
         renderActivityCard(cell, audit, document.getElementById('pill-' + id)?.textContent.trim() || 'Updated');
+    }
+
+    function applyAppointmentResult(id, newStatus, audit, updates = {}) {
+        const row = document.querySelector(`tr[data-id="${CSS.escape(String(id))}"]`);
+        if (!row) return;
+
+        // Update only the affected row. This avoids downloading and rebuilding
+        // the complete appointment list after a successful action.
+        row.dataset.status = newStatus;
+        updateStatusPill(id, newStatus);
+        updateStatusAudit(id, audit);
+
+        const detailsButton = row.querySelector('.vd-action-group > .vd-appointment-details-btn[title]');
+        if (detailsButton?.dataset.appointmentDetails) {
+            try {
+                const details = JSON.parse(detailsButton.dataset.appointmentDetails);
+                details.status = newStatus;
+                details.activity = audit ? {
+                    name: audit.performed_by_name,
+                    role: audit.performed_by_role,
+                    at: audit.performed_at,
+                    status: newStatus
+                } : details.activity;
+                if (updates.appointmentCode) details.appointmentCode = updates.appointmentCode;
+                if (details.deposit && updates.depositStatus) details.deposit.status = updates.depositStatus;
+                detailsButton.dataset.appointmentDetails = JSON.stringify(details);
+            } catch (error) {
+                console.warn('Unable to refresh cached appointment details.', error);
+            }
+        }
+
+        // Remove action buttons that belong to the old state. The persistent
+        // details button remains available; a normal refresh restores all new
+        // state-specific actions when the staff member needs another action.
+        const actionGroup = row.querySelector('.vd-action-group');
+        actionGroup?.querySelectorAll('button').forEach(actionButton => {
+            if (actionButton !== detailsButton) actionButton.remove();
+        });
+
+        // Reapply the current client-side filter so a row whose status changed
+        // disappears when it no longer matches, without a server reload.
+        const table = row.closest('table');
+        const toggleId = table?.id === 'upcomingApptTable' ? 'upcomingStatusToggles' : 'pastStatusToggles';
+        document.querySelector(`#${toggleId} .vd-status-toggle-btn.active`)?.click();
     }
 
     function formatDateTime(value, dateOnly = false) {
@@ -862,9 +914,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
             const result = await response.json();
             if (!result.success) throw new Error(result.message || 'Failed to update the appointment.');
+            applyAppointmentResult(id, result.appointment?.status || newStatus, result.audit);
+            deliverQueuedNotification(result.notification);
             bootstrap.Modal.getInstance(document.getElementById('appointmentDetailsModal'))?.hide();
             showToast(result.message || `Status updated to ${newStatus}.`, true);
-            reloadAppointments();
         } catch (error) {
             LoadingUI.setButton(button, false);
             showToast(error.message || 'Unable to update the appointment.', false);
@@ -885,13 +938,24 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             fields: approving ? [] : [{ name: 'reason', label: 'Reason shown to the patient', multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255 }]
         });
         if (!confirmation.confirmed) return;
-        LoadingUI.setButton(button, true, approving ? 'Approving...' : 'Rejecting...');
+        LoadingUI.setButton(button, true, approving ? 'Confirming payment…' : 'Rejecting payment…');
         try {
             const fields = { deposit_id: payload.deposit.id };
             if (!approving) fields.reason = confirmation.values.reason;
-            await depositAction(action, fields);
+            const result = await depositAction(action, fields, false);
+            applyAppointmentResult(
+                payload.appointmentId,
+                result.appointment?.status || (approving ? 'Confirmed' : 'Awaiting Deposit'),
+                result.audit,
+                { appointmentCode: result.appointment_code, depositStatus: result.deposit_status }
+            );
             bootstrap.Modal.getInstance(document.getElementById('appointmentDetailsModal'))?.hide();
-            reloadAppointments();
+            const message = result.notification
+                ? (approving
+                    ? 'Payment verified. Patient notification scheduled.'
+                    : 'Payment rejected. Patient notification scheduled.')
+                : result.message;
+            showToast(message, true);
         } catch (error) {
             LoadingUI.setButton(button, false);
             showToast(error.message, false);
@@ -985,6 +1049,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             const result   = await response.json();
 
             if (result.success) {
+            deliverQueuedNotification(result.notification);
             updateStatusPill(id, newStatus);
             updateStatusAudit(id, result.audit);
             row.dataset.status = newStatus;
@@ -1004,9 +1069,9 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         });
     });
 
-    async function depositAction(action, fields) {
+    async function depositAction(action, fields, showSuccess = true) {
         const body=new FormData();body.append('action',action);body.append('csrf_token',CSRF_TOKEN);Object.entries(fields).forEach(([key,value])=>body.append(key,value));
-        const response=await fetch(DEPOSIT_CONTROLLER,{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);showToast(result.message,true);return result;
+        const response=await fetch(DEPOSIT_CONTROLLER,{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);deliverQueuedNotification(result.notification);if(showSuccess)showToast(result.message,true);return result;
     }
     document.querySelectorAll('[data-extend-deadline]').forEach(button => button.addEventListener('click', async () => {
         const response = await window.showActionModal({

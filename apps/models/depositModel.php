@@ -1,14 +1,17 @@
 <?php
 
 require_once __DIR__ . '/auditLogModel.php';
+require_once __DIR__ . '/emailNotificationModel.php';
 
 class DepositModel {
     private $conn;
     private $auditLog;
+    private $emailNotifications;
 
     public function __construct($conn) {
         $this->conn = $conn;
         $this->auditLog = new AuditLog($conn);
+        $this->emailNotifications = new EmailNotificationModel($conn);
     }
 
     private function generateAppointmentCode(): string {
@@ -320,18 +323,6 @@ class DepositModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function getNotificationDetails(int $depositId) {
-        $stmt = $this->conn->prepare("
-            SELECT p.email, p.firstname, p.lastname, a.appointment_code
-            FROM appointment_deposits d
-            JOIN appointments a ON a.appointment_id = d.appointment_id
-            JOIN patients p ON p.patient_id = a.patient_id
-            WHERE d.deposit_id = :deposit_id
-        ");
-        $stmt->execute([':deposit_id' => $depositId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
     public function verify($depositId, $userId): array {
         try {
             $this->conn->beginTransaction();
@@ -368,7 +359,7 @@ class DepositModel {
             ");
             $appointmentUpdate->execute([':appointment_id' => $row['appointment_id'], ':appointment_code' => $appointmentCode]);
 
-            $this->auditLog->record(
+            $audit = $this->auditLog->record(
                 'appointment',
                 (int) $row['appointment_id'],
                 'status_changed',
@@ -378,8 +369,30 @@ class DepositModel {
                 $actor
             );
 
+            // Store the confirmation email before commit so a confirmed
+            // payment always has a durable notification for browser delivery.
+            $notification = $this->emailNotifications->enqueueAppointmentTemplate(
+                (int) $row['appointment_id'],
+                'appointment_confirmed_code',
+                $appointmentCode,
+                'audit:' . $audit['audit_log_id'] . ':appointment_confirmed_code'
+            );
+
             $this->conn->commit();
-            return ['success' => true, 'message' => 'Payment verified and appointment confirmed.', 'appointment_code' => $appointmentCode, 'appointment_id' => (int) $row['appointment_id']];
+            return [
+                'success' => true,
+                'message' => 'Payment verified and appointment confirmed.',
+                'appointment_code' => $appointmentCode,
+                'appointment_id' => (int) $row['appointment_id'],
+                'appointment' => ['id' => (int) $row['appointment_id'], 'status' => 'Confirmed'],
+                'deposit_status' => 'Verified',
+                'notification' => $notification,
+                'audit' => [
+                    'performed_by_name' => $actor['name'],
+                    'performed_by_role' => $actor['role'],
+                    'performed_at' => $audit['performed_at'],
+                ],
+            ];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log('verify deposit error: ' . $e->getMessage());
@@ -432,7 +445,7 @@ class DepositModel {
                 WHERE appointment_id = :appointment_id
             ")->execute([':appointment_id' => $row['appointment_id']]);
 
-            $this->auditLog->record(
+            $audit = $this->auditLog->record(
                 'appointment',
                 (int) $row['appointment_id'],
                 'payment_rejected',
@@ -442,8 +455,29 @@ class DepositModel {
                 $actor
             );
 
+            // A rejected receipt may be submitted again later. Using the audit
+            // id gives each genuine review its own deduplicated notification.
+            $notification = $this->emailNotifications->enqueueAppointmentTemplate(
+                (int) $row['appointment_id'],
+                'payment_rejected',
+                $reason,
+                'audit:' . $audit['audit_log_id'] . ':payment_rejected'
+            );
+
             $this->conn->commit();
-            return ['success' => true, 'message' => 'Payment rejected. The patient has eight hours to resubmit.'];
+            return [
+                'success' => true,
+                'message' => 'Payment rejected. The patient has eight hours to resubmit.',
+                'appointment_id' => (int) $row['appointment_id'],
+                'appointment' => ['id' => (int) $row['appointment_id'], 'status' => 'Awaiting Deposit'],
+                'deposit_status' => 'Rejected',
+                'notification' => $notification,
+                'audit' => [
+                    'performed_by_name' => $actor['name'],
+                    'performed_by_role' => $actor['role'],
+                    'performed_at' => $audit['performed_at'],
+                ],
+            ];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log('reject deposit error: ' . $e->getMessage());
@@ -476,8 +510,18 @@ class DepositModel {
             $this->conn->prepare("UPDATE appointment_deposits SET status='Transferred',transferred_by_user_id=:user,transferred_at=NOW(),transfer_reason=:reason WHERE deposit_id=:id")->execute([':user'=>$userId,':reason'=>trim($reason)?:'Transferred to a newly accepted appointment.',':id'=>$source['deposit_id']]);
             $this->conn->prepare("UPDATE appointment_deposits SET status='Verified',amount=:amount,verified_by_user_id=:user,verified_at=NOW(),transferred_from_appointment_id=:source,transferred_by_user_id=:user2,transferred_at=NOW(),transfer_reason=:reason WHERE deposit_id=:id")->execute([':amount'=>$source['amount'],':user'=>$userId,':source'=>$sourceAppointmentId,':user2'=>$userId,':reason'=>trim($reason)?:'Transferred from prior appointment.',':id'=>$target['deposit_id']]);
             $this->conn->prepare("UPDATE appointments SET status='Confirmed',confirmed_at=NOW(),appointment_code=:code,code_generated_at=NOW() WHERE appointment_id=:id")->execute([':code'=>$code,':id'=>$targetAppointmentId]);
-            $actor=$this->auditLog->getUserActor($userId);$this->auditLog->record('appointment',$targetAppointmentId,'deposit_transferred',"Transferred a verified deposit from appointment #{$sourceAppointmentId}.",null,['source_appointment_id'=>$sourceAppointmentId,'appointment_code'=>$code],$actor);
-            $this->conn->commit();return ['success'=>true,'message'=>'Deposit transferred and the new appointment confirmed.','appointment_code'=>$code,'deposit_id'=>(int)$target['deposit_id']];
+            $actor=$this->auditLog->getUserActor($userId);$audit=$this->auditLog->record('appointment',$targetAppointmentId,'deposit_transferred',"Transferred a verified deposit from appointment #{$sourceAppointmentId}.",null,['source_appointment_id'=>$sourceAppointmentId,'appointment_code'=>$code],$actor);
+
+            // A transferred deposit confirms the target appointment, so its
+            // check-in code is queued just like a normally verified payment.
+            $notification=$this->emailNotifications->enqueueAppointmentTemplate(
+                $targetAppointmentId,
+                'appointment_confirmed_code',
+                $code,
+                'audit:'.$audit['audit_log_id'].':appointment_confirmed_code'
+            );
+
+            $this->conn->commit();return ['success'=>true,'message'=>'Deposit transferred and the new appointment confirmed.','appointment_code'=>$code,'deposit_id'=>(int)$target['deposit_id'],'appointment'=>['id'=>$targetAppointmentId,'status'=>'Confirmed'],'notification'=>$notification];
         }catch(Throwable $e){if($this->conn->inTransaction())$this->conn->rollBack();error_log('transferDeposit error: '.$e->getMessage());return ['success'=>false,'message'=>'Unable to transfer the deposit.'];}
     }
 

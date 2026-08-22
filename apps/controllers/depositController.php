@@ -6,7 +6,6 @@ require_once '../../config/conn.php';
 require_once '../models/depositModel.php';
 require_once '../models/patientModel.php';
 require_once '../helpers/csrf.php';
-require_once '../../config/mailer.php';
 
 class DepositController {
     private $conn;
@@ -119,10 +118,6 @@ class DepositController {
         $userId = $this->requireStaff();
         $depositId = (int) ($_POST['deposit_id'] ?? 0);
         $result = $this->deposits->verify($depositId, $userId);
-        if ($result['success'] ?? false) {
-            $patient = $this->deposits->getNotificationDetails($depositId);
-            if ($patient) sendAppointmentCodeEmail($patient['email'], trim($patient['firstname'] . ' ' . $patient['lastname']), $result['appointment_code']);
-        }
         $this->json($result);
     }
 
@@ -135,15 +130,11 @@ class DepositController {
             $this->json(['success' => false, 'message' => 'Enter a short rejection reason.']);
         }
         $result = $this->deposits->reject($depositId, $userId, $reason);
-        if ($result['success'] ?? false) {
-            $patient = $this->deposits->getNotificationDetails($depositId);
-            if ($patient) sendPaymentRejectedEmail($patient['email'], trim($patient['firstname'] . ' ' . $patient['lastname']), $reason);
-        }
         $this->json($result);
     }
 
     public function extend(): void { $this->requireCsrf(); $user=$this->requireStaff(); $this->json($this->deposits->extendDeadline((int)($_POST['appointment_id']??0),$user,trim($_POST['reason']??''))); }
-    public function transfer(): void { $this->requireCsrf(); $user=$this->requireStaff(); $result=$this->deposits->transferDeposit((int)($_POST['source_appointment_id']??0),(int)($_POST['target_appointment_id']??0),$user,trim($_POST['reason']??'')); if($result['success']??false){$p=$this->deposits->getNotificationDetails($result['deposit_id']);if($p)sendAppointmentCodeEmail($p['email'],trim($p['firstname'].' '.$p['lastname']),$result['appointment_code']);}$this->json($result); }
+    public function transfer(): void { $this->requireCsrf(); $user=$this->requireStaff(); $this->json($this->deposits->transferDeposit((int)($_POST['source_appointment_id']??0),(int)($_POST['target_appointment_id']??0),$user,trim($_POST['reason']??''))); }
     public function refund(): void { $this->requireCsrf(); $user=$this->requireStaff(); $this->json($this->deposits->markRefunded((int)($_POST['appointment_id']??0),$user,trim($_POST['notes']??''))); }
 
     public function receipt(): void {

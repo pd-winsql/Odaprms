@@ -231,7 +231,16 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
                 method: 'POST',
                 body: new FormData(this)
             });
-            const result = await response.json();
+            const responseBody = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseBody);
+            } catch (parseError) {
+                // Do not expose a raw JSON parser message or encourage an
+                // immediate duplicate booking when PHP returned unexpected text.
+                console.error('Unexpected booking response:', responseBody, parseError);
+                throw new Error('The server response could not be read. Check Home or History before submitting again.');
+            }
             if (!result.success) throw new Error(result.message || 'Booking failed.');
             window.showToast('Appointment request submitted for clinic review.', true);
             document.querySelector('[data-page="home-content.php"]')?.click();

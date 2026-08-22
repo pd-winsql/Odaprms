@@ -139,7 +139,7 @@ $today    = date('l, F j Y');
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
-        window.showToast = function(message, success = true) {
+        window.showToast = function(message, success = true, duration = 4000) {
             const toast = document.getElementById('globalToast');
             const msgEl = document.getElementById('globalToastMsg');
             if (!toast || !msgEl) return;
@@ -150,7 +150,7 @@ $today    = date('l, F j Y');
             window._globalToastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.classList.add('d-none'), 250);
-            }, 3000);
+            }, duration);
         };
 
         const sidebar    = document.getElementById('sidebar');
