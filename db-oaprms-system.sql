@@ -980,6 +980,7 @@ ALTER TABLE `patient_medical_history`
 --
 ALTER TABLE `schedules`
   ADD PRIMARY KEY (`schedule_id`),
+  ADD UNIQUE KEY `uq_schedules_sched_date` (`sched_date`),
   ADD KEY `fkclinic_id` (`clinic_id`);
 
 --

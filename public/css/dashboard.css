@@ -2014,6 +2014,47 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
 }
 
 /* Add schedule inline form */
+.vd-schedule-date-input {
+    cursor: pointer;
+}
+
+.vd-schedule-selection-count {
+    margin-top: 6px;
+    color: var(--mid);
+    font-size: 11px;
+}
+
+/* Match the schedule picker to the dashboard palette. */
+.vd-schedule-calendar {
+    z-index: 1065;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 14px 34px rgba(38, 32, 24, 0.16);
+    font-family: "Jost", sans-serif;
+}
+
+.vd-schedule-calendar .flatpickr-months,
+.vd-schedule-calendar .flatpickr-weekdays {
+    background: var(--gold-pale);
+}
+
+.vd-schedule-calendar .flatpickr-day.today {
+    border-color: var(--gold);
+}
+
+.vd-schedule-calendar .flatpickr-day:hover,
+.vd-schedule-calendar .flatpickr-day:focus {
+    border-color: var(--gold-pale);
+    background: var(--gold-pale);
+}
+
+.vd-schedule-calendar .flatpickr-day.selected,
+.vd-schedule-calendar .flatpickr-day.selected:hover,
+.vd-schedule-calendar .flatpickr-day.selected:focus {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: #fff;
+}
 .vd-add-form {
   padding: 14px 20px;
   background: var(--gold-pale);

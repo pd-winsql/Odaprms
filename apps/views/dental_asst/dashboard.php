@@ -49,8 +49,9 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260814-patient-queue-1">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260823-flatpickr-1">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
 </head>
@@ -156,6 +157,7 @@ $today = date('l, F j Y');
     <script src="../../../public/js/action-modal.js?v=3"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/dashboard-tables.js?v=5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
         window.showToast = function(message, success = true, duration = 4000) {

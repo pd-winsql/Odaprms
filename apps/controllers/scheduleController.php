@@ -53,6 +53,7 @@ class ScheduleController {
         // Validate every row before starting the batch insert.
         $schedules = [];
         $seenDates = [];
+        $latestAllowedDate = new DateTimeImmutable('last day of next month');
         foreach ($submittedSchedules as $index => $submittedSchedule) {
             $schedDate = is_array($submittedSchedule) ? ($submittedSchedule['sched_date'] ?? '') : '';
             $maxAppointments = (int) (is_array($submittedSchedule) ? ($submittedSchedule['max_appointments'] ?? 0) : 0);
@@ -64,6 +65,10 @@ class ScheduleController {
             }
             if ($date < new DateTimeImmutable('today')) {
                 echo 'Schedule #' . ($index + 1) . ' cannot be in the past.';
+                exit;
+            }
+            if ($date > $latestAllowedDate) {
+                echo 'Schedules can only be added through the end of next month.';
                 exit;
             }
             if ($maxAppointments < 1 || $maxAppointments > 50) {

@@ -29,6 +29,15 @@ foreach ($clinics as $clinic) {
     }
 }
 $totalAvailable = max(0, $totalCapacity - $totalBooked);
+
+// Build one global blocked-date list because schedules are unique across clinics.
+$occupiedScheduleDates = [];
+foreach ($schedulesByClinic as $clinicSchedules) {
+    foreach ($clinicSchedules as $schedule) {
+        $occupiedScheduleDates[] = $schedule['sched_date'];
+    }
+}
+$occupiedScheduleDates = array_values(array_unique($occupiedScheduleDates));
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
