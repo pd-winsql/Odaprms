@@ -33,32 +33,60 @@ class ScheduleController {
 
     public function addSchedule() {
         $this->requireStaffMutation();
-        header('Content-Type: application/json');
+        header('Content-Type: text/plain');
         $clinic_id = $_POST['clinic_id'] ?? '';
-        $sched_date = $_POST['sched_date'] ?? '';
-        $max_appointments = $_POST['max_appointments'] ?? 8;
+        $submittedSchedules = $_POST['schedules'] ?? null;
 
-        $max_appointments = (int) $max_appointments;
-        $date = DateTimeImmutable::createFromFormat('Y-m-d', $sched_date);
-        if(!$clinic_id || !$date || $date->format('Y-m-d') !== $sched_date) {
-            echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
-            exit;
+        // single-date form request.
+        if (!is_array($submittedSchedules)) {
+            $submittedSchedules = [[
+                'sched_date' => $_POST['sched_date'] ?? '',
+                'max_appointments' => $_POST['max_appointments'] ?? 8,
+            ]];
         }
-        if ($date < new DateTimeImmutable('today')) {
-            echo 'Schedule date cannot be in the past.';
-            exit;
-        }
-        if ($max_appointments < 1 || $max_appointments > 50) {
-            echo 'Maximum appointments must be between 1 and 50.';
-            exit;
-        }
-        // Prevent overlap across all clinics: ensure no other schedule exists on this date.
-        if ($this->schedules->existsScheduleOnDate($sched_date)) {
-            echo 'A schedule already exists for that date.';
+
+        if (!$clinic_id || empty($submittedSchedules) || count($submittedSchedules) > 100) {
+            echo 'Add between 1 and 100 schedules.';
             exit;
         }
 
-        $result = $this->schedules->addSchedule($clinic_id, $sched_date, $max_appointments);
+        // Validate every row before starting the batch insert.
+        $schedules = [];
+        $seenDates = [];
+        foreach ($submittedSchedules as $index => $submittedSchedule) {
+            $schedDate = is_array($submittedSchedule) ? ($submittedSchedule['sched_date'] ?? '') : '';
+            $maxAppointments = (int) (is_array($submittedSchedule) ? ($submittedSchedule['max_appointments'] ?? 0) : 0);
+            $date = DateTimeImmutable::createFromFormat('!Y-m-d', $schedDate);
+
+            if (!$date || $date->format('Y-m-d') !== $schedDate) {
+                echo 'Schedule #' . ($index + 1) . ' has an invalid date.';
+                exit;
+            }
+            if ($date < new DateTimeImmutable('today')) {
+                echo 'Schedule #' . ($index + 1) . ' cannot be in the past.';
+                exit;
+            }
+            if ($maxAppointments < 1 || $maxAppointments > 50) {
+                echo 'Schedule #' . ($index + 1) . ' must have 1 to 50 maximum appointments.';
+                exit;
+            }
+            // Reject duplicate dates within the same submission.
+            if (isset($seenDates[$schedDate])) {
+                echo 'The same date was added more than once.';
+                exit;
+            }
+            // Keep the existing rule that a date can only have one schedule.
+            if ($this->schedules->existsScheduleOnDate($schedDate)) {
+                echo 'A schedule already exists for ' . $date->format('M j, Y') . '.';
+                exit;
+            }
+
+            $seenDates[$schedDate] = true;
+            $schedules[] = ['sched_date' => $schedDate, 'max_appointments' => $maxAppointments];
+        }
+
+        // Insert all validated rows together, or none if the insert fails.
+        $result = $this->schedules->addSchedules($clinic_id, $schedules);
 
         if ($result) {
             echo 'success';

@@ -111,6 +111,39 @@ class Schedule {
         }
     }
 
+    /**
+     * Inserts a validated group of schedules as one database transaction.
+     * Each item must contain sched_date and max_appointments.
+     */
+    public function addSchedules($clinic_id, array $schedules): bool {
+        try {
+            // Keep a bulk submission atomic so partial schedules are never saved.
+            $this->conn->beginTransaction();
+            $insert = $this->conn->prepare(
+                'INSERT INTO schedules (clinic_id, sched_date, max_appointments)
+                 VALUES (:clinic_id, :sched_date, :max_appointments)'
+            );
+
+            // Reuse one prepared statement for each validated schedule row.
+            foreach ($schedules as $schedule) {
+                $insert->execute([
+                    ':clinic_id' => $clinic_id,
+                    ':sched_date' => $schedule['sched_date'],
+                    ':max_appointments' => $schedule['max_appointments'],
+                ]);
+            }
+
+            return $this->conn->commit();
+        } catch (PDOException $e) {
+            // Undo any rows already inserted when one row fails.
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log('addSchedules error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function updateSchedule($schedule_id, $clinic_id, $sched_date, $max_appointments) {
         try {
             $stmt = $this->conn->prepare("UPDATE schedules SET clinic_id = :clinic_id, sched_date = :sched_date, max_appointments = :max_appointments WHERE schedule_id = :schedule_id");

@@ -149,8 +149,7 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value)
         $mail->Port       = $config['port'];
         // Browser-triggered delivery should fail quickly and retry later instead
         // of holding a background request for minutes when SMTP is unavailable.
-        $mail->Timeout    = 15;
-        $mail->Timelimit  = 20;
+        $mail->Timeout = 15;
 
         $mail->setFrom($_ENV['MAIL_FROM_ADDRESS'], $_ENV['MAIL_FROM_NAME']);
         $mail->addAddress($toEmail, $toName);
