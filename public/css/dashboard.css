@@ -3249,11 +3249,27 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
     width: 100%;
 }
 
+/* Dashboard button variants use !important text colors. Keep every action-menu
+   state readable against the menu's light surface. */
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item span {
+    color: #3f3529 !important;
+}
+
 .vd-appt-action-dropdown .vd-appt-menu-item:hover,
-.vd-appt-action-dropdown .vd-appt-menu-item:focus {
+.vd-appt-action-dropdown .vd-appt-menu-item:focus,
+.vd-appt-action-dropdown .vd-appt-menu-item:focus-visible,
+.vd-appt-action-dropdown .vd-appt-menu-item:active {
     background: #f5eddf;
-    color: #4b3b21;
+    color: #3f3529 !important;
     transform: none;
+}
+
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item:hover span,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item:focus span,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item:focus-visible span,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item:active span {
+    color: #3f3529 !important;
 }
 
 .vd-appt-action-dropdown .vd-appt-menu-item i {
@@ -3263,13 +3279,27 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
     text-align: center;
 }
 
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-primary,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-primary span,
 .vd-appt-action-dropdown .vd-appt-menu-primary i {
-    color: var(--gold);
+    color: #76591f !important;
 }
 
-.vd-appt-action-dropdown .vd-appt-menu-danger,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-danger,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-danger span,
 .vd-appt-action-dropdown .vd-appt-menu-danger i {
-    color: #a1483e;
+    color: #9f4138 !important;
+}
+
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item:disabled,
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item:disabled span {
+    color: #746d63 !important;
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-item:disabled {
+    background: transparent;
+    cursor: wait;
+    opacity: .72;
 }
 
 @media (max-width: 767px) {

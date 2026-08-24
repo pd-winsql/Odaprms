@@ -241,14 +241,15 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <div class="dropdown-menu dropdown-menu-end vd-appt-action-dropdown"
                             aria-labelledby="apptActions-<?= (int)$appt['appointment_id'] ?>">
                         <div class="vd-action-group">
-                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn vd-appt-menu-item"
-                            title="View appointment details"
+                        <?php $isPaymentReview = $appt['status'] === 'Payment Under Review'; ?>
+                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn vd-appt-menu-item<?= $isPaymentReview ? ' vd-review-payment-btn vd-appt-menu-primary' : '' ?>"
+                            title="<?= $isPaymentReview ? 'Review payment' : 'View appointment details' ?>"
                             data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">
-                            <i class="ti ti-eye" aria-hidden="true"></i>
-                            <span>View details</span>
+                            <i class="ti <?= $isPaymentReview ? 'ti-receipt' : 'ti-eye' ?>" aria-hidden="true"></i>
+                            <span><?= $isPaymentReview ? 'Review payment' : 'View details' ?></span>
                         </button>
                         <?php if ($appt['status'] === 'Pending Review'): ?>
-                        <button type="button" class="btn vd-btn-gold btn-sm vd-appt-menu-item vd-appt-menu-primary" data-status-action="Awaiting Deposit"
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-primary" data-status-action="Awaiting Deposit"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
                             data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-check" aria-hidden="true"></i><span>Accept appointment</span></button>
@@ -256,9 +257,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
                             data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-x" aria-hidden="true"></i><span>Reject appointment</span></button>
-                        <?php elseif ($appt['status'] === 'Payment Under Review'): ?>
-                        <button type="button" class="btn vd-btn-gold btn-sm vd-appointment-details-btn vd-review-payment-btn vd-appt-menu-item vd-appt-menu-primary"
-                            data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>"><i class="ti ti-receipt" aria-hidden="true"></i><span>Review payment</span></button>
                         <?php elseif ($appt['status'] === 'Awaiting Deposit'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-extend-deadline="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-clock-plus" aria-hidden="true"></i><span>Extend by 8 hours</span></button>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-transfer-deposit="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-arrows-exchange" aria-hidden="true"></i><span>Transfer deposit</span></button>
@@ -276,7 +274,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <?php elseif ($appt['status'] === 'Checked In'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-open-today-queue><i class="ti ti-list-check" aria-hidden="true"></i><span>Manage queue</span></button>
                         <?php elseif ($appt['status'] === 'In Progress'): ?>
-                        <button type="button" class="btn vd-btn-gold btn-sm vd-appt-menu-item vd-appt-menu-primary" data-status-action="Completed"
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-primary" data-status-action="Completed"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
                             data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-circle-check" aria-hidden="true"></i><span>Complete appointment</span></button>
                         <?php elseif ($appt['status'] === 'Cancelled' && ($appt['deposit_status'] ?? '') === 'For Refund'): ?>
@@ -558,6 +556,12 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         // newly confirmed state, without refreshing the appointment content.
         const actionGroup = row.querySelector('.vd-action-group');
         if (actionGroup && detailsButton && details) {
+            detailsButton.classList.remove('vd-review-payment-btn', 'vd-appt-menu-primary');
+            detailsButton.title = 'View appointment details';
+            const detailsIcon = detailsButton.querySelector('i');
+            const detailsLabel = detailsButton.querySelector('span');
+            if (detailsIcon) detailsIcon.className = 'ti ti-eye';
+            if (detailsLabel) detailsLabel.textContent = 'View details';
             actionGroup.replaceChildren(detailsButton);
             renderRowActions(actionGroup, details);
         }
