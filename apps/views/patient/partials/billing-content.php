@@ -21,6 +21,27 @@ $settings = (new SiteSettingsModel($conn))->getSettings();
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 $csrfToken = $_SESSION['csrf_token'];
 
+// Keep the newest usable deposit in the working card through the end of its
+// appointment date (including a visit completed today). Every other deposit
+// belongs in the read-only history.
+$today = date('Y-m-d');
+$inactiveAppointmentStatuses = ['Cancelled', 'No-show', 'Rejected'];
+$terminalDepositStatuses = ['Expired', 'Forfeited', 'Refunded'];
+$currentDeposit = null;
+$previousDeposits = [];
+foreach ($deposits as $deposit) {
+    $isCurrent = $currentDeposit === null
+        && $deposit['date'] >= $today
+        && !in_array($deposit['appointment_status'], $inactiveAppointmentStatuses, true)
+        && !in_array($deposit['deposit_status'], $terminalDepositStatuses, true);
+
+    if ($isCurrent) {
+        $currentDeposit = $deposit;
+    } else {
+        $previousDeposits[] = $deposit;
+    }
+}
+
 function depositStatusClass($status) {
     $key = strtolower(str_replace(' ', '-', $status));
     return 'vd-status vd-status-' . $key;
@@ -37,7 +58,8 @@ function depositStatusClass($status) {
     <?php if (empty($deposits)): ?>
         <div class="vd-dash-card"><div class="vd-empty-state">You have no appointment deposits.</div></div>
     <?php else: ?>
-        <?php foreach ($deposits as $deposit): ?>
+        <?php if ($currentDeposit): ?>
+        <?php foreach ([$currentDeposit] as $deposit): ?>
         <?php
             $canSubmit = in_array($deposit['deposit_status'], ['Awaiting Submission', 'Rejected'], true)
                 && $deposit['appointment_status'] === 'Awaiting Deposit';
@@ -116,6 +138,58 @@ function depositStatusClass($status) {
             </div>
         </div>
         <?php endforeach; ?>
+        <?php else: ?>
+        <div class="vd-dash-card"><div class="vd-empty-state">You have no active appointment deposit.</div></div>
+        <?php endif; ?>
+
+        <div class="vd-dash-card">
+            <div class="vd-dash-card-header">
+                <span class="vd-dash-card-title">Previous deposits</span>
+                <span class="vd-topbar-date"><?= count($previousDeposits) ?> record<?= count($previousDeposits) === 1 ? '' : 's' ?></span>
+            </div>
+            <div class="vd-dash-card-body">
+                <?php if (!$previousDeposits): ?>
+                    <div class="vd-empty-state">No previous deposits yet.</div>
+                <?php else: ?>
+                    <div class="vd-appt-table-wrap">
+                        <table class="vd-appt-table w-100">
+                            <thead>
+                                <tr><th>Appointment</th><th>Deposit</th><th>Status</th><th>Payment activity</th></tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($previousDeposits as $deposit): ?>
+                                <tr>
+                                    <td>
+                                        <div class="vd-appt-name">#<?= (int) $deposit['appointment_id'] ?> · <?= date('M d, Y', strtotime($deposit['date'])) ?></div>
+                                        <div class="vd-appt-meta"><?= htmlspecialchars($deposit['clinic_name']) ?> · <?= htmlspecialchars($deposit['service_name'] ?: 'No service') ?></div>
+                                    </td>
+                                    <td>
+                                        <div class="vd-appt-name">₱<?= number_format((float) $deposit['amount'], 2) ?></div>
+                                        <div class="vd-appt-meta">Ref: <?= htmlspecialchars($deposit['gcash_reference'] ?: 'Not submitted') ?></div>
+                                    </td>
+                                    <td>
+                                        <span class="<?= depositStatusClass($deposit['deposit_status']) ?>"><?= htmlspecialchars($deposit['deposit_status']) ?></span>
+                                        <div class="vd-appt-meta mt-1">Appointment: <?= htmlspecialchars($deposit['appointment_status']) ?></div>
+                                    </td>
+                                    <td>
+                                        <?php if ($deposit['verified_at']): ?>
+                                            <div class="vd-appt-name">Verified</div>
+                                            <div class="vd-appt-meta"><?= date('M d, Y g:i A', strtotime($deposit['verified_at'])) ?></div>
+                                        <?php elseif ($deposit['submitted_at']): ?>
+                                            <div class="vd-appt-name">Submitted</div>
+                                            <div class="vd-appt-meta"><?= date('M d, Y g:i A', strtotime($deposit['submitted_at'])) ?></div>
+                                        <?php else: ?>
+                                            <span class="vd-appt-meta">No submission</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
     <?php endif; ?>
 </div>
 

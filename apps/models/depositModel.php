@@ -157,13 +157,14 @@ class DepositModel {
                 payment.verified_at,
                 payment.payment_rejection_reason AS rejection_reason,
                 payment.resubmission_deadline_at,
-                a.service_name
+                a.service_name,
+                a.created_at
             FROM vw_appointment_overview a
             JOIN vw_appointment_payment_summary payment
                 ON payment.appointment_id = a.appointment_id
                 AND payment.deposit_id IS NOT NULL
             WHERE a.patient_id = :patient_id
-            ORDER BY a.created_at DESC
+            ORDER BY a.created_at DESC, payment.deposit_id DESC
         ");
         $stmt->execute([':patient_id' => $patientId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
