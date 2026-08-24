@@ -277,6 +277,7 @@ CREATE TABLE `clinics` (
   `clinic_name` varchar(100) NOT NULL,
   `clinic_address` varchar(100) NOT NULL,
   `clinic_contact` varchar(15) NOT NULL,
+  `embed_url` text DEFAULT NULL,
   `clinic_image` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -284,9 +285,9 @@ CREATE TABLE `clinics` (
 -- Dumping data for table `clinics`
 --
 
-INSERT INTO `clinics` (`clinic_id`, `clinic_name`, `clinic_address`, `clinic_contact`, `clinic_image`) VALUES
-(1, 'Alcala Branch', 'Zone 4, Tupang, Alcala, Cagayan', '0912-345-6789', NULL),
-(2, 'Tuguegarao Branch', 'Bartolome St., Caggay, Tuguegarao City, Cagayan', '0912-345-6789', NULL);
+INSERT INTO `clinics` (`clinic_id`, `clinic_name`, `clinic_address`, `clinic_contact`, `embed_url`, `clinic_image`) VALUES
+(1, 'Alcala Branch', 'Zone 4, Tupang, Alcala, Cagayan', '0912-345-6789', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2880.167736548895!2d121.63913503906203!3d17.908509915210743!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3385f5f555a3231b%3A0xd3c7413d82013205!2sDr.%20Aprille%20Cabayu-Ventura%20Clinica%20Dental!5e1!3m2!1sen!2sph!4v1787551455140!5m2!1sen!2sph', NULL),
+(2, 'Tuguegarao Branch', 'Bartolome St., Caggay, Tuguegarao City, Cagayan', '0912-345-6789', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d555.7286709904844!2d121.74134650485767!3d17.639557171908194!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x338585eb28ccc835%3A0x72f667b3142c792b!2sPurok%205%20Bartolome%20St%2C%20Tuguegarao%20City%2C%203500%20Cagayan!5e1!3m2!1sen!2sph!4v1787287560379!5m2!1sen!2sph', NULL);
 
 -- --------------------------------------------------------
 
@@ -661,7 +662,7 @@ CREATE TABLE `site_settings` (
   `pillar3_title` varchar(100) DEFAULT 'Two Convenient Branches',
   `pillar3_desc` varchar(255) DEFAULT 'Serving patients in both Alcala and Tuguegarao, Cagayan.',
   `contact_address` varchar(255) DEFAULT 'Alcala & Tuguegarao, Cagayan',
-  `contact_phone` varchar(20) DEFAULT '0912-345-6789',
+  `contact_phone` varchar(255) DEFAULT '0912-345-6789',
   `contact_email` varchar(100) DEFAULT 'info@draprilleventura.com',
   `deposit_amount` decimal(10,2) NOT NULL DEFAULT 400.00,
   `payment_deadline_minutes` smallint(5) UNSIGNED NOT NULL DEFAULT 30,

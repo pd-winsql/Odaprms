@@ -1,2 +1,0 @@
-ALTER TABLE site_settings
-  MODIFY contact_phone VARCHAR(255) DEFAULT '0912-345-6789';
