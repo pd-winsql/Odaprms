@@ -4,7 +4,9 @@ require_once '../models/patientModel.php';
 require_once '../models/userModel.php';
 require_once '../helpers/csrf.php';
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 class PatientController {
     private $patients;

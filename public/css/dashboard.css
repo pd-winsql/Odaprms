@@ -3133,3 +3133,166 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
     }
 
 }
+
+/* Compact appointment rows and single row-actions menu */
+.vd-appt-table-wrap {
+    overflow: visible;
+}
+
+.vd-appt-table {
+    min-width: 900px;
+}
+
+.vd-appt-table td {
+    padding: 11px 14px;
+}
+
+.vd-appt-table thead th {
+    padding: 11px 14px;
+}
+
+.vd-appt-table .vd-activity-cell {
+    min-width: 225px;
+}
+
+.vd-appt-table .vd-activity-avatar {
+    flex-basis: 32px;
+    height: 32px;
+    width: 32px;
+}
+
+.vd-appt-actions-cell {
+    min-width: 112px;
+    text-align: right;
+    width: 1%;
+}
+
+.vd-appt-action-menu {
+    display: inline-block;
+    text-align: left;
+}
+
+.vd-appt-action-toggle {
+    align-items: center;
+    background: #f6efe2;
+    border: 1px solid #dfcfb1;
+    border-radius: 9px;
+    color: #654f28;
+    display: inline-flex;
+    font-size: 10px;
+    font-weight: 600;
+    gap: 7px;
+    justify-content: center;
+    letter-spacing: .08em;
+    min-height: 34px;
+    padding: 7px 10px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.vd-appt-action-toggle:hover,
+.vd-appt-action-toggle:focus,
+.vd-appt-action-toggle[aria-expanded="true"] {
+    background: #ecdfc8;
+    border-color: #c7aa70;
+    color: #4d3b1e;
+}
+
+.vd-appt-action-toggle .vd-appt-action-caret {
+    font-size: 12px;
+    transition: transform .15s ease;
+}
+
+.vd-appt-action-toggle[aria-expanded="true"] .vd-appt-action-caret {
+    transform: rotate(180deg);
+}
+
+.vd-appt-action-dropdown {
+    background: #fffdf9;
+    border: 1px solid #dfd1bd;
+    border-radius: 11px;
+    box-shadow: 0 14px 30px rgba(62, 45, 23, .16);
+    min-width: 210px;
+    padding: 6px;
+    z-index: 1080;
+}
+
+.vd-appt-action-dropdown .vd-action-group {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 2px;
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-item,
+.vd-appt-action-dropdown .vd-action-group .vd-btn-gold,
+.vd-appt-action-dropdown .vd-appointment-details-btn {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: none;
+    color: var(--dark);
+    display: flex;
+    font-size: 11px;
+    font-weight: 400;
+    gap: 9px;
+    justify-content: flex-start;
+    letter-spacing: 0;
+    min-height: 36px;
+    padding: 8px 10px;
+    text-align: left;
+    text-transform: none;
+    transform: none;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-item:hover,
+.vd-appt-action-dropdown .vd-appt-menu-item:focus {
+    background: #f5eddf;
+    color: #4b3b21;
+    transform: none;
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-item i {
+    color: #826a3b;
+    flex: 0 0 16px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-primary i {
+    color: var(--gold);
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-danger,
+.vd-appt-action-dropdown .vd-appt-menu-danger i {
+    color: #a1483e;
+}
+
+@media (max-width: 767px) {
+    .vd-appt-table-wrap {
+        overflow-x: visible;
+    }
+
+    .vd-responsive-table {
+        min-width: 0;
+    }
+
+    .vd-responsive-table .vd-appt-actions-cell {
+        overflow: visible;
+        text-align: right;
+        width: 35%;
+    }
+
+    .vd-appt-action-toggle {
+        letter-spacing: .04em;
+        padding-inline: 8px;
+    }
+
+    .vd-appt-action-dropdown {
+        min-width: 195px;
+    }
+}

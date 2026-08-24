@@ -182,10 +182,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 <tr>
                     <th>Patient</th>
                     <th>Clinic</th>
-                    <th>Date</th>
+                    <th>Schedule</th>
                     <th>Status</th>
                     <th>Latest Activity</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -229,48 +229,61 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             </div>
                         <?php endif; ?>
                     </td>
-                    <td>
+                    <td class="vd-appt-actions-cell">
+                        <div class="dropdown vd-appt-action-menu">
+                        <button type="button" class="btn vd-appt-action-toggle" id="apptActions-<?= (int)$appt['appointment_id'] ?>"
+                            data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                            aria-label="Open actions for <?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
+                            <i class="ti ti-dots" aria-hidden="true"></i>
+                            <span>Actions</span>
+                            <i class="ti ti-chevron-down vd-appt-action-caret" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end vd-appt-action-dropdown"
+                            aria-labelledby="apptActions-<?= (int)$appt['appointment_id'] ?>">
                         <div class="vd-action-group">
-                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn"
+                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn vd-appt-menu-item"
                             title="View appointment details"
                             data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">
                             <i class="ti ti-eye" aria-hidden="true"></i>
+                            <span>View details</span>
                         </button>
                         <?php if ($appt['status'] === 'Pending Review'): ?>
-                        <button type="button" class="btn vd-btn-gold btn-sm" data-status-action="Awaiting Deposit"
+                        <button type="button" class="btn vd-btn-gold btn-sm vd-appt-menu-item vd-appt-menu-primary" data-status-action="Awaiting Deposit"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Accept</button>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="Rejected"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-check" aria-hidden="true"></i><span>Accept appointment</span></button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-danger" data-status-action="Rejected"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Reject</button>
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-x" aria-hidden="true"></i><span>Reject appointment</span></button>
                         <?php elseif ($appt['status'] === 'Payment Under Review'): ?>
-                        <button type="button" class="btn vd-btn-gold btn-sm vd-appointment-details-btn vd-review-payment-btn"
-                            data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">Review Payment</button>
+                        <button type="button" class="btn vd-btn-gold btn-sm vd-appointment-details-btn vd-review-payment-btn vd-appt-menu-item vd-appt-menu-primary"
+                            data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>"><i class="ti ti-receipt" aria-hidden="true"></i><span>Review payment</span></button>
                         <?php elseif ($appt['status'] === 'Awaiting Deposit'): ?>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-extend-deadline="<?= (int)$appt['appointment_id'] ?>">Extend 8h</button>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-transfer-deposit="<?= (int)$appt['appointment_id'] ?>">Transfer Deposit</button>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="Cancelled"
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-extend-deadline="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-clock-plus" aria-hidden="true"></i><span>Extend by 8 hours</span></button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-transfer-deposit="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-arrows-exchange" aria-hidden="true"></i><span>Transfer deposit</span></button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-danger" data-status-action="Cancelled"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Cancel</button>
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-calendar-cancel" aria-hidden="true"></i><span>Cancel appointment</span></button>
                         <?php elseif ($appt['status'] === 'Confirmed'): ?>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="Cancelled"
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-danger" data-status-action="Cancelled"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Cancel</button>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-status-action="No-show"
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-calendar-cancel" aria-hidden="true"></i><span>Cancel appointment</span></button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-status-action="No-show"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">No-show</button>
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-user-off" aria-hidden="true"></i><span>Mark as no-show</span></button>
                         <?php elseif ($appt['status'] === 'Checked In'): ?>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-open-today-queue>Manage Queue</button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-open-today-queue><i class="ti ti-list-check" aria-hidden="true"></i><span>Manage queue</span></button>
                         <?php elseif ($appt['status'] === 'In Progress'): ?>
-                        <button type="button" class="btn vd-btn-gold btn-sm" data-status-action="Completed"
+                        <button type="button" class="btn vd-btn-gold btn-sm vd-appt-menu-item vd-appt-menu-primary" data-status-action="Completed"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">Complete</button>
+                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-circle-check" aria-hidden="true"></i><span>Complete appointment</span></button>
                         <?php elseif ($appt['status'] === 'Cancelled' && ($appt['deposit_status'] ?? '') === 'For Refund'): ?>
-                        <button type="button" class="btn vd-btn-outline btn-sm" data-record-refund="<?= (int)$appt['appointment_id'] ?>">Record Refund</button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-record-refund="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-cash-banknote-off" aria-hidden="true"></i><span>Record refund</span></button>
                         <?php endif; ?>
+                        </div>
+                        </div>
                         </div>
                     </td>
                     </tr>
@@ -330,10 +343,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 <tr>
                     <th>Patient</th>
                     <th>Clinic</th>
-                    <th>Date</th>
+                    <th>Schedule</th>
                     <th>Status</th>
                     <th>Latest Activity</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -377,11 +390,27 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             </div>
                         <?php endif; ?>
                     </td>
-                    <td>
-                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn"
+                    <td class="vd-appt-actions-cell">
+                        <div class="dropdown vd-appt-action-menu">
+                        <button type="button" class="btn vd-appt-action-toggle" id="pastApptActions-<?= (int)$appt['appointment_id'] ?>"
+                            data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Open actions for <?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
+                            <i class="ti ti-dots" aria-hidden="true"></i>
+                            <span>Actions</span>
+                            <i class="ti ti-chevron-down vd-appt-action-caret" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end vd-appt-action-dropdown"
+                            aria-labelledby="pastApptActions-<?= (int)$appt['appointment_id'] ?>">
+                        <div class="vd-action-group">
+                        <button type="button" class="btn vd-btn-outline btn-md vd-appointment-details-btn vd-appt-menu-item"
+                            title="View appointment details"
                             data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">
                             <i class="ti ti-eye" aria-hidden="true"></i>
+                            <span>View details</span>
                         </button>
+                        </div>
+                        </div>
+                        </div>
                     </td>
                     </tr>
                 <?php endforeach; ?>
@@ -547,11 +576,17 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             email: details.email,
             deposit: details.deposit
         };
-        const addStatusAction = (label, className, status) => {
-            actionGroup.append(makeActionButton(label, className, button => runStatusAction(button, statusPayload, status)));
+        const menuClass = 'btn vd-btn-outline btn-sm vd-appt-menu-item';
+        const addStatusAction = (label, status, icon, tone = '') => {
+            actionGroup.append(makeActionButton(
+                label,
+                `${menuClass}${tone ? ` vd-appt-menu-${tone}` : ''}`,
+                button => runStatusAction(button, statusPayload, status),
+                icon
+            ));
         };
-        const addDepositAction = (label, className, dataKey, handler) => {
-            const button = makeActionButton(label, className, handler);
+        const addDepositAction = (label, dataKey, handler, icon) => {
+            const button = makeActionButton(label, menuClass, handler, icon);
             button.dataset[dataKey] = details.appointmentId;
             actionGroup.append(button);
         };
@@ -559,23 +594,23 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         // This mirrors the server-rendered action map so each row remains fully
         // usable immediately after its status changes.
         if (details.status === 'Pending Review') {
-            addStatusAction('Accept', 'btn vd-btn-gold btn-sm', 'Awaiting Deposit');
-            addStatusAction('Reject', 'btn vd-btn-outline btn-sm', 'Rejected');
+            addStatusAction('Accept appointment', 'Awaiting Deposit', 'ti-check', 'primary');
+            addStatusAction('Reject appointment', 'Rejected', 'ti-x', 'danger');
         } else if (details.status === 'Awaiting Deposit') {
-            addDepositAction('Extend 8h', 'btn vd-btn-outline btn-sm', 'extendDeadline', button => runExtendDeadline(button));
-            addDepositAction('Transfer Deposit', 'btn vd-btn-outline btn-sm', 'transferDeposit', button => runTransferDeposit(button));
-            addStatusAction('Cancel', 'btn vd-btn-outline btn-sm', 'Cancelled');
+            addDepositAction('Extend by 8 hours', 'extendDeadline', button => runExtendDeadline(button), 'ti-clock-plus');
+            addDepositAction('Transfer deposit', 'transferDeposit', button => runTransferDeposit(button), 'ti-arrows-exchange');
+            addStatusAction('Cancel appointment', 'Cancelled', 'ti-calendar-cancel', 'danger');
         } else if (details.status === 'Confirmed') {
-            addStatusAction('Cancel', 'btn vd-btn-outline btn-sm', 'Cancelled');
-            addStatusAction('No-show', 'btn vd-btn-outline btn-sm', 'No-show');
+            addStatusAction('Cancel appointment', 'Cancelled', 'ti-calendar-cancel', 'danger');
+            addStatusAction('Mark as no-show', 'No-show', 'ti-user-off');
         } else if (details.status === 'Checked In') {
-            actionGroup.append(makeActionButton('Manage Queue', 'btn vd-btn-outline btn-sm', () => {
+            actionGroup.append(makeActionButton('Manage queue', menuClass, () => {
                 document.querySelector('[data-page="dashboard-content.php"]')?.click();
-            }));
+            }, 'ti-list-check'));
         } else if (details.status === 'In Progress') {
-            addStatusAction('Complete', 'btn vd-btn-gold btn-sm', 'Completed');
+            addStatusAction('Complete appointment', 'Completed', 'ti-circle-check', 'primary');
         } else if (details.status === 'Cancelled' && details.deposit?.status === 'For Refund') {
-            addDepositAction('Record Refund', 'btn vd-btn-outline btn-sm', 'recordRefund', button => runRecordRefund(button));
+            addDepositAction('Record refund', 'recordRefund', button => runRecordRefund(button), 'ti-cash-banknote-off');
         }
     }
 
@@ -634,11 +669,20 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         container.appendChild(item);
     }
 
-    function makeActionButton(label, className, handler) {
+    function makeActionButton(label, className, handler, iconClass = '') {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = className;
-        button.textContent = label;
+        if (iconClass) {
+            const icon = document.createElement('i');
+            icon.className = `ti ${iconClass}`;
+            icon.setAttribute('aria-hidden', 'true');
+            const text = document.createElement('span');
+            text.textContent = label;
+            button.append(icon, text);
+        } else {
+            button.textContent = label;
+        }
         button.addEventListener('click', () => handler(button));
         return button;
     }
