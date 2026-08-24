@@ -21,13 +21,18 @@ SET time_zone = "+00:00";
 -- Database: `db-oaprms-system`
 --
 
+CREATE DATABASE IF NOT EXISTS `db-oaprms-system`
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_general_ci;
+USE `db-oaprms-system`;
+
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `appointments`
 --
 
-CREATE TABLE `appointments` (
+CREATE TABLE IF NOT EXISTS `appointments` (
   `appointment_id` int(11) NOT NULL,
   `patient_id` int(11) DEFAULT NULL,
   `schedule_id` int(11) NOT NULL,
@@ -78,7 +83,7 @@ INSERT INTO `appointments` (`appointment_id`, `patient_id`, `schedule_id`, `clin
 -- Table structure for table `appointment_billings`
 --
 
-CREATE TABLE `appointment_billings` (
+CREATE TABLE IF NOT EXISTS `appointment_billings` (
   `billing_id` bigint(20) UNSIGNED NOT NULL,
   `appointment_id` int(11) NOT NULL,
   `actual_service_amount` decimal(10,2) DEFAULT NULL,
@@ -100,7 +105,7 @@ CREATE TABLE `appointment_billings` (
 -- Table structure for table `appointment_checkins`
 --
 
-CREATE TABLE `appointment_checkins` (
+CREATE TABLE IF NOT EXISTS `appointment_checkins` (
   `checkin_id` int(11) NOT NULL,
   `appointment_id` int(11) NOT NULL,
   `arrived_at` datetime NOT NULL,
@@ -137,7 +142,7 @@ INSERT INTO `appointment_checkins` (`checkin_id`, `appointment_id`, `arrived_at`
 -- Table structure for table `appointment_deposits`
 --
 
-CREATE TABLE `appointment_deposits` (
+CREATE TABLE IF NOT EXISTS `appointment_deposits` (
   `deposit_id` int(11) NOT NULL,
   `appointment_id` int(11) NOT NULL,
   `amount` decimal(10,2) NOT NULL DEFAULT 400.00,
@@ -181,7 +186,7 @@ INSERT INTO `appointment_deposits` (`deposit_id`, `appointment_id`, `amount`, `g
 -- Table structure for table `appointment_email_notifications`
 --
 
-CREATE TABLE `appointment_email_notifications` (
+CREATE TABLE IF NOT EXISTS `appointment_email_notifications` (
   `notification_id` bigint(20) UNSIGNED NOT NULL,
   `appointment_id` int(11) NOT NULL,
   `recipient_user_id` int(11) DEFAULT NULL,
@@ -205,7 +210,7 @@ CREATE TABLE `appointment_email_notifications` (
 -- Table structure for table `appointment_services`
 --
 
-CREATE TABLE `appointment_services` (
+CREATE TABLE IF NOT EXISTS `appointment_services` (
   `appointment_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -239,7 +244,7 @@ INSERT INTO `appointment_services` (`appointment_id`, `service_id`) VALUES
 -- Table structure for table `audit_logs`
 --
 
-CREATE TABLE `audit_logs` (
+CREATE TABLE IF NOT EXISTS `audit_logs` (
   `audit_log_id` bigint(20) UNSIGNED NOT NULL,
   `entity_type` varchar(50) NOT NULL,
   `entity_id` bigint(20) UNSIGNED DEFAULT NULL,
@@ -272,7 +277,7 @@ INSERT INTO `audit_logs` (`audit_log_id`, `entity_type`, `entity_id`, `action`, 
 -- Table structure for table `clinics`
 --
 
-CREATE TABLE `clinics` (
+CREATE TABLE IF NOT EXISTS `clinics` (
   `clinic_id` int(11) NOT NULL,
   `clinic_name` varchar(100) NOT NULL,
   `clinic_address` varchar(100) NOT NULL,
@@ -295,7 +300,7 @@ INSERT INTO `clinics` (`clinic_id`, `clinic_name`, `clinic_address`, `clinic_con
 -- Table structure for table `email_verifications`
 --
 
-CREATE TABLE `email_verifications` (
+CREATE TABLE IF NOT EXISTS `email_verifications` (
   `id` int(11) NOT NULL,
   `email` varchar(255) NOT NULL,
   `otp` varchar(6) NOT NULL,
@@ -326,7 +331,7 @@ INSERT INTO `email_verifications` (`id`, `email`, `otp`, `expires_at`, `used`, `
 -- Table structure for table `password_resets`
 --
 
-CREATE TABLE `password_resets` (
+CREATE TABLE IF NOT EXISTS `password_resets` (
   `id` int(11) NOT NULL,
   `token_hash` varchar(255) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
@@ -350,7 +355,7 @@ INSERT INTO `password_resets` (`id`, `token_hash`, `email`, `otp`, `expires_at`,
 -- Table structure for table `patients`
 --
 
-CREATE TABLE `patients` (
+CREATE TABLE IF NOT EXISTS `patients` (
   `patient_id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
   `firstname` varchar(100) NOT NULL,
@@ -400,7 +405,7 @@ INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middl
 -- Table structure for table `patient_account_link_authorizations`
 --
 
-CREATE TABLE `patient_account_link_authorizations` (
+CREATE TABLE IF NOT EXISTS `patient_account_link_authorizations` (
   `authorization_id` bigint(20) UNSIGNED NOT NULL,
   `patient_id` int(11) NOT NULL,
   `authorized_email` varchar(255) NOT NULL,
@@ -419,7 +424,7 @@ CREATE TABLE `patient_account_link_authorizations` (
 -- Table structure for table `patient_conditions`
 --
 
-CREATE TABLE `patient_conditions` (
+CREATE TABLE IF NOT EXISTS `patient_conditions` (
   `condition_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
   `condition` varchar(100) NOT NULL
@@ -438,7 +443,7 @@ INSERT INTO `patient_conditions` (`condition_id`, `patient_id`, `condition`) VAL
 -- Table structure for table `patient_consent`
 --
 
-CREATE TABLE `patient_consent` (
+CREATE TABLE IF NOT EXISTS `patient_consent` (
   `consent_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
   `consent_name` varchar(100) DEFAULT NULL,
@@ -461,7 +466,7 @@ INSERT INTO `patient_consent` (`consent_id`, `patient_id`, `consent_name`, `cons
 -- Table structure for table `patient_dental_history`
 --
 
-CREATE TABLE `patient_dental_history` (
+CREATE TABLE IF NOT EXISTS `patient_dental_history` (
   `dental_history_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
   `previous_dentist` varchar(100) DEFAULT NULL,
@@ -488,7 +493,7 @@ INSERT INTO `patient_dental_history` (`dental_history_id`, `patient_id`, `previo
 -- Table structure for table `patient_duplicate_reviews`
 --
 
-CREATE TABLE `patient_duplicate_reviews` (
+CREATE TABLE IF NOT EXISTS `patient_duplicate_reviews` (
   `duplicate_review_id` bigint(20) UNSIGNED NOT NULL,
   `new_patient_id` int(11) NOT NULL,
   `possible_existing_patient_id` int(11) NOT NULL,
@@ -507,7 +512,7 @@ CREATE TABLE `patient_duplicate_reviews` (
 -- Table structure for table `patient_medical_history`
 --
 
-CREATE TABLE `patient_medical_history` (
+CREATE TABLE IF NOT EXISTS `patient_medical_history` (
   `medical_history_id` int(11) NOT NULL,
   `patient_id` int(11) NOT NULL,
   `good_health` tinyint(1) DEFAULT NULL,
@@ -549,7 +554,7 @@ INSERT INTO `patient_medical_history` (`medical_history_id`, `patient_id`, `good
 -- Table structure for table `schedules`
 --
 
-CREATE TABLE `schedules` (
+CREATE TABLE IF NOT EXISTS `schedules` (
   `schedule_id` int(11) NOT NULL,
   `clinic_id` int(11) NOT NULL,
   `sched_date` date NOT NULL,
@@ -587,7 +592,7 @@ INSERT INTO `schedules` (`schedule_id`, `clinic_id`, `sched_date`, `max_appointm
 -- Table structure for table `services`
 --
 
-CREATE TABLE `services` (
+CREATE TABLE IF NOT EXISTS `services` (
   `service_id` int(11) NOT NULL,
   `category_id` int(11) NOT NULL,
   `service_name` varchar(100) NOT NULL,
@@ -622,7 +627,7 @@ INSERT INTO `services` (`service_id`, `category_id`, `service_name`, `service_de
 -- Table structure for table `service_categories`
 --
 
-CREATE TABLE `service_categories` (
+CREATE TABLE IF NOT EXISTS `service_categories` (
   `category_id` int(11) NOT NULL,
   `category_name` varchar(100) NOT NULL,
   `category_description` varchar(255) DEFAULT NULL,
@@ -645,7 +650,7 @@ INSERT INTO `service_categories` (`category_id`, `category_name`, `category_desc
 -- Table structure for table `site_settings`
 --
 
-CREATE TABLE `site_settings` (
+CREATE TABLE IF NOT EXISTS `site_settings` (
   `id` int(11) NOT NULL DEFAULT 1,
   `brand_name_top` varchar(50) DEFAULT 'Dr. Aprille',
   `brand_name_sub` varchar(50) DEFAULT 'Clinica Dental',
@@ -686,7 +691,7 @@ INSERT INTO `site_settings` (`id`, `brand_name_top`, `brand_name_sub`, `site_log
 -- Table structure for table `staffs`
 --
 
-CREATE TABLE `staffs` (
+CREATE TABLE IF NOT EXISTS `staffs` (
   `staff_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `firstname` varchar(100) NOT NULL,
@@ -714,7 +719,7 @@ INSERT INTO `staffs` (`staff_id`, `user_id`, `firstname`, `lastname`, `middlenam
 -- Table structure for table `users`
 --
 
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
@@ -747,7 +752,7 @@ INSERT INTO `users` (`id`, `email`, `password`, `email_verified_at`, `user_role`
 -- Stand-in structure for view `vw_patient_information`
 -- (See below for the actual view)
 --
-CREATE TABLE `vw_patient_information` (
+CREATE TABLE IF NOT EXISTS `vw_patient_information` (
 `patient_id` int(11)
 ,`user_id` int(11)
 ,`firstname` varchar(100)
