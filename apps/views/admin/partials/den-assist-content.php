@@ -17,6 +17,12 @@ $staffList  = $staffModel->getAllStaff();
 
 <div class="d-flex flex-column gap-4">
 
+    <div>
+        <div class="vd-welcome-greet">DENTAL ASSISTANT MANAGEMENT</div>
+        <div class="vd-welcome-name">Staff Accounts</div>
+        <p class="text-muted small mb-0 mt-2">Create dental assistant accounts, review staff details, and manage employment access.</p>
+    </div>
+
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Dental Assistants</span>

@@ -84,6 +84,12 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
 
 <div class="d-flex flex-column gap-4">
 
+    <div>
+        <div class="vd-welcome-greet">SERVICE MANAGEMENT</div>
+        <div class="vd-welcome-name">Dental Services</div>
+        <p class="text-muted small mb-0 mt-2">Organize dental services and categories, update treatment details, and control what is available to patients.</p>
+    </div>
+
     <!-- VIEW TOGGLE -->
     <div class="vd-view-toggle">
         <button type="button" class="vd-toggle-btn active" data-view="services">Services</button>

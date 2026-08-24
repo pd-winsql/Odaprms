@@ -41,8 +41,7 @@ $occupiedScheduleDates = array_values(array_unique($occupiedScheduleDates));
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
-<div class="vd-content">
-    <div class="d-flex flex-column gap-4">
+<div class="d-flex flex-column gap-4">
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
@@ -164,7 +163,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         </div>
         <?php endforeach; ?>
         
-        </div>
 </div>
 
 <!-- Delete confirmation modal -->
