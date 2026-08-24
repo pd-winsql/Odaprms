@@ -2679,16 +2679,98 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
 
 .vd-appointment-receipt-preview {
   position: relative;
-  height: min(520px, 60vh);
+  height: min(420px, 42vh);
   overflow: hidden;
   border-radius: 10px;
-  background: #2d2a26;
+  background: #f7f3eb;
 }
 
-.vd-appointment-receipt-preview .vd-receipt-preview-frame {
+.vd-appointment-receipt-preview .vd-receipt-preview-frame,
+.vd-appointment-receipt-preview .vd-receipt-preview-image {
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+.vd-appointment-receipt-preview .vd-receipt-preview-image {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 767px) {
+  .vd-appointment-details-modal .modal-dialog {
+    height: calc(100vh - 12px);
+    height: calc(100dvh - 12px);
+    margin: 6px;
+    min-height: 0;
+  }
+
+  .vd-appointment-details-modal .modal-content {
+    max-height: calc(100vh - 12px);
+    max-height: calc(100dvh - 12px);
+  }
+
+  .vd-appointment-details-modal .modal-header,
+  .vd-appointment-details-modal .modal-footer {
+    flex: 0 0 auto;
+    padding: 12px 14px;
+  }
+
+  .vd-appointment-details-modal .modal-body {
+    min-height: 0;
+    padding: 12px 14px 14px;
+  }
+
+  .vd-appointment-receipt-wrap {
+    margin-top: 10px;
+    padding: 10px;
+  }
+
+  .vd-appointment-receipt-preview {
+    height: min(340px, 38dvh);
+    border-radius: 8px;
+  }
+
+  .vd-appointment-details-modal #appointmentModalActions {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .vd-appointment-details-modal #appointmentModalActions .btn {
+    min-height: 38px;
+  }
+}
+
+@media (max-width: 420px) {
+  .vd-appointment-details-modal #appointmentDetailsTitle {
+    font-size: 21px;
+  }
+
+  .vd-appointment-details-modal .vd-appointment-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vd-appointment-receipt-preview {
+    height: min(300px, 36dvh);
+  }
+
+  .vd-appointment-details-modal .modal-footer {
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .vd-appointment-details-modal #appointmentModalActions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .vd-appointment-details-modal #appointmentModalActions .btn {
+    min-width: 0;
+    padding-inline: 8px;
+    white-space: normal;
+  }
 }
 
 .vd-final-billing-summary {

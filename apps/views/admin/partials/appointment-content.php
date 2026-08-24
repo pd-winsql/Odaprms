@@ -107,6 +107,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             'refundReason' => $appointment['refund_reason'] ?? '',
             'refundedAt' => $appointment['refunded_at'] ?? '',
             'hasReceipt' => (bool) ($appointment['has_receipt'] ?? false),
+            'receiptMime' => $appointment['receipt_mime'] ?? '',
             'receiptUrl' => !empty($appointment['has_receipt'])
                 ? '../../controllers/depositController.php?action=receipt&deposit_id=' . (int) $appointment['deposit_id']
                 : '',
@@ -463,7 +464,8 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             <div class="vd-receipt-preview-loading" id="appointmentReceiptLoading">
                                 <span class="vd-spinner" aria-hidden="true"></span><span>Loading receipt...</span>
                             </div>
-                            <iframe id="appointmentReceiptFrame" class="vd-receipt-preview-frame" title="Payment receipt preview"></iframe>
+                            <img id="appointmentReceiptImage" class="vd-receipt-preview-image d-none" alt="Submitted payment receipt">
+                            <iframe id="appointmentReceiptFrame" class="vd-receipt-preview-frame d-none" title="Payment receipt preview"></iframe>
                         </div>
                     </div>
                 </section>
@@ -698,6 +700,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const note = document.getElementById('appointmentPaymentNote');
         const receiptWrap = document.getElementById('appointmentReceiptWrap');
         const receiptPreview = document.getElementById('appointmentReceiptPreview');
+        const receiptImage = document.getElementById('appointmentReceiptImage');
         const receiptFrame = document.getElementById('appointmentReceiptFrame');
         const receiptToggle = document.getElementById('toggleAppointmentReceipt');
 
@@ -706,7 +709,11 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         note.textContent = '';
         receiptWrap.classList.add('d-none');
         receiptPreview.classList.add('d-none');
+        receiptImage.removeAttribute('src');
+        receiptImage.classList.add('d-none');
+        receiptImage.classList.remove('is-ready');
         receiptFrame.removeAttribute('src');
+        receiptFrame.classList.add('d-none');
         receiptFrame.classList.remove('is-ready');
         receiptToggle.textContent = 'View Receipt';
 
@@ -739,8 +746,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         if (deposit.hasReceipt && deposit.receiptUrl) {
             receiptWrap.classList.remove('d-none');
             receiptToggle.dataset.receiptUrl = deposit.receiptUrl;
+            receiptToggle.dataset.receiptMime = deposit.receiptMime || '';
         } else {
             delete receiptToggle.dataset.receiptUrl;
+            delete receiptToggle.dataset.receiptMime;
         }
     }
 
@@ -1068,16 +1077,30 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 
     document.getElementById('toggleAppointmentReceipt')?.addEventListener('click', function () {
         const preview = document.getElementById('appointmentReceiptPreview');
+        const image = document.getElementById('appointmentReceiptImage');
         const frame = document.getElementById('appointmentReceiptFrame');
         const loading = document.getElementById('appointmentReceiptLoading');
         const opening = preview.classList.contains('d-none');
         preview.classList.toggle('d-none', !opening);
         this.textContent = opening ? 'Hide Receipt' : 'View Receipt';
-        if (opening && !frame.getAttribute('src') && this.dataset.receiptUrl) {
-            loading.classList.remove('d-none');
-            frame.classList.remove('is-ready');
-            frame.src = this.dataset.receiptUrl;
+        if (opening && this.dataset.receiptUrl) {
+            const isImage = String(this.dataset.receiptMime || '').startsWith('image/');
+            const activePreview = isImage ? image : frame;
+            loading.classList.toggle('d-none', activePreview.classList.contains('is-ready'));
+            image.classList.toggle('d-none', !isImage);
+            frame.classList.toggle('d-none', isImage);
+            if (isImage && !image.getAttribute('src')) {
+                image.src = this.dataset.receiptUrl;
+            } else if (!isImage && !frame.getAttribute('src')) {
+                frame.classList.remove('is-ready');
+                frame.src = this.dataset.receiptUrl + '#view=Fit&toolbar=0&navpanes=0';
+            }
         }
+    });
+
+    document.getElementById('appointmentReceiptImage')?.addEventListener('load', function () {
+        document.getElementById('appointmentReceiptLoading')?.classList.add('d-none');
+        this.classList.add('is-ready');
     });
 
     document.getElementById('appointmentReceiptFrame')?.addEventListener('load', function () {
@@ -1086,7 +1109,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     });
 
     document.getElementById('appointmentDetailsModal')?.addEventListener('hidden.bs.modal', () => {
+        const image = document.getElementById('appointmentReceiptImage');
         const frame = document.getElementById('appointmentReceiptFrame');
+        image?.removeAttribute('src');
+        image?.classList.remove('is-ready');
         frame?.removeAttribute('src');
         frame?.classList.remove('is-ready');
         activeAppointmentPayload = null;
