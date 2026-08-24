@@ -13,6 +13,7 @@ class Staff {
                 SELECT s.*, u.email AS user_email
                 FROM staffs s
                 JOIN users u ON s.user_id = u.id
+                WHERE u.user_role = 'Dental Assistant'
                 ORDER BY s.created_at DESC
             ");
             $stmt->execute();

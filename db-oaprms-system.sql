@@ -716,7 +716,6 @@ INSERT INTO `staffs` (`staff_id`, `user_id`, `firstname`, `lastname`, `middlenam
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `email` varchar(255) NOT NULL,
-  `username` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
   `email_verified_at` datetime DEFAULT NULL,
   `user_role` enum('Patient','Admin','Dental Assistant') NOT NULL DEFAULT 'Patient'
@@ -726,20 +725,20 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `username`, `password`, `email_verified_at`, `user_role`) VALUES
-(7, 'admin@gmail.com', 'admin', '$2y$10$yjiG6c81sf6NPj8gEWkR8.6BEFnug.jLEry2zzD7L9gGzhxY/NTGm', '2026-08-09 18:47:19', 'Admin'),
-(14, 'winsight11@gmail.com', 'winpogi', '$2y$10$u.XUDEHisxdJ6QbWZciI/un2sHC5csepwapa6q9XNkmGlqQ6.mtdi', '2026-08-09 18:47:19', 'Patient'),
-(15, 'stephanieunista@gmail.com', 'ning', '$2y$10$vNimCUMY2cHtz3PPQfyLNezSOy9WR/Qryu4lQYb1k6AVOfCtaR6dG', '2026-08-09 18:47:19', 'Patient'),
-(16, 'stephyyyunista94@gmail.com', 'stephanie.unista', '$2y$10$6dDvGf5.aFptNtGWE9QiseE3qAk9V/jB7rL/4jW2Y.WTTJy.CAvem', '2026-08-09 18:47:19', 'Dental Assistant'),
-(17, 'llantomichelle9@gmail.com', 'michelle', '$2y$10$CYTbshBCb.qmC2LVdU407OyB5G4IAxge4lwH4Lx.hbVYGTbNJQI7q', '2026-08-09 18:47:19', 'Patient'),
-(18, 'roncorpuz09@gmail.com', 'winje.corpuz', '$2y$10$6SSUY0/c2WLmquUkQXC7gehJfOLHHBqc1i2uhb6HmH2c64LJc4bMm', '2026-08-09 18:47:19', 'Dental Assistant'),
-(19, 'winje@gmail.com', 'winje.win', '$2y$10$C69fAaA/Er81z90RnoB0H.XQ9ze3mZhkEn/2fK5q7z80h04ZVUVRm', '2026-08-09 18:47:19', 'Patient'),
-(20, 'j.cruz@gmail.com', 'cruzJ', '$2y$10$3y.eHdpfkHY6s.7oChZwEOfGiWzhvMo.yhfjwwgRUgY8LQbys/XlW', '2026-08-09 18:47:19', 'Patient'),
-(21, 'jcruz@gmail.com', 'cruz.J', '$2y$10$F/Rfkca9YMPaDkjVAXRdTeLZvRiAWVX3ldVDr490E8CbCnQw.hSnu', '2026-08-09 18:47:19', 'Patient'),
-(22, 'corpuzwinjemelron@gmail.com', 'pogi.naman', '$2y$10$AeUUJZzAJHanni9kfh452eu2R2nVKKNgWOC.1EOtPR67782eCz3p6', '2026-08-09 18:47:19', 'Dental Assistant'),
-(28, 'christianjamescapule@gmail.com', 'pogicj', '$2y$10$BPHcRiUNHPEqlA2q7g2ETe/jWRamNzub5vNH9WGxri1buDZdC3GW2', '2026-08-09 18:47:19', 'Patient'),
-(30, 'codex-feature-test@example.invalid', 'codex_feature_test', '$2y$10$Z/TB4KriADPNW0Ex53qcbeehjydDYxsZqfs0x1QHSKg2ycmL2MRea', '2026-08-09 18:47:19', 'Admin'),
-(31, 'ronniebarasi30@gmail.com', 'ronnie', '$2y$10$CLljiRpNi.yKtFg4of6h/.iATUX.fcdf102G4mgYmGYjHzg8bX9Uu', '2026-08-09 18:47:19', 'Patient');
+INSERT INTO `users` (`id`, `email`, `password`, `email_verified_at`, `user_role`) VALUES
+(7, 'admin@gmail.com', '$2y$10$yjiG6c81sf6NPj8gEWkR8.6BEFnug.jLEry2zzD7L9gGzhxY/NTGm', '2026-08-09 18:47:19', 'Admin'),
+(14, 'winsight11@gmail.com', '$2y$10$u.XUDEHisxdJ6QbWZciI/un2sHC5csepwapa6q9XNkmGlqQ6.mtdi', '2026-08-09 18:47:19', 'Patient'),
+(15, 'stephanieunista@gmail.com', '$2y$10$vNimCUMY2cHtz3PPQfyLNezSOy9WR/Qryu4lQYb1k6AVOfCtaR6dG', '2026-08-09 18:47:19', 'Patient'),
+(16, 'stephyyyunista94@gmail.com', '$2y$10$6dDvGf5.aFptNtGWE9QiseE3qAk9V/jB7rL/4jW2Y.WTTJy.CAvem', '2026-08-09 18:47:19', 'Dental Assistant'),
+(17, 'llantomichelle9@gmail.com', '$2y$10$CYTbshBCb.qmC2LVdU407OyB5G4IAxge4lwH4Lx.hbVYGTbNJQI7q', '2026-08-09 18:47:19', 'Patient'),
+(18, 'roncorpuz09@gmail.com', '$2y$10$6SSUY0/c2WLmquUkQXC7gehJfOLHHBqc1i2uhb6HmH2c64LJc4bMm', '2026-08-09 18:47:19', 'Dental Assistant'),
+(19, 'winje@gmail.com', '$2y$10$C69fAaA/Er81z90RnoB0H.XQ9ze3mZhkEn/2fK5q7z80h04ZVUVRm', '2026-08-09 18:47:19', 'Patient'),
+(20, 'j.cruz@gmail.com', '$2y$10$3y.eHdpfkHY6s.7oChZwEOfGiWzhvMo.yhfjwwgRUgY8LQbys/XlW', '2026-08-09 18:47:19', 'Patient'),
+(21, 'jcruz@gmail.com', '$2y$10$F/Rfkca9YMPaDkjVAXRdTeLZvRiAWVX3ldVDr490E8CbCnQw.hSnu', '2026-08-09 18:47:19', 'Patient'),
+(22, 'corpuzwinjemelron@gmail.com', '$2y$10$AeUUJZzAJHanni9kfh452eu2R2nVKKNgWOC.1EOtPR67782eCz3p6', '2026-08-09 18:47:19', 'Dental Assistant'),
+(28, 'christianjamescapule@gmail.com', '$2y$10$BPHcRiUNHPEqlA2q7g2ETe/jWRamNzub5vNH9WGxri1buDZdC3GW2', '2026-08-09 18:47:19', 'Patient'),
+(30, 'codex-feature-test@example.invalid', '$2y$10$Z/TB4KriADPNW0Ex53qcbeehjydDYxsZqfs0x1QHSKg2ycmL2MRea', '2026-08-09 18:47:19', 'Admin'),
+(31, 'ronniebarasi30@gmail.com', '$2y$10$CLljiRpNi.yKtFg4of6h/.iATUX.fcdf102G4mgYmGYjHzg8bX9Uu', '2026-08-09 18:47:19', 'Patient');
 
 -- --------------------------------------------------------
 
@@ -1014,8 +1013,7 @@ ALTER TABLE `staffs`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD UNIQUE KEY `username` (`username`);
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- AUTO_INCREMENT for dumped tables
