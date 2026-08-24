@@ -115,7 +115,7 @@ function dashboardBillingPayload(array $entry): string {
                     <thead><tr><th>Queue</th><th>Patient</th><th>Services</th><th>Clinic</th><th>Arrival</th><th>Profile</th><th>Check-in</th><th>Action</th></tr></thead>
                     <tbody>
                     <?php foreach ($todayLogbook as $entry): ?>
-                        <tr>
+                        <tr data-logbook-patient="<?= (int) $entry['patient_id'] ?>">
                             <td>
                                 <?php if ($entry['is_in_treatment']): ?><span class="vd-queue-badge vd-queue-now">Now</span>
                                 <?php elseif ($entry['is_next']): ?><span class="vd-queue-badge vd-queue-next">Next</span>
@@ -138,7 +138,7 @@ function dashboardBillingPayload(array $entry): string {
                                 <?php if (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
                                     <span class="text-muted small">Awaiting patient code</span>
                                 <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?>
-                                    <button type="button" class="btn vd-btn-outline btn-sm" data-complete-profile="<?= (int) $entry['patient_id'] ?>">Complete Patient Form</button>
+                                    <button type="button" class="btn vd-btn-outline btn-sm" data-complete-profile="<?= (int) $entry['patient_id'] ?>" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">Review Patient Profile</button>
                                 <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready' && $entry['is_next']): ?>
                                     <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
                                         <i class="ti ti-player-play me-1"></i>Start Next
@@ -413,7 +413,7 @@ function dashboardBillingPayload(array $entry): string {
             const content = document.querySelector('.vd-dash-content');
             LoadingUI.showContent(content, { label: 'Loading patient form…' });
             try {
-                const response = await fetch(`partials/_patient-form.php?id=${button.dataset.completeProfile}`);
+                const response = await fetch(`partials/_patient-checkin-form.php?id=${button.dataset.completeProfile}&appointment_id=${button.dataset.appointmentId}`);
                 if (!response.ok) throw new Error('Unable to load patient form.');
                 content.innerHTML = await response.text();
                 content.querySelectorAll('script').forEach(oldScript => {
@@ -426,6 +426,17 @@ function dashboardBillingPayload(array $entry): string {
             finally { LoadingUI.finishContent(content); }
         });
     });
+
+    const highlightedPatient = sessionStorage.getItem('highlightLogbookPatient');
+    if (highlightedPatient) {
+        const row = document.querySelector(`[data-logbook-patient="${highlightedPatient}"]`);
+        if (row) {
+            row.classList.add('vd-logbook-row-highlight');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            window.setTimeout(() => row.classList.remove('vd-logbook-row-highlight'), 3500);
+        }
+        sessionStorage.removeItem('highlightLogbookPatient');
+    }
 
     document.querySelectorAll('[data-queue-action]').forEach(button => {
         button.addEventListener('click', async () => {

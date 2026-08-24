@@ -130,175 +130,43 @@ class PatientController {
 
     public function updatePersonal() {
         header('Content-Type: application/json');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-            exit;
-        }
-
-        $patient_id = $this->requirePatient();
-
-        $result = $this->patients->updatePersonal($patient_id, [
-            'firstname'      => $_POST['firstname'] ?? '',
-            'middlename'     => $_POST['middlename'] ?? '',
-            'lastname'       => $_POST['lastname'] ?? '',
-            'birthdate'      => $_POST['birthdate'] ?? null,
-            'age'            => $_POST['age'] ?? null,
-            'gender'         => $_POST['gender'] ?? '',
-            'civil_status'   => $_POST['civil_status'] ?? '',
-            'phone_number'   => $_POST['phone_number'] ?? '',
-            'email'          => $_POST['email'] ?? '',
-            'home_address'   => $_POST['home_address'] ?? '',
-            'work_address'   => $_POST['work_address'] ?? '',
-            'occupation'     => $_POST['occupation'] ?? '',
-            'office_contact' => $_POST['office_contact'] ?? '',
-            'fb_account'     => $_POST['fb_account'] ?? '',
-        ]);
-
-        echo json_encode([
-            'success' => (bool) $result,
-            'message' => $result ? 'Personal information updated.' : 'Failed to update.',
-        ]);
+        $this->requirePatient();
+        echo json_encode(['success' => false, 'message' => 'Personal information can only be updated by clinic staff.']);
         exit;
     }
 
     public function updateMinors() {
         header('Content-Type: application/json');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-            exit;
-        }
-
-        $patient_id = $this->requirePatient();
-
-        $result = $this->patients->updateMinors($patient_id, [
-            'guardian_name'     => $_POST['guardian_name'] ?? '',
-            'guardian_contact'  => $_POST['guardian_contact'] ?? '',
-            'physician_name'    => $_POST['physician_name'] ?? '',
-            'physician_contact' => $_POST['physician_contact'] ?? '',
-            'physician_address' => $_POST['physician_address'] ?? '',
-        ]);
-
-        echo json_encode([
-            'success' => (bool) $result,
-            'message' => $result ? 'Guardian information updated.' : 'Failed to update.',
-        ]);
+        $this->requirePatient();
+        echo json_encode(['success' => false, 'message' => 'Guardian and physician information can only be updated by clinic staff.']);
         exit;
     }
 
     public function updateDental() {
         header('Content-Type: application/json');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-            exit;
-        }
-
-        $patient_id = $this->requirePatient();
-
-        $result = $this->patients->updateDentalHistory($patient_id, [
-            'previous_dentist'  => $_POST['previous_dentist'] ?? '',
-            'last_dental_visit'  => $_POST['last_dental_visit'] ?? null,
-            'treatment_done'     => $_POST['treatment_done'] ?? '',
-            'reason_for_visit'   => $_POST['reason_for_visit'] ?? '',
-            'referred_by'        => $_POST['referred_by'] ?? '',
-            'last_updated_by'    => 'patient',
-        ]);
-
-        echo json_encode([
-            'success' => (bool) $result,
-            'message' => $result ? 'Dental history updated.' : 'Failed to update.',
-        ]);
+        $this->requirePatient();
+        echo json_encode(['success' => false, 'message' => 'Dental history can only be updated by clinic staff.']);
         exit;
     }
 
     public function updateHealth() {
         header('Content-Type: application/json');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-            exit;
-        }
-
-        $patient_id = $this->requirePatient();
-
-        $result = $this->patients->updateMedicalHistory($patient_id, [
-            'good_health'              => $_POST['good_health'] ?? null,
-            'medical_condition'        => $_POST['medical_condition'] ?? null,
-            'medical_condition_detail' => $_POST['medical_condition_detail'] ?? '',
-            'serious_illness'          => $_POST['serious_illness'] ?? null,
-            'serious_illness_detail'   => $_POST['serious_illness_detail'] ?? '',
-            'hospitalized'             => $_POST['hospitalized'] ?? null,
-            'hospitalized_detail'      => $_POST['hospitalized_detail'] ?? '',
-            'medication'               => $_POST['medication'] ?? null,
-            'medication_detail'        => $_POST['medication_detail'] ?? '',
-            'smoke'                    => $_POST['smoke'] ?? null,
-            'alcohol'                  => $_POST['alcohol'] ?? null,
-            'drugs'                    => $_POST['drugs'] ?? null,
-            'allergy'                  => $_POST['allergy'] ?? null,
-            'allergy_detail'           => $_POST['allergy_detail'] ?? '',
-            'pregnant'                 => $_POST['pregnant'] ?? null,
-            'nursing'                  => $_POST['nursing'] ?? null,
-            'birth_control'            => $_POST['birth_control'] ?? null,
-            'blood_type'               => $_POST['blood_type'] ?? '',
-            'blood_pressure'           => $_POST['blood_pressure'] ?? '',
-            'last_updated_by'          => 'patient',
-        ]);
-
-        echo json_encode([
-            'success' => (bool) $result,
-            'message' => $result ? 'Health questionnaire updated.' : 'Failed to update.',
-        ]);
+        $this->requirePatient();
+        echo json_encode(['success' => false, 'message' => 'Medical information can only be updated by clinic staff.']);
         exit;
     }
 
     public function updateConditions() {
         header('Content-Type: application/json');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-            exit;
-        }
-
-        $patient_id = $this->requirePatient();
-
-        $conditions = $_POST['conditions'] ?? [];
-        if (!is_array($conditions)) {
-            $conditions = [];
-        }
-
-        $cond_others = $_POST['cond_others'] ?? '';
-
-        $result = $this->patients->updateConditions($patient_id, $conditions, $cond_others);
-
-        echo json_encode([
-            'success' => (bool) $result,
-            'message' => $result ? 'Conditions updated.' : 'Failed to update.',
-        ]);
+        $this->requirePatient();
+        echo json_encode(['success' => false, 'message' => 'Medical conditions can only be updated by clinic staff.']);
         exit;
     }
 
     public function updateConsent() {
         header('Content-Type: application/json');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-            exit;
-        }
-
-        $patient_id = $this->requirePatient();
-
-        $result = $this->patients->updateConsent($patient_id, [
-            'consent_name' => $_POST['consent_name'] ?? '',
-            'consent_for'  => $_POST['consent_for'] ?? '',
-            'consent_date' => $_POST['consent_date'] ?? null,
-        ]);
-
-        echo json_encode([
-            'success' => (bool) $result,
-            'message' => $result ? 'Consent updated.' : 'Failed to update.',
-        ]);
+        $this->requirePatient();
+        echo json_encode(['success' => false, 'message' => 'Consent information can only be updated by clinic staff.']);
         exit;
     }
 
@@ -334,6 +202,19 @@ class PatientController {
                 exit;
             }
         }
+        if (!$isDraft && ($_POST['contact_confirmed'] ?? '') !== '1') {
+            echo json_encode(['success' => false, 'message' => 'Confirm the patient’s phone number and email before marking the profile ready.']);
+            exit;
+        }
+        $normalizedPhone = Patient::normalizePhone($_POST['phone_number'] ?? '');
+        if (!$isDraft && !preg_match('/^09\d{9}$/', $normalizedPhone)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid 11-digit Philippine mobile number.']);
+            exit;
+        }
+        if (!$isDraft && trim($_POST['email'] ?? '') !== '' && !filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid email address or leave the email field blank.']);
+            exit;
+        }
         $birth = DateTime::createFromFormat('Y-m-d', $_POST['birthdate']);
         $today = new DateTime('today');
         if (!$isDraft && (!$birth || $birth > $today)) {
@@ -346,6 +227,29 @@ class PatientController {
         foreach ($booleanFields as $field) {
             $data[$field] = $this->toBool($_POST[$field] ?? null);
         }
+        $requiredMedicalAnswers = ['good_health','medical_condition','serious_illness','hospitalized','medication','smoke','alcohol','drugs','allergy'];
+        if (!$isDraft) {
+            foreach ($requiredMedicalAnswers as $field) {
+                if ($data[$field] === null) {
+                    echo json_encode(['success' => false, 'message' => 'Review and answer every general health question.']);
+                    exit;
+                }
+            }
+            if (($_POST['gender'] ?? '') === 'Female') {
+                foreach (['pregnant','nursing','birth_control'] as $field) {
+                    if ($data[$field] === null) {
+                        echo json_encode(['success' => false, 'message' => 'Complete the women-only health questions.']);
+                        exit;
+                    }
+                }
+            }
+            foreach (['medical_condition','serious_illness','hospitalized','medication','allergy'] as $field) {
+                if ($data[$field] === 1 && trim($_POST[$field . '_detail'] ?? '') === '') {
+                    echo json_encode(['success' => false, 'message' => 'Add details for every medical question answered Yes.']);
+                    exit;
+                }
+            }
+        }
         $textFields = [
             'firstname','lastname','middlename','gender','civil_status','phone_number','email','home_address','work_address',
             'occupation','office_contact','fb_account','guardian_name','guardian_contact','physician_name','physician_contact',
@@ -354,13 +258,23 @@ class PatientController {
             'blood_type','blood_pressure','cond_others','consent_name','consent_for'
         ];
         foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        $data['phone_number'] = $normalizedPhone;
         $data['birthdate'] = $_POST['birthdate'];
         $data['age'] = $birth ? $birth->diff($today)->y : null;
         $submittedConditions = (array) ($_POST['conditions'] ?? []);
-        if (!empty($_POST['conditions_text'])) {
-            $submittedConditions = array_merge($submittedConditions, explode(',', $_POST['conditions_text']));
+        $conditionGroups = require __DIR__ . '/../../config/medicalConditions.php';
+        $allowedConditions = array_merge(...array_values($conditionGroups));
+        $data['conditions'] = array_values(array_intersect(array_map('trim', $submittedConditions), $allowedConditions));
+        $data['contact_confirmed'] = ($_POST['contact_confirmed'] ?? '') === '1';
+        $data['appointment_id'] = (int) ($_POST['appointment_id'] ?? 0) ?: null;
+        if (!empty($_POST['no_known_conditions'])) {
+            $data['conditions'] = [];
+            $data['cond_others'] = '';
         }
-        $data['conditions'] = array_values(array_filter(array_map('trim', $submittedConditions)));
+        if (!$isDraft && empty($_POST['no_known_conditions']) && !$data['conditions'] && $data['cond_others'] === '') {
+            echo json_encode(['success' => false, 'message' => 'Select the patient’s medical conditions or confirm that there are no known conditions.']);
+            exit;
+        }
 
         echo json_encode($this->patients->completeProfileByStaff($patientId, $data, (int) $_SESSION['user_id'], !$isDraft));
         exit;

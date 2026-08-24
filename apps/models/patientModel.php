@@ -154,9 +154,15 @@ class Patient {
     public function getPatientFull($patient_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT v.*, p.profile_completed_at, p.profile_completed_by_user_id
+                SELECT v.*, p.profile_completed_at, p.profile_completed_by_user_id,
+                       dh.last_updated_by AS dental_last_updated_by,
+                       dh.last_updated_at AS dental_last_updated_at,
+                       mh.last_updated_by AS medical_last_updated_by,
+                       mh.last_updated_at AS medical_last_updated_at
                 FROM vw_patient_information v
                 JOIN patients p ON p.patient_id = v.patient_id
+                LEFT JOIN patient_dental_history dh ON dh.patient_id = p.patient_id
+                LEFT JOIN patient_medical_history mh ON mh.patient_id = p.patient_id
                 WHERE v.patient_id = :patient_id
             ");
             $stmt->execute([':patient_id' => $patient_id]);
@@ -746,7 +752,11 @@ class Patient {
             $audit->record(
                 'patient', $patientId, $markComplete ? 'profile_completed' : 'profile_draft_saved',
                 ($markComplete ? 'Completed' : 'Saved a draft of') . " the patient form for patient #{$patientId} at the front desk.",
-                null, ['profile_status' => $markComplete ? 'Complete' : 'Draft'], $actor
+                null, [
+                    'profile_status' => $markComplete ? 'Complete' : 'Draft',
+                    'contact_confirmed' => !empty($data['contact_confirmed']),
+                    'appointment_id' => $data['appointment_id'] ?? null,
+                ], $actor
             );
 
             $this->conn->commit();

@@ -48,10 +48,9 @@ $allConditions = [
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Personal Information</span>
-        <button class="btn vd-btn-gold btn-sm" id="savePersonalBtn">Save Changes</button>
         </div>
         <div class="vd-profile-body">
-        <form id="personalForm">
+        <form id="personalForm" inert>
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">First Name</label>
@@ -141,10 +140,9 @@ $allConditions = [
         style="<?= (empty($patient['guardian_name']) && (($patient['age'] ?? 99) >= 18)) ? 'display:none;' : '' ?>">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Guardian / Physician</span>
-        <button class="btn vd-btn-gold btn-sm" id="saveMinorsBtn">Save Changes</button>
         </div>
         <div class="vd-profile-body">
-        <form id="minorsForm">
+        <form id="minorsForm" inert>
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Guardian Name</label>
@@ -180,10 +178,9 @@ $allConditions = [
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Dental History</span>
-        <button class="btn vd-btn-gold btn-sm" id="saveDentalBtn">Save Changes</button>
         </div>
         <div class="vd-profile-body">
-        <form id="dentalForm">
+        <form id="dentalForm" inert>
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Previous Dentist</label>
@@ -219,10 +216,9 @@ $allConditions = [
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Health Questionnaire</span>
-        <button class="btn vd-btn-gold btn-sm" id="saveHealthBtn">Save Changes</button>
         </div>
         <div class="vd-profile-body">
-        <form id="healthForm">
+        <form id="healthForm" inert>
             <?php
             $yesnoFields = [
                 'good_health'        => 'Are you in good health?',
@@ -316,10 +312,9 @@ $allConditions = [
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Medical Conditions</span>
-        <button class="btn vd-btn-gold btn-sm" id="saveConditionsBtn">Save Changes</button>
         </div>
         <div class="vd-profile-body">
-        <form id="conditionsForm">
+        <form id="conditionsForm" inert>
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-1 mb-3">
             <?php foreach ($allConditions as $cond): ?>
             <div class="col">
@@ -346,10 +341,9 @@ $allConditions = [
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Consent</span>
-        <button class="btn vd-btn-gold btn-sm" id="saveConsentBtn">Save Changes</button>
         </div>
         <div class="vd-profile-body">
-        <form id="consentForm">
+        <form id="consentForm" inert>
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Consent Name</label>
@@ -378,110 +372,3 @@ $allConditions = [
     </div>
 
 </div>
-
-<script>
-(function () {
-    const CONTROLLER = '../../controllers/patientController.php';
-
-    function showToast(msg, success) {
-        if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
-        console.warn('showToast not available:', msg);
-    }
-
-    async function submitSection(formId, action, button) {
-        const form     = document.getElementById(formId);
-        const formData = new FormData(form);
-        formData.append('action', action);
-
-        LoadingUI.setButton(button, true, 'Saving…');
-        try {
-        const res    = await fetch(CONTROLLER, { method: 'POST', body: formData });
-        const result = await res.json();
-        showToast(result.message, result.success);
-        } catch (err) {
-        showToast('Network error. Please try again.', false);
-        console.error(err);
-        } finally {
-        LoadingUI.setButton(button, false);
-        }
-    }
-
-    // ── Save buttons ──
-    document.getElementById('savePersonalBtn').addEventListener('click', (event) =>
-        submitSection('personalForm', 'updatePersonal', event.currentTarget));
-
-    document.getElementById('saveMinorsBtn')?.addEventListener('click', (event) =>
-        submitSection('minorsForm', 'updateMinors', event.currentTarget));
-
-    document.getElementById('saveDentalBtn').addEventListener('click', (event) =>
-        submitSection('dentalForm', 'updateDental', event.currentTarget));
-
-    document.getElementById('saveHealthBtn').addEventListener('click', (event) =>
-        submitSection('healthForm', 'updateHealth', event.currentTarget));
-
-    document.getElementById('saveConditionsBtn').addEventListener('click', (event) =>
-        submitSection('conditionsForm', 'updateConditions', event.currentTarget));
-
-    document.getElementById('saveConsentBtn').addEventListener('click', (event) =>
-        submitSection('consentForm', 'updateConsent', event.currentTarget));
-
-    // ── Show/hide minors card based on age ──
-    const birthdateInput = document.querySelector('input[name="birthdate"]');
-    const minorsCard     = document.getElementById('minorsCard');
-
-    if (birthdateInput) {
-        birthdateInput.addEventListener('change', function () {
-        if (!this.value) return;
-        const birthdate = new Date(this.value);
-        const today     = new Date();
-        let age = today.getFullYear() - birthdate.getFullYear();
-        const m = today.getMonth() - birthdate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthdate.getDate())) age--;
-        // Auto-fill age field
-        document.querySelector('input[name="age"]').value = age;
-        minorsCard.style.display = age < 18 ? '' : 'none';
-        });
-    }
-
-    // ── Enable/disable detail inputs based on yes/no radio ──
-    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-        radio.addEventListener('change', function () {
-        const name      = this.name;
-        const detailMap = {
-            medical_condition : 'medical_condition_detail',
-            serious_illness   : 'serious_illness_detail',
-            hospitalized      : 'hospitalized_detail',
-            medication        : 'medication_detail',
-            allergy           : 'allergy_detail',
-        };
-        if (detailMap[name]) {
-            const detailInput = document.querySelector(`input[name="${detailMap[name]}"]`);
-            if (detailInput) {
-            detailInput.disabled = this.value === '0';
-            if (this.value === '0') detailInput.value = '';
-            }
-        }
-        });
-    });
-
-    const phoneInput = document.getElementById('phoneNumber'); // match the id you used above
-
-        if (phoneInput) {
-            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
-                'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
-
-            phoneInput.addEventListener('keydown', function (e) {
-                if (e.ctrlKey || e.metaKey) return;           // allow copy/paste/select-all
-                if (allowedKeys.includes(e.key)) return;       // allow navigation keys
-                if (!/^[0-9]$/.test(e.key)) {
-                    e.preventDefault();                        // block anything that isn't a digit
-                }
-            });
-
-            phoneInput.addEventListener('input', function () {
-                this.value = this.value.replace(/\D/g, '').slice(0, 11); // cleanup fallback (e.g. pasted text)
-            });
-        }
-
-})();
-</script>

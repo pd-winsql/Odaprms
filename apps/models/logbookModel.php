@@ -402,7 +402,8 @@ class LogbookModel
             }
 
             $profileRequired = empty($appointment['profile_completed_at']);
-            $checkinStatus = $profileRequired ? 'Profile Required' : 'Ready';
+            // Every arrival receives a quick staff profile review before entering the ready queue.
+            $checkinStatus = 'Profile Required';
             $insert = $this->conn->prepare("
                 INSERT INTO appointment_checkins (
                     appointment_id,
@@ -455,7 +456,7 @@ class LogbookModel
                 'success' => true,
                 'message' => $profileRequired
                     ? 'Arrival recorded. Complete the patient form before treatment.'
-                    : 'Arrival recorded. The patient is ready.',
+                    : 'Arrival recorded. Review and confirm the patient profile before treatment.',
                 'status' => $checkinStatus,
                 'patient_id' => (int) $appointment['patient_id'],
             ];

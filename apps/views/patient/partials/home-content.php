@@ -53,11 +53,11 @@ $missingProfileFields = array_keys(array_filter(
     <div class="vd-home-profile-notice">
         <div class="vd-home-profile-notice-icon"><i class="ti ti-user-exclamation"></i></div>
         <div class="vd-home-profile-notice-copy">
-            <strong>Complete your patient profile</strong>
-            <span>Add your <?= htmlspecialchars(implode(', ', $missingProfileFields)) ?> so future bookings can be prepared faster.</span>
+            <strong>Your patient profile needs review</strong>
+            <span>Clinic staff will verify and complete the missing <?= htmlspecialchars(implode(', ', $missingProfileFields)) ?> during check-in.</span>
         </div>
         <button type="button" class="btn vd-btn-outline btn-sm" onclick="document.querySelector('[data-page=\'profile-content.php\']').click()">
-            Complete Profile
+            View Profile
         </button>
     </div>
     <?php endif; ?>

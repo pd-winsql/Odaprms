@@ -93,7 +93,7 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
             <?php if (!empty($missingProfile)): ?>
             <div class="alert alert-warning small">
                 Your profile is missing: <?= htmlspecialchars(implode(', ', $missingProfile)) ?>.
-                You can still request this appointment, but please <a href="#profile-content.php" class="alert-link" data-open-profile>complete your profile</a> for faster processing.
+                You can still request this appointment. Clinic staff will complete the missing information during check-in. You may <a href="#profile-content.php" class="alert-link" data-open-profile>view your profile</a> now.
             </div>
             <?php endif; ?>
 

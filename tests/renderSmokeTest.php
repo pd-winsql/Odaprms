@@ -21,7 +21,10 @@ $files = [
     'analytics' => __DIR__ . '/../apps/views/admin/partials/analytics-content.php',
     'patient-billing' => __DIR__ . '/../apps/views/patient/partials/billing-content.php',
     'patient-booking' => __DIR__ . '/../apps/views/patient/partials/booking-content.php',
+    'patient-home' => __DIR__ . '/../apps/views/patient/partials/home-content.php',
     'staff-patient-form' => __DIR__ . '/../apps/views/admin/partials/_patient-form.php',
+    'staff-checkin-form' => __DIR__ . '/../apps/views/admin/partials/_patient-checkin-form.php',
+    'patient-profile' => __DIR__ . '/../apps/views/patient/partials/profile-content.php',
     'cash-billing' => __DIR__ . '/../apps/views/admin/partials/cash-billing-content.php',
     'admin-change-password' => __DIR__ . '/../apps/views/admin/partials/change-password-content.php',
     'dental-change-password' => __DIR__ . '/../apps/views/dental_asst/partials/change-password-content.php',
@@ -35,7 +38,7 @@ if (!isset($files[$case])) {
     exit(2);
 }
 if ($case === 'historical-logbook') $_GET['date'] = date('Y-m-d');
-if ($case === 'staff-patient-form') $_GET['id'] = 14;
+if (in_array($case, ['staff-patient-form', 'staff-checkin-form'], true)) $_GET['id'] = 14;
 
 ob_start();
 include $files[$case];
