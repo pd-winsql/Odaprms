@@ -206,7 +206,12 @@ class PatientController {
             echo json_encode(['success' => false, 'message' => 'Confirm the patient’s phone number and email before marking the profile ready.']);
             exit;
         }
-        $normalizedPhone = Patient::normalizePhone($_POST['phone_number'] ?? '');
+        $submittedPhone = trim($_POST['phone_number'] ?? '');
+        if ($submittedPhone !== '' && !preg_match('/^\d{1,11}$/', $submittedPhone)) {
+            echo json_encode(['success' => false, 'message' => 'Phone number must contain numbers only and cannot exceed 11 digits.']);
+            exit;
+        }
+        $normalizedPhone = Patient::normalizePhone($submittedPhone);
         if (!$isDraft && !preg_match('/^09\d{9}$/', $normalizedPhone)) {
             echo json_encode(['success' => false, 'message' => 'Enter a valid 11-digit Philippine mobile number.']);
             exit;

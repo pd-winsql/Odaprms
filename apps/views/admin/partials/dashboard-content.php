@@ -17,7 +17,10 @@ $appointmentModel = new Appointment($conn);
 $depositModel = new DepositModel($conn);
 $depositModel->expireUnpaidAppointments();
 $logbookModel = new LogbookModel($conn);
-$upcoming = $appointmentModel->getAllUpcomingWithStatus();
+$upcoming = array_values(array_filter(
+    $appointmentModel->getAllUpcomingWithStatus(),
+    static fn(array $appointment): bool => ($appointment['date'] ?? '') > date('Y-m-d')
+));
 $clinics = (new Clinic($conn))->getAllClinics();
 $todayLogbook = $logbookModel->getToday();
 $arrivedCount = count(array_filter($todayLogbook, static fn($row) => !empty($row['arrived_at'])));

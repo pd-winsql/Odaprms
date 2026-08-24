@@ -191,7 +191,7 @@ class Patient {
     }
 
     public function getAllPatients() {
-        $stmt = $this->conn->query("SELECT * FROM patients");
+        $stmt = $this->conn->query("SELECT * FROM patients ORDER BY created_at DESC, patient_id DESC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
