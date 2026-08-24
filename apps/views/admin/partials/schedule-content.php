@@ -16,19 +16,28 @@ $scheduleModel = new Schedule($conn);
 $clinicModel = new Clinic($conn);
 $clinics = $clinicModel->getAllClinics();
 $schedulesByClinic = [];
-$totalUpcomingSchedules = 0;
-$totalCapacity = 0;
-$totalBooked = 0;
+$scheduleSummaryByClinic = [];
 foreach ($clinics as $clinic) {
     $clinicSchedules = $scheduleModel->getAvailableSchedulesByClinic($clinic['clinic_id']);
-    $schedulesByClinic[(int) $clinic['clinic_id']] = $clinicSchedules;
-    $totalUpcomingSchedules += count($clinicSchedules);
+    $clinicId = (int) $clinic['clinic_id'];
+    $clinicCapacity = 0;
+    $clinicBooked = 0;
+    $schedulesByClinic[$clinicId] = $clinicSchedules;
     foreach ($clinicSchedules as $schedule) {
-        $totalCapacity += (int) $schedule['max_appointments'];
-        $totalBooked += (int) $schedule['total_appointments'];
+        $clinicCapacity += (int) $schedule['max_appointments'];
+        $clinicBooked += (int) $schedule['total_appointments'];
     }
+    $scheduleSummaryByClinic[$clinicId] = [
+        'upcoming' => count($clinicSchedules),
+        'capacity' => $clinicCapacity,
+        'booked' => $clinicBooked,
+        'available' => max(0, $clinicCapacity - $clinicBooked),
+    ];
 }
-$totalAvailable = max(0, $totalCapacity - $totalBooked);
+$firstClinic = $clinics[0] ?? null;
+$activeSummary = $firstClinic
+    ? $scheduleSummaryByClinic[(int) $firstClinic['clinic_id']]
+    : ['upcoming' => 0, 'capacity' => 0, 'booked' => 0, 'available' => 0];
 
 // Build one global blocked-date list because schedules are unique across clinics.
 $occupiedScheduleDates = [];
@@ -49,7 +58,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 <div class="vd-welcome-name">Clinic Availability</div>
                 <p class="text-muted small mb-0 mt-2">Create appointment dates, review remaining availability, and adjust each schedule’s capacity.</p>
             </div>
-            <?php $firstClinic = $clinics[0] ?? null; ?>
             <button type="button" class="btn vd-btn-gold align-self-start" id="addScheduleForActiveClinic"
                 data-bs-toggle="modal" data-bs-target="#addScheduleModal"
                 data-clinic-id="<?= (int) ($firstClinic['clinic_id'] ?? 0) ?>"
@@ -59,22 +67,27 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             </button>
         </div>
 
-        <div class="vd-schedule-summary-grid">
-            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-calendar-event"></i></span><span><small>Upcoming Dates</small><strong><?= $totalUpcomingSchedules ?></strong></span></div>
-            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-users"></i></span><span><small>Total Capacity</small><strong><?= $totalCapacity ?></strong></span></div>
-            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-user-check"></i></span><span><small>Booked Slots</small><strong><?= $totalBooked ?></strong></span></div>
-            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-armchair"></i></span><span><small>Available Slots</small><strong><?= $totalAvailable ?></strong></span></div>
-        </div>
-
         <div class="vd-clinic-switch" role="tablist" aria-label="Schedule clinic">
             <?php foreach ($clinics as $index => $clinic): ?>
+            <?php $summary = $scheduleSummaryByClinic[(int) $clinic['clinic_id']]; ?>
             <button type="button" role="tab" aria-selected="<?= $index === 0 ? 'true' : 'false' ?>"
                 class="vd-clinic-switch-btn vd-schedule-clinic-btn <?= $index === 0 ? 'active' : '' ?>"
                 data-clinic-id="<?= (int) $clinic['clinic_id'] ?>"
-                data-clinic-name="<?= htmlspecialchars($clinic['clinic_name'], ENT_QUOTES) ?>">
+                data-clinic-name="<?= htmlspecialchars($clinic['clinic_name'], ENT_QUOTES) ?>"
+                data-upcoming="<?= $summary['upcoming'] ?>"
+                data-capacity="<?= $summary['capacity'] ?>"
+                data-booked="<?= $summary['booked'] ?>"
+                data-available="<?= $summary['available'] ?>">
                 <i class="ti ti-building-hospital"></i> <?= htmlspecialchars($clinic['clinic_name']) ?>
             </button>
             <?php endforeach; ?>
+        </div>
+
+        <div class="vd-schedule-summary-grid" aria-live="polite">
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-calendar-event"></i></span><span><small>Upcoming Dates</small><strong id="scheduleSummaryUpcoming"><?= $activeSummary['upcoming'] ?></strong></span></div>
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-users"></i></span><span><small>Total Capacity</small><strong id="scheduleSummaryCapacity"><?= $activeSummary['capacity'] ?></strong></span></div>
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-user-check"></i></span><span><small>Booked Slots</small><strong id="scheduleSummaryBooked"><?= $activeSummary['booked'] ?></strong></span></div>
+            <div class="vd-schedule-summary-card"><span class="vd-schedule-summary-icon"><i class="ti ti-armchair"></i></span><span><small>Available Slots</small><strong id="scheduleSummaryAvailable"><?= $activeSummary['available'] ?></strong></span></div>
         </div>
 
         <!-- Schedule Overview -->
@@ -103,7 +116,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             $usagePercent = $capacity > 0 ? min(100, (int) round(($booked / $capacity) * 100)) : 0;
                         ?>
                         <div class="vd-sched-card <?= $isPast ? 'past' : '' ?>"
-                            id="schedCard-<?= $sched['schedule_id'] ?>" data-booked="<?= $booked ?>">
+                            id="schedCard-<?= $sched['schedule_id'] ?>" data-booked="<?= $booked ?>" data-capacity="<?= $capacity ?>">
 
                             <!-- Default view -->
                             <div class="vd-sched-card-view">
@@ -195,6 +208,19 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
     const clinicButtons = Array.from(document.querySelectorAll('.vd-schedule-clinic-btn'));
     const clinicPanels = Array.from(document.querySelectorAll('.vd-schedule-clinic-panel'));
     const addScheduleButton = document.getElementById('addScheduleForActiveClinic');
+    const summaryFields = {
+        upcoming: document.getElementById('scheduleSummaryUpcoming'),
+        capacity: document.getElementById('scheduleSummaryCapacity'),
+        booked: document.getElementById('scheduleSummaryBooked'),
+        available: document.getElementById('scheduleSummaryAvailable')
+    };
+
+    function updateScheduleSummary(button) {
+        Object.entries(summaryFields).forEach(([key, field]) => {
+            if (field) field.textContent = button.dataset[key] || '0';
+        });
+    }
+
     clinicButtons.forEach(button => button.addEventListener('click', () => {
         clinicButtons.forEach(item => {
             const isActive = item === button;
@@ -204,6 +230,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         clinicPanels.forEach(panel => panel.classList.toggle('d-none', panel.dataset.clinicPanel !== button.dataset.clinicId));
         addScheduleButton.dataset.clinicId = button.dataset.clinicId;
         addScheduleButton.dataset.clinicName = button.dataset.clinicName;
+        updateScheduleSummary(button);
     }));
 
     // Show toast for query param results (e.g., edit conflict) — use global showToast if available
@@ -264,9 +291,17 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 if (result.trim() === 'success') {
                     const booked = Number(card.dataset.booked || 0);
                     const capacity = Number(newMax);
+                    const previousCapacity = Number(card.dataset.capacity || 0);
                     document.getElementById('slots-' + id).textContent = Math.max(0, capacity - booked) + ' available';
                     document.getElementById('usage-' + id).textContent = booked + ' booked of ' + capacity;
                     document.getElementById('progress-' + id).style.width = Math.min(100, Math.round((booked / capacity) * 100)) + '%';
+                    card.dataset.capacity = String(capacity);
+                    const activeClinicButton = clinicButtons.find(item => item.classList.contains('active'));
+                    if (activeClinicButton) {
+                        activeClinicButton.dataset.capacity = String(Number(activeClinicButton.dataset.capacity || 0) + capacity - previousCapacity);
+                        activeClinicButton.dataset.available = String(Number(activeClinicButton.dataset.available || 0) + capacity - previousCapacity);
+                        updateScheduleSummary(activeClinicButton);
+                    }
                     card.querySelector('.vd-sched-card-view').classList.remove('d-none');
                     card.querySelector('.vd-sched-card-edit').classList.add('d-none');
                     showToast('Schedule updated.', true);
