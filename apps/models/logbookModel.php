@@ -7,17 +7,20 @@ class LogbookModel
     private $conn;
     private $auditLog;
 
+    // Sets up the database connection and audit logger.
     public function __construct($conn)
     {
         $this->conn = $conn;
         $this->auditLog = new AuditLog($conn);
     }
 
+    // Builds the shared query used to retrieve logbook details.
     private function baseLogbookQuery(): string
     {
         return "
             SELECT
                 a.appointment_id,
+                a.appointment_code,
                 a.patient_id,
                 a.date,
                 a.status AS appointment_status,
@@ -63,6 +66,7 @@ class LogbookModel
         ";
     }
 
+    // Gets logbook entries for a selected date in queue order.
     public function getForDate($date): array
     {
         $stmt = $this->conn->prepare($this->baseLogbookQuery() . "
@@ -92,11 +96,13 @@ class LogbookModel
         return $this->annotateQueue($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
+    // Gets all logbook entries scheduled for today.
     public function getToday(): array
     {
         return $this->getForDate(date('Y-m-d'));
     }
 
+    // Adds queue position and treatment flags to each entry.
     private function annotateQueue(array $rows): array
     {
         $position = 0;
@@ -112,6 +118,7 @@ class LogbookModel
         return $rows;
     }
 
+    // Finds the appointment currently first in the ready queue.
     private function getNextReadyAppointmentId(bool $forUpdate = false): ?int
     {
         $sql = "
@@ -136,6 +143,7 @@ class LogbookModel
         return $value === false ? null : (int) $value;
     }
 
+    // Returns the next patient waiting to be treated.
     public function getNextPatient(): ?array
     {
         foreach ($this->getToday() as $row) {
@@ -144,6 +152,7 @@ class LogbookModel
         return null;
     }
 
+    // Locks and returns an appointment's queue record for an update.
     private function queueRecordForUpdate(int $appointmentId): ?array
     {
         $stmt = $this->conn->prepare("
@@ -161,6 +170,7 @@ class LogbookModel
         return $row ?: null;
     }
 
+    // Cleans and validates a reason for changing queue order.
     private function validateQueueReason(string $reason): ?string
     {
         $reason = trim($reason);
@@ -168,6 +178,7 @@ class LogbookModel
         return substr($reason, 0, 255);
     }
 
+    // Places the next ready patient on hold and records the action.
     public function placeOnHold(int $appointmentId, int $userId, string $reason): array
     {
         $reason = $this->validateQueueReason($reason);
@@ -217,6 +228,7 @@ class LogbookModel
         }
     }
 
+    // Returns an on-hold patient to the end of the queue.
     public function returnToQueue(int $appointmentId, int $userId): array
     {
         try {
@@ -257,6 +269,7 @@ class LogbookModel
         }
     }
 
+    // Moves a selected ready patient to the front of the queue.
     public function serveNext(int $appointmentId, int $userId, string $reason): array
     {
         $reason = $this->validateQueueReason($reason);
@@ -311,23 +324,37 @@ class LogbookModel
         }
     }
 
+    // Finds today's confirmed appointments using a code or patient name.
     public function lookupToday(string $term): array
     {
-        $term = strtoupper(trim($term));
-        if (!preg_match('/^AVC-[A-Z0-9]+$/', $term)) return [];
+        $term = trim($term);
+        if ($term === '') return [];
+
+        $isCode = preg_match('/^AVC-[A-Z0-9]+$/i', $term) === 1;
+        $where = $isCode
+            ? 'UPPER(a.appointment_code) = :term'
+            : "(
+                    a.firstname LIKE :term
+                    OR a.lastname LIKE :term
+                    OR CONCAT_WS(' ', a.firstname, a.lastname) LIKE :term
+                    OR CONCAT_WS(' ', a.lastname, a.firstname) LIKE :term
+               )";
         $sql = $this->baseLogbookQuery() . "
             WHERE a.date = CURDATE()
               AND a.status = 'Confirmed'
-              AND UPPER(a.appointment_code) = :term
-            ORDER BY a.created_at ASC LIMIT 10
+              AND {$where}
+            ORDER BY a.lastname ASC, a.firstname ASC, a.created_at ASC
+            LIMIT 10
         ";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':term' => $term]);
+        $stmt->execute([':term' => $isCode ? strtoupper($term) : '%' . $term . '%']);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($rows as &$row) $row['lookup_method'] = 'Code';
+        foreach ($rows as &$row) $row['lookup_method'] = $isCode ? 'Code' : 'Patient Search';
+        unset($row);
         return $rows;
     }
 
+    // Checks in a confirmed patient and adds them to today's queue.
     public function checkIn($appointmentId, $userId, string $lookupMethod = 'Code'): array
     {
         try {
@@ -439,6 +466,7 @@ class LogbookModel
         }
     }
 
+    // Marks a checked-in patient as ready after completing their profile.
     public function markReadyAfterProfile($patientId): void
     {
         $stmt = $this->conn->prepare("

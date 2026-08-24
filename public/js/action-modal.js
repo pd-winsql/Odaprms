@@ -66,7 +66,22 @@
             label.htmlFor = id;
             label.textContent = field.label || 'Details';
 
-            const input = field.multiline ? document.createElement('textarea') : document.createElement('input');
+            let input;
+            if (Array.isArray(field.options)) {
+                input = document.createElement('select');
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = field.placeholder || 'Select an option';
+                input.appendChild(placeholder);
+                field.options.forEach((option) => {
+                    const element = document.createElement('option');
+                    element.value = option.value;
+                    element.textContent = option.label;
+                    input.appendChild(element);
+                });
+            } else {
+                input = field.multiline ? document.createElement('textarea') : document.createElement('input');
+            }
             input.id = id;
             input.name = field.name || `field_${index}`;
             input.className = 'form-control vd-input';
@@ -74,7 +89,7 @@
             input.placeholder = field.placeholder || '';
             input.value = field.value || '';
             input.required = Boolean(field.required);
-            if (!field.multiline) input.type = field.type || 'text';
+            if (!field.multiline && input.tagName === 'INPUT') input.type = field.type || 'text';
             if (field.multiline) input.rows = field.rows || 3;
             if (field.minlength) input.minLength = field.minlength;
             if (field.maxlength) input.maxLength = field.maxlength;

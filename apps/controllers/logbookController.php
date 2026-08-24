@@ -8,11 +8,13 @@ require_once '../helpers/csrf.php';
 
 header('Content-Type: application/json');
 
+// Allows only authorized staff to use logbook actions.
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
     echo json_encode(['success' => false, 'message' => 'Forbidden.']);
     exit;
 }
 
+// Rejects requests with an invalid or expired CSRF token.
 if (!validate_csrf()) {
     echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
     exit;
@@ -22,6 +24,7 @@ $db = new Database();
 $model = new LogbookModel($db->connect());
 $action = $_POST['action'] ?? '';
 
+// Handles patient check-in requests.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'checkIn') {
     $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
     $lookupMethod = trim($_POST['lookup_method'] ?? 'Code');
@@ -29,11 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'checkIn') {
     exit;
 }
 
+// Looks up a confirmed appointment scheduled for today.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'lookup') {
     echo json_encode(['success' => true, 'matches' => $model->lookupToday(trim($_POST['term'] ?? ''))]);
     exit;
 }
 
+// Handles changes to a patient's position in the queue.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['placeOnHold', 'returnToQueue', 'serveNext'], true)) {
     $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
     if ($appointmentId <= 0) {
@@ -53,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['placeOnHold', '
     exit;
 }
 
+// Updates a patient's current visit status.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'updateVisitStatus') {
     $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
     $status = trim($_POST['status'] ?? '');
@@ -71,4 +77,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'updateVisitStatus') {
     exit;
 }
 
+// Returns an error when no supported action matches the request.
 echo json_encode(['success' => false, 'message' => 'Invalid request.']);

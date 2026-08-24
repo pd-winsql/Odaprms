@@ -87,8 +87,8 @@ function dashboardBillingPayload(array $entry): string {
         <div class="vd-dash-card-body">
         <div class="d-flex flex-wrap gap-2 mb-4">
             <input type="text" class="form-control vd-input flex-grow-1" id="checkinLookup"
-                placeholder="Enter appointment code (AVC-XXXXXX)" aria-label="Appointment code"
-                autocomplete="off" autocapitalize="characters">
+                placeholder="Enter appointment code or patient name" aria-label="Appointment code or patient name"
+                autocomplete="off">
             <button type="button" class="btn vd-btn-gold" id="findCheckinAppointment">Find Appointment</button>
         </div>
         <div class="vd-queue-overview mb-4">
@@ -347,7 +347,7 @@ function dashboardBillingPayload(array $entry): string {
     }));
     document.getElementById('findCheckinAppointment')?.addEventListener('click', async () => {
         const term = document.getElementById('checkinLookup').value.trim();
-        if (!/^AVC-[A-Z0-9]+$/i.test(term)) { window.showToast('Enter a valid appointment code, such as AVC-XXXXXX.', false); return; }
+        if (term.length < 2) { window.showToast('Enter an appointment code or at least two letters of the patient name.', false); return; }
         const lookupBody = new FormData();
         lookupBody.append('action', 'lookup');
         lookupBody.append('term', term);
@@ -355,22 +355,46 @@ function dashboardBillingPayload(array $entry): string {
         try {
             const lookupResponse = await fetch('../../controllers/logbookController.php', { method: 'POST', body: lookupBody });
             const lookup = await lookupResponse.json();
-            if (!lookup.success || !lookup.matches?.length) throw new Error('No confirmed appointment for today matches that code.');
-            const match = lookup.matches[0];
-            const confirmation = await window.showActionModal({
-                title: 'Confirm Patient Arrival',
-                kicker: 'Logbook check-in',
-                message: 'Verify the appointment details before recording this patient as arrived.',
-                confirmText: 'Check In Patient',
-                icon: 'ti-login-2',
-                tone: 'success',
-                details: [
-                    { label: 'Patient', value: `${match.firstname} ${match.lastname}` },
-                    { label: 'Service', value: match.service_name || 'Service not listed' },
-                    { label: 'Clinic', value: match.clinic_name }
-                ]
-            });
+            if (!lookup.success || !lookup.matches?.length) throw new Error('No confirmed appointment for today matches that search.');
+
+            let match = lookup.matches[0];
+            const confirmation = lookup.matches.length > 1
+                ? await window.showActionModal({
+                    title: 'Select Patient',
+                    kicker: 'Logbook check-in',
+                    message: 'More than one patient matched. Select the correct appointment before checking in.',
+                    confirmText: 'Check In Patient',
+                    icon: 'ti-users',
+                    tone: 'success',
+                    fields: [{
+                        name: 'appointment_id',
+                        label: 'Today\'s matching appointments',
+                        placeholder: 'Select a patient',
+                        required: true,
+                        options: lookup.matches.map(item => ({
+                            value: String(item.appointment_id),
+                            label: `${item.firstname} ${item.lastname} — ${item.service_name || 'Service not listed'} — ${item.clinic_name}`
+                        }))
+                    }]
+                })
+                : await window.showActionModal({
+                    title: 'Confirm Patient Arrival',
+                    kicker: 'Logbook check-in',
+                    message: 'Verify the appointment details before recording this patient as arrived.',
+                    confirmText: 'Check In Patient',
+                    icon: 'ti-login-2',
+                    tone: 'success',
+                    details: [
+                        { label: 'Patient', value: `${match.firstname} ${match.lastname}` },
+                        { label: 'Service', value: match.service_name || 'Service not listed' },
+                        { label: 'Clinic', value: match.clinic_name }
+                    ]
+                });
             if (!confirmation.confirmed) return;
+            if (lookup.matches.length > 1) {
+                match = lookup.matches.find(item => String(item.appointment_id) === confirmation.values.appointment_id);
+                if (!match) throw new Error('Select a valid appointment.');
+            }
             const body = new FormData();
             body.append('action', 'checkIn');
             body.append('appointment_id', match.appointment_id);
