@@ -20,8 +20,8 @@ class clinicController {
         exit;
     }
 
-    private function requireAdminPost(): void {
-        if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Admin') {
+    private function requireStaffPost(): void {
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
             $this->json(['success' => false, 'message' => 'Forbidden.']);
         }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -62,7 +62,7 @@ class clinicController {
     }
 
     public function addClinic(): void {
-        $this->requireAdminPost();
+        $this->requireStaffPost();
         $name = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
         $embedUrl = $this->normalizeEmbedUrl($_POST['embed_url'] ?? '');
@@ -84,9 +84,9 @@ class clinicController {
         $this->json(['success' => true, 'message' => 'Clinic added successfully.', 'clinic_id' => $clinicId]);
     }
 
-    // Inline update from the admin dashboard (AJAX, returns JSON)
+    // Inline update from either staff dashboard (AJAX, returns JSON)
     public function updateClinicInline() {
-        $this->requireAdminPost();
+        $this->requireStaffPost();
 
         $id      = $_POST['clinic_id'] ?? '';
         $name    = trim($_POST['name'] ?? '');

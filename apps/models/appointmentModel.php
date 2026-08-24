@@ -233,11 +233,13 @@ class Appointment {
     // Patient: view upcoming appointments
     public function getPatientUpcomingAppointments($patient_id) {
         try {
+            // Keep cancelled bookings out of the patient's upcoming list.
             $stmt = $this->conn->prepare("
                 SELECT a.*
                 FROM vw_appointment_overview a
                 WHERE a.patient_id = :patient_id
                 AND a.date >= CURDATE()
+                AND a.status <> 'Cancelled'
 
                 ORDER BY a.date ASC
             ");
@@ -456,10 +458,16 @@ class Appointment {
                 ];
             }
 
-            // If rejecting an appointment, require a non-empty reason.
-            if ($status === 'Rejected' && trim($reason) === '') {
+            // Require a reason when rejecting or cancelling an appointment.
+            if (in_array($status, ['Rejected', 'Cancelled'], true) && trim($reason) === '') {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'A rejection reason is required.'];
+                $reasonType = $status === 'Cancelled' ? 'cancellation' : 'rejection';
+                return ['success' => false, 'message' => "A {$reasonType} reason is required."];
+            }
+            // Keep the reason within the database field limit.
+            if (strlen(trim($reason)) > 255) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'The reason must not exceed 255 characters.'];
             }
 
             // Additional readiness checks when transitioning to 'In Progress'.
@@ -570,19 +578,16 @@ class Appointment {
                     ->execute([':id'=>$appointment_id]);
             }
             if ($status === 'Cancelled') {
-                // When clinic cancels, mark verified deposits as 'For Refund',
-                // and otherwise mark them expired.
+                // Keep a verified deposit available for refund or transfer.
                 $this->conn->prepare("
                     UPDATE appointment_deposits SET
-                        status = CASE WHEN status='Verified' THEN 'For Refund' ELSE 'Expired' END,
-                        refund_reason = CASE WHEN status='Verified' THEN 'Clinic cancelled the appointment.' ELSE refund_reason END
+                        refund_reason = CASE WHEN status='Verified' THEN :reason ELSE refund_reason END,
+                        status = CASE WHEN status='Verified' THEN 'For Refund' ELSE 'Expired' END
                     WHERE appointment_id=:id AND status IN ('Verified','Awaiting Submission','Rejected')
-                ")->execute([':id'=>$appointment_id]);
+                ")->execute([':reason'=>trim($reason), ':id'=>$appointment_id]);
             }
 
-            // Update the appointment row. Use CASE WHEN to set reviewer and
-            // timestamps only for specific status transitions while preserving
-            // existing values for other transitions.
+            // Save the new status, timestamps, and cancellation reason.
             $stmt = $this->conn->prepare("
                 UPDATE appointments SET
                     status = :status,
@@ -594,7 +599,8 @@ class Appointment {
                     rejection_reason = CASE WHEN :status = 'Rejected' THEN :reason ELSE rejection_reason END,
                     treatment_started_at = CASE WHEN :status = 'In Progress' THEN NOW() ELSE treatment_started_at END,
                     completed_at = CASE WHEN :status = 'Completed' THEN NOW() ELSE completed_at END,
-                    cancelled_at = CASE WHEN :status = 'Cancelled' THEN NOW() ELSE cancelled_at END
+                    cancelled_at = CASE WHEN :status = 'Cancelled' THEN NOW() ELSE cancelled_at END,
+                    cancellation_reason = CASE WHEN :status = 'Cancelled' THEN :reason ELSE cancellation_reason END
                 WHERE appointment_id = :id
             ");
             $stmt->execute([

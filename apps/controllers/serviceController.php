@@ -13,9 +13,9 @@ class serviceController {
         $this->services = new ServiceModel($conn);
     }
 
-    private function requireAdmin() {
+    private function requireStaff() {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
             echo json_encode(['success' => false, 'message' => 'Forbidden.']);
             exit;
         }
@@ -26,7 +26,7 @@ class serviceController {
     // ---------------------------------------------------------------
 
     public function addCategory() {
-        $this->requireAdmin();
+        $this->requireStaff();
 
         $name        = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
@@ -48,7 +48,7 @@ class serviceController {
     }
 
     public function updateCategory() {
-        $this->requireAdmin();
+        $this->requireStaff();
 
         $id          = $_POST['category_id'] ?? '';
         $name        = trim($_POST['name'] ?? '');
@@ -69,7 +69,7 @@ class serviceController {
     }
 
     public function deleteCategory($id) {
-        $this->requireAdmin();
+        $this->requireStaff();
         $result = $this->services->deleteCategory($id);
         echo json_encode($result
             ? ['success' => true, 'message' => 'Category deleted.']
@@ -82,7 +82,7 @@ class serviceController {
     // ---------------------------------------------------------------
 
     public function addService() {
-        $this->requireAdmin();
+        $this->requireStaff();
 
         $name        = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
@@ -115,7 +115,7 @@ class serviceController {
     }
 
     public function updateService() {
-        $this->requireAdmin();
+        $this->requireStaff();
 
         $id          = $_POST['service_id'] ?? '';
         $name        = trim($_POST['name'] ?? '');
@@ -147,7 +147,7 @@ class serviceController {
     }
 
     public function deleteService($id) {
-        $this->requireAdmin();
+        $this->requireStaff();
         $result = $this->services->deleteService($id);
         echo json_encode($result
             ? ['success' => true, 'message' => 'Service deleted.']

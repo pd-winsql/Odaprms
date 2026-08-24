@@ -972,16 +972,30 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const id = payload.appointmentId;
         const name = payload.patientName || `Appointment #${id}`;
         let reason = '';
-        if (newStatus === 'Rejected') {
-            const rejection = await window.showActionModal({
-                title: 'Reject Appointment Request', kicker: 'Appointment review',
-                message: 'The patient will receive this reason by email. Please keep it clear and professional.',
-                confirmText: 'Reject Appointment', icon: 'ti-calendar-x', tone: 'danger',
+        // Ask staff for the reason shown to the patient.
+        if (['Rejected', 'Cancelled'].includes(newStatus)) {
+            const isCancellation = newStatus === 'Cancelled';
+            const decision = await window.showActionModal({
+                title: isCancellation ? 'Cancel Appointment' : 'Reject Appointment Request',
+                kicker: isCancellation ? 'Appointment cancellation' : 'Appointment review',
+                message: isCancellation
+                    ? 'Enter the reason shown to the patient. For an emergency reschedule, cancel this appointment before transferring its deposit to the new booking.'
+                    : 'The patient will receive this reason by email. Please keep it clear and professional.',
+                confirmText: isCancellation ? 'Cancel Appointment' : 'Reject Appointment',
+                icon: isCancellation ? 'ti-calendar-cancel' : 'ti-calendar-x',
+                tone: isCancellation ? 'warning' : 'danger',
                 details: [{ label: 'Patient', value: name }],
-                fields: [{ name: 'reason', label: 'Reason for rejection', placeholder: 'Example: The selected schedule is no longer available.', multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255 }]
+                fields: [{
+                    name: 'reason',
+                    label: isCancellation ? 'Reason for cancellation' : 'Reason for rejection',
+                    placeholder: isCancellation
+                        ? 'Example: Patient emergency — requested reschedule.'
+                        : 'Example: The selected schedule is no longer available.',
+                    multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255
+                }]
             });
-            if (!rejection.confirmed) return;
-            reason = rejection.values.reason;
+            if (!decision.confirmed) return;
+            reason = decision.values.reason;
         } else {
             const labels = {
                 'Awaiting Deposit': ['Accept Appointment Request', 'Accept Appointment', 'The patient will be asked to submit the required deposit.'],
