@@ -33,6 +33,13 @@ $onHoldCount = count(array_filter($todayLogbook, static fn($row) => $row['queue_
 $reviewCount = $depositModel->getPendingReviewCount();
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 $csrfToken = $_SESSION['csrf_token'];
+$dashboardDisplayName = $_SESSION['display_name'] ?? $_SESSION['email'] ?? 'Staff member';
+// The session name may include middle names. Keep only its first and last
+// parts in the dashboard greeting while preserving the full sidebar name.
+$dashboardNameParts = preg_split('/\s+/', trim($dashboardDisplayName), -1, PREG_SPLIT_NO_EMPTY);
+$dashboardGreetingName = count($dashboardNameParts) > 1
+    ? $dashboardNameParts[0] . ' ' . $dashboardNameParts[count($dashboardNameParts) - 1]
+    : $dashboardDisplayName;
 
 function dashboardStatusClass($status) {
     return 'vd-status vd-status-' . strtolower(str_replace(' ', '-', $status));
@@ -59,6 +66,15 @@ function dashboardBillingPayload(array $entry): string {
 ?>
 
 <div class="d-flex flex-column gap-4">
+    <section class="vd-dashboard-welcome" aria-labelledby="vdDashboardGreeting">
+        <span class="vd-dashboard-welcome-kicker">Dashboard overview</span>
+        <h1 class="vd-dashboard-greeting" id="vdDashboardGreeting"
+            data-user-name="<?= htmlspecialchars($dashboardGreetingName, ENT_QUOTES, 'UTF-8') ?>">
+            Welcome, <?= htmlspecialchars($dashboardGreetingName) ?>
+        </h1>
+        <p class="vd-dashboard-welcome-copy">Here’s what’s happening at the clinic today.</p>
+    </section>
+
     <div class="vd-stat-grid">
         <div class="vd-stat-card"><div class="vd-stat-label">Today's Appointments</div><div class="vd-stat-value"><?= count($todayLogbook) ?></div><div class="vd-stat-sub">Across <?= count($clinics) ?> clinics</div></div>
         <div class="vd-stat-card"><div class="vd-stat-label">Arrived</div><div class="vd-stat-value"><?= $arrivedCount ?></div><div class="vd-stat-sub"><?= $readyCount ?> ready</div></div>

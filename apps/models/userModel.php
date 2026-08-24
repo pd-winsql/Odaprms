@@ -9,6 +9,8 @@ class User {
 
     public function findByEmail($email) {
         try {
+            // Build one session-ready name from the matching staff or patient
+            // profile; accounts without a profile fall back to their email.
             $stmt = $this->conn->prepare("
                 SELECT u.*,
                     COALESCE(

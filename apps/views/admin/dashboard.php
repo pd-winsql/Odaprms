@@ -52,7 +52,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260823-flatpickr-1">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260824-dashboard-greeting-1">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
 </head>
@@ -155,7 +155,10 @@ $today = date('l, F j Y');
         </div>
         <div class="vd-topbar-right">
 
-            <span class="vd-topbar-date"><?= $today ?></span>
+            <div class="vd-topbar-datetime">
+                <time class="vd-topbar-date" id="vdTopbarDate"><?= $today ?></time>
+                <time class="vd-topbar-clock" id="vdTopbarClock" aria-label="Current time in Manila">--:--:-- --</time>
+            </div>
             <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
             <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
         </div>
@@ -180,6 +183,7 @@ $today = date('l, F j Y');
     <script src="../../../public/js/action-modal.js?v=3"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/dashboard-tables.js?v=5"></script>
+    <script src="../../../public/js/dashboard-topbar.js?v=20260824-2"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="../../../public/js/admin-analytics.js?v=5"></script>

@@ -43,6 +43,8 @@ class UserController {
         // Set session
         $_SESSION['user_id']   = $user['id'];
         $_SESSION['email']     = $user['email'];
+        // Reuse the combined profile name returned by User::findByEmail() on
+        // authenticated pages instead of querying the profile on every page.
         $_SESSION['display_name'] = $user['display_name'] ?? $user['email'];
         $_SESSION['user_role'] = $user['user_role'];
 

@@ -217,6 +217,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 .vd-dash-title {
   font-family: 'Cormorant Garamond', serif;
@@ -224,16 +225,32 @@
   font-weight: 300;
   letter-spacing: 0.04em;
   color: var(--dark);
+  line-height: 1.05;
 }
 .vd-topbar-right {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+.vd-topbar-datetime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
 .vd-topbar-date {
   font-size: 11px;
   color: var(--mid);
   letter-spacing: 0.04em;
+}
+.vd-topbar-clock {
+  min-width: 86px;
+  color: var(--dark);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: 0.055em;
+  text-align: right;
 }
 .vd-role-badge {
   font-size: 9px;
@@ -329,6 +346,33 @@
   flex-direction: column;
   gap: 22px;
   flex: 1;
+}
+
+.vd-dashboard-welcome {
+  padding: 2px 2px 0;
+}
+.vd-dashboard-welcome-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.vd-dashboard-greeting {
+  margin: 0;
+  color: var(--dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.vd-dashboard-welcome-copy {
+  margin: 3px 0 0;
+  color: var(--mid);
+  font-size: 11px;
+  letter-spacing: 0.025em;
 }
 
 /* ── Stat cards ── */
@@ -1077,6 +1121,8 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
   .vd-dash-title { font-size: 18px; }
   .vd-topbar-search { display: none; }
   .vd-topbar-date { display: none; }
+  .vd-topbar-clock { min-width: 72px; font-size: 10px; }
+  .vd-dashboard-greeting { font-size: 25px; }
 }
 
 /* Desktop — patient gets a sidebar, bottom nav hidden */
@@ -1975,18 +2021,25 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 200px;
 }
  
 .vd-search-icon {
   position: absolute;
-  left: 10px;
+  left: 8px;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
   font-size: 13px;
+  line-height: 1;
   color: var(--gold);
   pointer-events: none;
 }
  
 .vd-search-input {
-  padding-left: 30px;
+  /* .vd-input removes left padding with !important in styles.css. Keep
+     enough room here for the leading search icon. */
+  padding-left: 28px !important;
   min-width: 200px;
   height: 34px;
   font-size: 12px;
