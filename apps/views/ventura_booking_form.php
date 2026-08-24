@@ -81,7 +81,7 @@
             <!-- BOOKING FORM -->
             <div id="formView">
                 <h1 class="vd-page-title mb-1">Book an Appointment</h1>
-                <p class="text-muted small mb-4">Choose your appointment, then submit the ₱400 GCash deposit within 30 minutes for clinic verification.</p>
+                <p class="text-muted small mb-4">Choose your appointment, then follow the current GCash deposit instructions in your patient dashboard.</p>
 
                 <!-- WIZARD STEPPER -->
                 <div class="vd-wizard-steps mb-4">

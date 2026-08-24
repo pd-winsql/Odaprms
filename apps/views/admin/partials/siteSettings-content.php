@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
     echo '<div class="vd-empty-state">Unauthorized.</div>';
-    exit;
+    return;
 }
 
 require_once __DIR__ . '/../../../../config/conn.php';
@@ -176,14 +176,14 @@ function sv($settings, $key)
     <div class="vd-dash-card">
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">GCash Deposit Settings</span></div>
         <div class="vd-dash-card-body">
-            <div class="alert alert-info small">The feature uses a fixed ₱400 deposit and a 30-minute receipt-submission deadline.</div>
+            <div class="alert alert-info small">These values apply when a new deposit deadline is created, including payment resubmissions and extensions. Existing recorded amounts and deadlines are not changed.</div>
             <div class="row g-3 mb-3">
-                <div class="col-md-3"><label class="vd-label form-label">Deposit</label><input class="form-control vd-input vd-field" data-field="deposit_amount" value="400.00" readonly></div>
-                <div class="col-md-3"><label class="vd-label form-label">Deadline</label><input class="form-control vd-input vd-field" data-field="payment_deadline_minutes" value="480 minutes (8 hours)" readonly></div>
+                <div class="col-md-3"><label class="vd-label form-label">Deposit Amount (₱)</label><input type="number" class="form-control vd-input vd-field" data-field="deposit_amount" value="<?= sv($settings, 'deposit_amount') ?>" min="0.01" max="99999999.99" step="0.01" required></div>
+                <div class="col-md-3"><label class="vd-label form-label">Deadline (minutes)</label><input type="number" class="form-control vd-input vd-field" data-field="payment_deadline_minutes" value="<?= sv($settings, 'payment_deadline_minutes') ?>" min="1" max="65535" step="1" required></div>
                 <div class="col-md-3"><label class="vd-label form-label">GCash Account Name</label><input class="form-control vd-input vd-field" data-field="gcash_account_name" value="<?= sv($settings, 'gcash_account_name') ?>" maxlength="100"></div>
                 <div class="col-md-3"><label class="vd-label form-label">GCash Number</label><input class="form-control vd-input vd-field" data-field="gcash_account_number" value="<?= sv($settings, 'gcash_account_number') ?>" maxlength="30"></div>
             </div>
-            <div class="d-flex justify-content-end mb-4"><button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="payment">Save GCash Details</button></div>
+            <div class="d-flex justify-content-end mb-4"><button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="payment">Save Deposit Settings</button></div>
             <hr style="border-color: var(--border);">
             <label class="vd-label form-label mt-2">GCash QR Code</label>
             <?php if (!empty($settings['gcash_qr_path'])): ?><div class="mb-3"><img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="Current GCash QR" style="max-height:180px" class="img-thumbnail"></div><?php endif; ?>
@@ -285,11 +285,16 @@ function sv($settings, $key)
                 const group = this.dataset.group;
                 const label = groupLabels[group] || group;
                 const saveButton = this;
+                const card = saveButton.closest('.vd-dash-card');
+                const invalidField = Array.from(card.querySelectorAll('.vd-field')).find(field => !field.checkValidity());
+                if (invalidField) {
+                    invalidField.reportValidity();
+                    return;
+                }
 
                 askForSaveConfirmation(
                     `Save changes to the "${label}" section? The update will take effect across applicable parts of the system.`,
                     async function() {
-                        const card = saveButton.closest('.vd-dash-card');
                         const fields = card.querySelectorAll('.vd-field');
 
                         const formData = new FormData();

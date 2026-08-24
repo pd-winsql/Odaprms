@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../helpers/paymentSettings.php';
+
 class EmailNotificationModel {
     private PDO $conn;
 
@@ -43,10 +45,24 @@ class EmailNotificationModel {
         }
 
         $name = trim(($recipient['firstname'] ?? '') . ' ' . ($recipient['lastname'] ?? ''));
+        $paymentStmt = $this->conn->prepare("
+            SELECT COALESCE(d.amount, ss.deposit_amount, 400) AS deposit_amount,
+                   COALESCE(ss.payment_deadline_minutes, 480) AS payment_deadline_minutes
+            FROM site_settings ss
+            LEFT JOIN appointment_deposits d ON d.appointment_id = :appointment_id
+            WHERE ss.id = 1
+            LIMIT 1
+        ");
+        $paymentStmt->execute([':appointment_id' => $appointmentId]);
+        $payment = $paymentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
         $payload = json_encode([
             'to_name' => $name !== '' ? $name : 'Patient',
             'template_key' => $templateKey,
             'value' => $value,
+            'template_variables' => [
+                '{deposit_amount}' => vdFormatPesoAmount((float) ($payment['deposit_amount'] ?? 400)),
+                '{payment_deadline}' => vdFormatDurationMinutes((int) ($payment['payment_deadline_minutes'] ?? 480)),
+            ],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         // The audit-based key makes retries safe: the same business event can

@@ -17,6 +17,43 @@ class SiteSettingsModel {
         'payment' => ['deposit_amount', 'payment_deadline_minutes', 'gcash_account_name', 'gcash_account_number'],
     ];
 
+    public static function validatePaymentSettings(array $data): array
+    {
+        $rawAmount = trim((string) ($data['deposit_amount'] ?? ''));
+        $rawDeadline = trim((string) ($data['payment_deadline_minutes'] ?? ''));
+        $accountName = trim((string) ($data['gcash_account_name'] ?? ''));
+        $accountNumber = trim((string) ($data['gcash_account_number'] ?? ''));
+
+        if (!preg_match('/^\d+(?:\.\d{1,2})?$/', $rawAmount)) {
+            return ['success' => false, 'message' => 'Deposit amount must be a valid amount with up to two decimal places.'];
+        }
+        if (!ctype_digit($rawDeadline)) {
+            return ['success' => false, 'message' => 'Payment deadline must be a whole number of minutes.'];
+        }
+
+        $amount = (float) $rawAmount;
+        $deadlineMinutes = (int) $rawDeadline;
+        if ($amount < 0.01 || $amount > 99999999.99) {
+            return ['success' => false, 'message' => 'Deposit amount must be between ₱0.01 and ₱99,999,999.99.'];
+        }
+        if ($deadlineMinutes < 1 || $deadlineMinutes > 65535) {
+            return ['success' => false, 'message' => 'Payment deadline must be between 1 and 65,535 minutes.'];
+        }
+        if ($accountName === '' || $accountNumber === '') {
+            return ['success' => false, 'message' => 'GCash account name and number are required.'];
+        }
+
+        return [
+            'success' => true,
+            'data' => [
+                'deposit_amount' => number_format($amount, 2, '.', ''),
+                'payment_deadline_minutes' => (string) $deadlineMinutes,
+                'gcash_account_name' => $accountName,
+                'gcash_account_number' => $accountNumber,
+            ],
+        ];
+    }
+
     // Fetch the single settings row. Falls back to the table's own DEFAULT
     // values (via an empty INSERT) if the row is ever missing.
     public function getSettings() {

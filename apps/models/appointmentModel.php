@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/auditLogModel.php';
 require_once __DIR__ . '/emailNotificationModel.php';
+require_once __DIR__ . '/../helpers/paymentSettings.php';
 
 class Appointment {
     private $conn;
@@ -642,7 +643,7 @@ class Appointment {
                 'success' => true,
                 'changed' => true,
                 'message' => $status === 'Awaiting Deposit'
-                    ? 'Appointment accepted. The patient now has eight hours to submit the deposit.'
+                    ? 'Appointment accepted. The patient now has ' . vdFormatDurationMinutes($minutes) . ' to submit the ' . vdFormatPesoAmount($amount) . ' deposit.'
                     : ($status === 'In Progress' ? 'Treatment started for the next patient.' : 'Status updated successfully.'),
                 'audit' => [
                     'performed_by_name' => $actor['name'],

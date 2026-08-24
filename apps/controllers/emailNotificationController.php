@@ -4,6 +4,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/paymentSettings.php';
 require_once '../../config/mailer.php';
 
 header('Content-Type: application/json');
@@ -57,7 +58,7 @@ $failed = 0;
 try {
     $whereId = $notificationId > 0 ? ' AND notification_id = :notification_id' : '';
     $queue = $conn->prepare("
-        SELECT notification_id, recipient_email, payload, attempts
+        SELECT notification_id, appointment_id, recipient_email, payload, attempts
         FROM appointment_email_notifications
         WHERE delivery_status = 'Pending'
           AND attempts < 3
@@ -93,11 +94,29 @@ try {
 
         try {
             $payload = json_decode((string) $notification['payload'], true, 512, JSON_THROW_ON_ERROR);
+            $templateVariables = is_array($payload['template_variables'] ?? null) ? $payload['template_variables'] : [];
+            if (!$templateVariables) {
+                $paymentStmt = $conn->prepare("
+                    SELECT COALESCE(d.amount, ss.deposit_amount, 400) AS deposit_amount,
+                           COALESCE(ss.payment_deadline_minutes, 480) AS payment_deadline_minutes
+                    FROM site_settings ss
+                    LEFT JOIN appointment_deposits d ON d.appointment_id = :appointment_id
+                    WHERE ss.id = 1
+                    LIMIT 1
+                ");
+                $paymentStmt->execute([':appointment_id' => (int) $notification['appointment_id']]);
+                $payment = $paymentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+                $templateVariables = [
+                    '{deposit_amount}' => vdFormatPesoAmount((float) ($payment['deposit_amount'] ?? 400)),
+                    '{payment_deadline}' => vdFormatDurationMinutes((int) ($payment['payment_deadline_minutes'] ?? 480)),
+                ];
+            }
             $result = sendTemplateEmail(
                 (string) $notification['recipient_email'],
                 (string) ($payload['to_name'] ?? 'Patient'),
                 (string) ($payload['template_key'] ?? ''),
-                (string) ($payload['value'] ?? '')
+                (string) ($payload['value'] ?? ''),
+                $templateVariables
             );
         } catch (Throwable $e) {
             $result = ['success' => false, 'message' => $e->getMessage()];

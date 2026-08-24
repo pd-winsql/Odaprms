@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/auditLogModel.php';
 require_once __DIR__ . '/emailNotificationModel.php';
+require_once __DIR__ . '/../helpers/paymentSettings.php';
 
 class DepositModel {
     private $conn;
@@ -405,10 +406,10 @@ class DepositModel {
             $this->conn->beginTransaction();
             $settings = $this->conn->query("SELECT payment_deadline_minutes FROM site_settings WHERE id = 1")
                 ->fetch(PDO::FETCH_ASSOC) ?: [];
-            $minutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 30));
+            $minutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 480));
 
             $stmt = $this->conn->prepare("
-                SELECT d.appointment_id, d.status, a.status AS appointment_status
+                SELECT d.appointment_id, d.status, d.amount, a.status AS appointment_status
                 FROM appointment_deposits d
                 JOIN appointments a ON a.appointment_id = d.appointment_id
                 WHERE d.deposit_id = :deposit_id
@@ -467,7 +468,7 @@ class DepositModel {
             $this->conn->commit();
             return [
                 'success' => true,
-                'message' => 'Payment rejected. The patient has eight hours to resubmit.',
+                'message' => 'Payment rejected. The patient has ' . vdFormatDurationMinutes($minutes) . ' to resubmit the ' . vdFormatPesoAmount((float) $row['amount']) . ' deposit.',
                 'appointment_id' => (int) $row['appointment_id'],
                 'appointment' => ['id' => (int) $row['appointment_id'], 'status' => 'Awaiting Deposit'],
                 'deposit_status' => 'Rejected',
@@ -489,13 +490,13 @@ class DepositModel {
         if (strlen(trim($reason)) < 3) return ['success'=>false,'message'=>'An extension reason is required.'];
         try {
             $this->conn->beginTransaction();
-            $minutes=(int)($this->conn->query('SELECT payment_deadline_minutes FROM site_settings WHERE id=1')->fetchColumn() ?: 480);
-            $stmt=$this->conn->prepare("SELECT a.status,d.deposit_id,d.status deposit_status FROM appointments a JOIN appointment_deposits d ON d.appointment_id=a.appointment_id WHERE a.appointment_id=:id FOR UPDATE");$stmt->execute([':id'=>$appointmentId]);$row=$stmt->fetch(PDO::FETCH_ASSOC);
+            $minutes=max(1,(int)($this->conn->query('SELECT payment_deadline_minutes FROM site_settings WHERE id=1')->fetchColumn() ?: 480));
+            $stmt=$this->conn->prepare("SELECT a.status,d.deposit_id,d.status deposit_status,d.amount FROM appointments a JOIN appointment_deposits d ON d.appointment_id=a.appointment_id WHERE a.appointment_id=:id FOR UPDATE");$stmt->execute([':id'=>$appointmentId]);$row=$stmt->fetch(PDO::FETCH_ASSOC);
             if(!$row||$row['status']!=='Awaiting Deposit'||!in_array($row['deposit_status'],['Awaiting Submission','Rejected'],true)){ $this->conn->rollBack(); return ['success'=>false,'message'=>'This payment deadline cannot be extended.']; }
             $this->conn->prepare("UPDATE appointments SET payment_deadline_at=DATE_ADD(NOW(),INTERVAL {$minutes} MINUTE) WHERE appointment_id=:id")->execute([':id'=>$appointmentId]);
             $this->conn->prepare("UPDATE appointment_deposits SET resubmission_deadline_at=NULL,deadline_extended_by_user_id=:user,deadline_extended_at=NOW(),deadline_extension_reason=:reason WHERE deposit_id=:id")->execute([':user'=>$userId,':reason'=>trim($reason),':id'=>$row['deposit_id']]);
-            $actor=$this->auditLog->getUserActor($userId);$this->auditLog->record('appointment',$appointmentId,'payment_deadline_extended',"Extended the payment deadline for appointment #{$appointmentId} by eight hours.",null,['minutes'=>$minutes,'reason'=>trim($reason)],$actor);
-            $this->conn->commit();return ['success'=>true,'message'=>'Payment deadline extended by eight hours.'];
+            $duration=vdFormatDurationMinutes($minutes);$actor=$this->auditLog->getUserActor($userId);$this->auditLog->record('appointment',$appointmentId,'payment_deadline_extended',"Extended the payment deadline for appointment #{$appointmentId} by {$duration}.",null,['minutes'=>$minutes,'reason'=>trim($reason)],$actor);
+            $this->conn->commit();return ['success'=>true,'message'=>'Payment deadline extended by '.$duration.'.'];
         }catch(Throwable $e){if($this->conn->inTransaction())$this->conn->rollBack();error_log('extendDeadline error: '.$e->getMessage());return ['success'=>false,'message'=>'Unable to extend the deadline.'];}
     }
 

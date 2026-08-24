@@ -124,13 +124,21 @@ function buildEmailHtml($toName, $template, $value, ?array $branding = null, boo
 }
 
 // ── Generic sender: looks up a template by key, sends it with $value as the highlighted code/status ──
-function sendTemplateEmail($toEmail, $toName, $templateKey, $value)
+function sendTemplateEmail($toEmail, $toName, $templateKey, $value, array $templateVariables = [])
 {
     $template = getEmailTemplate($templateKey);
 
     if (!$template) {
         error_log("sendTemplateEmail error: unknown template key '$templateKey'");
         return ['success' => false, 'message' => 'Unknown email template.'];
+    }
+
+    if ($templateVariables) {
+        foreach (['subject', 'heading', 'intro', 'instruction', 'label', 'footer'] as $field) {
+            if (isset($template[$field])) {
+                $template[$field] = strtr($template[$field], $templateVariables);
+            }
+        }
     }
 
     $config = getMailConfig();

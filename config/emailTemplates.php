@@ -96,7 +96,7 @@ return [
         'subject' => 'Appointment Accepted - Deposit Required',
         'heading' => 'Deposit Required',
         'intro' => 'The clinic has tentatively accepted your appointment request.',
-        'instruction' => 'Please open Billing in your patient dashboard and submit the ₱400 GCash deposit within eight hours. Your slot remains reserved during this period.',
+        'instruction' => 'Please open Billing in your patient dashboard and submit the {deposit_amount} GCash deposit within {payment_deadline}. Your slot remains reserved during this period.',
         'label' => 'Appointment Status',
         'footer' => 'Your appointment becomes fully confirmed after the clinic verifies your payment.'
     ],
@@ -114,7 +114,7 @@ return [
         'subject' => 'Deposit Proof Needs Correction',
         'heading' => 'Payment Proof Rejected',
         'intro' => 'The clinic could not verify your submitted GCash payment proof.',
-        'instruction' => 'Review the reason below and upload corrected proof within eight hours.',
+        'instruction' => 'Review the reason below and upload corrected proof for the {deposit_amount} deposit within {payment_deadline}.',
         'label' => 'Reason',
         'footer' => 'The expiration timer is paused again after corrected proof is submitted.'
     ],

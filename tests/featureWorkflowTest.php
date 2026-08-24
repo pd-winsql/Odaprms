@@ -12,7 +12,9 @@ $conn = (new Database())->connect();
 expectTrue($conn->query('SELECT DATABASE()')->fetchColumn() === 'db-oaprms-system', 'Tests are isolated to the application database.');
 $appointments = new Appointment($conn); $deposits = new DepositModel($conn); $logbook = new LogbookModel($conn); $patients = new Patient($conn); $billings = new BillingModel($conn); $clinics = new Clinic($conn);
 $createdAppointments = []; $createdSchedules = []; $patientId = null; $createdClinicId = null; $registeredPatientId = null; $registeredUserId = null;
+$originalPaymentSettings = $conn->query('SELECT deposit_amount, payment_deadline_minutes FROM site_settings WHERE id=1')->fetch(PDO::FETCH_ASSOC);
 try {
+    $conn->exec("UPDATE site_settings SET deposit_amount=425.50, payment_deadline_minutes=75 WHERE id=1");
     $clinicId = (int) $conn->query('SELECT clinic_id FROM clinics ORDER BY clinic_id LIMIT 1')->fetchColumn();
     $serviceId = (int) $conn->query('SELECT service_id FROM services WHERE is_active=1 ORDER BY service_id LIMIT 1')->fetchColumn();
     $staffId = (int) $conn->query("SELECT id FROM users WHERE user_role IN ('Admin','Dental Assistant') ORDER BY id LIMIT 1")->fetchColumn();
@@ -52,7 +54,11 @@ try {
     $accepted=$appointments->updateAppointmentStatus($booking['appointment_id'],'Awaiting Deposit',$staffId); expectTrue($accepted['success'],'Staff accepts the request for payment.');
     expectTrue(($accepted['notification']['status'] ?? '') === 'Pending','Acceptance queues the patient email without contacting SMTP.');
     $deposit=$conn->query('SELECT * FROM appointment_deposits WHERE appointment_id='.(int)$booking['appointment_id'])->fetch(PDO::FETCH_ASSOC);
-    expectTrue((float)$deposit['amount']===400.0 && $deposit['status']==='Awaiting Submission','Acceptance creates the fixed ₱400 deposit and deadline.');
+    expectTrue((float)$deposit['amount']===425.5 && $deposit['status']==='Awaiting Submission','Acceptance creates a deposit using the configured amount.');
+    expectTrue(str_contains($accepted['message'] ?? '', '1 hour 15 minutes') && str_contains($accepted['message'] ?? '', '₱425.50'), 'Acceptance message uses the configured deposit and deadline.');
+    $queuedPayload=$conn->query('SELECT payload FROM appointment_email_notifications WHERE appointment_id='.(int)$booking['appointment_id'].' ORDER BY notification_id DESC LIMIT 1')->fetchColumn();
+    $queuedVariables=json_decode((string)$queuedPayload,true)['template_variables']??[];
+    expectTrue(($queuedVariables['{deposit_amount}']??'')==='₱425.50' && ($queuedVariables['{payment_deadline}']??'')==='1 hour 15 minutes','Queued email carries the configured deposit and deadline.');
     $reference='TEST'.date('YmdHis').random_int(100,999);
     $submitted=$deposits->submitReceipt($booking['appointment_id'],$reference,'storage/payment_receipts/test.jpg','image/jpeg'); expectTrue($submitted['success'],'Receipt submission pauses expiry and enters payment review.');
     $staffAppointment=array_values(array_filter($appointments->getAllUpcomingWithStatus(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
@@ -71,16 +77,27 @@ try {
     $shortPayment=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1500,$staffId);
     expectTrue(!$shortPayment['success']&&$conn->query('SELECT status FROM appointments WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()==='In Progress','Insufficient cash leaves the visit in progress and creates no billing.');
     $settled=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,2000,$staffId,'Paid at the front desk.');
-    expectTrue($settled['success']&&$settled['payment_status']==='Paid'&&(float)$settled['deposit_applied']===400.0&&(float)$settled['amount_due']===1600.0&&(float)$settled['change']===400.0,'Final billing deducts the deposit, calculates change, and records full payment.');
+    expectTrue($settled['success']&&$settled['payment_status']==='Paid'&&(float)$settled['deposit_applied']===425.5&&(float)$settled['amount_due']===1574.5&&(float)$settled['change']===425.5,'Final billing deducts the configured deposit, calculates change, and records full payment.');
     expectTrue($conn->query('SELECT status FROM appointments WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()==='Completed','Payment and visit completion are committed together.');
     expectTrue(!$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1600,$staffId)['success'],'A completed visit cannot be billed twice.');
     $billingRecord=array_values(array_filter($billings->getStaffBillings(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
     expectTrue($billingRecord&&$billingRecord['payment_status']==='Paid','The read-only billing records query includes the completed settlement.');
 
     $appointments->updateAppointmentStatus($differentDayBooking['appointment_id'],'Awaiting Deposit',$staffId);
+    $secondDeposit=$conn->query('SELECT * FROM appointment_deposits WHERE appointment_id='.(int)$differentDayBooking['appointment_id'])->fetch(PDO::FETCH_ASSOC);
+    $secondReference='TEST'.date('YmdHis').random_int(1000,9999);
+    expectTrue($deposits->submitReceipt($differentDayBooking['appointment_id'],$secondReference,'storage/payment_receipts/test.jpg','image/jpeg')['success'],'A second receipt can be submitted for resubmission testing.');
+    $rejected=$deposits->reject((int)$secondDeposit['deposit_id'],$staffId,'Reference could not be verified.');
+    expectTrue($rejected['success']&&str_contains($rejected['message'],'1 hour 15 minutes')&&str_contains($rejected['message'],'₱425.50'),'Rejected proof uses the configured resubmission deadline and stored deposit amount.');
+    $extended=$deposits->extendDeadline((int)$differentDayBooking['appointment_id'],$staffId,'Patient requested additional time.');
+    expectTrue($extended['success']&&str_contains($extended['message'],'1 hour 15 minutes'),'Deadline extension uses the configured duration.');
     $conn->prepare('UPDATE appointments SET payment_deadline_at=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE appointment_id=:id')->execute([':id'=>$differentDayBooking['appointment_id']]);
     expectTrue($deposits->expireUnpaidAppointments()>=1,'Unpaid accepted request expires after its deadline.');
 } finally {
+    if ($originalPaymentSettings) {
+        $restoreSettings=$conn->prepare('UPDATE site_settings SET deposit_amount=:amount, payment_deadline_minutes=:minutes WHERE id=1');
+        $restoreSettings->execute([':amount'=>$originalPaymentSettings['deposit_amount'],':minutes'=>$originalPaymentSettings['payment_deadline_minutes']]);
+    }
     foreach(array_reverse($createdAppointments) as $id){$conn->prepare("DELETE FROM audit_logs WHERE entity_type='appointment' AND entity_id=:id")->execute([':id'=>$id]);foreach(['appointment_billings','appointment_checkins','appointment_deposits','appointment_services'] as $table)$conn->prepare("DELETE FROM {$table} WHERE appointment_id=:id")->execute([':id'=>$id]);$conn->prepare('DELETE FROM appointments WHERE appointment_id=:id')->execute([':id'=>$id]);}
     if($patientId){$conn->prepare("DELETE FROM audit_logs WHERE entity_type='patient' AND entity_id=:id")->execute([':id'=>$patientId]);foreach(['patient_duplicate_reviews','patient_conditions','patient_consent','patient_dental_history','patient_medical_history'] as $table){$column=$table==='patient_duplicate_reviews'?'new_patient_id':'patient_id';$conn->prepare("DELETE FROM {$table} WHERE {$column}=:id")->execute([':id'=>$patientId]);}$conn->prepare('DELETE FROM patients WHERE patient_id=:id')->execute([':id'=>$patientId]);}
     foreach($createdSchedules as $id)$conn->prepare('DELETE FROM schedules WHERE schedule_id=:id')->execute([':id'=>$id]);

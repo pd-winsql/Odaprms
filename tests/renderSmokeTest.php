@@ -26,6 +26,8 @@ $files = [
     'admin-change-password' => __DIR__ . '/../apps/views/admin/partials/change-password-content.php',
     'dental-change-password' => __DIR__ . '/../apps/views/dental_asst/partials/change-password-content.php',
     'patient-change-password' => __DIR__ . '/../apps/views/patient/partials/change-password-content.php',
+    'settings' => __DIR__ . '/../apps/views/admin/partials/siteSettings-content.php',
+    'dental-settings' => __DIR__ . '/../apps/views/admin/partials/siteSettings-content.php',
 ];
 
 if (!isset($files[$case])) {
@@ -38,6 +40,14 @@ if ($case === 'staff-patient-form') $_GET['id'] = 14;
 ob_start();
 include $files[$case];
 $html = ob_get_clean();
+if ($case === 'dental-settings') {
+    if (!str_contains($html, 'Unauthorized.')) {
+        fwrite(STDERR, "Dental Assistant unexpectedly accessed admin settings.\n");
+        exit(1);
+    }
+    echo "PASS: Dental Assistant is denied access to admin settings.\n";
+    exit(0);
+}
 if (strlen($html) < 300) {
     fwrite(STDERR, "Rendered output was unexpectedly short for {$case}.\n");
     exit(1);

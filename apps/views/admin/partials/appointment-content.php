@@ -8,10 +8,14 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['Admin', 
 
 require_once  __DIR__ . '/../../../../config/conn.php';
 require_once  __DIR__ . '/../../../models/appointmentModel.php';
+require_once  __DIR__ . '/../../../helpers/paymentSettings.php';
 
 $db   = new Database();
 $conn = $db->connect();
 $appointmentModel = new Appointment($conn);
+$paymentSettings = $conn->query("SELECT deposit_amount, payment_deadline_minutes FROM site_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC) ?: [];
+$configuredDepositLabel = vdFormatPesoAmount((float) ($paymentSettings['deposit_amount'] ?? 400));
+$configuredDeadlineLabel = vdFormatDurationMinutes((int) ($paymentSettings['payment_deadline_minutes'] ?? 480));
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
@@ -1048,7 +1052,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const response = await window.showActionModal({
             title: 'Extend Payment Deadline',
             kicker: 'Deposit deadline',
-            message: 'Grant the patient another eight hours to submit the ₱400 deposit.',
+            message: <?= json_encode('Grant the patient another ' . $configuredDeadlineLabel . ' to submit the ' . $configuredDepositLabel . ' deposit.') ?>,
             confirmText: 'Extend Deadline',
             icon: 'ti-clock-plus',
             tone: 'warning',

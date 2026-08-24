@@ -45,12 +45,12 @@ class SiteSettingsController {
         }
 
         if ($group === 'payment') {
-            $data['deposit_amount'] = '400.00';
-            $data['payment_deadline_minutes'] = '480';
-            if ($data['gcash_account_name'] === '' || $data['gcash_account_number'] === '') {
-                echo json_encode(['success' => false, 'message' => 'GCash account name and number are required.']);
+            $validation = SiteSettingsModel::validatePaymentSettings($data);
+            if (!$validation['success']) {
+                echo json_encode($validation);
                 exit;
             }
+            $data = $validation['data'];
         }
 
         $result = $this->settings->updateGroup($group, $data, 'Admin');
