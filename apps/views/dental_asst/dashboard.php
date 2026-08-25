@@ -43,6 +43,7 @@ $today = date('l, F j Y');
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -57,6 +58,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
 </head>
+
 <body class="vd-dash-body">
 
     <!-- Sidebar overlay (mobile) -->
@@ -70,54 +72,54 @@ $today = date('l, F j Y');
         </div>
 
         <nav class="vd-sidebar-nav">
-        <div class="vd-nav-section">Main</div>
-        <a href="#" class="vd-nav-item active" data-page="dashboard-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-layout-dashboard"></i></span> Dashboard
-        </a>
-        <a href="#" class="vd-nav-item" data-page="appointment-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
-        </a>
-        <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
-        </a>
-        <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
-        </a>
-        <a href="#" class="vd-nav-item" data-page="logbook-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
-        </a>
-        <a href="#" class="vd-nav-item" data-page="patient-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
-        </a>
+            <div class="vd-nav-section">Main</div>
+            <a href="#" class="vd-nav-item active" data-page="dashboard-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-layout-dashboard"></i></span> Dashboard
+            </a>
+            <a href="#" class="vd-nav-item" data-page="appointment-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
+            </a>
+            <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
+            </a>
+            <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
+            </a>
+            <a href="#" class="vd-nav-item" data-page="logbook-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
+            </a>
+            <a href="#" class="vd-nav-item" data-page="patient-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
+            </a>
 
-        <div class="vd-nav-section">Manage</div>
-                <a href="#" class="vd-nav-item" data-page="services-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Services
-        </a>
-        <a href="#" class="vd-nav-item" data-page="clinic-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Clinics
-        </a>
-        <a href="#" class="vd-nav-item" data-page="schedule-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
-        </a>
+            <div class="vd-nav-section">Manage</div>
+            <a href="#" class="vd-nav-item" data-page="services-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Services
+            </a>
+            <a href="#" class="vd-nav-item" data-page="clinic-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Clinics
+            </a>
+            <a href="#" class="vd-nav-item" data-page="schedule-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
+            </a>
 
-        <div class="vd-nav-section">Account</div>
-        <a href="#" class="vd-nav-item" data-page="change-password-content.php">
-            <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
-        </a>
-        <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
-            <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
-        </a>
+            <div class="vd-nav-section">Account</div>
+            <a href="#" class="vd-nav-item" data-page="change-password-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
+            </a>
+            <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
+                <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
+            </a>
         </nav>
 
         <div class="vd-sidebar-footer">
-        <div class="vd-user-chip">
-            <div class="vd-user-avatar"><?= htmlspecialchars($initials) ?></div>
-            <div>
-            <div class="vd-user-name"><?= htmlspecialchars($displayName) ?></div>
-            <div class="vd-user-role"><?= htmlspecialchars($_SESSION['user_role']) ?></div>
+            <div class="vd-user-chip">
+                <div class="vd-user-avatar"><?= htmlspecialchars($initials) ?></div>
+                <div>
+                    <div class="vd-user-name"><?= htmlspecialchars($displayName) ?></div>
+                    <div class="vd-user-role"><?= htmlspecialchars($_SESSION['user_role']) ?></div>
+                </div>
             </div>
-        </div>
         </div>
 
     </aside>
@@ -127,25 +129,25 @@ $today = date('l, F j Y');
 
         <!-- Topbar -->
         <div class="vd-dash-topbar">
-        <div class="vd-dash-topbar-left">
-            <button class="vd-menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
-            <i class="ti ti-menu-2"></i>
-            </button>
-            <span class="vd-dash-title" id="dashTitle">Dashboard</span>
-        </div>
-        <div class="vd-topbar-right">
-            <div class="vd-topbar-datetime">
-                <time class="vd-topbar-date" id="vdTopbarDate"><?= $today ?></time>
-                <time class="vd-topbar-clock" id="vdTopbarClock" aria-label="Current time in Manila">--:--:-- --</time>
+            <div class="vd-dash-topbar-left">
+                <button class="vd-menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
+                    <i class="ti ti-menu-2"></i>
+                </button>
+                <span class="vd-dash-title" id="dashTitle">Dashboard</span>
             </div>
-            <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
-            <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
-        </div>
+            <div class="vd-topbar-right">
+                <div class="vd-topbar-datetime">
+                    <time class="vd-topbar-date" id="vdTopbarDate"><?= $today ?></time>
+                    <time class="vd-topbar-clock" id="vdTopbarClock" aria-label="Current time in Manila">--:--:-- --</time>
+                </div>
+                <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
+                <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
+            </div>
         </div>
 
         <!-- Content -->
         <div class="vd-dash-content">
-        <?php include 'partials/dashboard-content.php'; ?>
+            <?php include 'partials/dashboard-content.php'; ?>
         </div><!-- /vd-dash-content -->
     </main>
 
@@ -180,22 +182,23 @@ $today = date('l, F j Y');
             }, duration);
         };
 
-        
-        const sidebar        = document.getElementById('sidebar');
-        const overlay        = document.getElementById('sidebarOverlay');
-        const menuToggle     = document.getElementById('menuToggle');
+
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const menuToggle = document.getElementById('menuToggle');
 
         function openSidebar() {
-        sidebar.classList.add('open');
-        overlay.classList.add('active');
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
         }
+
         function closeSidebar() {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('active');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
         }
 
         menuToggle.addEventListener('click', () => {
-        sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+            sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
         });
         overlay.addEventListener('click', closeSidebar);
 
@@ -214,31 +217,36 @@ $today = date('l, F j Y');
         }
 
         async function loadpage(page, options = {}) {
-        const silent = options.silent === true;
-        let loaded = false;
-        if (!silent) LoadingUI.showContent(dashContent, { label: 'Loading dashboard…', page });
-        try {
-            const response = await fetch(`partials/${page}`, { cache: 'no-store' });
-            if (!response.ok) throw new Error('Network response was not ok');
-            const html = await response.text();
-            dashContent.innerHTML = html;
-
-            dashContent.querySelectorAll('script').forEach(oldScript => {
-            const newScript = document.createElement('script');
-            newScript.textContent = oldScript.textContent;
-            document.body.appendChild(newScript);
-            oldScript.remove();
+            const silent = options.silent === true;
+            let loaded = false;
+            if (!silent) LoadingUI.showContent(dashContent, {
+                label: 'Loading dashboard…',
+                page
             });
+            try {
+                const response = await fetch(`partials/${page}`, {
+                    cache: 'no-store'
+                });
+                if (!response.ok) throw new Error('Network response was not ok');
+                const html = await response.text();
+                dashContent.innerHTML = html;
 
-            closeSidebar();
-            loaded = true;
+                dashContent.querySelectorAll('script').forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = oldScript.textContent;
+                    document.body.appendChild(newScript);
+                    oldScript.remove();
+                });
+
+                closeSidebar();
+                loaded = true;
             } catch (error) {
-            dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
-            console.error('Error fetching page:', error);
+                dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
+                console.error('Error fetching page:', error);
             } finally {
-            if (!silent) LoadingUI.finishContent(dashContent);
-        }
-        return loaded;
+                if (!silent) LoadingUI.finishContent(dashContent);
+            }
+            return loaded;
         }
 
         // Poll for new appointments or deposit changes and silently refresh the
@@ -300,7 +308,10 @@ $today = date('l, F j Y');
             const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
             try {
                 const response = await fetch('../../controllers/appointmentController.php?action=latestAppointment', {
-                    cache: 'no-store', headers: { Accept: 'application/json' }
+                    cache: 'no-store',
+                    headers: {
+                        Accept: 'application/json'
+                    }
                 });
                 if (!response.ok) return;
                 const result = await response.json();
@@ -318,18 +329,20 @@ $today = date('l, F j Y');
                 if (dashContent.querySelector('.modal.show')) return;
 
                 appointmentRefreshInFlight = true;
-                const state = currentPage === 'appointment-content.php'
-                    ? appointmentViewState()
-                    : depositViewState();
-                const refreshed = await loadpage(currentPage, { silent: true });
+                const state = currentPage === 'appointment-content.php' ?
+                    appointmentViewState() :
+                    depositViewState();
+                const refreshed = await loadpage(currentPage, {
+                    silent: true
+                });
                 if (!refreshed) return;
                 if (currentPage === 'appointment-content.php') restoreAppointmentViewState(state);
                 else restoreDepositViewState(state);
                 lastKnownAppointmentId = latestId;
                 lastKnownDepositVersion = depositVersion;
-                const message = hasDepositChange && !hasNewAppointment
-                    ? 'A deposit record changed. The list has been updated.'
-                    : 'A new appointment was added. The list has been updated.';
+                const message = hasDepositChange && !hasNewAppointment ?
+                    'A deposit record changed. The list has been updated.' :
+                    'A new appointment was added. The list has been updated.';
                 window.showToast(message, true);
             } catch (error) {
                 console.debug('Automatic appointment refresh skipped:', error);
@@ -338,47 +351,47 @@ $today = date('l, F j Y');
             }
         }
 
-        window.setInterval(checkForNewAppointments, 15000);
+        window.setInterval(checkForNewAppointments, 10000);
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) checkForNewAppointments();
         });
-        
+
         navItems.forEach(item => {
             item.addEventListener('click', async (e) => {
-            e.preventDefault();
+                e.preventDefault();
 
-            if (item.hasAttribute('data-logout-confirm')) {
-                return;
-            }
+                if (item.hasAttribute('data-logout-confirm')) {
+                    return;
+                }
 
-            const page = item.getAttribute('data-page');
-            if (!page || page === '#') return;
+                const page = item.getAttribute('data-page');
+                if (!page || page === '#') return;
 
-            navItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
 
-            window.location.hash = page;
-            setDashboardTitle(page);
+                window.location.hash = page;
+                setDashboardTitle(page);
 
-            await loadpage(page);
+                await loadpage(page);
             });
         });
 
-            window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             const hash = window.location.hash.replace('#', '');
             if (hash) {
                 const matchingNav = document.querySelector(`[data-page="${hash}"]`);
-                if(matchingNav) {
-                navItems.forEach(i => i.classList.remove('active'));
-                matchingNav.classList.add('active');
-                setDashboardTitle(hash);
-                await loadpage(hash);
+                if (matchingNav) {
+                    navItems.forEach(i => i.classList.remove('active'));
+                    matchingNav.classList.add('active');
+                    setDashboardTitle(hash);
+                    await loadpage(hash);
                 }
             }
-            });
+        });
 
         // Prevent back button after logout
-        window.addEventListener('pageshow', function (e) {
+        window.addEventListener('pageshow', function(e) {
             if (e.persisted) {
                 window.location.reload();
             }
@@ -411,4 +424,5 @@ $today = date('l, F j Y');
         </div>
     </div>
 </body>
+
 </html>
