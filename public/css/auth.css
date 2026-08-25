@@ -195,6 +195,12 @@
   font-weight: 300;
 }
 
+/* Hide Edge's native password reveal control; these fields use .vd-pw-toggle. */
+.vd-auth-input[type="password"]::-ms-reveal,
+.vd-auth-input[type="password"]::-ms-clear {
+  display: none;
+}
+
 .vd-auth-hint {
   font-size: 10px;
   color: var(--mid);

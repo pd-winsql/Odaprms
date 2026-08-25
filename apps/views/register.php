@@ -17,7 +17,7 @@ if (isset($_SESSION['user_id'])) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
-  <link rel="stylesheet" href="../../public/css/auth.css?v=20260813-inverse-logo">
+  <link rel="stylesheet" href="../../public/css/auth.css?v=20260825-password-toggle">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
@@ -102,6 +102,10 @@ if (isset($_SESSION['user_id'])) {
 
         <div class="vd-auth-footer">
           Already have an account? <a href="login.php">Sign in</a>
+        </div>
+
+        <div class="vd-auth-footer mt-2">
+          <a href="../../index.php">← Back to home</a>
         </div>
 
       </div>
