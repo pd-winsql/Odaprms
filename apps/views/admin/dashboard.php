@@ -29,6 +29,8 @@ $appointmentModel = new Appointment($conn);
 $clinicModel      = new Clinic($conn);
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
+$latestAppointmentId = $appointmentModel->getLatestAppointmentId();
+$depositFeedVersion = $appointmentModel->getDepositFeedVersion();
 $clinics  = $clinicModel->getAllClinics();
 $branding = vdLoadSiteBranding($conn);
 
@@ -237,10 +239,12 @@ $today = date('l, F j Y');
             dashTitle.textContent = getPageTitle(page);
         }
         
-        async function loadpage(page) {
-        LoadingUI.showContent(dashContent, { label: 'Loading dashboard…', page });
+        async function loadpage(page, options = {}) {
+        const silent = options.silent === true;
+        let loaded = false;
+        if (!silent) LoadingUI.showContent(dashContent, { label: 'Loading dashboard…', page });
         try {
-            const response = await fetch(`partials/${page}`);
+            const response = await fetch(`partials/${page}`, { cache: 'no-store' });
             if (!response.ok) throw new Error('Network response was not ok');
             const html = await response.text();
             dashContent.innerHTML = html;
@@ -251,15 +255,117 @@ $today = date('l, F j Y');
             document.body.appendChild(newScript);
             oldScript.remove();
             });
-        
+
             closeSidebar();
+            loaded = true;
             } catch (error) {
             dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
             console.error('Error fetching page:', error);
             } finally {
-            LoadingUI.finishContent(dashContent);
+            if (!silent) LoadingUI.finishContent(dashContent);
+        }
+        return loaded;
+        }
+
+        let lastKnownAppointmentId = <?= (int) $latestAppointmentId ?>;
+        let lastKnownDepositVersion = <?= json_encode($depositFeedVersion) ?>;
+        let appointmentRefreshInFlight = false;
+
+        function appointmentViewState() {
+            return {
+                view: dashContent.querySelector('.vd-toggle-btn.active')?.dataset.view || 'upcoming',
+                upcomingStatus: dashContent.querySelector('#upcomingStatusToggles .active')?.dataset.status || '',
+                pastStatus: dashContent.querySelector('#pastStatusToggles .active')?.dataset.status || '',
+                upcomingFrom: dashContent.querySelector('#filterDateFromUpcoming')?.value || '',
+                upcomingTo: dashContent.querySelector('#filterDateToUpcoming')?.value || '',
+                pastFrom: dashContent.querySelector('#filterDateFromPast')?.value || '',
+                pastTo: dashContent.querySelector('#filterDateToPast')?.value || ''
+            };
+        }
+
+        function restoreAppointmentViewState(state) {
+            dashContent.querySelector(`.vd-toggle-btn[data-view="${state.view}"]`)?.click();
+            const restoreFilter = (key, suffix, status, from, to) => {
+                dashContent.querySelector(`#${key}StatusToggles [data-status="${CSS.escape(status)}"]`)?.click();
+                const fromInput = dashContent.querySelector(`#filterDateFrom${suffix}`);
+                const toInput = dashContent.querySelector(`#filterDateTo${suffix}`);
+                if (fromInput) fromInput.value = from;
+                if (toInput) {
+                    toInput.value = to;
+                    toInput.dispatchEvent(new Event('change'));
+                }
+            };
+            restoreFilter('upcoming', 'Upcoming', state.upcomingStatus, state.upcomingFrom, state.upcomingTo);
+            restoreFilter('past', 'Past', state.pastStatus, state.pastFrom, state.pastTo);
+        }
+
+        function depositViewState() {
+            return {
+                status: dashContent.querySelector('#depositStatusFilter')?.value || '',
+                from: dashContent.querySelector('#depositDateFrom')?.value || '',
+                to: dashContent.querySelector('#depositDateTo')?.value || ''
+            };
+        }
+
+        function restoreDepositViewState(state) {
+            const status = dashContent.querySelector('#depositStatusFilter');
+            const from = dashContent.querySelector('#depositDateFrom');
+            const to = dashContent.querySelector('#depositDateTo');
+            if (status) status.value = state.status;
+            if (from) from.value = state.from;
+            if (to) {
+                to.value = state.to;
+                to.dispatchEvent(new Event('change'));
             }
         }
+
+        async function checkForNewAppointments() {
+            if (document.hidden || appointmentRefreshInFlight) return;
+            const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
+            try {
+                const response = await fetch('../../controllers/appointmentController.php?action=latestAppointment', {
+                    cache: 'no-store', headers: { Accept: 'application/json' }
+                });
+                if (!response.ok) return;
+                const result = await response.json();
+                const latestId = Number(result.latest_appointment_id || 0);
+                const depositVersion = String(result.deposit_feed_version || '0:0:0');
+                const hasNewAppointment = latestId > lastKnownAppointmentId;
+                const hasDepositChange = depositVersion !== lastKnownDepositVersion;
+                if (!result.success || (!hasNewAppointment && !hasDepositChange)) return;
+
+                if (!['appointment-content.php', 'payment-review-content.php'].includes(currentPage)) {
+                    lastKnownAppointmentId = latestId;
+                    lastKnownDepositVersion = depositVersion;
+                    return;
+                }
+                if (dashContent.querySelector('.modal.show')) return;
+
+                appointmentRefreshInFlight = true;
+                const state = currentPage === 'appointment-content.php'
+                    ? appointmentViewState()
+                    : depositViewState();
+                const refreshed = await loadpage(currentPage, { silent: true });
+                if (!refreshed) return;
+                if (currentPage === 'appointment-content.php') restoreAppointmentViewState(state);
+                else restoreDepositViewState(state);
+                lastKnownAppointmentId = latestId;
+                lastKnownDepositVersion = depositVersion;
+                const message = hasDepositChange && !hasNewAppointment
+                    ? 'A deposit record changed. The list has been updated.'
+                    : 'A new appointment was added. The list has been updated.';
+                window.showToast(message, true);
+            } catch (error) {
+                console.debug('Automatic appointment refresh skipped:', error);
+            } finally {
+                appointmentRefreshInFlight = false;
+            }
+        }
+
+        window.setInterval(checkForNewAppointments, 15000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) checkForNewAppointments();
+        });
         
         navItems.forEach(item => {
             item.addEventListener('click', async (e) => {

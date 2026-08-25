@@ -16,6 +16,38 @@ class Appointment {
         $this->emailNotifications = new EmailNotificationModel($conn);
     }
 
+    /**
+     * A cheap cursor used by staff dashboards to notice newly-created bookings.
+     */
+    public function getLatestAppointmentId(): int {
+        try {
+            return (int) $this->conn->query('SELECT COALESCE(MAX(appointment_id), 0) FROM appointments')->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('getLatestAppointmentId error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Detects new deposits and receipt/status updates without returning payment data.
+     */
+    public function getDepositFeedVersion(): string {
+        try {
+            $sql = "
+                SELECT CONCAT(
+                    COUNT(*), ':',
+                    COALESCE(MAX(deposit_id), 0), ':',
+                    COALESCE(DATE_FORMAT(MAX(updated_at), '%Y%m%d%H%i%s'), '0')
+                )
+                FROM appointment_deposits
+            ";
+            return (string) $this->conn->query($sql)->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('getDepositFeedVersion error: ' . $e->getMessage());
+            return '0:0:0';
+        }
+    }
+
     public function getServiceDetailsForAppointments(array $appointmentIds): array {
         $appointmentIds = array_values(array_unique(array_filter(array_map('intval', $appointmentIds))));
         if (!$appointmentIds) return [];

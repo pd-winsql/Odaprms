@@ -6,6 +6,18 @@ if (isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
+
+if (isset($_GET['restart'])) {
+    unset($_SESSION['pending_reset_email'], $_SESSION['pending_reset_expires_at']);
+    header('Location: forgot-pass.php');
+    exit;
+} elseif (
+    !empty($_SESSION['pending_reset_email'])
+    && (int) ($_SESSION['pending_reset_expires_at'] ?? 0) >= time()
+) {
+    header('Location: verify-otp.php?email=' . rawurlencode($_SESSION['pending_reset_email']));
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -79,8 +91,15 @@ if (isset($_SESSION['user_id'])) {
         const sucEl = document.getElementById('fpSuccess');
         errEl.classList.add('d-none');
         sucEl.classList.add('d-none');
-        btn.textContent = 'Sending…';
-        btn.disabled    = true;
+
+        const emailInput = document.getElementById('fpEmail');
+        if (!emailInput.checkValidity()) {
+            errEl.textContent = 'Please enter a valid email address.';
+            errEl.classList.remove('d-none');
+            emailInput.focus();
+            return;
+        }
+
         LoadingUI.setButton(btn, true, 'Sending…');
 
         const formData = new FormData(this);
@@ -104,16 +123,12 @@ if (isset($_SESSION['user_id'])) {
             } else {
             errEl.textContent = result.message;
             errEl.classList.remove('d-none');
-            btn.textContent = 'Send Reset Code';
             LoadingUI.setButton(btn, false);
-            btn.disabled    = false;
             }
         } catch (err) {
             errEl.textContent = 'Network error. Please try again.';
             errEl.classList.remove('d-none');
-            btn.textContent = 'Send Reset Code';
             LoadingUI.setButton(btn, false);
-            btn.disabled    = false;
         }
         });
     </script>

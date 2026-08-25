@@ -73,6 +73,7 @@ class UserController {
 
         $email    = trim($_POST['email']    ?? '');
         $password = trim($_POST['password'] ?? '');
+        $confirmPassword = trim($_POST['confirm_password'] ?? '');
         $identity = [
             'firstname' => trim($_POST['firstname'] ?? ''),
             'middlename' => trim($_POST['middlename'] ?? ''),
@@ -83,8 +84,13 @@ class UserController {
             'phone_number' => trim($_POST['phone_number'] ?? ''),
         ];
 
-        if (!$email || !$password || !$identity['firstname'] || !$identity['lastname'] || !$identity['birthdate'] || !$identity['gender'] || !$identity['phone_number']) {
-            echo json_encode(['success' => false, 'message' => 'Please fill in all fields.']);
+        if (!$email || !$password || !$confirmPassword || !$identity['firstname'] || !$identity['lastname'] || !$identity['birthdate'] || !$identity['gender'] || !$identity['phone_number']) {
+            echo json_encode(['success' => false, 'message' => 'Please fill in all required fields.']);
+            exit;
+        }
+
+        if ($password !== $confirmPassword) {
+            echo json_encode(['success' => false, 'message' => 'Passwords do not match.']);
             exit;
         }
 
@@ -113,8 +119,8 @@ class UserController {
             echo json_encode(['success' => false, 'message' => 'Please enter a valid birthdate.']);
             exit;
         }
-        if (strlen(Patient::normalizePhone($identity['phone_number'])) < 10) {
-            echo json_encode(['success' => false, 'message' => 'Please enter a valid contact number.']);
+        if (!preg_match('/^\d{11}$/', $identity['phone_number'])) {
+            echo json_encode(['success' => false, 'message' => 'Contact number must contain exactly 11 digits.']);
             exit;
         }
 
@@ -139,6 +145,24 @@ class UserController {
             'possible_match_ids' => $possibleMatches,
         ];
 
+        // Returning to the registration form must not invalidate a code that
+        // was already delivered. The dedicated resend action below is the
+        // only action that replaces an active code.
+        $stmt = $this->conn->prepare("
+            SELECT id FROM email_verifications
+            WHERE email = :email AND used = 0 AND expires_at > NOW()
+            ORDER BY created_at DESC LIMIT 1
+        ");
+        $stmt->execute([':email' => $email]);
+        if ($stmt->fetch(PDO::FETCH_ASSOC)) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Your previous verification code is still valid. You can continue using it.',
+                'resumed' => true,
+            ]);
+            exit;
+        }
+
         // Generate and store OTP
         $otp       = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
@@ -156,6 +180,9 @@ class UserController {
         if ($result['success']) {
             echo json_encode(['success' => true, 'message' => 'Verification code sent to your email.']);
         } else {
+            // Do not leave an apparently valid code that was never delivered.
+            $stmt = $this->conn->prepare("DELETE FROM email_verifications WHERE email = :email AND otp = :otp AND used = 0");
+            $stmt->execute([':email' => $email, ':otp' => $otp]);
             echo json_encode(['success' => false, 'message' => 'Failed to send verification email. Please try again.']);
         }
         exit;
@@ -190,6 +217,8 @@ class UserController {
         if ($result['success']) {
             echo json_encode(['success' => true, 'message' => 'New verification code sent.']);
         } else {
+            $stmt = $this->conn->prepare("DELETE FROM email_verifications WHERE email = :email AND otp = :otp AND used = 0");
+            $stmt->execute([':email' => $email, ':otp' => $otp]);
             echo json_encode(['success' => false, 'message' => 'Failed to resend code. Please try again.']);
         }
         exit;

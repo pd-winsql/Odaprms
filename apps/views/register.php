@@ -6,6 +6,19 @@ if (isset($_SESSION['user_id'])) {
     header('Location: /Capstone System/index.php');
     exit;
 }
+
+// Browser Back should resume an in-progress verification. The explicit edit
+// link clears the pending form data, then returns to a clean registration URL.
+$pendingRegistration = $_SESSION['pending_registration'] ?? null;
+if ($pendingRegistration && isset($_GET['edit'])) {
+    unset($_SESSION['pending_registration']);
+    header('Location: register.php');
+    exit;
+}
+if ($pendingRegistration) {
+    header('Location: /Capstone System/apps/views/verify-register.php?email=' . rawurlencode($pendingRegistration['email']));
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -17,7 +30,7 @@ if (isset($_SESSION['user_id'])) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css">
-  <link rel="stylesheet" href="../../public/css/auth.css?v=20260825-password-toggle">
+  <link rel="stylesheet" href="../../public/css/auth.css?v=20260825-responsive-a11y">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
@@ -49,43 +62,43 @@ if (isset($_SESSION['user_id'])) {
           <div class="vd-auth-sub">Fill in your details to get started.</div>
         </div>
 
-        <div id="registerError"   class="vd-auth-error   d-none"></div>
-        <div id="registerSuccess" class="vd-auth-success d-none"></div>
+        <div id="registerError" class="vd-auth-error d-none" role="alert" aria-live="polite"></div>
+        <div id="registerSuccess" class="vd-auth-success d-none" role="status" aria-live="polite"></div>
 
         <form id="registerForm" class="vd-auth-form vd-register-grid" novalidate>
-          <div class="vd-auth-group"><label class="vd-label">First Name</label><input type="text" name="firstname" class="vd-auth-input" required autocomplete="given-name"></div>
-          <div class="vd-auth-group"><label class="vd-label">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" class="vd-auth-input" autocomplete="additional-name"></div>
-          <div class="vd-auth-group"><label class="vd-label">Last Name</label><input type="text" name="lastname" class="vd-auth-input" required autocomplete="family-name"></div>
-          <div class="vd-auth-group"><label class="vd-label">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" class="vd-auth-input" placeholder="Jr., Sr., III"></div>
-          <div class="vd-auth-group"><label class="vd-label">Birthdate</label><input type="date" name="birthdate" class="vd-auth-input" max="<?= date('Y-m-d') ?>" required autocomplete="bday"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regFirstName">First Name</label><input type="text" name="firstname" id="regFirstName" class="vd-auth-input" required autocomplete="given-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regMiddleName">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" id="regMiddleName" class="vd-auth-input" autocomplete="additional-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regLastName">Last Name</label><input type="text" name="lastname" id="regLastName" class="vd-auth-input" required autocomplete="family-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regSuffix">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" id="regSuffix" class="vd-auth-input" placeholder="Jr., Sr., III"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regBirthdate">Birthdate</label><input type="date" name="birthdate" id="regBirthdate" class="vd-auth-input" max="<?= date('Y-m-d') ?>" required autocomplete="bday"></div>
           <div class="vd-auth-group">
-            <label class="vd-label">Gender</label>
-            <select name="gender" class="vd-auth-input" required>
+            <label class="vd-label" for="regGender">Gender</label>
+            <select name="gender" id="regGender" class="vd-auth-input" required>
               <option value="" selected disabled>Select gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Prefer not to say">Prefer not to say</option>
             </select>
           </div>
-          <div class="vd-auth-group"><label class="vd-label">Contact Number</label><input type="tel" name="phone_number" class="vd-auth-input" placeholder="09XXXXXXXXX" required autocomplete="tel"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regPhoneNumber">Contact Number</label><input type="tel" name="phone_number" id="regPhoneNumber" class="vd-auth-input" placeholder="09XXXXXXXXX" required maxlength="11" minlength="11" inputmode="numeric" pattern="[0-9]{11}" autocomplete="tel"></div>
           <div class="vd-auth-group">
-            <label class="vd-label">Email Address</label>
-            <input type="email" name="email" class="vd-auth-input"
+            <label class="vd-label" for="regEmail">Email Address</label>
+            <input type="email" name="email" id="regEmail" class="vd-auth-input"
               placeholder="email@example.com" required autocomplete="email">
           </div>
           <div class="vd-auth-group">
-            <label class="vd-label">Password</label>
+            <label class="vd-label" for="regPassword">Password</label>
             <div class="vd-auth-input-wrap">
               <input type="password" name="password" id="regPassword" class="vd-auth-input"
-                placeholder="Min. 8 characters" required autocomplete="new-password">
+                placeholder="Min. 8 characters" required autocomplete="new-password" aria-describedby="regPasswordHint">
               <button type="button" class="vd-pw-toggle" id="toggleRegPw" aria-label="Show password">
                 <i class="ti ti-eye" id="regEyeIcon"></i>
               </button>
             </div>
-            <div class="vd-auth-hint">Use at least 8 characters with both letters and numbers.</div>
+            <div class="vd-auth-hint" id="regPasswordHint">Use at least 8 characters with both letters and numbers.</div>
           </div>
           <div class="vd-auth-group">
-            <label class="vd-label">Confirm Password</label>
+            <label class="vd-label" for="regConfirmPassword">Confirm Password</label>
             <div class="vd-auth-input-wrap">
               <input type="password" name="confirm_password" id="regConfirmPassword" class="vd-auth-input"
                 placeholder="Re-enter password" required autocomplete="new-password">
@@ -129,7 +142,31 @@ if (isset($_SESSION['user_id'])) {
       togglePassword('regConfirmPassword', 'regConfirmEyeIcon');
     });
 
-    document.getElementById('registerForm').addEventListener('submit', async function (e) {
+    const registerForm = document.getElementById('registerForm');
+
+    function isRequiredFieldMissing(field) {
+      return field.required && !String(field.value).trim();
+    }
+
+    function clearRequiredError(field) {
+      if (!isRequiredFieldMissing(field)) {
+        field.classList.remove('vd-auth-input-invalid');
+        field.removeAttribute('aria-invalid');
+      }
+    }
+
+    registerForm.querySelectorAll('[required]').forEach(function (field) {
+      field.addEventListener(field.tagName === 'SELECT' ? 'change' : 'input', function () {
+        clearRequiredError(field);
+      });
+    });
+
+    const phoneNumber = document.getElementById('regPhoneNumber');
+    phoneNumber.addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 11);
+    });
+
+    registerForm.addEventListener('submit', async function (e) {
       e.preventDefault();
 
       const btn   = document.getElementById('registerBtn');
@@ -141,6 +178,35 @@ if (isset($_SESSION['user_id'])) {
       const formData = new FormData(this);
       const pw       = formData.get('password');
       const cpw      = formData.get('confirm_password');
+
+      const requiredFields = Array.from(this.querySelectorAll('[required]'));
+      const missingFields = requiredFields.filter(isRequiredFieldMissing);
+
+      requiredFields.forEach(function (field) {
+        const isMissing = missingFields.includes(field);
+        field.classList.toggle('vd-auth-input-invalid', isMissing);
+        if (isMissing) {
+          field.setAttribute('aria-invalid', 'true');
+        } else {
+          field.removeAttribute('aria-invalid');
+        }
+      });
+
+      if (missingFields.length) {
+        errEl.textContent = 'Please fill in all required fields.';
+        errEl.classList.remove('d-none');
+        missingFields[0].focus();
+        return;
+      }
+
+      if (!/^\d{11}$/.test(phoneNumber.value)) {
+        phoneNumber.classList.add('vd-auth-input-invalid');
+        phoneNumber.setAttribute('aria-invalid', 'true');
+        errEl.textContent = 'Contact number must contain exactly 11 digits.';
+        errEl.classList.remove('d-none');
+        phoneNumber.focus();
+        return;
+      }
 
       if (pw !== cpw) {
         errEl.textContent = 'Passwords do not match.';
@@ -156,8 +222,6 @@ if (isset($_SESSION['user_id'])) {
       }
 
       formData.append('action', 'sendRegisterOTP');
-      btn.textContent = 'Sending verification code…';
-      btn.disabled    = true;
       LoadingUI.setButton(btn, true, 'Sending code…');
 
       try {
@@ -176,16 +240,12 @@ if (isset($_SESSION['user_id'])) {
         } else {
           errEl.textContent = result.message;
           errEl.classList.remove('d-none');
-          btn.textContent = 'Create Account';
           LoadingUI.setButton(btn, false);
-          btn.disabled    = false;
         }
       } catch (err) {
         errEl.textContent = 'Network error. Please try again.';
         errEl.classList.remove('d-none');
-        btn.textContent = 'Create Account';
         LoadingUI.setButton(btn, false);
-        btn.disabled    = false;
       }
     });
   </script>

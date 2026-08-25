@@ -9,7 +9,7 @@ if (isset($_SESSION['user_id'])) {
 
 $token = $_GET['token'] ?? '';
 if (!$token) {
-    header('Location: forgot-password.php');
+    header('Location: forgot-pass.php');
     exit;
 }
 ?>

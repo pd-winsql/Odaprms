@@ -309,6 +309,34 @@ class AppointmentController {
         ]);
         exit;
     }
+
+    public function latestAppointment() {
+        header('Content-Type: application/json');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+
+        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'], true)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'latest_appointment_id' => $this->appointmentModel->getLatestAppointmentId(),
+            'deposit_feed_version' => $this->appointmentModel->getDepositFeedVersion(),
+        ]);
+        exit;
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'latestAppointment') {
+    (new AppointmentController())->latestAppointment();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

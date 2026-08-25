@@ -5,14 +5,16 @@ $branding = vdLoadSiteBranding();
 
 // If already logged in, redirect to appropriate dashboard
 if (isset($_SESSION['user_id'])) {
-	if ($_SESSION['user_role'] === 'Patient') {
-		header('Location: apps/views/patient/dashboard.php');
-	} else if ($_SESSION['user_role'] === 'Admin') {
-		header('Location: apps/views/admin/dashboard.php');
-	} else if ($_SESSION['user_role'] === 'Dentist') {
-		header('Location: apps/views/dentist/dashboard.php');
+	$dashboardRoutes = [
+		'Patient' => 'patient/dashboard.php',
+		'Admin' => 'admin/dashboard.php',
+		'Dental Assistant' => 'dental_asst/dashboard.php',
+	];
+
+	if (isset($dashboardRoutes[$_SESSION['user_role']])) {
+		header('Location: ' . $dashboardRoutes[$_SESSION['user_role']]);
+		exit;
 	}
-	exit;
 }
 ?>
 <!DOCTYPE html>
@@ -26,7 +28,7 @@ if (isset($_SESSION['user_id'])) {
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 	<link rel="stylesheet" href="../../public/css/bootstrap.min.css">
 	<link rel="stylesheet" href="../../public/css/styles.css">
-	<link rel="stylesheet" href="../../public/css/auth.css?v=20260825-password-toggle">
+	<link rel="stylesheet" href="../../public/css/auth.css?v=20260825-responsive-a11y">
 	<link rel="stylesheet" href="../../public/css/loading.css">
 	<script src="../../public/js/loading.js" defer></script>
 </head>
@@ -65,12 +67,12 @@ if (isset($_SESSION['user_id'])) {
 
 				<form id="loginForm" class="vd-auth-form" novalidate>
 					<div class="vd-auth-group">
-						<label class="vd-label">Email Address</label>
-						<input type="text" name="identity" class="vd-auth-input"
+						<label class="vd-label" for="loginIdentity">Email Address</label>
+						<input type="text" name="identity" id="loginIdentity" class="vd-auth-input"
 							placeholder="Enter your email" required autocomplete="email" inputmode="email">
 					</div>
 					<div class="vd-auth-group">
-						<label class="vd-label">Password</label>
+						<label class="vd-label" for="logPassword">Password</label>
 						<div class="vd-auth-input-wrap">
 							<input type="password" name="password" id="logPassword" class="vd-auth-input"
 								placeholder="••••••••" required autocomplete="current-password">

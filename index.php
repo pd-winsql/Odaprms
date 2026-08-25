@@ -138,7 +138,7 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
   <!-- HERO -->
   <section id="hero-section" class="vd-hero d-flex align-items-center">
     <div class="container">
-      <div class="row align-items-center g-5">
+      <div class="row align-items-center gy-5 gx-0 gx-md-5">
         <div class="d-none d-lg-block col-lg-6"></div>
         <div class="col-12 col-lg-6">
           <div class="vd-hero-card ms-lg-auto">
@@ -264,7 +264,7 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
   <!-- CONTACT -->
   <section id="contact" class="py-5 vd-contact-bg border-top">
     <div class="container">
-      <div class="row justify-content-center g-5 align-items-center">
+      <div class="row justify-content-center gy-5 gx-0 gx-md-5 align-items-center">
         <div class="col-12 col-md-5">
           <div class="vd-eyebrow mb-2">Get In Touch</div>
           <h2 class="vd-contact-heading mb-3">We'd Love to Hear From You</h2>

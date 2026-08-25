@@ -89,7 +89,7 @@ if (!$email) {
             </div>
 
             <div class="vd-auth-footer mt-2">
-            <a href="register.php">← Back to Register</a>
+            <a href="register.php?edit=1">← Edit registration details</a>
             </div>
 
         </div>

@@ -190,6 +190,12 @@
 .vd-auth-input:focus {
   border-bottom-color: var(--gold);
 }
+.vd-auth-input.vd-auth-input-invalid {
+  border-bottom-color: #c94b4b;
+}
+.vd-auth-input.vd-auth-input-invalid:focus {
+  border-bottom-color: #a32d2d;
+}
 .vd-auth-input::placeholder {
   color: #ccc;
   font-weight: 300;
@@ -274,7 +280,7 @@
 
 /* ── Mobile ── */
 @media (max-width: 767px) {
-  .vd-register-grid { grid-template-columns: 1fr; }
+  .vd-auth-form.vd-register-grid { grid-template-columns: 1fr; }
   .vd-register-span-2 { grid-column: auto; }
   .vd-auth-split { flex-direction: column; }
 

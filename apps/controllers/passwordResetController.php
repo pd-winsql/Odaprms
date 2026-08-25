@@ -16,8 +16,8 @@ $userModel = new User($conn);
 
 $action = $_POST['action'] ?? '';
 
-// ── 1. Send OTP ──────────────────────────────────────────────
-if ($action === 'sendOTP') {
+// ── 1. Send or explicitly resend OTP ─────────────────────────
+if ($action === 'sendOTP' || $action === 'resendOTP') {
     $email = trim($_POST['email'] ?? '');
 
     if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -31,6 +31,29 @@ if ($action === 'sendOTP') {
         // Don't reveal if email exists or not for security
         echo json_encode(['success' => true, 'message' => 'If that email is registered, a reset code has been sent.']);
         exit;
+    }
+
+    // A normal submission may be the user returning with the browser's Back
+    // button. Preserve the delivered code while it is still valid. Only an
+    // explicit click on "Resend OTP" replaces it.
+    if ($action === 'sendOTP') {
+        $stmt = $conn->prepare("
+            SELECT id, UNIX_TIMESTAMP(expires_at) AS expires_ts FROM password_resets
+            WHERE email = :email AND used = 0 AND expires_at >= NOW()
+            ORDER BY created_at DESC LIMIT 1
+        ");
+        $stmt->execute([':email' => $email]);
+        $activeReset = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($activeReset) {
+            $_SESSION['pending_reset_email'] = $email;
+            $_SESSION['pending_reset_expires_at'] = (int) $activeReset['expires_ts'];
+            echo json_encode([
+                'success' => true,
+                'message' => 'Your previous reset code is still valid. You can continue using it.',
+                'resumed' => true,
+            ]);
+            exit;
+        }
     }
 
     // Generate 6-digit OTP
@@ -55,8 +78,13 @@ if ($action === 'sendOTP') {
     $result = sendOTPEmail($email, $name, $otp, 'forgot_password');
 
     if ($result['success']) {
+        $_SESSION['pending_reset_email'] = $email;
+        $_SESSION['pending_reset_expires_at'] = time() + 600;
         echo json_encode(['success' => true, 'message' => 'Reset code sent! Check your email.']);
     } else {
+        // Do not retain a code that the mailer failed to deliver.
+        $stmt = $conn->prepare("DELETE FROM password_resets WHERE email = :email AND otp = :otp AND used = 0");
+        $stmt->execute([':email' => $email, ':otp' => $otp]);
         echo json_encode(['success' => false, 'message' => $result['message']]);
     }
     exit;
@@ -110,6 +138,7 @@ if ($action === 'verifyOTP') {
 
     // Still keep email in session
     $_SESSION['reset_email'] = $email;
+    unset($_SESSION['pending_reset_email'], $_SESSION['pending_reset_expires_at']);
 
     // Send ONLY the raw token to the browser
     echo json_encode([
@@ -191,7 +220,13 @@ if ($action === 'resetPassword') {
 
     if ($result) {
         // Clear reset session data
-        unset($_SESSION['reset_token'], $_SESSION['reset_email'], $_SESSION['reset_expires']);
+        unset(
+            $_SESSION['reset_token'],
+            $_SESSION['reset_email'],
+            $_SESSION['reset_expires'],
+            $_SESSION['pending_reset_email'],
+            $_SESSION['pending_reset_expires_at']
+        );
         echo json_encode(['success' => true, 'message' => 'Password reset successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to reset password. Please try again.']);

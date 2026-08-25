@@ -9,7 +9,7 @@ if (isset($_SESSION['user_id'])) {
 
 $email = $_GET['email'] ?? '';
 if (!$email) {
-    header('Location: forgot-password.php');
+    header('Location: forgot-pass.php');
     exit;
 }
 ?>
@@ -83,7 +83,7 @@ if (!$email) {
         </div>
 
         <div class="vd-auth-footer mt-2">
-          <a href="forgot-pass.php">← Back</a>
+          <a href="forgot-pass.php?restart=1">← Use another email</a>
         </div>
 
       </div>
@@ -120,7 +120,8 @@ if (!$email) {
     resendBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       const formData = new FormData();
-      formData.append('action', 'sendOTP');
+      // Only this explicit action replaces the currently valid code.
+      formData.append('action', 'resendOTP');
       formData.append('email', '<?= htmlspecialchars($email) ?>');
       LoadingUI.setButton(resendBtn, true, 'Sending…');
 
