@@ -267,6 +267,8 @@ $today = date('l, F j Y');
         return loaded;
         }
 
+        // Poll for new appointments or deposit changes and silently refresh the
+        // relevant staff view while preserving filters and avoiding open modals.
         let lastKnownAppointmentId = <?= (int) $latestAppointmentId ?>;
         let lastKnownDepositVersion = <?= json_encode($depositFeedVersion) ?>;
         let appointmentRefreshInFlight = false;
