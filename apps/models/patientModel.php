@@ -154,9 +154,10 @@ class Patient {
     public function getPatientFull($patient_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT v.*, p.profile_completed_at, p.profile_completed_by_user_id,
+                SELECT v.*, p.profile_status, p.profile_completed_at, p.profile_completed_by_user_id,
                        dh.last_updated_by AS dental_last_updated_by,
                        dh.last_updated_at AS dental_last_updated_at,
+                       mh.cond_others, mh.no_known_conditions,
                        mh.last_updated_by AS medical_last_updated_by,
                        mh.last_updated_at AS medical_last_updated_at
                 FROM vw_patient_information v
@@ -699,7 +700,8 @@ class Patient {
             $medicalFields = [
                 'good_health','medical_condition','medical_condition_detail','serious_illness','serious_illness_detail',
                 'hospitalized','hospitalized_detail','medication','medication_detail','smoke','alcohol','drugs',
-                'allergy','allergy_detail','pregnant','nursing','birth_control','blood_type','blood_pressure','cond_others'
+                'allergy','allergy_detail','pregnant','nursing','birth_control','blood_type','blood_pressure','cond_others',
+                'no_known_conditions'
             ];
             $columns = implode(', ', $medicalFields);
             $values = implode(', ', array_map(static fn($field) => ':' . $field, $medicalFields));

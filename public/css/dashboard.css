@@ -2433,6 +2433,104 @@ button.vd-stat-card { width: 100%; color: inherit; font: inherit; cursor: pointe
   text-transform: uppercase;
 }
 
+.vd-medical-help {
+  margin: 0 0 10px;
+  color: var(--mid);
+  font-size: 11px;
+}
+
+.vd-required-mark { color: #a64034; }
+
+.vd-medical-question {
+  margin-inline: 0;
+  border-radius: 3px;
+  transition: background-color .18s ease, box-shadow .18s ease;
+}
+
+.vd-medical-question.is-missing,
+.vd-medical-follow-up.is-missing {
+  background: #fff4f1;
+  box-shadow: inset 3px 0 #b94f40;
+}
+
+.vd-medical-follow-up {
+  padding: 12px 14px;
+  background: #faf7ef;
+  border-left: 3px solid var(--gold);
+}
+
+.vd-required-note {
+  display: inline-block;
+  margin-left: 6px;
+  color: #9a4135;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.vd-medical-missing-wrap {
+  margin: 0 18px 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.vd-medical-missing-wrap .vd-medical-subsection { margin-bottom: 9px; }
+
+.vd-medical-missing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vd-medical-missing-list li { margin: 0; padding: 0; }
+
+.vd-medical-missing-list button {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #ead5cc;
+  border-left: 3px solid #b94f40;
+  border-radius: 3px;
+  background: #fff8f5;
+  color: #71362e;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+
+.vd-medical-missing-list button i {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #b94f40;
+  font-size: 15px;
+}
+
+.vd-medical-missing-list button:hover {
+  border-color: #cf9c8f;
+  background: #fff1ec;
+  transform: translateX(2px);
+}
+
+.vd-medical-missing-list button:focus-visible {
+  outline: 2px solid rgba(181, 139, 61, .4);
+  outline-offset: 2px;
+}
+
+.vd-medical-complete {
+  margin-top: 9px;
+  color: #4f7c27;
+  font-size: 10px;
+}
+
 .vd-condition-groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

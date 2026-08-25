@@ -3,6 +3,7 @@ require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../models/userModel.php';
 require_once '../helpers/csrf.php';
+require_once '../support/MedicalQuestionnaire.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -232,27 +233,18 @@ class PatientController {
         foreach ($booleanFields as $field) {
             $data[$field] = $this->toBool($_POST[$field] ?? null);
         }
-        $requiredMedicalAnswers = ['good_health','medical_condition','serious_illness','hospitalized','medication','smoke','alcohol','drugs','allergy'];
+        $medicalContext = ['gender' => $_POST['gender'] ?? null];
+        foreach (MedicalQuestionnaire::groups() as $group) {
+            if (MedicalQuestionnaire::groupApplies($group, $medicalContext)) continue;
+            foreach (array_keys($group['questions']) as $field) $data[$field] = null;
+        }
         if (!$isDraft) {
-            foreach ($requiredMedicalAnswers as $field) {
-                if ($data[$field] === null) {
-                    echo json_encode(['success' => false, 'message' => 'Review and answer every general health question.']);
-                    exit;
-                }
-            }
-            if (($_POST['gender'] ?? '') === 'Female') {
-                foreach (['pregnant','nursing','birth_control'] as $field) {
-                    if ($data[$field] === null) {
-                        echo json_encode(['success' => false, 'message' => 'Complete the women-only health questions.']);
-                        exit;
-                    }
-                }
-            }
-            foreach (['medical_condition','serious_illness','hospitalized','medication','allergy'] as $field) {
-                if ($data[$field] === 1 && trim($_POST[$field . '_detail'] ?? '') === '') {
-                    echo json_encode(['success' => false, 'message' => 'Add details for every medical question answered Yes.']);
-                    exit;
-                }
+            $missingMedical = MedicalQuestionnaire::missingItems($data, $_POST, $medicalContext);
+            if ($missingMedical) {
+                $messages = array_column(array_slice($missingMedical, 0, 3), 'message');
+                $suffix = count($missingMedical) > 3 ? ' (and ' . (count($missingMedical) - 3) . ' more)' : '';
+                echo json_encode(['success' => false, 'message' => 'Complete the medical review: ' . implode('; ', $messages) . $suffix . '.']);
+                exit;
             }
         }
         $textFields = [
@@ -263,6 +255,12 @@ class PatientController {
             'blood_type','blood_pressure','cond_others','consent_name','consent_for'
         ];
         foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        foreach (MedicalQuestionnaire::groups() as $group) {
+            foreach ($group['questions'] as $field => $question) {
+                $detailField = $question['detail_field'] ?? null;
+                if ($detailField && ($data[$field] ?? null) !== 1) $data[$detailField] = '';
+            }
+        }
         $data['phone_number'] = $normalizedPhone;
         $data['birthdate'] = $_POST['birthdate'];
         $data['age'] = $birth ? $birth->diff($today)->y : null;
@@ -272,11 +270,13 @@ class PatientController {
         $data['conditions'] = array_values(array_intersect(array_map('trim', $submittedConditions), $allowedConditions));
         $data['contact_confirmed'] = ($_POST['contact_confirmed'] ?? '') === '1';
         $data['appointment_id'] = (int) ($_POST['appointment_id'] ?? 0) ?: null;
-        if (!empty($_POST['no_known_conditions'])) {
+        $conditionsReviewed = !empty($_POST['no_known_conditions']) || (bool) $data['conditions'] || $data['cond_others'] !== '';
+        $data['no_known_conditions'] = !empty($_POST['no_known_conditions']) ? 1 : ($conditionsReviewed ? 0 : null);
+        if ($data['no_known_conditions'] === 1) {
             $data['conditions'] = [];
             $data['cond_others'] = '';
         }
-        if (!$isDraft && empty($_POST['no_known_conditions']) && !$data['conditions'] && $data['cond_others'] === '') {
+        if (!$isDraft && !$conditionsReviewed) {
             echo json_encode(['success' => false, 'message' => 'Select the patient’s medical conditions or confirm that there are no known conditions.']);
             exit;
         }

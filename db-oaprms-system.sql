@@ -533,6 +533,7 @@ CREATE TABLE IF NOT EXISTS `patient_medical_history` (
   `nursing` tinyint(1) DEFAULT NULL,
   `birth_control` tinyint(1) DEFAULT NULL,
   `cond_others` varchar(255) DEFAULT NULL,
+  `no_known_conditions` tinyint(1) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `blood_type` varchar(10) DEFAULT NULL,
   `blood_pressure` varchar(20) DEFAULT NULL,
