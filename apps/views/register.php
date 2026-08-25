@@ -8,17 +8,27 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // Browser Back should resume an in-progress verification. The explicit edit
-// link clears the pending form data, then returns to a clean registration URL.
+// link is the one exception: keep the pending data and use it to refill the
+// registration form.
 $pendingRegistration = $_SESSION['pending_registration'] ?? null;
-if ($pendingRegistration && isset($_GET['edit'])) {
-    unset($_SESSION['pending_registration']);
-    header('Location: register.php');
-    exit;
-}
-if ($pendingRegistration) {
+$isEditingRegistration = $pendingRegistration && isset($_GET['edit']);
+if ($pendingRegistration && !$isEditingRegistration) {
     header('Location: /Capstone System/apps/views/verify-register.php?email=' . rawurlencode($pendingRegistration['email']));
     exit;
 }
+
+$pendingIdentity = $pendingRegistration['identity'] ?? [];
+$registrationValues = [
+    'firstname' => $pendingIdentity['firstname'] ?? '',
+    'middlename' => $pendingIdentity['middlename'] ?? '',
+    'lastname' => $pendingIdentity['lastname'] ?? '',
+    'suffix' => $pendingIdentity['suffix'] ?? '',
+    'birthdate' => $pendingIdentity['birthdate'] ?? '',
+    'gender' => $pendingIdentity['gender'] ?? '',
+    'phone_number' => $pendingIdentity['phone_number'] ?? '',
+    'email' => $pendingRegistration['email'] ?? '',
+];
+$escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -66,25 +76,25 @@ if ($pendingRegistration) {
         <div id="registerSuccess" class="vd-auth-success d-none" role="status" aria-live="polite"></div>
 
         <form id="registerForm" class="vd-auth-form vd-register-grid" novalidate>
-          <div class="vd-auth-group"><label class="vd-label" for="regFirstName">First Name</label><input type="text" name="firstname" id="regFirstName" class="vd-auth-input" required autocomplete="given-name"></div>
-          <div class="vd-auth-group"><label class="vd-label" for="regMiddleName">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" id="regMiddleName" class="vd-auth-input" autocomplete="additional-name"></div>
-          <div class="vd-auth-group"><label class="vd-label" for="regLastName">Last Name</label><input type="text" name="lastname" id="regLastName" class="vd-auth-input" required autocomplete="family-name"></div>
-          <div class="vd-auth-group"><label class="vd-label" for="regSuffix">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" id="regSuffix" class="vd-auth-input" placeholder="Jr., Sr., III"></div>
-          <div class="vd-auth-group"><label class="vd-label" for="regBirthdate">Birthdate</label><input type="date" name="birthdate" id="regBirthdate" class="vd-auth-input" max="<?= date('Y-m-d') ?>" required autocomplete="bday"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regFirstName">First Name</label><input type="text" name="firstname" id="regFirstName" class="vd-auth-input" value="<?= $escape($registrationValues['firstname']) ?>" required autocomplete="given-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regMiddleName">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" id="regMiddleName" class="vd-auth-input" value="<?= $escape($registrationValues['middlename']) ?>" autocomplete="additional-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regLastName">Last Name</label><input type="text" name="lastname" id="regLastName" class="vd-auth-input" value="<?= $escape($registrationValues['lastname']) ?>" required autocomplete="family-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regSuffix">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" id="regSuffix" class="vd-auth-input" value="<?= $escape($registrationValues['suffix']) ?>" placeholder="Jr., Sr., III"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regBirthdate">Birthdate</label><input type="date" name="birthdate" id="regBirthdate" class="vd-auth-input" value="<?= $escape($registrationValues['birthdate']) ?>" max="<?= date('Y-m-d') ?>" required autocomplete="bday"></div>
           <div class="vd-auth-group">
             <label class="vd-label" for="regGender">Gender</label>
             <select name="gender" id="regGender" class="vd-auth-input" required>
-              <option value="" selected disabled>Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Prefer not to say">Prefer not to say</option>
+              <option value="" <?= $registrationValues['gender'] === '' ? 'selected' : '' ?> disabled>Select gender</option>
+              <option value="Male" <?= $registrationValues['gender'] === 'Male' ? 'selected' : '' ?>>Male</option>
+              <option value="Female" <?= $registrationValues['gender'] === 'Female' ? 'selected' : '' ?>>Female</option>
+              <option value="Prefer not to say" <?= $registrationValues['gender'] === 'Prefer not to say' ? 'selected' : '' ?>>Prefer not to say</option>
             </select>
           </div>
-          <div class="vd-auth-group"><label class="vd-label" for="regPhoneNumber">Contact Number</label><input type="tel" name="phone_number" id="regPhoneNumber" class="vd-auth-input" placeholder="09XXXXXXXXX" required maxlength="11" minlength="11" inputmode="numeric" pattern="[0-9]{11}" autocomplete="tel"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regPhoneNumber">Contact Number</label><input type="tel" name="phone_number" id="regPhoneNumber" class="vd-auth-input" value="<?= $escape($registrationValues['phone_number']) ?>" placeholder="09XXXXXXXXX" required maxlength="11" minlength="11" inputmode="numeric" pattern="[0-9]{11}" autocomplete="tel"></div>
           <div class="vd-auth-group">
             <label class="vd-label" for="regEmail">Email Address</label>
             <input type="email" name="email" id="regEmail" class="vd-auth-input"
-              placeholder="email@example.com" required autocomplete="email">
+              value="<?= $escape($registrationValues['email']) ?>" placeholder="email@example.com" required autocomplete="email">
           </div>
           <div class="vd-auth-group">
             <label class="vd-label" for="regPassword">Password</label>
@@ -143,6 +153,22 @@ if ($pendingRegistration) {
     });
 
     const registerForm = document.getElementById('registerForm');
+    const registrationPasswordKey = 'pendingRegistrationPasswords';
+    const isEditingRegistration = <?= $isEditingRegistration ? 'true' : 'false' ?>;
+
+    // Passwords cannot be reconstructed from the secure server-side hash. Keep
+    // them only in this tab while email verification is in progress.
+    if (isEditingRegistration) {
+      try {
+        const savedPasswords = JSON.parse(sessionStorage.getItem(registrationPasswordKey) || 'null');
+        if (savedPasswords) {
+          document.getElementById('regPassword').value = savedPasswords.password || '';
+          document.getElementById('regConfirmPassword').value = savedPasswords.confirmPassword || '';
+        }
+      } catch (err) {
+        // The other registration details are still restored by the server.
+      }
+    }
 
     function isRequiredFieldMissing(field) {
       return field.required && !String(field.value).trim();
@@ -231,6 +257,17 @@ if ($pendingRegistration) {
         const result = await res.json();
 
         if (result.success) {
+          try {
+            sessionStorage.setItem(registrationPasswordKey, JSON.stringify({
+              password: pw,
+              confirmPassword: cpw
+            }));
+            if (!result.resumed) {
+              sessionStorage.setItem('registerOtpResendAvailableAt', String(Date.now() + 60000));
+            }
+          } catch (err) {
+            // Registration can continue even when browser storage is disabled.
+          }
           sucEl.textContent = result.message + ' Redirecting…';
           sucEl.classList.remove('d-none');
           const email = formData.get('email');

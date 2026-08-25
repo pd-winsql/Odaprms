@@ -9,13 +9,13 @@ if (isset($_SESSION['user_id'])) {
 }
 
 if (!isset($_SESSION['pending_registration'])) {
-    header('Location: /Capstone System/register.php');
+    header('Location: /Capstone System/apps/views/register.php');
     exit;
 }
 
 $email = $_SESSION['pending_registration']['email'] ?? '';
 if (!$email) {
-    header('Location: /Capstone System/register.php');
+    header('Location: /Capstone System/apps/views/register.php');
     exit;
 }
 ?>
@@ -101,33 +101,82 @@ if (!$email) {
         const CONTROLLER = '/Capstone System/apps/controllers/userController.php';
 
         // ── Resend timer ──
-        let countdown   = 60;
         const timerEl   = document.getElementById('resendTimer');
         const resendBtn = document.getElementById('resendBtn');
+        const resendCooldownKey = 'registerOtpResendAvailableAt';
+        let resendInterval = null;
+        let resendInFlight = false;
 
-        function startTimer() {
-        resendBtn.style.pointerEvents = 'none';
-        resendBtn.style.opacity       = '0.4';
-        timerEl.textContent = ` (${countdown}s)`;
-
-        const interval = setInterval(() => {
-            countdown--;
-            timerEl.textContent = ` (${countdown}s)`;
-            if (countdown <= 0) {
-            clearInterval(interval);
-            timerEl.textContent           = '';
-            resendBtn.style.pointerEvents = 'auto';
-            resendBtn.style.opacity       = '1';
-            countdown = 60;
-            }
-        }, 1000);
+        function setResendEnabled(enabled) {
+            resendBtn.style.pointerEvents = enabled ? 'auto' : 'none';
+            resendBtn.style.opacity = enabled ? '1' : '0.4';
+            resendBtn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
         }
 
-        startTimer();
+        function saveCooldown(availableAt) {
+            try {
+                sessionStorage.setItem(resendCooldownKey, String(availableAt));
+            } catch (err) {
+                // The in-memory timer still works when browser storage is unavailable.
+            }
+        }
+
+        function updateTimer(availableAt) {
+            const secondsRemaining = Math.max(0, Math.ceil((availableAt - Date.now()) / 1000));
+            if (secondsRemaining <= 0) {
+                if (resendInterval !== null) {
+                    clearInterval(resendInterval);
+                    resendInterval = null;
+                }
+                timerEl.textContent = '';
+                setResendEnabled(true);
+                // Keep an expired marker so refreshing the page does not start
+                // another one-minute countdown.
+                saveCooldown(0);
+                return;
+            }
+
+            setResendEnabled(false);
+            timerEl.textContent = ` (${secondsRemaining}s)`;
+        }
+
+        function startTimer(availableAt = Date.now() + 60000, persist = true) {
+            if (resendInterval !== null) {
+                clearInterval(resendInterval);
+            }
+            if (persist) saveCooldown(availableAt);
+            updateTimer(availableAt);
+            if (availableAt > Date.now()) {
+                resendInterval = setInterval(() => updateTimer(availableAt), 250);
+            }
+        }
+
+        let savedCooldown = null;
+        try {
+            const storedCooldown = sessionStorage.getItem(resendCooldownKey);
+            savedCooldown = storedCooldown === null ? null : Number(storedCooldown);
+        } catch (err) {
+            // Fall back to a fresh in-memory timer.
+        }
+
+        if (savedCooldown === null || !Number.isFinite(savedCooldown)) {
+            startTimer();
+        } else if (savedCooldown > Date.now()) {
+            startTimer(savedCooldown, false);
+        } else {
+            timerEl.textContent = '';
+            resendBtn.style.pointerEvents = 'auto';
+            resendBtn.style.opacity       = '1';
+            resendBtn.setAttribute('aria-disabled', 'false');
+        }
 
         // ── Resend — uses dedicated action, no password needed ──
         resendBtn.addEventListener('click', async (e) => {
         e.preventDefault();
+        if (resendInFlight || resendBtn.getAttribute('aria-disabled') === 'true') return;
+
+        resendInFlight = true;
+        setResendEnabled(false);
         const errEl = document.getElementById('otpError');
         const sucEl = document.getElementById('otpSuccess');
         errEl.classList.add('d-none');
@@ -142,17 +191,22 @@ if (!$email) {
             const result = await res.json();
 
             if (result.success) {
+            resendInFlight = false;
             LoadingUI.setButton(resendBtn, false);
             sucEl.textContent = 'New code sent!';
             sucEl.classList.remove('d-none');
             startTimer();
             } else {
+            resendInFlight = false;
             LoadingUI.setButton(resendBtn, false);
+            setResendEnabled(true);
             errEl.textContent = result.message;
             errEl.classList.remove('d-none');
             }
         } catch (err) {
+            resendInFlight = false;
             LoadingUI.setButton(resendBtn, false);
+            setResendEnabled(true);
             errEl.textContent = 'Network error. Please try again.';
             errEl.classList.remove('d-none');
         }
@@ -187,6 +241,12 @@ if (!$email) {
             const result = await res.json();
 
             if (result.success) {
+            try {
+                sessionStorage.removeItem('pendingRegistrationPasswords');
+                sessionStorage.removeItem(resendCooldownKey);
+            } catch (err) {
+                // Account creation is complete even when browser storage is unavailable.
+            }
             sucEl.textContent = 'Account created! Opening appointment booking…';
             sucEl.classList.remove('d-none');
             setTimeout(() => {
