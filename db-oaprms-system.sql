@@ -558,6 +558,60 @@ INSERT INTO `patient_dental_history` (`dental_history_id`, `patient_id`, `previo
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `patient_odontograms`
+--
+
+CREATE TABLE IF NOT EXISTS `patient_odontograms` (
+  `odontogram_id` bigint(20) UNSIGNED NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `dentition_type` enum('Permanent','Primary','Mixed') NOT NULL DEFAULT 'Permanent',
+  `periodontal_status` enum('None','Gingivitis','Early Periodontitis','Moderate Periodontitis','Advanced Periodontitis') NOT NULL DEFAULT 'None',
+  `occlusion_class` varchar(32) DEFAULT NULL,
+  `occlusion_findings` varchar(255) DEFAULT NULL,
+  `appliances` varchar(255) DEFAULT NULL,
+  `tmd_findings` varchar(255) DEFAULT NULL,
+  `clinical_notes` text DEFAULT NULL,
+  `updated_by_user_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient_odontogram_teeth`
+--
+
+CREATE TABLE IF NOT EXISTS `patient_odontogram_teeth` (
+  `odontogram_tooth_id` bigint(20) UNSIGNED NOT NULL,
+  `odontogram_id` bigint(20) UNSIGNED NOT NULL,
+  `tooth_number` char(2) NOT NULL,
+  `surface` enum('Whole','Occlusal','Mesial','Distal','Buccal','Lingual') NOT NULL DEFAULT 'Whole',
+  `category` enum('Condition','Restoration','Surgery') NOT NULL,
+  `finding_code` varchar(8) NOT NULL,
+  `notes` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `patient_odontogram_snapshots`
+--
+
+CREATE TABLE IF NOT EXISTS `patient_odontogram_snapshots` (
+  `odontogram_snapshot_id` bigint(20) UNSIGNED NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `chart_payload` longtext NOT NULL,
+  `reviewed_by_user_id` int(11) DEFAULT NULL,
+  `reviewed_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `patient_duplicate_reviews`
 --
 
@@ -1069,6 +1123,31 @@ ALTER TABLE `patient_dental_history`
   ADD KEY `patient_id` (`patient_id`);
 
 --
+-- Indexes for table `patient_odontograms`
+--
+ALTER TABLE `patient_odontograms`
+  ADD PRIMARY KEY (`odontogram_id`),
+  ADD UNIQUE KEY `uq_patient_odontogram` (`patient_id`),
+  ADD KEY `idx_odontogram_updated_by` (`updated_by_user_id`);
+
+--
+-- Indexes for table `patient_odontogram_teeth`
+--
+ALTER TABLE `patient_odontogram_teeth`
+  ADD PRIMARY KEY (`odontogram_tooth_id`),
+  ADD UNIQUE KEY `uq_odontogram_tooth_finding` (`odontogram_id`,`tooth_number`,`surface`,`category`),
+  ADD KEY `idx_odontogram_tooth_number` (`tooth_number`);
+
+--
+-- Indexes for table `patient_odontogram_snapshots`
+--
+ALTER TABLE `patient_odontogram_snapshots`
+  ADD PRIMARY KEY (`odontogram_snapshot_id`),
+  ADD UNIQUE KEY `uq_odontogram_snapshot_appointment` (`appointment_id`),
+  ADD KEY `idx_odontogram_snapshot_patient` (`patient_id`,`reviewed_at`),
+  ADD KEY `idx_odontogram_snapshot_reviewer` (`reviewed_by_user_id`);
+
+--
 -- Indexes for table `patient_duplicate_reviews`
 --
 ALTER TABLE `patient_duplicate_reviews`
@@ -1235,6 +1314,24 @@ ALTER TABLE `patient_dental_history`
   MODIFY `dental_history_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `patient_odontograms`
+--
+ALTER TABLE `patient_odontograms`
+  MODIFY `odontogram_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `patient_odontogram_teeth`
+--
+ALTER TABLE `patient_odontogram_teeth`
+  MODIFY `odontogram_tooth_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `patient_odontogram_snapshots`
+--
+ALTER TABLE `patient_odontogram_snapshots`
+  MODIFY `odontogram_snapshot_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `patient_duplicate_reviews`
 --
 ALTER TABLE `patient_duplicate_reviews`
@@ -1394,6 +1491,27 @@ ALTER TABLE `patient_consent`
 --
 ALTER TABLE `patient_dental_history`
   ADD CONSTRAINT `fk_dental_history_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `patient_odontograms`
+--
+ALTER TABLE `patient_odontograms`
+  ADD CONSTRAINT `fk_odontogram_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_odontogram_updated_by` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `patient_odontogram_teeth`
+--
+ALTER TABLE `patient_odontogram_teeth`
+  ADD CONSTRAINT `fk_odontogram_tooth_chart` FOREIGN KEY (`odontogram_id`) REFERENCES `patient_odontograms` (`odontogram_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `patient_odontogram_snapshots`
+--
+ALTER TABLE `patient_odontogram_snapshots`
+  ADD CONSTRAINT `fk_odontogram_snapshot_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_odontogram_snapshot_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_odontogram_snapshot_reviewer` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `patient_duplicate_reviews`

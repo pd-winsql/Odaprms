@@ -127,6 +127,12 @@ krsort($months); // latest first
 							title="Transaction history" aria-label="Transaction history">
 							<i class="ti ti-receipt" aria-hidden="true"></i>
 						</button>
+						<button class="btn vd-btn-outline vd-table-icon-btn vd-view-odontogram-btn"
+							data-id="<?= $p['patient_id'] ?>"
+							data-bs-toggle="tooltip" data-bs-placement="top"
+							title="Dental chart" aria-label="View dental chart">
+							<i class="ti ti-tooth" aria-hidden="true"></i>
+						</button>
 						<?php if (empty($p['user_id'])): ?><button class="btn vd-btn-outline vd-table-icon-btn" data-authorize-link="<?= (int)$p['patient_id'] ?>" title="Authorize account link" aria-label="Authorize account link"><i class="ti ti-user-link"></i></button><?php endif; ?>
 						</div>
 					</td>
@@ -257,6 +263,29 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 			} catch (err) {
 				dashContent.innerHTML = '<div class="vd-empty-state">Error loading transaction history.</div>';
 				console.error(err);
+			} finally {
+				LoadingUI.finishContent(dashContent);
+			}
+		});
+	});
+
+	document.querySelectorAll('.vd-view-odontogram-btn').forEach(btn => {
+		btn.addEventListener('click', async function () {
+			const dashContent = document.querySelector('.vd-dash-content');
+			LoadingUI.showContent(dashContent, { label: 'Loading dental chart…' });
+			try {
+				const response = await fetch(`partials/_patient-odontogram.php?id=${encodeURIComponent(this.dataset.id)}`);
+				if (!response.ok) throw new Error('Failed to load dental chart');
+				dashContent.innerHTML = await response.text();
+				dashContent.querySelectorAll('script').forEach(oldScript => {
+					const newScript = document.createElement('script');
+					newScript.textContent = oldScript.textContent;
+					document.body.appendChild(newScript);
+					oldScript.remove();
+				});
+			} catch (error) {
+				dashContent.innerHTML = '<div class="vd-empty-state">Error loading dental chart.</div>';
+				console.error(error);
 			} finally {
 				LoadingUI.finishContent(dashContent);
 			}

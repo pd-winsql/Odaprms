@@ -39,6 +39,9 @@ function val($v, $fallback = '—') {
     <button class="btn vd-btn-outline vd-back-btn" id="backToPatients">
         <i class="ti ti-arrow-left me-1"></i> <?= $isAdminViewer ? 'Back to Today’s Queue' : 'Back to Patients' ?>
     </button>
+    <button class="btn vd-btn-gold ms-2" id="openPatientOdontogram" data-patient-id="<?= (int) $patient_id ?>">
+        <i class="ti ti-tooth me-1" aria-hidden="true"></i> Dental chart
+    </button>
 </div>
 
     <div class="d-flex flex-column gap-4">
@@ -352,6 +355,26 @@ function val($v, $fallback = '—') {
             return;
         }
         document.querySelector('[data-page="dashboard-content.php"]')?.click();
+    });
+    document.getElementById('openPatientOdontogram')?.addEventListener('click', async function () {
+        const dashContent = document.querySelector('.vd-dash-content');
+        LoadingUI.showContent(dashContent, { label: 'Loading dental chart…' });
+        try {
+            const response = await fetch(`partials/_patient-odontogram.php?id=${encodeURIComponent(this.dataset.patientId)}`);
+            if (!response.ok) throw new Error('Failed to load dental chart');
+            dashContent.innerHTML = await response.text();
+            dashContent.querySelectorAll('script').forEach(oldScript => {
+                const newScript = document.createElement('script');
+                newScript.textContent = oldScript.textContent;
+                document.body.appendChild(newScript);
+                oldScript.remove();
+            });
+        } catch (error) {
+            dashContent.innerHTML = '<div class="vd-empty-state">Error loading dental chart.</div>';
+            console.error(error);
+        } finally {
+            LoadingUI.finishContent(dashContent);
+        }
     });
     })();
 </script>

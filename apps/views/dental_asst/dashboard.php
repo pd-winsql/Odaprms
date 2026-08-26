@@ -59,6 +59,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../../public/css/styles.css') ?>">
     <link rel="stylesheet" href="../../../public/css/dashboard.css?v=<?= filemtime(__DIR__ . '/../../../public/css/dashboard.css') ?>">
+    <link rel="stylesheet" href="../../../public/css/odontogram.css?v=<?= filemtime(__DIR__ . '/../../../public/css/odontogram.css') ?>">
     <link rel="stylesheet" href="../../../public/css/ui-refinements.css?v=<?= filemtime(__DIR__ . '/../../../public/css/ui-refinements.css') ?>">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
@@ -175,6 +176,7 @@ $today = date('l, F j Y');
     <script src="../../../public/js/action-modal.js?v=3"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/dashboard-tables.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-tables.js') ?>"></script>
+    <script src="../../../public/js/odontogram.js?v=<?= filemtime(__DIR__ . '/../../../public/js/odontogram.js') ?>"></script>
     <script src="../../../public/js/dashboard-topbar.js?v=20260824-2"></script>
     <script src="../../../public/js/staff-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/staff-appointment-notifications.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>

@@ -42,6 +42,9 @@ policyExpect(str_contains($billingController, 'vdCanPerformBilling'), 'Final bil
 policyExpect(str_contains($billingController, 'http_response_code(403)'), 'Unauthorized final billing requests return HTTP 403.');
 $billingInsightsController = file_get_contents($root . '/apps/controllers/billingInsightsController.php');
 policyExpect(str_contains($billingInsightsController, 'vdRequireAdminJson'), 'Billing insight data remains Admin-only.');
+$odontogramController = file_get_contents($root . '/apps/controllers/odontogramController.php');
+policyExpect(str_contains($odontogramController, "['Admin', 'Dental Assistant']"), 'Dental chart reads are available to both staff roles.');
+policyExpect(str_contains($odontogramController, "!== 'Admin'"), 'Dental chart updates remain Admin / Dentist-only.');
 $sharedQueue = file_get_contents($root . '/apps/views/admin/partials/dashboard-content.php');
 policyExpect(str_contains($sharedQueue, 'Awaiting admin settlement'), 'The Dental Assistant queue exposes the Admin settlement handoff state.');
 $assistantAppointments = file_get_contents($root . '/apps/views/admin/partials/appointment-content.php');
