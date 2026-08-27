@@ -23,6 +23,15 @@ $upcoming = array_values(array_filter(
 ));
 $clinics = (new Clinic($conn))->getAllClinics();
 $todayLogbook = $logbookModel->getToday();
+$finishedQueueStatuses = ['Completed', 'Cancelled', 'No-show'];
+$activeQueueEntries = array_values(array_filter(
+    $todayLogbook,
+    static fn(array $entry): bool => !in_array($entry['appointment_status'], $finishedQueueStatuses, true)
+));
+$finishedQueueEntries = array_values(array_filter(
+    $todayLogbook,
+    static fn(array $entry): bool => in_array($entry['appointment_status'], $finishedQueueStatuses, true)
+));
 $arrivedCount = count(array_filter($todayLogbook, static fn($row) => !empty($row['arrived_at'])));
 $readyCount = count(array_filter($todayLogbook, static fn($row) => $row['checkin_status'] === 'Ready'));
 $currentPatient = null;
@@ -47,6 +56,35 @@ $dashboardGreetingName = count($dashboardNameParts) > 1
 function dashboardStatusClass($status)
 {
     return 'vd-status vd-status-' . strtolower(str_replace(' ', '-', $status));
+}
+
+function dashboardQueueState(array $entry): array
+{
+    if ($entry['appointment_status'] === 'In Progress') {
+        return ['label' => 'In treatment', 'class' => 'vd-status vd-status-in-progress', 'detail' => 'Treatment is underway'];
+    }
+    if ($entry['checkin_status'] === 'Profile Required') {
+        return ['label' => 'Needs profile', 'class' => 'vd-status vd-status-profile-required', 'detail' => 'Complete the patient profile'];
+    }
+    if ($entry['queue_status'] === 'On Hold' && $entry['appointment_status'] === 'Checked In') {
+        return ['label' => 'On hold', 'class' => 'vd-status vd-status-warning', 'detail' => 'Temporarily removed from queue'];
+    }
+    if ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready') {
+        return [
+            'label' => 'Ready to treat',
+            'class' => 'vd-status vd-status-ready',
+            'detail' => $entry['is_next'] ? 'Next patient in line' : 'Waiting in queue',
+        ];
+    }
+    if (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed') {
+        return ['label' => 'Awaiting check-in', 'class' => 'vd-status vd-status-not-arrived', 'detail' => 'Patient has not checked in'];
+    }
+
+    return [
+        'label' => $entry['appointment_status'],
+        'class' => dashboardStatusClass($entry['appointment_status']),
+        'detail' => $entry['checked_in_by'] ?: 'No next step available',
+    ];
 }
 
 function dashboardBillingPayload(array $entry): string
@@ -74,12 +112,19 @@ function dashboardBillingPayload(array $entry): string
 
 <div class="d-flex flex-column gap-4">
     <section class="vd-dashboard-welcome" aria-labelledby="vdDashboardGreeting">
-        <span class="vd-dashboard-welcome-kicker">Dashboard overview</span>
-        <h1 class="vd-dashboard-greeting" id="vdDashboardGreeting"
-            data-user-name="<?= htmlspecialchars($dashboardGreetingName, ENT_QUOTES, 'UTF-8') ?>">
-            Welcome, <?= htmlspecialchars($dashboardGreetingName) ?>
-        </h1>
-        <p class="vd-dashboard-welcome-copy">Here’s what’s happening at the clinic today.</p>
+        <div>
+            <span class="vd-dashboard-welcome-kicker">Clinic operations</span>
+            <h1 class="vd-dashboard-greeting" id="vdDashboardGreeting"
+                data-user-name="<?= htmlspecialchars($dashboardGreetingName, ENT_QUOTES, 'UTF-8') ?>">
+                Today’s overview
+            </h1>
+            <p class="vd-dashboard-welcome-copy">Welcome, <?= htmlspecialchars($dashboardGreetingName) ?>. Prioritize the live queue, then review upcoming visits.</p>
+        </div>
+        <button type="button" class="btn vd-btn-outline vd-dashboard-review-btn" id="openPaymentsAwaitingReview">
+            <i class="ti ti-receipt" aria-hidden="true"></i>
+            Payments to review
+            <span class="vd-dashboard-review-count"><?= $reviewCount ?></span>
+        </button>
     </section>
 
     <div class="vd-stat-grid">
@@ -98,15 +143,10 @@ function dashboardBillingPayload(array $entry): string
             <div class="vd-stat-value"><?= count($upcoming) ?></div>
             <div class="vd-stat-sub">All active requests</div>
         </div>
-        <button type="button" class="vd-stat-card text-start" id="openPaymentsAwaitingReview">
-            <div class="vd-stat-label">Payments Awaiting Review</div>
-            <div class="vd-stat-value"><?= $reviewCount ?></div>
-            <div class="vd-stat-sub">Open in Appointments</div>
-        </button>
     </div>
 
     <div class="vd-dash-card">
-        <div class="vd-dash-card-header"><span class="vd-dash-card-title">Today's Logbook</span><span class="vd-topbar-date"><?= date('F j, Y') ?></span></div>
+        <div class="vd-dash-card-header"><span class="vd-dash-card-title">Today’s Queue</span><span class="vd-topbar-date"><?= date('F j, Y') ?></span></div>
         <div class="vd-dash-card-body">
             <div class="d-flex flex-wrap gap-2 mb-4">
                 <input type="text" class="form-control vd-input flex-grow-1" id="checkinLookup"
@@ -130,7 +170,7 @@ function dashboardBillingPayload(array $entry): string
                     <span><strong><?= $onHoldCount ?></strong> on hold</span>
                 </div>
             </div>
-            <?php if (!$todayLogbook): ?>
+            <?php if (!$activeQueueEntries): ?>
                 <div class="vd-empty-state">No confirmed appointments scheduled for today.</div>
             <?php else: ?>
                 <div class="vd-appt-table-wrap">
@@ -140,13 +180,16 @@ function dashboardBillingPayload(array $entry): string
                                 <th>Queue</th>
                                 <th>Patient</th>
                                 <th>Visit</th>
-                                <th>Readiness</th>
-                                <th>Action</th>
+                                <th>Current state</th>
+                                <th>Next step</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($todayLogbook as $entry): ?>
-                                <tr data-logbook-patient="<?= (int) $entry['patient_id'] ?>">
+                            <?php foreach ($activeQueueEntries as $entry):
+                                $queueState = dashboardQueueState($entry);
+                                $queueRowClass = $entry['is_in_treatment'] ? 'vd-queue-row-current' : ($entry['is_next'] ? 'vd-queue-row-next' : '');
+                            ?>
+                                <tr class="<?= $queueRowClass ?>" data-logbook-patient="<?= (int) $entry['patient_id'] ?>">
                                     <td>
                                         <?php if ($entry['is_in_treatment']): ?><span class="vd-queue-badge vd-queue-now">Now</span>
                                         <?php elseif ($entry['is_next']): ?><span class="vd-queue-badge vd-queue-next">Next</span>
@@ -166,54 +209,80 @@ function dashboardBillingPayload(array $entry): string
                                         <div class="vd-appt-meta"><i class="ti ti-building-hospital" aria-hidden="true"></i><?= htmlspecialchars($entry['clinic_name']) ?></div>
                                     </td>
                                     <td>
-                                        <div class="vd-readiness-stack">
-                                            <div><span>Profile</span><span class="<?= dashboardStatusClass($entry['profile_completed_at'] ? 'Complete' : 'Incomplete') ?>"><?= $entry['profile_completed_at'] ? 'Complete' : 'Incomplete' ?></span></div>
-                                            <div><span>Check-in</span>
-                                                <?php if ($entry['checkin_status']): ?><span class="<?= dashboardStatusClass($entry['checkin_status']) ?>"><?= htmlspecialchars($entry['checkin_status']) ?></span>
-                                                <?php else: ?><span class="vd-status vd-status-not-arrived">Not arrived</span><?php endif; ?>
-                                            </div>
+                                        <div class="vd-queue-state">
+                                            <span class="<?= htmlspecialchars($queueState['class']) ?>"><?= htmlspecialchars($queueState['label']) ?></span>
+                                            <span><?= htmlspecialchars($queueState['detail']) ?></span>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="vd-queue-action-cell">
                                         <?php if (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
-                                            <span class="text-muted small">Awaiting patient code</span>
+                                            <span class="vd-queue-action-note">Waiting for patient code</span>
                                         <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?>
-                                            <button type="button" class="btn vd-btn-outline btn-sm" data-complete-profile="<?= (int) $entry['patient_id'] ?>" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">Review Patient Profile</button>
+                                            <button type="button" class="btn vd-btn-outline btn-sm vd-queue-primary-action" data-complete-profile="<?= (int) $entry['patient_id'] ?>" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">Review profile</button>
                                         <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready' && $entry['is_next']): ?>
-                                            <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
-                                                <i class="ti ti-player-play me-1"></i>Start Next
-                                            </button>
-                                            <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="placeOnHold" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Place on Hold</button>
+                                            <div class="vd-queue-action-group">
+                                                <button type="button" class="btn vd-btn-gold btn-sm vd-queue-primary-action" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
+                                                    <i class="ti ti-player-play" aria-hidden="true"></i>Start treatment
+                                                </button>
+                                                <details class="vd-queue-more-actions">
+                                                    <summary title="More queue actions" aria-label="More queue actions"><i class="ti ti-dots" aria-hidden="true"></i></summary>
+                                                    <div class="vd-queue-more-menu">
+                                                        <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="placeOnHold" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Place on hold</button>
+                                                    </div>
+                                                </details>
+                                            </div>
                                         <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['queue_status'] === 'On Hold'): ?>
-                                            <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="returnToQueue" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Return to Queue</button>
+                                            <button type="button" class="btn vd-btn-outline btn-sm vd-queue-primary-action" data-queue-action="returnToQueue" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Return to queue</button>
                                         <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready'): ?>
                                             <?php if (!$entry['serve_next_at']): ?>
-                                                <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="serveNext" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Serve Next</button>
-                                            <?php else: ?><span class="text-muted small">Selected by staff</span><?php endif; ?>
+                                                <button type="button" class="btn vd-btn-outline btn-sm vd-queue-primary-action" data-queue-action="serveNext" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Move to next</button>
+                                            <?php else: ?><span class="vd-queue-action-note">Selected by staff</span><?php endif; ?>
                                         <?php elseif ($entry['appointment_status'] === 'In Progress'): ?>
-                                            <button type="button" class="btn vd-btn-gold btn-sm" data-complete-with-billing
+                                            <button type="button" class="btn vd-btn-gold btn-sm vd-queue-primary-action" data-complete-with-billing
                                                 data-appointment-id="<?= (int) $entry['appointment_id'] ?>"
                                                 data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>"
                                                 data-services="<?= htmlspecialchars($entry['service_name'] ?: 'Service not listed') ?>"
                                                 data-clinic="<?= htmlspecialchars($entry['clinic_name']) ?>"
                                                 data-deposit="<?= htmlspecialchars((string) ((float) $entry['verified_deposit'])) ?>">
-                                                <i class="ti ti-check me-1"></i>Complete Visit
+                                                <i class="ti ti-check" aria-hidden="true"></i>Complete visit
                                             </button>
-                                        <?php elseif ($entry['appointment_status'] === 'Completed'): ?>
-                                            <?php if (!empty($entry['billing_id'])): ?>
-                                                <button type="button" class="btn vd-btn-outline btn-sm" data-view-logbook-billing="<?= dashboardBillingPayload($entry) ?>">
-                                                    <i class="ti ti-receipt me-1"></i>View Billing
-                                                </button>
-                                            <?php else: ?>
-                                                <span class="vd-status vd-status-warning">Billing Missing</span>
-                                            <?php endif; ?>
-                                        <?php else: ?><span class="text-muted small"><?= htmlspecialchars($entry['checked_in_by'] ?: '—') ?></span><?php endif; ?>
+                                        <?php else: ?><span class="vd-queue-action-note"><?= htmlspecialchars($entry['checked_in_by'] ?: 'No action available') ?></span><?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($finishedQueueEntries): ?>
+                <details class="vd-finished-today mt-4">
+                    <summary>
+                        <span><i class="ti ti-circle-check" aria-hidden="true"></i>Finished today</span>
+                        <span class="vd-finished-count"><?= count($finishedQueueEntries) ?></span>
+                        <i class="ti ti-chevron-down vd-finished-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="vd-finished-list">
+                        <?php foreach ($finishedQueueEntries as $entry): ?>
+                            <div class="vd-finished-row">
+                                <div>
+                                    <strong><?= htmlspecialchars($entry['lastname'] . ', ' . $entry['firstname']) ?></strong>
+                                    <span><?= htmlspecialchars($entry['service_name'] ?: 'Service not listed') ?> · <?= htmlspecialchars($entry['clinic_name']) ?></span>
+                                </div>
+                                <span class="<?= dashboardStatusClass($entry['appointment_status']) ?>"><?= htmlspecialchars($entry['appointment_status']) ?></span>
+                                <div class="vd-finished-action">
+                                    <?php if ($entry['appointment_status'] === 'Completed' && !empty($entry['billing_id'])): ?>
+                                        <button type="button" class="btn vd-btn-outline btn-sm" data-view-logbook-billing="<?= dashboardBillingPayload($entry) ?>">View billing</button>
+                                    <?php elseif ($entry['appointment_status'] === 'Completed'): ?>
+                                        <span class="vd-status vd-status-warning">Billing missing</span>
+                                    <?php else: ?>
+                                        <span class="vd-appt-meta">Recorded</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </details>
             <?php endif; ?>
         </div>
     </div>
@@ -222,7 +291,7 @@ function dashboardBillingPayload(array $entry): string
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">Upcoming Appointments</span><span class="vd-topbar-date"><?= count($upcoming) ?> total</span></div>
         <div class="vd-dash-card-body">
             <?php if (!$upcoming): ?><div class="vd-empty-state">No upcoming appointment requests.</div>
-                <?php else: foreach (array_slice($upcoming, 0, 5) as $appt): ?>
+                <?php else: foreach (array_slice($upcoming, 0, 3) as $appt): ?>
                     <div class="vd-appt-row">
                         <div class="vd-appt-date-box">
                             <div class="vd-appt-day"><?= date('d', strtotime($appt['date'])) ?></div>

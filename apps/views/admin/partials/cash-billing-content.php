@@ -52,7 +52,7 @@ function billingRecordPayload(array $row): string {
             <td><div class="vd-appt-name">₱<?= number_format((float)$row['actual_service_amount'], 2) ?></div><div class="vd-appt-meta">Deposit: ₱<?= number_format((float)$row['deposit_applied'], 2) ?></div></td>
             <td><span class="<?= htmlspecialchars('vd-status vd-status-' . strtolower(str_replace(' ', '-', $row['payment_status']))) ?>"><?= htmlspecialchars($row['payment_status']) ?></span></td>
             <td><div class="vd-appt-name"><?= htmlspecialchars($row['recorded_by']) ?></div><div class="vd-appt-meta"><?= $row['recorded_at'] ? date('M d, Y g:i A', strtotime($row['recorded_at'])) : 'Not recorded' ?></div></td>
-            <td><button type="button" class="btn vd-btn-outline btn-md vd-billing-details-btn" title="View billing details" data-billing-record="<?= billingRecordPayload($row) ?>"><i class="ti ti-eye" aria-hidden="true"></i></button></td>
+            <td><button type="button" class="btn vd-btn-outline btn-md vd-billing-details-btn" aria-label="View billing details for <?= htmlspecialchars(trim($row['firstname'] . ' ' . $row['lastname'])) ?>" title="View billing details" data-billing-record="<?= billingRecordPayload($row) ?>"><i class="ti ti-eye" aria-hidden="true"></i><span class="vd-action-label">View details</span></button></td>
           </tr>
         <?php endforeach; ?></tbody>
       </table></div>

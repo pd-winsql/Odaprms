@@ -50,7 +50,7 @@ if (!$email) {
       <div class="vd-auth-form-wrap">
 
         <div class="vd-auth-heading">
-          <div class="vd-auth-title">Enter OTP</div>
+          <h1 class="vd-auth-title">Enter OTP</h1>
           <div class="vd-auth-sub">
             We sent a 6-digit code to<br>
             <strong><?= htmlspecialchars($email) ?></strong>
@@ -64,7 +64,7 @@ if (!$email) {
           <input type="hidden" name="email" value="<?= htmlspecialchars($email) ?>">
 
           <div class="vd-auth-group">
-            <label class="vd-label">6-Digit OTP Code</label>
+            <label class="vd-label" for="otpInput">6-Digit OTP Code</label>
             <input type="text" name="otp" id="otpInput" class="vd-auth-input vd-otp-input"
               placeholder="_ _ _ _ _ _"
               maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>

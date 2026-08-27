@@ -1,0 +1,359 @@
+/*
+ * Ventura UI refinement layer
+ *
+ * This file is intentionally loaded after dashboard.css. It is the single
+ * supplementary layer for shared tokens and recently introduced components.
+ * Established dashboard components remain owned by dashboard.css.
+ */
+
+:root {
+    --vd-text-xs: 0.75rem;
+    --vd-text-sm: 0.8125rem;
+    --vd-text-md: 0.9375rem;
+    --vd-control-height: 44px;
+    --vd-radius-sm: 8px;
+    --vd-radius-md: 12px;
+    --vd-radius-lg: 16px;
+    --vd-surface: #fffdf9;
+    --vd-surface-subtle: #f8f2e8;
+    --vd-surface-action: #fcf7ee;
+    --vd-border: #dfcfb1;
+    --vd-text: #2f2923;
+    --vd-text-muted: #70665b;
+    --vd-gold-dark: #765716;
+}
+
+.vd-dash-body {
+    color: var(--vd-text);
+    font-size: var(--vd-text-md);
+}
+
+.vd-dash-body small,
+.vd-dash-body .small,
+.vd-dash-body .vd-appt-meta,
+.vd-dash-body .vd-topbar-date {
+    font-size: var(--vd-text-sm);
+    line-height: 1.5;
+}
+
+.vd-dash-body .vd-label,
+.vd-dash-body .vd-appt-table thead th {
+    font-size: var(--vd-text-xs);
+    line-height: 1.35;
+}
+
+.vd-dash-body .btn,
+.vd-dash-body .form-control,
+.vd-dash-body .form-select,
+.vd-dash-body button,
+.vd-dash-body [role="button"] {
+    min-height: var(--vd-control-height);
+}
+
+.vd-dash-body .btn {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.45rem;
+    justify-content: center;
+}
+
+/* Statuses outside the primary appointment filters use a compact select. */
+.vd-status-more-select {
+    background-color: var(--vd-surface);
+    border: 1px solid var(--vd-border);
+    border-radius: var(--vd-radius-sm);
+    color: var(--vd-text);
+    font: 500 var(--vd-text-sm) "Jost", sans-serif;
+    min-height: 40px;
+    min-width: 172px;
+    padding: 7px 36px 7px 12px;
+}
+
+.vd-table-icon-btn,
+.vd-billing-details-btn {
+    min-height: var(--vd-control-height);
+    min-width: var(--vd-control-height);
+}
+
+.vd-billing-details-btn {
+    height: auto;
+    padding-inline: 14px;
+    white-space: nowrap;
+    width: auto;
+}
+
+.vd-billing-details-btn i {
+    display: none;
+    font-size: 1.125rem;
+}
+
+.vd-action-label {
+    font-size: var(--vd-text-sm);
+    font-weight: 500;
+}
+
+/* Shared non-appointment modal readability. */
+.vd-modal-content .modal-body {
+    color: var(--vd-text);
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+.vd-modal-content .modal-title {
+    line-height: 1.15;
+}
+
+.vd-table-details-item dt,
+.vd-action-modal-kicker {
+    font-size: var(--vd-text-xs);
+}
+
+.vd-table-details-item dd {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Reduce nested card weight while retaining clear major regions. */
+.vd-dash-card {
+    border-radius: var(--vd-radius-lg);
+    box-shadow: 0 2px 6px rgba(54, 42, 25, 0.045);
+}
+
+.vd-stat-card,
+.vd-queue-overview-card {
+    box-shadow: none;
+}
+
+.vd-dashboard-welcome {
+    align-items: end;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+}
+
+.vd-dashboard-review-btn {
+    flex: 0 0 auto;
+}
+
+.vd-dashboard-review-count {
+    align-items: center;
+    background: #f0e4cb;
+    border-radius: 999px;
+    color: var(--vd-gold-dark);
+    display: inline-flex;
+    font-size: var(--vd-text-xs);
+    font-weight: 600;
+    height: 24px;
+    justify-content: center;
+    min-width: 24px;
+    padding-inline: 7px;
+}
+
+/* Today’s Queue prioritizes the live state and one clear next step. */
+.vd-queue-state {
+    align-items: start;
+    display: grid;
+    gap: 6px;
+    min-width: 160px;
+}
+
+.vd-queue-state .vd-status {
+    justify-self: start;
+}
+
+.vd-queue-state > span:last-child,
+.vd-queue-action-note {
+    color: var(--vd-text-muted);
+    font-size: var(--vd-text-sm);
+    line-height: 1.4;
+}
+
+.vd-queue-row-current > td:first-child {
+    box-shadow: inset 4px 0 0 #375a67;
+}
+
+.vd-queue-row-next > td:first-child {
+    box-shadow: inset 4px 0 0 #96701b;
+}
+
+.vd-queue-action-cell {
+    min-width: 205px;
+}
+
+.vd-queue-primary-action {
+    white-space: nowrap;
+}
+
+.vd-queue-action-group {
+    align-items: flex-start;
+    display: flex;
+    gap: 8px;
+}
+
+.vd-queue-more-actions summary {
+    align-items: center;
+    background: var(--vd-surface);
+    border: 1px solid var(--vd-border);
+    border-radius: var(--vd-radius-sm);
+    color: var(--vd-gold-dark);
+    cursor: pointer;
+    display: inline-flex;
+    height: var(--vd-control-height);
+    justify-content: center;
+    list-style: none;
+    width: var(--vd-control-height);
+}
+
+.vd-queue-more-actions summary::-webkit-details-marker {
+    display: none;
+}
+
+.vd-queue-more-actions summary:focus-visible {
+    outline: 3px solid rgba(128, 97, 31, 0.28);
+    outline-offset: 2px;
+}
+
+.vd-queue-more-menu {
+    padding-top: 8px;
+}
+
+.vd-queue-more-menu .btn {
+    white-space: nowrap;
+}
+
+.vd-finished-today {
+    border-top: 1px solid var(--vd-border);
+}
+
+.vd-finished-today > summary {
+    align-items: center;
+    color: var(--vd-text);
+    cursor: pointer;
+    display: grid;
+    font-size: var(--vd-text-md);
+    font-weight: 500;
+    gap: 10px;
+    grid-template-columns: 1fr auto auto;
+    list-style: none;
+    min-height: 52px;
+    padding: 10px 2px;
+}
+
+.vd-finished-today > summary::-webkit-details-marker {
+    display: none;
+}
+
+.vd-finished-today > summary > span:first-child {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+}
+
+.vd-finished-today > summary > span:first-child i {
+    color: #4c742b;
+}
+
+.vd-finished-count {
+    align-items: center;
+    background: var(--vd-surface-subtle);
+    border: 1px solid var(--vd-border);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: var(--vd-text-xs);
+    height: 26px;
+    justify-content: center;
+    min-width: 26px;
+    padding-inline: 7px;
+}
+
+.vd-finished-chevron {
+    color: var(--vd-gold-dark);
+    transition: transform 0.2s ease;
+}
+
+.vd-finished-today[open] .vd-finished-chevron {
+    transform: rotate(180deg);
+}
+
+.vd-finished-list {
+    border-top: 1px solid #eee3d1;
+}
+
+.vd-finished-row {
+    align-items: center;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(130px, auto);
+    padding: 13px 2px;
+}
+
+.vd-finished-row + .vd-finished-row {
+    border-top: 1px solid #eee3d1;
+}
+
+.vd-finished-row > div:first-child {
+    display: grid;
+    gap: 2px;
+}
+
+.vd-finished-row > div:first-child strong {
+    font-size: var(--vd-text-md);
+}
+
+.vd-finished-row > div:first-child span {
+    color: var(--vd-text-muted);
+    font-size: var(--vd-text-sm);
+}
+
+.vd-finished-action {
+    display: flex;
+    justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+    .vd-dashboard-welcome {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .vd-finished-row {
+        align-items: start;
+        grid-template-columns: 1fr auto;
+    }
+
+    .vd-finished-action {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+    }
+    .vd-status-filter-wrap,
+    .vd-filter-bar {
+        padding-inline: 16px;
+    }
+
+    .vd-status-filter-toggle {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vd-status-more-select {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .vd-filter-group {
+        min-width: min(100%, 160px);
+    }
+
+    .vd-billing-details-btn {
+        padding-inline: 0;
+        width: var(--vd-control-height);
+    }
+
+    .vd-billing-details-btn i {
+        display: inline-block;
+    }
+
+    .vd-billing-details-btn .vd-action-label {
+        display: none;
+    }
+}

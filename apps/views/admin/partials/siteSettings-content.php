@@ -87,11 +87,7 @@ function sv($settings, $key)
             <span class="vd-dash-card-title">Hero Section</span>
         </div>
         <div class="vd-dash-card-body">
-            <div class="mb-3">
-                <label class="vd-label form-label">System Tag <span class="vd-appt-meta">(small pill above everything)</span></label>
-                <input type="text" class="form-control vd-input vd-field" data-field="hero_system_tag"
-                    maxlength="150" value="<?= sv($settings, 'hero_system_tag') ?>">
-            </div>
+            <p class="vd-appt-meta mb-3">The clinic name is shown automatically above the hero message to keep the homepage clearly branded.</p>
             <div class="mb-3">
                 <label class="vd-label form-label">Eyebrow <span class="vd-appt-meta">(small gold caps line)</span></label>
                 <input type="text" class="form-control vd-input vd-field" data-field="hero_eyebrow"

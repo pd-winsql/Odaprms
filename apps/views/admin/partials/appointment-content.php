@@ -54,6 +54,8 @@ $statusFilterOrder = [
     'No-show',
     'Rejected',
 ];
+$primaryStatusFilters = array_slice($statusFilterOrder, 0, 4);
+$secondaryStatusFilters = array_slice($statusFilterOrder, 4);
 
 $upcomingFilters = buildFilterOptions($upcoming);
 $pastFilters     = buildFilterOptions($past);
@@ -148,9 +150,16 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         <div class="vd-status-filter-wrap">
             <div class="vd-status-filter-toggle" id="upcomingStatusToggles" role="group" aria-label="Filter upcoming appointments by status">
                 <button type="button" class="vd-status-toggle-btn active" data-status="">All Status</button>
-                <?php foreach ($statusFilterOrder as $status): ?>
+                <?php foreach ($primaryStatusFilters as $status): ?>
                     <button type="button" class="vd-status-toggle-btn" data-status="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></button>
                 <?php endforeach; ?>
+                <label class="visually-hidden" for="upcomingMoreStatus">More appointment statuses</label>
+                <select class="vd-status-more-select" id="upcomingMoreStatus" data-status-select aria-label="More appointment statuses">
+                    <option value="">More statuses</option>
+                    <?php foreach ($secondaryStatusFilters as $status): ?>
+                        <option value="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
         </div>
 
@@ -307,9 +316,16 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         <div class="vd-status-filter-wrap">
             <div class="vd-status-filter-toggle" id="pastStatusToggles" role="group" aria-label="Filter past appointments by status">
                 <button type="button" class="vd-status-toggle-btn active" data-status="">All Status</button>
-                <?php foreach ($statusFilterOrder as $status): ?>
+                <?php foreach ($primaryStatusFilters as $status): ?>
                     <button type="button" class="vd-status-toggle-btn" data-status="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></button>
                 <?php endforeach; ?>
+                <label class="visually-hidden" for="pastMoreStatus">More appointment statuses</label>
+                <select class="vd-status-more-select" id="pastMoreStatus" data-status-select aria-label="More appointment statuses">
+                    <option value="">More statuses</option>
+                    <?php foreach ($secondaryStatusFilters as $status): ?>
+                        <option value="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
         </div>
 
@@ -889,11 +905,12 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const dateTo        = document.getElementById(dateToId);
         const clearBtn       = document.getElementById(clearBtnId);
         const countLabel     = document.getElementById(countLabelId);
+        const statusSelect   = statusToggle.querySelector('[data-status-select]');
         const rows            = table.querySelectorAll('tbody tr');
         const totalCount       = rows.length;
 
         function applyFilter() {
-            const status = statusToggle.querySelector('.vd-status-toggle-btn.active')?.dataset.status || '';
+            const status = statusSelect?.value || statusToggle.querySelector('.vd-status-toggle-btn.active')?.dataset.status || '';
             const from   = dateFrom.value;
             const to     = dateTo.value;
             let visible  = 0;
@@ -923,8 +940,16 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             button.addEventListener('click', () => {
                 statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.remove('active'));
                 button.classList.add('active');
+                if (statusSelect) statusSelect.value = '';
                 applyFilter();
             });
+        });
+        statusSelect?.addEventListener('change', () => {
+            statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.remove('active'));
+            if (!statusSelect.value) {
+                statusToggle.querySelector('.vd-status-toggle-btn[data-status=""]')?.classList.add('active');
+            }
+            applyFilter();
         });
         dateFrom.addEventListener('change', applyFilter);
         dateTo.addEventListener('change', applyFilter);
@@ -932,6 +957,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
                 statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.toggle('active', item.dataset.status === ''));
+                if (statusSelect) statusSelect.value = '';
                 dateFrom.value    = '';
                 dateTo.value      = '';
                 applyFilter();
@@ -944,7 +970,14 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     const requestedStatusFilter = sessionStorage.getItem('venturaAppointmentStatusFilter');
     if (requestedStatusFilter) {
         sessionStorage.removeItem('venturaAppointmentStatusFilter');
-        document.querySelector(`#upcomingStatusToggles [data-status="${CSS.escape(requestedStatusFilter)}"]`)?.click();
+        const requestedButton = document.querySelector(`#upcomingStatusToggles [data-status="${CSS.escape(requestedStatusFilter)}"]`);
+        const requestedSelect = document.querySelector('#upcomingStatusToggles [data-status-select]');
+        if (requestedButton) {
+            requestedButton.click();
+        } else if (requestedSelect && Array.from(requestedSelect.options).some(option => option.value === requestedStatusFilter)) {
+            requestedSelect.value = requestedStatusFilter;
+            requestedSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
     }
 
     // Toggle between Upcoming and Past views (uses same design as services-content)

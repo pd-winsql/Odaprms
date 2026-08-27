@@ -33,6 +33,7 @@ $deadline = $payment ? ($payment['resubmission_deadline_at'] ?: $payment['paymen
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../public/css/styles.css') ?>">
     <link rel="stylesheet" href="../../public/css/dashboard.css?v=<?= filemtime(__DIR__ . '/../../public/css/dashboard.css') ?>">
+    <link rel="stylesheet" href="../../public/css/ui-refinements.css?v=<?= filemtime(__DIR__ . '/../../public/css/ui-refinements.css') ?>">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>

@@ -142,8 +142,8 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
       <div class="row align-items-center gy-5 gx-0 gx-md-5">
         <div class="d-none d-lg-block col-lg-6"></div>
         <div class="col-12 col-lg-6">
-          <div class="vd-hero-card ms-lg-auto">
-            <div class="vd-hero-system-tag"><?= sv($settings, 'hero_system_tag', 'Online Dental Appointment & Patient Records Management System') ?></div>
+          <div class="vd-hero-copy ms-lg-auto">
+            <div class="vd-hero-brand"><?= htmlspecialchars(trim(($settings['brand_name_top'] ?? 'Dr. Aprille') . ' Ventura ' . ($settings['brand_name_sub'] ?? 'Clinica Dental'))) ?></div>
             <div class="vd-hero-eyebrow"><?= sv($settings, 'hero_eyebrow', 'Two Clinics in Cagayan · Alcala & Tuguegarao') ?></div>
             <h1 class="vd-hero-title"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
             <p class="vd-hero-sub"><?= sv($settings, 'hero_subtext', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.') ?></p>

@@ -412,7 +412,7 @@
 /* ── Stat cards ── */
 .vd-stat-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
 }
 .vd-stat-card {
@@ -1262,7 +1262,7 @@ button.vd-stat-card {
 /* Mobile — further compact admin layout */
 @media (max-width: 575px) {
     .vd-stat-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
         gap: 10px;
     }
     .vd-dash-content {
@@ -1323,11 +1323,8 @@ button.vd-stat-card {
     }
 }
 
-/* Large desktop — admin stat grid full 4 columns */
+/* Large desktop — dashboard grids */
 @media (min-width: 992px) {
-    .vd-stat-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
     .vd-dash-grid2 {
         grid-template-columns: 1fr 1fr;
     }
@@ -1338,11 +1335,49 @@ button.vd-stat-card {
    ============================================================ */
 
 .vd-appt-table-wrap {
-    overflow-x: auto;
-    width: 100%;
-    border: 1px solid rgba(217, 201, 168, 0.72);
-    border-radius: 14px;
     background: var(--white-bg);
+    background-clip: padding-box;
+    border: 1px solid rgba(217, 201, 168, 0.82);
+    border-radius: 14px;
+    display: block;
+    isolation: isolate;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-color: var(--gold) var(--gold-pale);
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+.vd-appt-table-wrap::-webkit-scrollbar {
+    height: 11px;
+}
+
+.vd-appt-table-wrap::-webkit-scrollbar-track {
+    background: var(--gold-pale);
+}
+
+.vd-appt-table-wrap::-webkit-scrollbar-thumb {
+    background: var(--gold);
+    border: 3px solid var(--gold-pale);
+    border-radius: 999px;
+}
+
+.vd-table-frame {
+    background: var(--white-bg);
+    border: 1px solid rgba(217, 201, 168, 0.82);
+    border-radius: 14px;
+    isolation: isolate;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.vd-table-frame > .vd-appt-table-wrap {
+    border: 0;
+    border-radius: 0;
+    isolation: auto;
 }
 
 /* Reports and data export */
@@ -1551,6 +1586,7 @@ button.vd-stat-card {
     }
     .vd-appt-table-wrap {
         overflow: visible !important;
+        scrollbar-gutter: auto;
     }
     .vd-report-table {
         width: 100%;
@@ -1698,7 +1734,7 @@ button.vd-stat-card {
     border-spacing: 0;
     font-size: 13.5px;
     font-weight: 300;
-    min-width: 700px;
+    min-width: 900px;
 }
 
 .vd-appt-table thead tr {
@@ -1716,7 +1752,7 @@ button.vd-stat-card {
     color: var(--mid);
     background: #f8f3e9;
     border-bottom: 1px solid var(--border);
-    padding: 13px 16px;
+    padding: 11px 14px;
     white-space: nowrap;
     text-align: left;
 }
@@ -1731,7 +1767,7 @@ button.vd-stat-card {
 }
 
 .vd-appt-table td {
-    padding: 14px 16px;
+    padding: 11px 14px;
     vertical-align: middle;
     color: var(--dark);
     border-bottom: 1px solid #eee6d7;
@@ -1901,7 +1937,7 @@ button.vd-stat-card {
 }
 
 .vd-appointment-details-modal .modal-dialog {
-    max-width: 980px;
+    max-width: 1080px;
 }
 .vd-appointment-details-modal .modal-content {
     border: 1px solid var(--border);
@@ -1911,22 +1947,27 @@ button.vd-stat-card {
 .vd-appointment-details-modal .modal-header,
 .vd-appointment-details-modal .modal-footer {
     border-color: #eee6d7;
-    padding: 19px 22px;
+    padding: 20px 24px;
 }
 .vd-appointment-details-modal .modal-body {
-    padding: 20px 22px 24px;
+    color: var(--dark);
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 24px;
 }
 .vd-appointment-details-kicker {
     color: var(--gold);
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.16em;
+    line-height: 1.4;
     margin-bottom: 4px;
     text-transform: uppercase;
 }
 .vd-appointment-details-subtitle {
     color: var(--mid);
-    font-size: 11px;
+    font-size: 14px;
+    line-height: 1.5;
     margin-top: 4px;
 }
 .vd-appointment-details-modal #appointmentDetailsTitle {
@@ -1938,20 +1979,21 @@ button.vd-stat-card {
 .vd-appointment-details-section-title {
     color: var(--dark);
     font-family: "Jost", sans-serif;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 500;
     letter-spacing: 0.08em;
+    line-height: 1.4;
     margin: 0 0 10px;
     text-transform: uppercase;
 }
 .vd-appointment-detail-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 9px;
+    gap: 12px;
 }
 .vd-appointment-detail-item {
     min-width: 0;
-    padding: 10px 11px;
+    padding: 13px 14px;
     border: 1px solid #eee4d2;
     border-radius: 7px;
     background: #fcfaf6;
@@ -1962,16 +2004,18 @@ button.vd-stat-card {
 }
 .vd-appointment-detail-item span {
     color: var(--mid);
-    font-size: 8px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.1em;
+    line-height: 1.35;
     margin-bottom: 3px;
     text-transform: uppercase;
 }
 .vd-appointment-detail-item strong {
     color: var(--dark);
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 500;
+    line-height: 1.45;
     overflow-wrap: anywhere;
 }
 .vd-appointment-detail-status {
@@ -1980,8 +2024,8 @@ button.vd-stat-card {
 .vd-appointment-services-section,
 .vd-appointment-payment-section,
 .vd-appointment-activity-section {
-    margin-top: 22px;
-    padding-top: 19px;
+    margin-top: 26px;
+    padding-top: 22px;
     border-top: 1px solid #eee6d7;
 }
 .vd-appointment-section-heading {
@@ -1992,7 +2036,8 @@ button.vd-stat-card {
 }
 .vd-appointment-service-count {
     color: var(--mid);
-    font-size: 10px;
+    font-size: 13px;
+    line-height: 1.4;
 }
 .vd-appointment-service-list {
     display: grid;
@@ -2001,9 +2046,9 @@ button.vd-stat-card {
 .vd-appointment-service-card {
     align-items: center;
     display: flex;
-    gap: 14px;
+    gap: 16px;
     min-width: 0;
-    padding: 14px 15px;
+    padding: 16px;
     border: 1px solid var(--gold-light);
     border-radius: 9px;
     background: #fffdf9;
@@ -2028,22 +2073,23 @@ button.vd-stat-card {
 }
 .vd-appointment-service-category {
     color: var(--gold);
-    font-size: 8.5px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.14em;
+    line-height: 1.35;
     text-transform: uppercase;
 }
 .vd-appointment-service-copy strong {
     color: var(--dark);
     font-family: "Cormorant Garamond", serif;
-    font-size: 21px;
+    font-size: 23px;
     font-weight: 400;
-    line-height: 1.1;
+    line-height: 1.15;
 }
 .vd-appointment-service-copy small {
     color: var(--mid);
-    font-size: 11px;
-    line-height: 1.4;
+    font-size: 14px;
+    line-height: 1.5;
 }
 .vd-appointment-service-included {
     align-items: center;
@@ -2051,7 +2097,8 @@ button.vd-stat-card {
     display: inline-flex;
     flex: 0 0 auto;
     gap: 5px;
-    font-size: 10px;
+    font-size: 13px;
+    line-height: 1.4;
 }
 .vd-appointment-service-included i {
     display: grid;
@@ -2124,33 +2171,9 @@ button.vd-stat-card {
     .vd-dash-card-body {
         padding: 10px;
     }
-    .vd-appt-table-wrap {
-        overflow-x: auto;
-        border-radius: 12px;
-    }
-    .vd-responsive-table {
-        min-width: 0;
-        width: 100%;
-        table-layout: fixed;
-    }
-    .vd-responsive-table .vd-table-secondary {
-        display: none;
-    }
-    .vd-responsive-table .vd-generated-details-cell {
-        display: table-cell;
-    }
-    .vd-responsive-table .vd-row-details-btn {
-        display: inline-flex;
-    }
     .vd-responsive-table thead th,
     .vd-responsive-table td {
         padding: 12px 9px;
-    }
-    .vd-responsive-table thead th:first-child {
-        width: 38%;
-    }
-    .vd-responsive-table .vd-table-actions-column {
-        width: 35%;
     }
     .vd-responsive-table td {
         overflow-wrap: anywhere;
@@ -2213,9 +2236,6 @@ button.vd-stat-card {
     .vd-responsive-table td {
         padding: 11px 7px;
     }
-    .vd-responsive-table thead th {
-        font-size: 8.5px;
-    }
     .vd-responsive-table .vd-appt-name {
         font-size: 12px;
     }
@@ -2247,12 +2267,6 @@ button.vd-stat-card {
     }
     .vd-appointment-service-copy strong {
         font-size: 18px;
-    }
-    .vd-appointment-service-copy small {
-        font-size: 10px;
-    }
-    .vd-appointment-service-included span {
-        display: none;
     }
 }
 
@@ -2306,35 +2320,29 @@ button.vd-stat-card {
    ============================================================ */
 
 .vd-filter-bar {
+    align-items: flex-end;
+    background: #f8f2e8;
+    border-bottom: 1px solid var(--border);
+    column-gap: 12px;
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 12px;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    background: var(--gold-pale);
+    padding: 14px 22px 18px;
+    row-gap: 10px;
 }
 
 .vd-status-filter-wrap {
+    background: #f8f2e8;
     border-bottom: 1px solid rgba(181, 146, 76, 0.15);
-    overflow-x: auto;
-    padding: 0.9rem 1rem 0;
-    scrollbar-width: thin;
-}
-.vd-status-filter-wrap::-webkit-scrollbar {
-    height: 5px;
-}
-.vd-status-filter-wrap::-webkit-scrollbar-track {
-    background: rgba(181, 146, 76, 0.06);
-}
-.vd-status-filter-wrap::-webkit-scrollbar-thumb {
-    background: rgba(181, 146, 76, 0.38);
-    border-radius: 999px;
+    overflow: visible;
+    padding: 12px 22px 0;
 }
 .vd-status-filter-toggle {
+    align-items: center;
     display: flex;
-    gap: 0.35rem;
-    min-width: max-content;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    overflow: visible;
 }
 .vd-status-toggle-btn {
     background: transparent;
@@ -2342,10 +2350,12 @@ button.vd-stat-card {
     border-bottom: 2px solid transparent;
     color: var(--mid);
     font-family: "Jost", sans-serif;
-    font-size: 0.6rem;
+    border-radius: 8px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.055em;
-    padding: 0.65rem 0.8rem 0.75rem;
+    min-height: 40px;
+    padding: 8px 12px;
     text-transform: uppercase;
     transition:
         color 0.18s ease,
@@ -2372,6 +2382,7 @@ button.vd-stat-card {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 160px;
 }
 
 .vd-filter-clear {
@@ -3535,12 +3546,10 @@ button.vd-stat-card {
     .vd-appointment-details-modal .modal-header,
     .vd-appointment-details-modal .modal-footer {
         flex: 0 0 auto;
-        padding: 12px 14px;
     }
 
     .vd-appointment-details-modal .modal-body {
         min-height: 0;
-        padding: 12px 14px 14px;
     }
 
     .vd-appointment-receipt-wrap {
@@ -3628,14 +3637,6 @@ button.vd-stat-card {
     color: var(--gold-dark);
     font-size: 18px;
 }
-.vd-billing-details-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 38px;
-}
-
 /* Password visibility control inside dashboard forms */
 .vd-change-password-form {
     max-width: 320px;
@@ -4084,22 +4085,6 @@ button.vd-stat-card {
 }
 
 /* Compact appointment rows and single row-actions menu */
-.vd-appt-table-wrap {
-    overflow-x: auto;
-}
-
-.vd-appt-table {
-    min-width: 900px;
-}
-
-.vd-appt-table td {
-    padding: 11px 14px;
-}
-
-.vd-appt-table thead th {
-    padding: 11px 14px;
-}
-
 .vd-appt-table .vd-activity-cell {
     min-width: 225px;
 }
@@ -4252,18 +4237,9 @@ button.vd-stat-card {
 }
 
 @media (max-width: 767px) {
-    .vd-appt-table-wrap {
-        overflow-x: auto;
-    }
-
-    .vd-responsive-table {
-        min-width: 0;
-    }
-
     .vd-responsive-table .vd-appt-actions-cell {
         overflow: visible;
         text-align: right;
-        width: 35%;
     }
 
     .vd-appt-action-toggle {
@@ -4368,11 +4344,6 @@ button.vd-stat-card {
     font-size: 12px;
 }
 
-#billingRecordsTable .vd-billing-details-btn .ti-eye {
-    font-size: 18px;
-    line-height: 1;
-}
-
 .vd-dash-body input:not([type="radio"]):not([type="checkbox"]),
 .vd-dash-body select,
 .vd-dash-body textarea {
@@ -4448,26 +4419,6 @@ button.vd-stat-card {
     min-width: 44px;
 }
 
-.vd-status-filter-toggle {
-    padding: 5px 8px 8px;
-    scrollbar-color: var(--gold) var(--gold-pale);
-    scrollbar-width: auto;
-}
-
-.vd-status-filter-toggle::-webkit-scrollbar {
-    height: 8px;
-}
-
-.vd-status-filter-toggle::-webkit-scrollbar-track {
-    background: var(--gold-pale);
-    border-radius: 999px;
-}
-
-.vd-status-filter-toggle::-webkit-scrollbar-thumb {
-    background: var(--gold);
-    border-radius: 999px;
-}
-
 .vd-filter-select,
 .vd-status-select {
     min-height: 44px;
@@ -4489,25 +4440,6 @@ button.vd-stat-card {
     width: 44px;
     height: 44px;
     min-width: 44px;
-}
-
-.vd-appt-table-wrap {
-    scrollbar-color: var(--gold) var(--gold-pale);
-    scrollbar-width: auto;
-}
-
-.vd-appt-table-wrap::-webkit-scrollbar {
-    height: 10px;
-}
-
-.vd-appt-table-wrap::-webkit-scrollbar-track {
-    background: var(--gold-pale);
-}
-
-.vd-appt-table-wrap::-webkit-scrollbar-thumb {
-    background: var(--gold);
-    border: 2px solid var(--gold-pale);
-    border-radius: 999px;
 }
 
 /* Keep the table's bottom edge visible above its native horizontal scrollbar. */
@@ -4649,14 +4581,6 @@ button.vd-stat-card {
         font-size: 11px;
     }
 
-    .vd-responsive-table thead th:first-child {
-        width: 39%;
-    }
-
-    .vd-responsive-table .vd-table-actions-column {
-        width: 34%;
-    }
-
     .vd-responsive-table .vd-status {
         display: inline-flex;
         max-width: 100%;
@@ -4706,15 +4630,6 @@ button.vd-stat-card {
 }
 
 /* Data tables always expose their complete columns through horizontal scroll. */
-.vd-appt-table-wrap {
-    display: block;
-    max-width: 100%;
-    overflow-x: auto !important;
-    overscroll-behavior-inline: contain;
-    scrollbar-gutter: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
 #upcomingApptTable,
 #pastApptTable {
     min-width: 1120px;
@@ -4833,109 +4748,6 @@ button.vd-stat-card {
     }
 }
 
-/* Appointment details use readable labels, values, and supporting copy. */
-.vd-appointment-details-modal .modal-dialog {
-    max-width: 1080px;
-}
-
-.vd-appointment-details-modal .modal-header,
-.vd-appointment-details-modal .modal-footer {
-    padding: 20px 24px;
-}
-
-.vd-appointment-details-modal .modal-body {
-    padding: 24px;
-}
-
-.vd-appointment-details-kicker {
-    font-size: 12px;
-    line-height: 1.4;
-}
-
-.vd-appointment-details-subtitle {
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.vd-appointment-details-section-title {
-    font-size: 13px;
-    line-height: 1.4;
-}
-
-.vd-appointment-detail-grid {
-    gap: 12px;
-}
-
-.vd-appointment-detail-item {
-    padding: 13px 14px;
-}
-
-.vd-appointment-detail-item span {
-    font-size: 12px;
-    line-height: 1.35;
-}
-
-.vd-appointment-detail-item strong {
-    font-size: 14px;
-    line-height: 1.45;
-}
-
-.vd-appointment-service-count,
-.vd-appointment-service-included {
-    font-size: 13px;
-    line-height: 1.4;
-}
-
-.vd-appointment-service-category {
-    font-size: 12px;
-    line-height: 1.35;
-}
-
-.vd-appointment-service-copy strong {
-    font-size: 23px;
-    line-height: 1.15;
-}
-
-.vd-appointment-service-copy small {
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.vd-appointment-service-card {
-    gap: 16px;
-    padding: 16px;
-}
-
-.vd-appointment-services-section,
-.vd-appointment-payment-section,
-.vd-appointment-activity-section {
-    margin-top: 26px;
-    padding-top: 22px;
-}
-
-@media (max-width: 767px) {
-    .vd-appointment-details-modal .modal-header,
-    .vd-appointment-details-modal .modal-footer {
-        padding: 16px;
-    }
-
-    .vd-appointment-details-modal .modal-body {
-        padding: 16px;
-    }
-
-    .vd-appointment-detail-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .vd-appointment-service-copy small {
-        font-size: 14px;
-    }
-
-    .vd-appointment-service-included span {
-        display: inline;
-    }
-}
-
 @media (max-width: 520px) {
     .vd-appointment-detail-grid {
         grid-template-columns: 1fr;
@@ -4956,14 +4768,6 @@ button.vd-stat-card {
 
 /* Preserve all four table corners instead of letting header and row
    backgrounds visually cut through the wrapper's rounded edge. */
-.vd-appt-table-wrap {
-    background: var(--white-bg);
-    background-clip: padding-box;
-    border: 1px solid rgba(217, 201, 168, 0.82);
-    border-radius: 14px;
-    isolation: isolate;
-}
-
 .vd-appt-table thead th:first-child {
     border-top-left-radius: 13px;
 }
@@ -4975,23 +4779,6 @@ button.vd-stat-card {
 }
 .vd-appt-table tbody tr:last-child td:last-child {
     border-bottom-right-radius: 13px;
-}
-
-/* Keep native scrollbars inside a separate viewport so they cannot paint over
-   the table's rounded outer border. */
-.vd-table-frame {
-    background: var(--white-bg);
-    border: 1px solid rgba(217, 201, 168, 0.82);
-    border-radius: 14px;
-    isolation: isolate;
-    max-width: 100%;
-    overflow: hidden;
-}
-
-.vd-table-frame > .vd-appt-table-wrap {
-    border: 0;
-    border-radius: 0;
-    isolation: auto;
 }
 
 /* The Actions column is intentionally differentiated without becoming an
@@ -5086,30 +4873,6 @@ button.vd-stat-card {
 .vd-today-logbook-table .vd-appt-meta i {
     color: #92722d;
     margin-right: 5px;
-}
-
-.vd-readiness-stack {
-    display: grid;
-    gap: 8px;
-    min-width: 210px;
-}
-
-.vd-readiness-stack > div {
-    align-items: center;
-    display: flex;
-    gap: 10px;
-    justify-content: space-between;
-}
-
-.vd-readiness-stack > div > span:first-child {
-    color: #746a5e;
-    font-size: 12px;
-}
-
-.vd-readiness-stack .vd-status {
-    display: inline-flex;
-    justify-content: center;
-    min-width: 92px;
 }
 
 /* Patient history actions remain compact while preserving a 44px target. */
@@ -5343,12 +5106,5 @@ button.vd-stat-card {
 
     .vd-today-logbook-table {
         min-width: 920px;
-    }
-}
-
-@media print {
-    .vd-appt-table-wrap {
-        overflow: visible !important;
-        scrollbar-gutter: auto;
     }
 }

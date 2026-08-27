@@ -68,7 +68,7 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
       <div class="vd-auth-form-wrap vd-register-wrap">
 
         <div class="vd-auth-heading">
-          <div class="vd-auth-title">Create account</div>
+          <h1 class="vd-auth-title">Create account</h1>
           <div class="vd-auth-sub">Fill in your details to get started.</div>
         </div>
 

@@ -149,6 +149,7 @@
   color: var(--dark);
   letter-spacing: 0.04em;
   margin-bottom: 6px;
+  margin-top: 0;
 }
 
 .vd-auth-sub {
@@ -271,7 +272,11 @@
   color: var(--mid);
 }
 .vd-auth-footer a {
+  align-items: center;
   color: var(--gold);
+  display: inline-flex;
+  min-height: 44px;
+  padding: 8px 2px;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;

@@ -17,30 +17,11 @@
         timeZone: TIME_ZONE,
         hour: 'numeric',
         minute: '2-digit',
-        second: '2-digit',
         hour12: true
     });
-    const hourFormatter = new Intl.DateTimeFormat('en-GB', {
-        timeZone: TIME_ZONE,
-        hour: '2-digit',
-        hourCycle: 'h23'
-    });
-
-    function getGreeting(hour) {
-        if (hour < 12) return 'Good morning';
-        if (hour < 18) return 'Good afternoon';
-        return 'Good evening';
-    }
 
     function updateTopbar() {
         const now = new Date();
-        const hour = Number(hourFormatter.format(now));
-        const greetingElement = document.getElementById('vdDashboardGreeting');
-
-        if (greetingElement) {
-            const userName = greetingElement.dataset.userName || 'there';
-            greetingElement.textContent = `${getGreeting(hour)}, ${userName}`;
-        }
         dateElement.textContent = dateFormatter.format(now);
         dateElement.dateTime = now.toISOString();
         clockElement.textContent = timeFormatter.format(now);
@@ -48,5 +29,5 @@
     }
 
     updateTopbar();
-    window.setInterval(updateTopbar, 1000);
+    window.setInterval(updateTopbar, 60000);
 })();

@@ -51,7 +51,7 @@ if (!$token) {
         <div class="vd-auth-form-wrap">
 
             <div class="vd-auth-heading">
-            <div class="vd-auth-title">Reset password</div>
+            <h1 class="vd-auth-title">Reset password</h1>
             <div class="vd-auth-sub">Choose a strong new password for your account.</div>
             </div>
 
@@ -62,7 +62,7 @@ if (!$token) {
             <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
 
             <div class="vd-auth-group">
-                <label class="vd-label">New Password</label>
+                <label class="vd-label" for="newPw">New Password</label>
                 <div class="vd-auth-input-wrap">
                 <input type="password" name="new_password" id="newPw"
                     class="vd-auth-input" placeholder="Min. 8 characters" required>
@@ -73,7 +73,7 @@ if (!$token) {
             </div>
 
             <div class="vd-auth-group">
-                <label class="vd-label">Confirm New Password</label>
+                <label class="vd-label" for="confirmPw">Confirm New Password</label>
                 <div class="vd-auth-input-wrap">
                 <input type="password" name="confirm_password" id="confirmPw"
                     class="vd-auth-input" placeholder="Re-enter password" required>

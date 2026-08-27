@@ -58,7 +58,7 @@ if (isset($_SESSION['user_id'])) {
 			<div class="vd-auth-form-wrap">
 
 				<div class="vd-auth-heading">
-					<div class="vd-auth-title">Welcome!</div>
+					<h1 class="vd-auth-title">Welcome!</h1>
 					<div class="vd-auth-sub">Sign in to your account to continue.</div>
 				</div>
 

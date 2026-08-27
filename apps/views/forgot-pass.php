@@ -56,7 +56,7 @@ if (isset($_GET['restart'])) {
         <div class="vd-auth-form-wrap">
 
             <div class="vd-auth-heading">
-            <div class="vd-auth-title">Forgot password?</div>
+            <h1 class="vd-auth-title">Forgot password?</h1>
             <div class="vd-auth-sub">Enter your email and we'll send you a reset code.</div>
             </div>
 
@@ -65,7 +65,7 @@ if (isset($_GET['restart'])) {
 
             <form id="forgotForm" class="vd-auth-form" novalidate>
             <div class="vd-auth-group">
-                <label class="vd-label">Email Address</label>
+                <label class="vd-label" for="fpEmail">Email Address</label>
                 <input type="email" name="email" id="fpEmail" class="vd-auth-input"
                 placeholder="Enter your registered email" required>
             </div>
