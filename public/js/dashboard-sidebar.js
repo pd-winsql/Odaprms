@@ -7,6 +7,13 @@
     const sections = Array.from(nav.querySelectorAll(':scope > .vd-nav-section'));
     sections.forEach((section, index) => {
         const label = section.textContent.trim();
+        const sectionKey = label.toLowerCase();
+        const isCollapsible = sectionKey === 'manage' || sectionKey === 'insights';
+
+        // Primary navigation and the short account group remain visible. Only
+        // secondary administrative groups use progressive disclosure.
+        if (!isCollapsible) return;
+
         const group = document.createElement('div');
         const groupId = `sidebar-nav-group-${index}`;
         group.id = groupId;
@@ -25,7 +32,7 @@
         toggle.setAttribute('aria-controls', groupId);
         toggle.innerHTML = `<span>${label}</span><i class="ti ti-chevron-down" aria-hidden="true"></i>`;
 
-        const openByDefault = index === 0 || Boolean(group.querySelector('.vd-nav-item.active'));
+        const openByDefault = Boolean(group.querySelector('.vd-nav-item.active'));
         group.hidden = !openByDefault;
         toggle.setAttribute('aria-expanded', String(openByDefault));
 

@@ -1472,6 +1472,37 @@ button.vd-stat-card {
 .vd-report-table tbody tr:hover {
     background: #fbf7ef;
 }
+.vd-report-row-hidden {
+    display: none !important;
+}
+.vd-report-pagination-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+}
+.vd-report-page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #746957;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+}
+.vd-report-page-size select {
+    min-height: 34px;
+    padding: 5px 28px 5px 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background-color: var(--white-bg);
+    color: var(--mid);
+    font: inherit;
+}
+.vd-report-page-size select:focus-visible {
+    outline: 2px solid rgba(181, 146, 76, 0.35);
+    outline-offset: 2px;
+    border-color: var(--gold);
+}
 
 @media (max-width: 900px) {
     .vd-report-filter-grid {
@@ -1501,10 +1532,13 @@ button.vd-stat-card {
 @media print {
     @page {
         size: A4 landscape;
-        margin: 12mm;
+        margin: 9mm;
     }
     body.vd-dash-body {
+        display: block !important;
         background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     .vd-sidebar,
     .vd-sidebar-overlay,
@@ -1529,13 +1563,18 @@ button.vd-stat-card {
     .vd-report-print-header {
         display: block;
         border-bottom: 2px solid #b5924c;
-        padding-bottom: 10px;
-        margin-bottom: 14px;
+        padding-bottom: 7px;
+        margin-bottom: 9px;
+        break-inside: avoid;
+    }
+    .vd-report-logo-img {
+        max-width: 145px;
+        max-height: 38px;
     }
     .vd-report-print-header h1 {
-        margin: 4px 0;
+        margin: 3px 0 2px;
         font-family: Georgia, serif;
-        font-size: 24px;
+        font-size: 21px;
         font-weight: 400;
     }
     .vd-report-print-header > div:last-child {
@@ -1554,24 +1593,25 @@ button.vd-stat-card {
     }
     .vd-report-summary {
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 7px;
-        margin-bottom: 12px;
+        gap: 6px;
+        margin-bottom: 8px;
+        break-inside: avoid;
     }
     .vd-stat-card,
     .vd-dash-card {
         box-shadow: none !important;
         border: 1px solid #d8d2c6 !important;
-        break-inside: avoid;
     }
     .vd-stat-card {
-        padding: 10px 12px;
+        padding: 7px 9px;
         border-radius: 4px;
+        break-inside: avoid;
     }
     .vd-stat-card:hover {
         transform: none;
     }
     .vd-stat-value {
-        font-size: 25px;
+        font-size: 22px;
     }
     .vd-stat-label,
     .vd-dash-card-title {
@@ -1580,16 +1620,28 @@ button.vd-stat-card {
     .vd-report-results {
         border-radius: 4px;
         overflow: visible;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+    }
+    .vd-report-results .vd-dash-card-header {
+        padding: 7px 10px;
+        break-after: avoid;
+        page-break-after: avoid;
     }
     .vd-report-results .vd-dash-card-body {
         padding: 0;
+        break-inside: auto;
+        page-break-inside: auto;
     }
     .vd-appt-table-wrap {
         overflow: visible !important;
         scrollbar-gutter: auto;
+        break-inside: auto;
+        page-break-inside: auto;
     }
     .vd-report-table {
         width: 100%;
+        min-width: 0 !important;
         border-collapse: collapse;
     }
     .vd-report-table thead {
@@ -1597,6 +1649,10 @@ button.vd-stat-card {
     }
     .vd-report-table tr {
         break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .vd-report-table tbody tr.vd-report-row-hidden {
+        display: table-row !important;
     }
     .vd-report-table th,
     .vd-report-table td {
@@ -4271,10 +4327,10 @@ button.vd-stat-card {
 .vd-nav-section-toggle {
     width: calc(100% - 20px);
     min-height: 44px;
-    margin: 4px 10px 2px;
-    padding: 8px 12px;
+    margin: 8px 10px 2px;
+    padding: 8px 12px 6px;
     border: 0;
-    border-radius: 8px;
+    border-radius: 0;
     background: transparent;
     color: var(--gold);
     display: flex;
@@ -4288,10 +4344,19 @@ button.vd-stat-card {
 }
 
 .vd-nav-section-toggle:hover {
-    background: var(--gold-pale);
+    background: transparent;
+    color: var(--dark);
+}
+
+.vd-nav-section-toggle:focus-visible {
+    outline: 0;
+    background: rgba(181, 146, 76, 0.08);
+    box-shadow: inset 3px 0 0 var(--gold);
 }
 
 .vd-nav-section-toggle i {
+    font-size: 13px;
+    opacity: 0.75;
     transition: transform 0.2s ease;
 }
 

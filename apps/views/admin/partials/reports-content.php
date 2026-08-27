@@ -217,6 +217,28 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
                         <?php endif; ?>
                     </table>
                 </div>
+                <nav class="vd-table-pagination vd-report-pagination" id="reportPagination" aria-label="Report table pagination">
+                    <div class="vd-report-pagination-status">
+                        <span class="vd-table-pagination-summary" id="reportPaginationSummary" aria-live="polite"></span>
+                        <label class="vd-report-page-size" for="reportPageSize">
+                            Rows per page
+                            <select id="reportPageSize" aria-label="Rows per page">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="vd-table-pagination-controls">
+                        <button type="button" class="btn vd-table-page-btn" id="reportPreviousPage">
+                            <i class="ti ti-chevron-left" aria-hidden="true"></i><span>Previous</span>
+                        </button>
+                        <span class="vd-table-page-label" id="reportPageLabel" aria-live="polite"></span>
+                        <button type="button" class="btn vd-table-page-btn" id="reportNextPage">
+                            <span>Next</span><i class="ti ti-chevron-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </nav>
             <?php endif; ?>
         </div>
     </div>
@@ -229,6 +251,8 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
     const form = document.getElementById('reportFilterForm');
     const type = document.getElementById('reportType');
     const appointmentFilters = document.querySelectorAll('.vd-appointment-filter');
+    const reportTable = document.querySelector('.vd-report-table');
+    const reportPagination = document.getElementById('reportPagination');
 
     function updateFilterVisibility() {
         const hide = type.value === 'utilization';
@@ -240,6 +264,59 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
 
     type.addEventListener('change', updateFilterVisibility);
     updateFilterVisibility();
+
+    if (reportTable && reportPagination) {
+        const rows = Array.from(reportTable.querySelectorAll('tbody tr'));
+        const tableWrap = reportTable.closest('.vd-appt-table-wrap');
+        const pageSizeSelect = document.getElementById('reportPageSize');
+        const summary = document.getElementById('reportPaginationSummary');
+        const pageLabel = document.getElementById('reportPageLabel');
+        const previous = document.getElementById('reportPreviousPage');
+        const next = document.getElementById('reportNextPage');
+        let currentPage = 1;
+
+        function renderReportPage() {
+            const pageSize = Number.parseInt(pageSizeSelect.value, 10);
+            const totalRows = rows.length;
+            const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+            currentPage = Math.min(currentPage, totalPages);
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, totalRows);
+
+            rows.forEach((row, index) => {
+                row.classList.toggle('vd-report-row-hidden', index < startIndex || index >= endIndex);
+            });
+
+            summary.textContent = `Showing ${totalRows ? startIndex + 1 : 0}–${endIndex} of ${totalRows}`;
+            pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
+            previous.disabled = currentPage === 1;
+            next.disabled = currentPage === totalPages;
+        }
+
+        previous.addEventListener('click', function () {
+            if (currentPage === 1) return;
+            currentPage--;
+            renderReportPage();
+            tableWrap?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        next.addEventListener('click', function () {
+            const pageSize = Number.parseInt(pageSizeSelect.value, 10);
+            const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+            if (currentPage === totalPages) return;
+            currentPage++;
+            renderReportPage();
+            tableWrap?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        pageSizeSelect.addEventListener('change', function () {
+            currentPage = 1;
+            renderReportPage();
+        });
+
+        renderReportPage();
+    }
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
