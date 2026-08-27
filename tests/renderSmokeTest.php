@@ -110,7 +110,7 @@ if ($case === 'dental-patient-transactions'
 }
 if ($case === 'dashboard'
     && (!str_contains($html, 'Treatment oversight')
-        || !str_contains($html, 'id="finalBillingModal"')
+        || str_contains($html, 'id="finalBillingModal"')
         || str_contains($html, 'id="checkinLookup"'))) {
     fwrite(STDERR, "Admin queue did not render in oversight mode.\n");
     exit(1);

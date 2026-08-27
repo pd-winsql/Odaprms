@@ -10,10 +10,6 @@ require_once __DIR__ . '/../../../models/appointmentModel.php';
 require_once __DIR__ . '/../../../models/clinicModel.php';
 require_once __DIR__ . '/../../../models/depositModel.php';
 require_once __DIR__ . '/../../../models/logbookModel.php';
-require_once __DIR__ . '/../../../models/serviceModel.php';
-require_once __DIR__ . '/../../../helpers/odontogramView.php';
-$appointmentRules = require __DIR__ . '/../../../../config/appointment.php';
-$maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 $isAdminQueueView = ($_SESSION['user_role'] ?? '') === 'Admin';
 
 $db = new Database();
@@ -29,16 +25,6 @@ $upcoming = array_values(array_filter(
 $clinics = (new Clinic($conn))->getAllClinics();
 $todayLogbook = $logbookModel->getToday();
 $todayServiceDetails = $appointmentModel->getServiceDetailsForAppointments(array_column($todayLogbook, 'appointment_id'));
-$billingServicesByCategory = [];
-if ($isAdminQueueView) {
-    $serviceModel = new ServiceModel($conn);
-    $serviceCategoryNames = array_column($serviceModel->getAllCategories(), 'category_name', 'category_id');
-    foreach ($serviceModel->getAllServices() as $service) {
-        $categoryId = (int) ($service['category_id'] ?? 0);
-        $categoryName = $serviceCategoryNames[$categoryId] ?? 'Other services';
-        $billingServicesByCategory[$categoryName][] = $service;
-    }
-}
 $finishedQueueStatuses = ['Completed', 'Cancelled', 'No-show'];
 $activeQueueEntries = array_values(array_filter(
     $todayLogbook,
@@ -125,15 +111,6 @@ function dashboardBillingPayload(array $entry): string
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
 }
 
-function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): string
-{
-    $ids = array_map('intval', array_column($serviceDetails[$appointmentId] ?? [], 'service_id'));
-    return htmlspecialchars(
-        json_encode($ids, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        ENT_QUOTES,
-        'UTF-8'
-    );
-}
 ?>
 
 <div class="d-flex flex-column gap-4">
@@ -258,16 +235,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                                                     <i class="ti ti-user-search" aria-hidden="true"></i>View details
                                                 </button>
                                                 <?php if ($entry['appointment_status'] === 'In Progress'): ?>
-                                                    <button type="button" class="btn vd-btn-gold btn-sm" data-complete-with-billing
-                                                        data-appointment-id="<?= (int) $entry['appointment_id'] ?>"
-                                                        data-patient-id="<?= (int) $entry['patient_id'] ?>"
-                                                        data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>"
-                                                        data-services="<?= htmlspecialchars($entry['service_name'] ?: 'Service not listed') ?>"
-                                                        data-service-ids="<?= dashboardServiceIdsPayload((int) $entry['appointment_id'], $todayServiceDetails) ?>"
-                                                        data-clinic="<?= htmlspecialchars($entry['clinic_name']) ?>"
-                                                        data-deposit="<?= htmlspecialchars((string) ((float) $entry['verified_deposit'])) ?>">
-                                                        <i class="ti ti-cash-check" aria-hidden="true"></i>Final billing
-                                                    </button>
+                                                    <a class="btn vd-btn-gold btn-sm" href="dashboard.php?complete_visit=<?= (int) $entry['appointment_id'] ?>"><i class="ti ti-cash-check" aria-hidden="true"></i>Complete visit</a>
                                                 <?php endif; ?>
                                             </div>
                                         <?php elseif (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
@@ -365,84 +333,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
     <?php endif; ?>
 </div>
 
-<?php if ($isAdminQueueView): ?>
-<div class="modal fade vd-final-billing-modal" id="finalBillingModal" tabindex="-1" aria-labelledby="finalBillingTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-        <div class="modal-content vd-modal-content">
-            <div class="modal-header">
-                <div>
-                    <div class="vd-action-modal-kicker">Complete transaction</div>
-                    <h5 class="modal-title vd-modal-title" id="finalBillingTitle">Final Billing</h5>
-                    <p class="text-muted small mb-0" id="finalBillingSubtitle"></p>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="vd-appointment-detail-grid mb-4" id="finalBillingVisitDetails"></div>
-                <details class="vd-final-billing-odontogram mb-4" id="finalBillingOdontogramReview" open>
-                    <summary>
-                        <div><strong>Dental chart review</strong><span id="finalOdontogramStatus">Required before settlement</span></div>
-                        <i class="ti ti-tooth" aria-hidden="true"></i>
-                    </summary>
-                    <?php vdRenderOdontogramWorkspace('finalBillingOdontogram', false, true); ?>
-                </details>
-                <section class="vd-billing-service-editor mb-4" aria-labelledby="finalPerformedServicesHeading">
-                    <div class="vd-billing-service-editor-head">
-                        <div>
-                            <h6 id="finalPerformedServicesHeading">Services performed</h6>
-                            <p>Select the treatments actually provided during this visit.</p>
-                        </div>
-                        <span id="finalServiceSelectionCount">0 of <?= $maxServicesPerVisit ?> selected</span>
-                    </div>
-                    <div class="vd-billing-service-groups">
-                        <?php foreach ($billingServicesByCategory as $categoryName => $services): ?>
-                            <fieldset class="vd-billing-service-group">
-                                <legend><?= htmlspecialchars($categoryName) ?></legend>
-                                <div class="vd-billing-service-options">
-                                    <?php foreach ($services as $service): ?>
-                                        <label class="vd-billing-service-option">
-                                            <input type="checkbox"
-                                                value="<?= (int) $service['service_id'] ?>"
-                                                data-final-service
-                                                data-service-name="<?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>"
-                                                data-service-active="<?= (int) $service['is_active'] ?>">
-                                            <span>
-                                                <strong><?= htmlspecialchars($service['service_name']) ?></strong>
-                                                <?php if (!(int) $service['is_active']): ?><small>Inactive</small><?php endif; ?>
-                                            </span>
-                                            <i class="ti ti-check" aria-hidden="true"></i>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </fieldset>
-                        <?php endforeach; ?>
-                    </div>
-                    <div class="vd-billing-service-feedback" id="finalServiceSelectionFeedback" aria-live="polite"></div>
-                    <div class="mt-3 d-none" id="finalServiceChangeReasonGroup">
-                        <label class="vd-label form-label" for="finalServiceChangeReason">Reason for service change</label>
-                        <textarea class="form-control vd-input" id="finalServiceChangeReason" rows="2" minlength="3" maxlength="255" placeholder="Example: Dentist recommended a more appropriate treatment."></textarea>
-                        <small class="text-muted">Required when the performed services differ from the booking.</small>
-                    </div>
-                </section>
-                <div class="row g-3">
-                    <div class="col-md-6"><label class="vd-label form-label" for="finalServiceAmount">Actual treatment charge</label><input type="number" min="0" step="0.01" class="form-control vd-input" id="finalServiceAmount" required></div>
-                    <div class="col-md-6"><label class="vd-label form-label" for="finalCashTendered">Cash tendered</label><input type="number" min="0" step="0.01" class="form-control vd-input" id="finalCashTendered" value="0" required></div>
-                    <div class="col-12"><label class="vd-label form-label" for="finalBillingNotes">Billing notes (optional)</label><textarea class="form-control vd-input" id="finalBillingNotes" rows="2" maxlength="255"></textarea></div>
-                </div>
-                <div class="vd-final-billing-summary mt-4">
-                    <div><span>Actual charge</span><strong id="finalChargeDisplay">₱0.00</strong></div>
-                    <div><span>Deposit applied</span><strong id="finalDepositDisplay">−₱0.00</strong></div>
-                    <div class="vd-final-billing-total"><span>Amount due</span><strong id="finalAmountDueDisplay">₱0.00</strong></div>
-                    <div><span>Cash tendered</span><strong id="finalCashDisplay">₱0.00</strong></div>
-                    <div><span>Change</span><strong id="finalChangeDisplay">₱0.00</strong></div>
-                </div>
-                <div class="alert alert-danger d-none mt-3 mb-0" id="finalBillingError"></div>
-            </div>
-            <div class="modal-footer"><button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn vd-btn-gold" id="recordPaymentAndComplete" disabled>Record Payment &amp; Complete Visit</button></div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
+
 
 <div class="modal fade vd-transaction-receipt-modal" id="logbookBillingDetailsModal" tabindex="-1" aria-labelledby="logbookBillingDetailsTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -485,265 +376,12 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
             style: 'currency',
             currency: 'PHP'
         });
-        const addBillingDetail = (container, label, value) => {
-            const item = document.createElement('div');
-            item.className = 'vd-appointment-detail-item';
-            const term = document.createElement('span');
-            term.textContent = label;
-            const detail = document.createElement('strong');
-            detail.textContent = value || 'Not provided';
-            item.append(term, detail);
-            container.appendChild(item);
-        };
         document.getElementById('openPaymentsAwaitingReview')?.addEventListener('click', () => {
             sessionStorage.setItem('venturaAppointmentStatusFilter', 'Payment Under Review');
             document.querySelector('[data-page="appointment-content.php"]')?.click();
         });
         const csrfToken = <?= json_encode($csrfToken) ?>;
-        <?php if ($isAdminQueueView): ?>
-        let activeBillingAppointment = null;
-        const finalBillingModalElement = document.getElementById('finalBillingModal');
-        let finalBillingModal = null;
-        const serviceAmountInput = document.getElementById('finalServiceAmount');
-        const cashTenderedInput = document.getElementById('finalCashTendered');
-        const completeBillingButton = document.getElementById('recordPaymentAndComplete');
-        const maxServicesPerVisit = <?= $maxServicesPerVisit ?>;
-        const performedServiceInputs = Array.from(document.querySelectorAll('[data-final-service]'));
-        const serviceChangeReasonInput = document.getElementById('finalServiceChangeReason');
-        const finalOdontogramRoot = document.getElementById('finalBillingOdontogram');
-        let finalOdontogramWorkspace = null;
-        const ensureFinalOdontogramWorkspace = () => {
-            finalOdontogramWorkspace ??= window.VdOdontogram?.mount(finalOdontogramRoot) || null;
-            return finalOdontogramWorkspace;
-        };
 
-        const selectedServiceInputs = () => performedServiceInputs.filter(input => input.checked);
-        const sortedServiceIds = inputs => inputs.map(input => Number(input.value)).sort((a, b) => a - b);
-        const selectionsMatch = (left, right) => left.length === right.length && left.every((value, index) => value === right[index]);
-
-        function serviceSelectionState() {
-            const selectedInputs = selectedServiceInputs();
-            const selectedIds = sortedServiceIds(selectedInputs);
-            const originalIds = [...(activeBillingAppointment?.originalServiceIds || [])].sort((a, b) => a - b);
-            return {
-                selectedInputs,
-                selectedIds,
-                changed: !selectionsMatch(selectedIds, originalIds)
-            };
-        }
-
-        function updateServiceSelection() {
-            const state = serviceSelectionState();
-            const selectedCount = state.selectedInputs.length;
-            const originalIds = activeBillingAppointment?.originalServiceIds || [];
-            const feedback = document.getElementById('finalServiceSelectionFeedback');
-            const counter = document.getElementById('finalServiceSelectionCount');
-            const reasonGroup = document.getElementById('finalServiceChangeReasonGroup');
-            const overLimit = state.changed && selectedCount > maxServicesPerVisit;
-
-            performedServiceInputs.forEach(input => {
-                const isOriginal = originalIds.includes(Number(input.value));
-                const isInactiveAddition = input.dataset.serviceActive !== '1' && !isOriginal;
-                const selectionIsFull = selectedCount >= maxServicesPerVisit && !input.checked;
-                input.disabled = !activeBillingAppointment || isInactiveAddition || selectionIsFull;
-            });
-
-            counter.textContent = originalIds.length > maxServicesPerVisit && !state.changed
-                ? `${selectedCount} selected · existing booking retained`
-                : `${selectedCount} of ${maxServicesPerVisit} selected`;
-            reasonGroup.classList.toggle('d-none', !state.changed);
-            serviceChangeReasonInput.required = state.changed;
-
-            feedback.className = 'vd-billing-service-feedback';
-            if (!selectedCount) {
-                feedback.textContent = 'Select at least one service performed.';
-                feedback.classList.add('is-error');
-            } else if (overLimit) {
-                feedback.textContent = `Reduce the edited selection to ${maxServicesPerVisit} services or fewer.`;
-                feedback.classList.add('is-error');
-            } else if (state.changed) {
-                feedback.textContent = 'The performed services differ from the booking. Add a short reason below.';
-                feedback.classList.add('is-changed');
-            } else {
-                feedback.textContent = 'The performed services match the original booking.';
-            }
-
-            return selectedCount > 0 && !overLimit;
-        }
-
-        function updateFinalBillingSummary() {
-            const charge = Math.max(0, Number(serviceAmountInput.value) || 0);
-            const deposit = Math.min(Number(activeBillingAppointment?.deposit || 0), charge);
-            const due = Math.max(0, charge - deposit);
-            const cash = Math.max(0, Number(cashTenderedInput.value) || 0);
-            const change = Math.max(0, cash - due);
-            document.getElementById('finalChargeDisplay').textContent = money(charge);
-            document.getElementById('finalDepositDisplay').textContent = '−' + money(deposit);
-            document.getElementById('finalAmountDueDisplay').textContent = money(due);
-            document.getElementById('finalCashDisplay').textContent = money(cash);
-            document.getElementById('finalChangeDisplay').textContent = money(change);
-            const servicesValid = updateServiceSelection();
-            const selection = serviceSelectionState();
-            const changeReasonValid = !selection.changed || serviceChangeReasonInput.value.trim().length >= 3;
-            const odontogramReviewed = activeBillingAppointment?.odontogramReviewed === true;
-            completeBillingButton.disabled = serviceAmountInput.value === '' || cash < due || !servicesValid || !changeReasonValid || !odontogramReviewed;
-            const error = document.getElementById('finalBillingError');
-            if (serviceAmountInput.value !== '' && cash < due) {
-                error.textContent = `Cash tendered is ${money(due - cash)} short of the amount due.`;
-                error.classList.remove('d-none');
-            } else {
-                error.classList.add('d-none');
-                error.textContent = '';
-            }
-        }
-
-        document.querySelectorAll('[data-complete-with-billing]').forEach(button => button.addEventListener('click', () => {
-            let originalServiceIds = [];
-            try {
-                originalServiceIds = JSON.parse(button.dataset.serviceIds || '[]').map(Number).filter(Number.isInteger);
-            } catch (error) {
-                console.error('Unable to read the booked services.', error);
-            }
-            activeBillingAppointment = {
-                id: button.dataset.appointmentId,
-                patientId: button.dataset.patientId,
-                patient: button.dataset.patient,
-                services: button.dataset.services,
-                originalServiceIds,
-                clinic: button.dataset.clinic,
-                deposit: Number(button.dataset.deposit || 0),
-                odontogramReviewed: false
-            };
-            document.getElementById('finalOdontogramStatus').textContent = 'Checking chart status…';
-            if (finalOdontogramRoot) finalOdontogramRoot.dataset.reviewed = '0';
-            document.getElementById('finalBillingTitle').textContent = `Final Billing · ${activeBillingAppointment.patient}`;
-            document.getElementById('finalBillingSubtitle').textContent = `Appointment #${activeBillingAppointment.id}`;
-            const details = document.getElementById('finalBillingVisitDetails');
-            details.replaceChildren();
-            addBillingDetail(details, 'Patient', activeBillingAppointment.patient);
-            addBillingDetail(details, 'Booked services', activeBillingAppointment.services);
-            addBillingDetail(details, 'Clinic', activeBillingAppointment.clinic);
-            addBillingDetail(details, 'Verified deposit', money(activeBillingAppointment.deposit));
-            performedServiceInputs.forEach(input => {
-                input.checked = originalServiceIds.includes(Number(input.value));
-            });
-            serviceAmountInput.value = '';
-            cashTenderedInput.value = '0';
-            document.getElementById('finalBillingNotes').value = '';
-            serviceChangeReasonInput.value = '';
-            updateFinalBillingSummary();
-            finalBillingModal = bootstrap.Modal.getOrCreateInstance(finalBillingModalElement);
-            finalBillingModal.show();
-            ensureFinalOdontogramWorkspace()?.load(activeBillingAppointment.patientId, activeBillingAppointment.id)
-                .then(data => {
-                    activeBillingAppointment.odontogramReviewed = Boolean(data.appointment_review);
-                    document.getElementById('finalOdontogramStatus').textContent = activeBillingAppointment.odontogramReviewed
-                        ? 'Reviewed for this visit'
-                        : 'Required before settlement';
-                    updateFinalBillingSummary();
-                })
-                .catch(error => {
-                    document.getElementById('finalOdontogramStatus').textContent = 'Unable to load chart';
-                    updateFinalBillingSummary();
-                    window.showToast(error.message || 'Unable to load the dental chart.', false);
-                });
-        }));
-        finalOdontogramRoot?.addEventListener('odontogram:reviewed', event => {
-            if (!activeBillingAppointment || Number(event.detail?.appointmentId) !== Number(activeBillingAppointment.id)) return;
-            activeBillingAppointment.odontogramReviewed = true;
-            document.getElementById('finalOdontogramStatus').textContent = 'Reviewed for this visit';
-            updateFinalBillingSummary();
-        });
-        finalOdontogramRoot?.addEventListener('odontogram:dirty', event => {
-            if (!activeBillingAppointment || Number(event.detail?.appointmentId) !== Number(activeBillingAppointment.id)) return;
-            activeBillingAppointment.odontogramReviewed = false;
-            document.getElementById('finalOdontogramStatus').textContent = 'Save the updated chart before settlement';
-            updateFinalBillingSummary();
-        });
-        [serviceAmountInput, cashTenderedInput, serviceChangeReasonInput].forEach(input => input?.addEventListener('input', updateFinalBillingSummary));
-        performedServiceInputs.forEach(input => input.addEventListener('change', updateFinalBillingSummary));
-
-        completeBillingButton?.addEventListener('click', async function() {
-            if (!activeBillingAppointment) return;
-            updateFinalBillingSummary();
-            if (this.disabled) return;
-            const selection = serviceSelectionState();
-            const performedServiceNames = selection.selectedInputs.map(input => input.dataset.serviceName);
-            const confirmationDetails = [{
-                    label: 'Patient',
-                    value: activeBillingAppointment.patient
-                },
-                {
-                    label: 'Services performed',
-                    value: performedServiceNames.join(', ')
-                },
-                {
-                    label: 'Amount due',
-                    value: document.getElementById('finalAmountDueDisplay').textContent
-                },
-                {
-                    label: 'Cash tendered',
-                    value: document.getElementById('finalCashDisplay').textContent
-                },
-                {
-                    label: 'Change',
-                    value: document.getElementById('finalChangeDisplay').textContent
-                }
-            ];
-            if (selection.changed) {
-                confirmationDetails.push({
-                    label: 'Service change reason',
-                    value: serviceChangeReasonInput.value.trim()
-                });
-            }
-            const confirmation = await window.showActionModal({
-                title: 'Confirm Final Payment',
-                kicker: 'Complete transaction',
-                message: 'This records the cash payment and completes the visit. The transaction cannot be edited from Today’s Logbook afterward.',
-                confirmText: 'Confirm & Complete',
-                icon: 'ti-cash-check',
-                tone: 'success',
-                details: confirmationDetails
-            });
-            if (!confirmation.confirmed) return;
-            LoadingUI.setButton(this, true, 'Completing...');
-            const body = new FormData();
-            body.append('action', 'settleAndComplete');
-            body.append('csrf_token', csrfToken);
-            body.append('appointment_id', activeBillingAppointment.id);
-            body.append('service_amount', serviceAmountInput.value);
-            body.append('cash_received', cashTenderedInput.value);
-            body.append('notes', document.getElementById('finalBillingNotes').value);
-            selection.selectedIds.forEach(serviceId => body.append('service_ids[]', String(serviceId)));
-            body.append('service_change_reason', serviceChangeReasonInput.value.trim());
-            try {
-                const response = await fetch('../../controllers/billingController.php', {
-                    method: 'POST',
-                    body
-                });
-                const result = await response.json();
-                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to complete the transaction.');
-                finalBillingModal.hide();
-                window.showToast(result.message, true);
-                document.querySelector('[data-page="dashboard-content.php"]')?.click();
-            } catch (error) {
-                LoadingUI.setButton(this, false);
-                const errorBox = document.getElementById('finalBillingError');
-                errorBox.textContent = error.message || 'Unable to complete the transaction.';
-                errorBox.classList.remove('d-none');
-                window.showToast(error.message, false);
-            }
-        });
-
-        finalBillingModalElement?.addEventListener('hidden.bs.modal', () => {
-            activeBillingAppointment = null;
-            performedServiceInputs.forEach(input => {
-                input.checked = false;
-                input.disabled = input.dataset.serviceActive !== '1';
-            });
-            LoadingUI.setButton(completeBillingButton, false);
-        });
-        <?php endif; ?>
 
         document.querySelectorAll('[data-view-logbook-billing]').forEach(button => button.addEventListener('click', () => {
             const billing = JSON.parse(button.dataset.viewLogbookBilling);

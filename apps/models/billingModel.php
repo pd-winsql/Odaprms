@@ -653,21 +653,6 @@ class BillingModel {
                 return ['success' => false, 'message' => 'Only an in-progress visit can be completed.'];
             }
 
-            $odontogramStmt = $this->conn->prepare("
-                SELECT COUNT(*)
-                FROM patient_odontogram_snapshots snap
-                JOIN appointments appointment ON appointment.appointment_id = snap.appointment_id
-                JOIN patient_odontograms chart ON chart.patient_id = appointment.patient_id
-                WHERE snap.appointment_id = :appointment_id
-                  AND snap.patient_id = appointment.patient_id
-                  AND snap.reviewed_at >= chart.updated_at
-            ");
-            $odontogramStmt->execute([':appointment_id' => $appointmentId]);
-            if ((int) $odontogramStmt->fetchColumn() < 1) {
-                $this->conn->rollBack();
-                return ['success' => false, 'message' => 'Review and save the patient dental chart before final settlement.'];
-            }
-
             $existingServices = $this->getAppointmentServicesForUpdate($appointmentId);
             $serviceValidation = $this->validateSelectedServices($serviceIds, $existingServices);
             $servicesChanged = $serviceValidation['changed'];

@@ -62,6 +62,7 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/ui-refinements.css?v=<?= filemtime(__DIR__ . '/../../../public/css/ui-refinements.css') ?>">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
+    <link rel="stylesheet" href="../../../public/css/complete-visit.css?v=<?= filemtime(__DIR__ . '/../../../public/css/complete-visit.css') ?>">
 </head>
 
 <body class="vd-dash-body">
@@ -150,7 +151,7 @@ $today = date('l, F j Y');
 
         <!-- Content -->
         <div class="vd-dash-content">
-            <?php include 'partials/dashboard-content.php'; ?>
+            <?php include isset($_GET['complete_visit']) ? 'partials/complete-visit-content.php' : 'partials/dashboard-content.php'; ?>
         </div><!-- /vd-dash-content -->
     </main>
 
@@ -228,6 +229,10 @@ $today = date('l, F j Y');
         }
 
         async function loadpage(page, options = {}) {
+            if (new URLSearchParams(window.location.search).has('complete_visit')) {
+                window.location.assign('dashboard.php#' + encodeURIComponent(page));
+                return false;
+            }
             const silent = options.silent === true;
             let loaded = false;
             if (!silent) LoadingUI.showContent(dashContent, {
@@ -274,7 +279,7 @@ $today = date('l, F j Y');
         }
 
         async function checkForStaffOperationsChanges() {
-            if (document.hidden || staffOperationsRefreshInFlight) return;
+            if (new URLSearchParams(window.location.search).has('complete_visit') || document.hidden || staffOperationsRefreshInFlight) return;
             const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
             try {
                 const response = await fetch('../../controllers/appointmentController.php?action=latestAppointment', {
@@ -333,6 +338,10 @@ $today = date('l, F j Y');
         });
 
         window.addEventListener('DOMContentLoaded', async () => {
+            if (new URLSearchParams(window.location.search).has('complete_visit')) {
+                document.getElementById('dashTitle').textContent = 'Complete Visit';
+                return;
+            }
             const hash = window.location.hash.replace('#', '');
             if (hash) {
                 const matchingNav = document.querySelector(`[data-page="${hash}"]`);
@@ -370,6 +379,7 @@ $today = date('l, F j Y');
             </div>
         </div>
     </div>
+<script src="../../../public/js/complete-visit.js?v=<?= filemtime(__DIR__ . '/../../../public/js/complete-visit.js') ?>"></script>
 </body>
 
 </html>

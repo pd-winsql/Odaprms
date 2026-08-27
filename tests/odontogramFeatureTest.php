@@ -50,11 +50,12 @@ odontogramExpect(str_contains($controller, "!== 'Admin'"), 'Only Admin may save 
 odontogramExpect(str_contains($controller, 'validate_csrf'), 'Dental chart updates require CSRF validation.');
 
 $billing = file_get_contents($root . '/apps/models/billingModel.php');
-odontogramExpect(str_contains($billing, 'patient_odontogram_snapshots'), 'Final settlement enforces an appointment chart review.');
-odontogramExpect(str_contains($billing, 'snap.reviewed_at >= chart.updated_at'), 'Final settlement rejects a stale chart review.');
+odontogramExpect(!str_contains($billing, 'snap.reviewed_at >= chart.updated_at'), 'Settlement does not require a dental chart review.');
 
 $dashboard = file_get_contents($root . '/apps/views/admin/partials/dashboard-content.php');
-odontogramExpect(str_contains($dashboard, 'finalBillingOdontogram') && str_contains($dashboard, 'odontogram:reviewed'), 'Final billing embeds and observes the dental chart review workspace.');
+odontogramExpect(str_contains($dashboard, 'dashboard.php?complete_visit='), 'Queue opens a dedicated Complete Visit page.');
+$page = file_get_contents($root . '/apps/views/admin/partials/complete-visit-content.php');
+odontogramExpect(str_contains($page, "vdRenderOdontogramWorkspace('completeVisitOdontogram', false)") && !str_contains($page, 'id="completeVisitChart" open'), 'Dental chart is optional and collapsed on the settlement page.');
 
 $migration = file_get_contents($root . '/database/migrations/20260915_add_patient_odontograms.sql');
 foreach (['patient_odontograms', 'patient_odontogram_teeth', 'patient_odontogram_snapshots'] as $table) {

@@ -99,8 +99,8 @@ function vdRenderOdontogramWorkspace(string $id, bool $readOnly, bool $billingCo
 
         <?php if (!$readOnly): ?>
         <div class="vd-odontogram-savebar">
-            <div><strong data-savebar-title><?= $billingContext ? 'Review required for settlement' : 'Unsaved dental chart' ?></strong><span data-savebar-message><?= $billingContext ? 'Review the chart and save it before completing final billing.' : 'Changes are recorded in the patient audit trail.' ?></span></div>
-            <button type="button" class="btn vd-btn-gold" data-save-odontogram><?= $billingContext ? 'Save & mark reviewed' : 'Save dental chart' ?></button>
+            <div><strong data-savebar-title><?= $billingContext ? 'Review required for settlement' : 'Dental chart' ?></strong><span data-savebar-message><?= $billingContext ? 'Review the chart and save it before completing final billing.' : 'Changes are recorded separately from payment.' ?></span></div>
+            <button type="button" class="btn vd-btn-gold" data-save-odontogram><?= $billingContext ? 'Save & mark reviewed' : 'Save chart' ?></button>
         </div>
         <?php endif; ?>
 

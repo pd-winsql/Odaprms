@@ -75,6 +75,11 @@
                 const result = await response.json();
                 if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load the dental chart.');
                 this.hydrate(result.data);
+                this.root.classList.remove('is-dirty');
+                if (!this.billingContext) {
+                    const title = this.root.querySelector('[data-savebar-title]');
+                    if (title) title.textContent = 'Dental chart · no unsaved changes';
+                }
                 this.loaded = true;
                 return result.data;
             } catch (error) {
@@ -271,6 +276,7 @@
             if (this.readOnly || !this.patientId) return;
             const button = this.root.querySelector('[data-save-odontogram]');
             const originalLabel = button.textContent;
+            this.setBusy(true);
             button.disabled = true;
             button.textContent = this.billingContext ? 'Marking reviewed…' : 'Saving…';
             const body = new FormData();
@@ -290,6 +296,7 @@
             } catch (error) {
                 window.showToast?.(error.message || 'Unable to save the dental chart.', false);
             } finally {
+                this.setBusy(false);
                 button.disabled = false;
                 button.textContent = originalLabel;
             }
