@@ -477,8 +477,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         </span>
                         <?php if ($appt['date'] < date('Y-m-d') && $appt['status'] === 'Payment Under Review'): ?>
                             <small class="d-block text-warning">Past appointment date · review payment</small>
-                        <?php elseif ($appt['date'] < date('Y-m-d') && $appt['status'] === 'Confirmed' && empty($appt['has_checkin'])): ?>
-                            <small class="d-block text-warning">Attendance unresolved</small>
                         <?php endif; ?>
 
                     </td>

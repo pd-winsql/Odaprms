@@ -27,7 +27,15 @@ class DepositModel {
         return $code;
     }
 
-    // Run from the existing dashboard/payment checks, using the clinic timezone.
+    public function forfeitVerifiedDeposit(int $appointmentId): void {
+        $this->conn->prepare("
+            UPDATE appointment_deposits
+            SET status = 'Forfeited', refund_reason = 'Patient did not attend the confirmed appointment.'
+            WHERE appointment_id = :id AND status = 'Verified'
+        ")->execute([':id' => $appointmentId]);
+    }
+
+    // Apply overdue request, payment, and attendance policies during existing checks.
     public function expireUnpaidAppointments(): int {
         $ownsTransaction = !$this->conn->inTransaction();
         try {
@@ -41,10 +49,12 @@ class DepositModel {
                        AND (d.deposit_id IS NULL OR d.status IN ('Awaiting Submission', 'Rejected'))
                        AND (a.date < :deposit_today
                             OR COALESCE(d.resubmission_deadline_at, a.payment_deadline_at) <= NOW()))
+                   OR (a.status = 'Confirmed' AND a.date < :attendance_today
+                       AND NOT EXISTS (SELECT 1 FROM appointment_checkins ac WHERE ac.appointment_id = a.appointment_id))
                 FOR UPDATE
             ");
             $today = date('Y-m-d');
-            $stmt->execute([':review_today' => $today, ':deposit_today' => $today]);
+            $stmt->execute([':review_today' => $today, ':deposit_today' => $today, ':attendance_today' => $today]);
             $expired = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $updateAppointment = $this->conn->prepare("
                 UPDATE appointments SET status = :status,
@@ -57,6 +67,15 @@ class DepositModel {
             $updateDeposit = $this->conn->prepare("UPDATE appointment_deposits SET status = 'Expired', rejection_reason = :reason WHERE deposit_id = :id");
             $actor = ['user_id' => null, 'name' => 'System', 'role' => 'System', 'source' => 'System'];
             foreach ($expired as $row) {
+                if ($row['status'] === 'Confirmed') {
+                    $reason = 'Appointment date passed without patient check-in.';
+                    $this->conn->prepare("UPDATE appointments SET status = 'No-show' WHERE appointment_id = :id")
+                        ->execute([':id' => $row['appointment_id']]);
+                    $this->forfeitVerifiedDeposit((int) $row['appointment_id']);
+                    $this->auditLog->record('appointment', (int) $row['appointment_id'], 'status_changed',
+                        $reason, ['status' => 'Confirmed'], ['status' => 'No-show', 'reason' => $reason], $actor);
+                    continue;
+                }
                 $rejected = $row['status'] === 'Pending Review';
                 $status = $rejected ? 'Rejected' : 'Cancelled';
                 $reason = $rejected ? 'Appointment date passed before approval.'

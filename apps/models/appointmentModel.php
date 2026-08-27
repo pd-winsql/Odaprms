@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/auditLogModel.php';
+require_once __DIR__ . '/depositModel.php';
 require_once __DIR__ . '/emailNotificationModel.php';
 require_once __DIR__ . '/../helpers/paymentSettings.php';
 require_once __DIR__ . '/../helpers/bookingPolicy.php';
@@ -901,12 +902,7 @@ class Appointment
         }
 
         if ($status === 'No-show') {
-            $this->conn->prepare("
-                UPDATE appointment_deposits
-                SET status = 'Forfeited',
-                    refund_reason = 'Patient did not attend the confirmed appointment.'
-                WHERE appointment_id = :id AND status = 'Verified'
-            ")->execute([':id' => $appointment_id]);
+            (new DepositModel($this->conn))->forfeitVerifiedDeposit((int) $appointment_id);
         }
 
         if ($status === 'Cancelled') {

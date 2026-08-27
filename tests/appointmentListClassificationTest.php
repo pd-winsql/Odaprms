@@ -47,6 +47,10 @@ try {
     $deposits = new DepositModel($conn);
     $beforePendingCount = $deposits->getPendingReviewCount();
     foreach ($cases as $case) {
+        if ($case['status'] === 'Confirmed') {
+            $conn->prepare("INSERT INTO appointment_deposits(appointment_id,status) VALUES(:id,'Verified')")
+                ->execute([':id' => $case['id']]);
+        }
         if (!in_array($case['status'], ['Awaiting Deposit', 'Payment Under Review'], true)) continue;
         $depositStatus = $case['status'] === 'Payment Under Review' ? 'Under Review' : 'Awaiting Submission';
         $conn->prepare('INSERT INTO appointment_deposits(appointment_id,status,receipt_path) VALUES(:id,:status,:receipt)')
@@ -54,14 +58,30 @@ try {
         $deadline = $case['when'] === 'today' ? 'DATE_SUB(NOW(), INTERVAL 1 HOUR)' : 'DATE_ADD(NOW(), INTERVAL 2 DAY)';
         $conn->exec("UPDATE appointments SET payment_deadline_at={$deadline} WHERE appointment_id=" . $case['id']);
     }
+    $insert->execute([':patient' => $fixture['patient_id'], ':clinic' => $fixture['clinic_id'], ':schedule' => $fixture['schedule_id'], ':date' => $dates['yesterday'], ':status' => 'Confirmed']);
+    $attendedId = (int) $conn->lastInsertId();
+    $staffId = (int) $conn->query("SELECT id FROM users WHERE user_role='Dental Assistant' LIMIT 1")->fetchColumn();
+    $conn->prepare("INSERT INTO appointment_checkins(appointment_id,arrived_at,checked_in_by_user_id,lookup_method,checkin_status) VALUES(:id,NOW(),:staff,'Code','Ready')")
+        ->execute([':id' => $attendedId, ':staff' => $staffId]);
+    $conn->prepare("INSERT INTO appointment_deposits(appointment_id,status) VALUES(:id,'Verified')")->execute([':id' => $attendedId]);
     $deposits->expireUnpaidAppointments();
+    classificationExpect($conn->query('SELECT status FROM appointments WHERE appointment_id=' . $attendedId)->fetchColumn() === 'Confirmed', 'A recorded check-in prevents automatic No-show even if the appointment status is still Confirmed.');
+    classificationExpect($conn->query('SELECT status FROM appointment_deposits WHERE appointment_id=' . $attendedId)->fetchColumn() === 'Verified', 'The attended patient’s verified deposit is not forfeited.');
     foreach ($cases as $case) {
         $expected = $case['status'];
         if ($case['when'] === 'yesterday' && $expected === 'Pending Review') $expected = 'Rejected';
+        if ($case['when'] === 'yesterday' && $expected === 'Confirmed') $expected = 'No-show';
         if ($case['when'] !== 'tomorrow' && $expected === 'Awaiting Deposit') $expected = 'Cancelled';
         $row = $conn->query('SELECT status,rejection_reason,cancellation_reason FROM appointments WHERE appointment_id=' . $case['id'])->fetch(PDO::FETCH_ASSOC);
         classificationExpect($row['status'] === $expected, "{$case['when']} {$case['status']} follows the cutoff policy.");
-        if ($expected !== $case['status']) {
+        if ($case['status'] === 'Confirmed') {
+            $expectedDeposit = $case['when'] === 'yesterday' ? 'Forfeited' : 'Verified';
+            classificationExpect($conn->query('SELECT status FROM appointment_deposits WHERE appointment_id=' . $case['id'])->fetchColumn() === $expectedDeposit, "{$case['when']} confirmed deposit follows the existing forfeiture rule.");
+            if ($expected === 'No-show') {
+                classificationExpect((int) $conn->query("SELECT COUNT(*) FROM audit_logs WHERE entity_type='appointment' AND entity_id=" . $case['id'])->fetchColumn() === 1, 'Automatic No-show is audited once.');
+            }
+        }
+        if ($expected !== $case['status'] && $expected !== 'No-show') {
             classificationExpect((bool) ($row['rejection_reason'] ?: $row['cancellation_reason']), 'Automatic expiry stores its reason.');
             $auditCount = (int) $conn->query("SELECT COUNT(*) FROM audit_logs WHERE entity_type='appointment' AND entity_id=" . $case['id'])->fetchColumn();
             classificationExpect($auditCount === 1, 'Automatic expiry is audited once.');
