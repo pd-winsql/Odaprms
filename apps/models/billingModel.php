@@ -5,10 +5,106 @@ require_once __DIR__ . '/auditLogModel.php';
 class BillingModel {
     private $conn;
     private $auditLog;
+    private $maxServicesPerVisit;
 
     public function __construct($conn) {
         $this->conn = $conn;
         $this->auditLog = new AuditLog($conn);
+        $appointmentRules = require __DIR__ . '/../../config/appointment.php';
+        $this->maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
+    }
+
+    private function normalizeServiceIds(array $serviceIds): array {
+        return array_values(array_unique(array_filter(array_map('intval', $serviceIds))));
+    }
+
+    private function getAppointmentServicesForUpdate(int $appointmentId): array {
+        $stmt = $this->conn->prepare("
+            SELECT aps.service_id, aps.quantity, aps.unit_price_snapshot,
+                   s.service_name, s.is_active, s.display_order
+            FROM appointment_services aps
+            JOIN services s ON s.service_id = aps.service_id
+            WHERE aps.appointment_id = :appointment_id
+            ORDER BY s.display_order, s.service_name
+            FOR UPDATE
+        ");
+        $stmt->execute([':appointment_id' => $appointmentId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function validateSelectedServices(array $serviceIds, array $existingServices): array {
+        if (!$serviceIds) {
+            throw new InvalidArgumentException('Select at least one service performed.');
+        }
+
+        $existingIds = array_map('intval', array_column($existingServices, 'service_id'));
+        $comparison = $serviceIds;
+        $existingComparison = $existingIds;
+        sort($comparison);
+        sort($existingComparison);
+        $changed = $comparison !== $existingComparison;
+
+        // Older appointments may already exceed the new limit. They can be
+        // settled unchanged, but any edited selection must respect the limit.
+        if ($changed && count($serviceIds) > $this->maxServicesPerVisit) {
+            throw new InvalidArgumentException(
+                "You can select up to {$this->maxServicesPerVisit} services per visit."
+            );
+        }
+
+        $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
+        $stmt = $this->conn->prepare("
+            SELECT service_id, service_name, is_active, display_order
+            FROM services
+            WHERE service_id IN ({$placeholders})
+            ORDER BY display_order, service_name
+        ");
+        $stmt->execute($serviceIds);
+        $selectedServices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (count($selectedServices) !== count($serviceIds)) {
+            throw new InvalidArgumentException('One or more selected services are invalid.');
+        }
+
+        foreach ($selectedServices as $service) {
+            $serviceId = (int) $service['service_id'];
+            if ((int) $service['is_active'] !== 1 && !in_array($serviceId, $existingIds, true)) {
+                throw new InvalidArgumentException('Inactive services cannot be newly added to a visit.');
+            }
+        }
+
+        return ['changed' => $changed, 'services' => $selectedServices];
+    }
+
+    private function replaceAppointmentServices(
+        int $appointmentId,
+        array $serviceIds,
+        array $existingServices
+    ): void {
+        $existingById = [];
+        foreach ($existingServices as $service) {
+            $existingById[(int) $service['service_id']] = $service;
+        }
+
+        $this->conn->prepare('DELETE FROM appointment_services WHERE appointment_id = :appointment_id')
+            ->execute([':appointment_id' => $appointmentId]);
+
+        $values = [];
+        $params = [];
+        foreach ($serviceIds as $index => $serviceId) {
+            $values[] = "(:appointment_id_{$index}, :service_id_{$index}, :quantity_{$index}, :price_{$index})";
+            $existing = $existingById[$serviceId] ?? null;
+            $params[":appointment_id_{$index}"] = $appointmentId;
+            $params[":service_id_{$index}"] = $serviceId;
+            $params[":quantity_{$index}"] = $existing['quantity'] ?? 1;
+            $params[":price_{$index}"] = $existing['unit_price_snapshot'] ?? null;
+        }
+
+        $insert = $this->conn->prepare("
+            INSERT INTO appointment_services
+                (appointment_id, service_id, quantity, unit_price_snapshot)
+            VALUES " . implode(', ', $values)
+        );
+        $insert->execute($params);
     }
 
     /**
@@ -71,7 +167,14 @@ class BillingModel {
                    payment.billing_id, payment.billing_recorded_at AS recorded_at,
                    payment.paid_at, payment.billing_notes AS notes,
                    payment.billing_recorded_by AS recorded_by,
-                   a.service_name
+                   COALESCE(
+                       (
+                           SELECT GROUP_CONCAT(item.service_name_snapshot ORDER BY item.sort_order, item.billing_item_id SEPARATOR ', ')
+                           FROM appointment_billing_items item
+                           WHERE item.billing_id = payment.billing_id
+                       ),
+                       a.service_name
+                   ) AS service_name
             FROM vw_appointment_overview a
             JOIN vw_appointment_payment_summary payment
                 ON payment.appointment_id = a.appointment_id
@@ -81,9 +184,21 @@ class BillingModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function settleAndCompleteVisit(int $appointmentId, float $serviceAmount, float $cashTendered, int $userId, string $notes = ''): array {
+    public function settleAndCompleteVisit(
+        int $appointmentId,
+        float $serviceAmount,
+        float $cashTendered,
+        int $userId,
+        string $notes = '',
+        array $serviceIds = [],
+        string $serviceChangeReason = ''
+    ): array {
         if ($serviceAmount < 0 || $cashTendered < 0) {
             return ['success' => false, 'message' => 'Amounts cannot be negative.'];
+        }
+        $serviceIds = $this->normalizeServiceIds($serviceIds);
+        if (!$serviceIds) {
+            return ['success' => false, 'message' => 'Select at least one service performed.'];
         }
 
         try {
@@ -113,6 +228,20 @@ class BillingModel {
                 return ['success' => false, 'message' => 'Only an in-progress visit can be completed.'];
             }
 
+            $existingServices = $this->getAppointmentServicesForUpdate($appointmentId);
+            $serviceValidation = $this->validateSelectedServices($serviceIds, $existingServices);
+            $servicesChanged = $serviceValidation['changed'];
+            $selectedServices = $serviceValidation['services'];
+            $serviceChangeReason = trim($serviceChangeReason);
+            if ($servicesChanged && strlen($serviceChangeReason) < 3) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'Enter a short reason for changing the performed services.'];
+            }
+            if (strlen($serviceChangeReason) > 255) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'The service change reason cannot exceed 255 characters.'];
+            }
+
             $depositApplied = min((float) $row['deposit_amount'], $serviceAmount);
             $amountDue = max(0, $serviceAmount - $depositApplied);
             if ($cashTendered < $amountDue) {
@@ -122,6 +251,27 @@ class BillingModel {
             $change = max(0, $cashTendered - $amountDue);
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
+
+            if ($servicesChanged) {
+                $this->replaceAppointmentServices($appointmentId, $serviceIds, $existingServices);
+                $oldServices = array_map(static fn(array $service): array => [
+                    'service_id' => (int) $service['service_id'],
+                    'service_name' => $service['service_name'],
+                ], $existingServices);
+                $newServices = array_map(static fn(array $service): array => [
+                    'service_id' => (int) $service['service_id'],
+                    'service_name' => $service['service_name'],
+                ], $selectedServices);
+                $this->auditLog->record(
+                    'appointment',
+                    $appointmentId,
+                    'appointment_services_changed',
+                    "Updated the performed services for appointment #{$appointmentId} during final billing.",
+                    ['services' => $oldServices],
+                    ['services' => $newServices, 'reason' => $serviceChangeReason],
+                    $actor
+                );
+            }
 
             $billing = $this->conn->prepare("
                 INSERT INTO appointment_billings
@@ -152,6 +302,10 @@ class BillingModel {
                 'cash_tendered' => $cashTendered,
                 'change' => $change,
                 'payment_status' => 'Paid',
+                'services' => array_map(static fn(array $service): array => [
+                    'service_id' => (int) $service['service_id'],
+                    'service_name' => $service['service_name'],
+                ], $selectedServices),
             ];
             $this->auditLog->record('appointment', $appointmentId, 'cash_billing_recorded',
                 "Recorded the final cash billing for appointment #{$appointmentId}.", null, $billingValues, $actor);
@@ -169,6 +323,9 @@ class BillingModel {
                 'cash_tendered' => $cashTendered,
                 'change' => $change,
             ];
+        } catch (InvalidArgumentException $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
         } catch (PDOException $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             if ((string) $e->getCode() === '23000') {

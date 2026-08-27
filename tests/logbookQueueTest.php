@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/conn.php';
 require_once __DIR__ . '/../apps/models/logbookModel.php';
 require_once __DIR__ . '/../apps/models/appointmentModel.php';
+require_once __DIR__ . '/../apps/models/billingModel.php';
 
 function queueExpect($condition, string $message): void {
     if (!$condition) throw new RuntimeException($message);
@@ -12,25 +13,25 @@ function queueExpect($condition, string $message): void {
 $conn = (new Database())->connect();
 $logbook = new LogbookModel($conn);
 $appointments = new Appointment($conn);
+$billings = new BillingModel($conn);
 $appointmentIds = [];
 $patientIds = [];
 $createdScheduleId = null;
 
 try {
-    $clinicId = (int) $conn->query('SELECT clinic_id FROM clinics ORDER BY clinic_id LIMIT 1')->fetchColumn();
     $serviceId = (int) $conn->query('SELECT service_id FROM services WHERE is_active = 1 ORDER BY service_id LIMIT 1')->fetchColumn();
     $staffId = (int) $conn->query("SELECT id FROM users WHERE user_role IN ('Admin','Dental Assistant') ORDER BY id LIMIT 1")->fetchColumn();
-    queueExpect($clinicId > 0 && $serviceId > 0 && $staffId > 0, 'Queue test fixtures are available.');
-
-    $schedule = $conn->prepare('SELECT schedule_id FROM schedules WHERE clinic_id = :clinic AND sched_date = CURDATE() LIMIT 1');
-    $schedule->execute([':clinic' => $clinicId]);
-    $scheduleId = (int) $schedule->fetchColumn();
+    $schedule = $conn->query('SELECT schedule_id, clinic_id FROM schedules WHERE sched_date = CURDATE() LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+    $scheduleId = (int) ($schedule['schedule_id'] ?? 0);
+    $clinicId = (int) ($schedule['clinic_id'] ?? 0);
     if ($scheduleId <= 0) {
+        $clinicId = (int) $conn->query('SELECT clinic_id FROM clinics ORDER BY clinic_id LIMIT 1')->fetchColumn();
         $conn->prepare('INSERT INTO schedules (clinic_id, sched_date, max_appointments) VALUES (:clinic, CURDATE(), 50)')
             ->execute([':clinic' => $clinicId]);
         $scheduleId = (int) $conn->lastInsertId();
         $createdScheduleId = $scheduleId;
     }
+    queueExpect($clinicId > 0 && $serviceId > 0 && $staffId > 0, 'Queue test fixtures are available.');
 
     $insertPatient = $conn->prepare("
         INSERT INTO patients (firstname, lastname, email, profile_status, profile_completed_at)
@@ -106,11 +107,15 @@ try {
         queueExpect($started['success'], 'The selected next patient can start treatment.');
         $parallelStart = $appointments->updateAppointmentStatus($appointmentIds[1], 'In Progress', $staffId);
         queueExpect(!$parallelStart['success'] && str_contains($parallelStart['message'], 'current patient'), 'A second treatment cannot start while one patient is in progress.');
-        queueExpect($appointments->updateAppointmentStatus($appointmentIds[2], 'Completed', $staffId)['success'], 'Completing treatment releases the queue for the next patient.');
+        $directCompletion = $appointments->updateAppointmentStatus($appointmentIds[2], 'Completed', $staffId);
+        queueExpect(!$directCompletion['success'], 'Treatment cannot be completed without final billing.');
+        $settled = $billings->settleAndCompleteVisit($appointmentIds[2], 0, 0, $staffId, '', [$serviceId]);
+        queueExpect($settled['success'], 'Final billing completes treatment and releases the queue for the next patient.');
     }
 } finally {
     foreach (array_reverse($appointmentIds) as $appointmentId) {
         $conn->prepare("DELETE FROM audit_logs WHERE entity_type = 'appointment' AND entity_id = :id")->execute([':id' => $appointmentId]);
+        $conn->prepare('DELETE FROM appointment_billings WHERE appointment_id = :id')->execute([':id' => $appointmentId]);
         $conn->prepare('DELETE FROM appointment_checkins WHERE appointment_id = :id')->execute([':id' => $appointmentId]);
         $conn->prepare('DELETE FROM appointment_services WHERE appointment_id = :id')->execute([':id' => $appointmentId]);
         $conn->prepare('DELETE FROM appointments WHERE appointment_id = :id')->execute([':id' => $appointmentId]);

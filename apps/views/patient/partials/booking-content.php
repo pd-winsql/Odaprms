@@ -11,6 +11,8 @@ require_once __DIR__ . '/../../../models/patientModel.php';
 require_once __DIR__ . '/../../../models/clinicModel.php';
 require_once __DIR__ . '/../../../models/scheduleModel.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
+$appointmentRules = require __DIR__ . '/../../../../config/appointment.php';
+$maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 
 $db = new Database();
 $conn = $db->connect();
@@ -115,7 +117,7 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
                 <input type="hidden" name="schedule_id" id="dashboardScheduleInput">
 
                 <p class="vd-section-label mb-1">Services</p>
-                <p class="text-muted small">Select one or more services for this visit.</p>
+                <p class="text-muted small">Select up to <?= $maxServicesPerVisit ?> services for this visit.</p>
                 <div class="vd-booking-service-options">
                     <?php foreach ($serviceCategories as $category): ?>
                         <?php foreach ($category['services'] as $service): ?>
@@ -164,12 +166,16 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
     const errorBox = document.getElementById('dashboardBookingError');
     const selectionSummary = document.getElementById('bookingSelectionSummary');
     const serviceCheckboxes = Array.from(document.querySelectorAll('input[name="service_ids[]"]'));
+    const maxServicesPerVisit = <?= $maxServicesPerVisit ?>;
 
     function updateSelectionSummary() {
         const selectedCount = serviceCheckboxes.filter(input => input.checked).length;
+        serviceCheckboxes.forEach(input => {
+            input.disabled = selectedCount >= maxServicesPerVisit && !input.checked;
+        });
         selectionSummary.innerHTML = selectedCount
-            ? `<strong>${selectedCount} service${selectedCount === 1 ? '' : 's'} selected</strong>Review your choices, then request the appointment.`
-            : '<strong>No services selected</strong>Choose at least one service to continue.';
+            ? `<strong>${selectedCount} of ${maxServicesPerVisit} services selected</strong>${selectedCount >= maxServicesPerVisit ? 'Service limit reached. Remove one to choose another.' : 'Review your choices, then request the appointment.'}`
+            : `<strong>No services selected</strong>Choose at least one and up to ${maxServicesPerVisit} services.`;
     }
 
     serviceCheckboxes.forEach(input => input.addEventListener('change', updateSelectionSummary));
@@ -234,6 +240,12 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
         errorBox.classList.add('d-none');
         if (!scheduleInput.value || !this.querySelector('input[name="service_ids[]"]:checked')) {
             errorBox.textContent = 'Please select a schedule and at least one service.';
+            errorBox.classList.remove('d-none');
+            return;
+        }
+        const selectedServiceCount = this.querySelectorAll('input[name="service_ids[]"]:checked').length;
+        if (selectedServiceCount > maxServicesPerVisit) {
+            errorBox.textContent = `You can select up to ${maxServicesPerVisit} services per visit.`;
             errorBox.classList.remove('d-none');
             return;
         }

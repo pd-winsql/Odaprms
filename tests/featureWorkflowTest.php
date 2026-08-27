@@ -9,6 +9,8 @@ require_once __DIR__ . '/../apps/models/clinicModel.php';
 
 function expectTrue($condition, $message) { if (!$condition) throw new RuntimeException($message); echo "PASS: {$message}\n"; }
 $conn = (new Database())->connect();
+$appointmentRules = require __DIR__ . '/../config/appointment.php';
+$maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 expectTrue($conn->query('SELECT DATABASE()')->fetchColumn() === 'db-oaprms-system', 'Tests are isolated to the application database.');
 $appointments = new Appointment($conn); $deposits = new DepositModel($conn); $logbook = new LogbookModel($conn); $patients = new Patient($conn); $billings = new BillingModel($conn); $clinics = new Clinic($conn);
 $createdAppointments = []; $createdSchedules = []; $patientId = null; $createdClinicId = null; $registeredPatientId = null; $registeredUserId = null;
@@ -17,8 +19,9 @@ try {
     $conn->exec("UPDATE site_settings SET deposit_amount=425.50, payment_deadline_minutes=75 WHERE id=1");
     $clinicId = (int) $conn->query('SELECT clinic_id FROM clinics ORDER BY clinic_id LIMIT 1')->fetchColumn();
     $serviceId = (int) $conn->query('SELECT service_id FROM services WHERE is_active=1 ORDER BY service_id LIMIT 1')->fetchColumn();
+    $replacementServiceId = (int) $conn->query('SELECT service_id FROM services WHERE is_active=1 AND service_id <> '.(int)$serviceId.' ORDER BY service_id LIMIT 1')->fetchColumn();
     $staffId = (int) $conn->query("SELECT id FROM users WHERE user_role IN ('Admin','Dental Assistant') ORDER BY id LIMIT 1")->fetchColumn();
-    expectTrue($clinicId && $serviceId && $staffId, 'Clinic, service, and staff fixtures are available.');
+    expectTrue($clinicId && $serviceId && $replacementServiceId && $staffId, 'Clinic, services, and staff fixtures are available.');
     $testClinicName = 'Workflow Clinic ' . bin2hex(random_bytes(4));
     $createdClinicId = $clinics->createClinic($testClinicName, 'Workflow Test Address', '09123456789', null);
     expectTrue($createdClinicId > 0 && $clinics->getClinicById($createdClinicId)['clinic_name'] === $testClinicName, 'Clinic creation stores the new clinic details.');
@@ -44,6 +47,10 @@ try {
 
     $booking=$appointments->bookAppointment($patientId,$todaySchedule['clinic_id'],[$serviceId],$todaySchedule['sched_date'],$todaySchedule['schedule_id']);
     expectTrue(($booking['status']??'')==='Pending Review', 'Booking starts in Pending Review without a deposit.'); $createdAppointments[]=(int)$booking['appointment_id'];
+    $overLimitServiceIds=array_map('intval',$conn->query('SELECT service_id FROM services WHERE is_active=1 ORDER BY service_id LIMIT '.($maxServicesPerVisit+1))->fetchAll(PDO::FETCH_COLUMN));
+    expectTrue(count($overLimitServiceIds)>$maxServicesPerVisit,'Enough active services exist to verify the configured selection limit.');
+    $tooManyServices=$appointments->bookAppointment($patientId,$todaySchedule['clinic_id'],$overLimitServiceIds,$todaySchedule['sched_date'],$todaySchedule['schedule_id']);
+    expectTrue(!($tooManyServices['success']??false)&&str_contains($tooManyServices['message']??'',"up to {$maxServicesPerVisit} services"),'New bookings enforce the configurable service limit.');
     $sameDayBooking=$appointments->bookAppointment($patientId,$todaySchedule['clinic_id'],[$serviceId],$todaySchedule['sched_date'],$todaySchedule['schedule_id']);
     expectTrue(!($sameDayBooking['success']??false) && str_contains($sameDayBooking['message']??'', 'different schedule'), 'A patient cannot book another appointment on the same date.');
     $differentDayBooking=$appointments->bookAppointment($patientId,$futureSchedule['clinic_id'],[$serviceId],$futureSchedule['sched_date'],$futureSchedule['schedule_id']);
@@ -74,12 +81,21 @@ try {
     $profile=['firstname'=>'Workflow','lastname'=>'Patient','middlename'=>'','birthdate'=>'2000-01-01','age'=>26,'gender'=>'Prefer not to say','civil_status'=>'Single','phone_number'=>'09123456789','email'=>'workflow-test@example.invalid','home_address'=>'Test','work_address'=>'','occupation'=>'Tester','office_contact'=>'','fb_account'=>'','guardian_name'=>'','guardian_contact'=>'','physician_name'=>'','physician_contact'=>'','physician_address'=>'','previous_dentist'=>'','last_dental_visit'=>'','treatment_done'=>'','reason_for_visit'=>'Checkup','referred_by'=>'','good_health'=>1,'medical_condition'=>0,'medical_condition_detail'=>'','serious_illness'=>0,'serious_illness_detail'=>'','hospitalized'=>0,'hospitalized_detail'=>'','medication'=>0,'medication_detail'=>'','smoke'=>0,'alcohol'=>0,'drugs'=>0,'allergy'=>0,'allergy_detail'=>'','pregnant'=>0,'nursing'=>0,'birth_control'=>0,'blood_type'=>'','blood_pressure'=>'','cond_others'=>'','conditions'=>[],'consent_name'=>'Workflow Patient','consent_for'=>'myself'];
     expectTrue($patients->completeProfileByStaff($patientId,$profile,$staffId)['success'],'Staff completes the entire patient profile.');
     expectTrue($appointments->updateAppointmentStatus($booking['appointment_id'],'In Progress',$staffId)['success'],'Ready checked-in appointment can start treatment.');
-    $shortPayment=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1500,$staffId);
+    expectTrue(!$appointments->updateAppointmentStatus($booking['appointment_id'],'Completed',$staffId)['success'],'An in-progress visit cannot bypass final billing.');
+    $tooManyPerformed=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,2000,$staffId,'',$overLimitServiceIds,'Multiple treatments were considered.');
+    expectTrue(!$tooManyPerformed['success']&&str_contains($tooManyPerformed['message']??'',"up to {$maxServicesPerVisit} services"),'Edited final billing selections enforce the configured service limit.');
+    $shortPayment=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1500,$staffId,'',[$replacementServiceId],'Dentist recommended a better treatment.');
     expectTrue(!$shortPayment['success']&&$conn->query('SELECT status FROM appointments WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()==='In Progress','Insufficient cash leaves the visit in progress and creates no billing.');
-    $settled=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,2000,$staffId,'Paid at the front desk.');
+    expectTrue((int)$conn->query('SELECT service_id FROM appointment_services WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()===$serviceId,'A failed settlement rolls back its service change.');
+    $missingChangeReason=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,2000,$staffId,'',[$replacementServiceId]);
+    expectTrue(!$missingChangeReason['success'],'Changing the performed services requires a reason.');
+    $settled=$billings->settleAndCompleteVisit($booking['appointment_id'],2000,2000,$staffId,'Paid at the front desk.',[$replacementServiceId],'Dentist recommended a better treatment.');
     expectTrue($settled['success']&&$settled['payment_status']==='Paid'&&(float)$settled['deposit_applied']===425.5&&(float)$settled['amount_due']===1574.5&&(float)$settled['change']===425.5,'Final billing deducts the configured deposit, calculates change, and records full payment.');
     expectTrue($conn->query('SELECT status FROM appointments WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()==='Completed','Payment and visit completion are committed together.');
-    expectTrue(!$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1600,$staffId)['success'],'A completed visit cannot be billed twice.');
+    expectTrue((int)$conn->query('SELECT service_id FROM appointment_services WHERE appointment_id='.(int)$booking['appointment_id'])->fetchColumn()===$replacementServiceId,'The appointment stores the service actually performed.');
+    expectTrue((int)$conn->query('SELECT service_id FROM appointment_billing_items WHERE billing_id=(SELECT billing_id FROM appointment_billings WHERE appointment_id='.(int)$booking['appointment_id'].')')->fetchColumn()===$replacementServiceId,'The receipt snapshots the service actually performed.');
+    expectTrue((int)$conn->query("SELECT COUNT(*) FROM audit_logs WHERE entity_type='appointment' AND entity_id=".(int)$booking['appointment_id']." AND action='appointment_services_changed'")->fetchColumn()===1,'The service change is recorded in the audit log.');
+    expectTrue(!$billings->settleAndCompleteVisit($booking['appointment_id'],2000,1600,$staffId,'',[$replacementServiceId])['success'],'A completed visit cannot be billed twice.');
     $billingRecord=array_values(array_filter($billings->getStaffBillings(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
     expectTrue($billingRecord&&$billingRecord['payment_status']==='Paid','The read-only billing records query includes the completed settlement.');
 

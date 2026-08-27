@@ -10,6 +10,9 @@ require_once __DIR__ . '/../../../models/appointmentModel.php';
 require_once __DIR__ . '/../../../models/clinicModel.php';
 require_once __DIR__ . '/../../../models/depositModel.php';
 require_once __DIR__ . '/../../../models/logbookModel.php';
+require_once __DIR__ . '/../../../models/serviceModel.php';
+$appointmentRules = require __DIR__ . '/../../../../config/appointment.php';
+$maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 
 $db = new Database();
 $conn = $db->connect();
@@ -17,12 +20,21 @@ $appointmentModel = new Appointment($conn);
 $depositModel = new DepositModel($conn);
 $depositModel->expireUnpaidAppointments();
 $logbookModel = new LogbookModel($conn);
+$serviceModel = new ServiceModel($conn);
 $upcoming = array_values(array_filter(
     $appointmentModel->getAllUpcomingWithStatus(),
     static fn(array $appointment): bool => ($appointment['date'] ?? '') > date('Y-m-d')
 ));
 $clinics = (new Clinic($conn))->getAllClinics();
 $todayLogbook = $logbookModel->getToday();
+$todayServiceDetails = $appointmentModel->getServiceDetailsForAppointments(array_column($todayLogbook, 'appointment_id'));
+$serviceCategoryNames = array_column($serviceModel->getAllCategories(), 'category_name', 'category_id');
+$billingServicesByCategory = [];
+foreach ($serviceModel->getAllServices() as $service) {
+    $categoryId = (int) ($service['category_id'] ?? 0);
+    $categoryName = $serviceCategoryNames[$categoryId] ?? 'Other services';
+    $billingServicesByCategory[$categoryName][] = $service;
+}
 $finishedQueueStatuses = ['Completed', 'Cancelled', 'No-show'];
 $activeQueueEntries = array_values(array_filter(
     $todayLogbook,
@@ -107,6 +119,16 @@ function dashboardBillingPayload(array $entry): string
         'recordedAt' => $entry['billing_recorded_at'] ?? '',
         'notes' => $entry['billing_notes'] ?? '',
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+}
+
+function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): string
+{
+    $ids = array_map('intval', array_column($serviceDetails[$appointmentId] ?? [], 'service_id'));
+    return htmlspecialchars(
+        json_encode($ids, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ENT_QUOTES,
+        'UTF-8'
+    );
 }
 ?>
 
@@ -242,6 +264,7 @@ function dashboardBillingPayload(array $entry): string
                                                 data-appointment-id="<?= (int) $entry['appointment_id'] ?>"
                                                 data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>"
                                                 data-services="<?= htmlspecialchars($entry['service_name'] ?: 'Service not listed') ?>"
+                                                data-service-ids="<?= dashboardServiceIdsPayload((int) $entry['appointment_id'], $todayServiceDetails) ?>"
                                                 data-clinic="<?= htmlspecialchars($entry['clinic_name']) ?>"
                                                 data-deposit="<?= htmlspecialchars((string) ((float) $entry['verified_deposit'])) ?>">
                                                 <i class="ti ti-check" aria-hidden="true"></i>Complete visit
@@ -322,6 +345,44 @@ function dashboardBillingPayload(array $entry): string
             </div>
             <div class="modal-body">
                 <div class="vd-appointment-detail-grid mb-4" id="finalBillingVisitDetails"></div>
+                <section class="vd-billing-service-editor mb-4" aria-labelledby="finalPerformedServicesHeading">
+                    <div class="vd-billing-service-editor-head">
+                        <div>
+                            <h6 id="finalPerformedServicesHeading">Services performed</h6>
+                            <p>Select the treatments actually provided during this visit.</p>
+                        </div>
+                        <span id="finalServiceSelectionCount">0 of <?= $maxServicesPerVisit ?> selected</span>
+                    </div>
+                    <div class="vd-billing-service-groups">
+                        <?php foreach ($billingServicesByCategory as $categoryName => $services): ?>
+                            <fieldset class="vd-billing-service-group">
+                                <legend><?= htmlspecialchars($categoryName) ?></legend>
+                                <div class="vd-billing-service-options">
+                                    <?php foreach ($services as $service): ?>
+                                        <label class="vd-billing-service-option">
+                                            <input type="checkbox"
+                                                value="<?= (int) $service['service_id'] ?>"
+                                                data-final-service
+                                                data-service-name="<?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>"
+                                                data-service-active="<?= (int) $service['is_active'] ?>">
+                                            <span>
+                                                <strong><?= htmlspecialchars($service['service_name']) ?></strong>
+                                                <?php if (!(int) $service['is_active']): ?><small>Inactive</small><?php endif; ?>
+                                            </span>
+                                            <i class="ti ti-check" aria-hidden="true"></i>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </fieldset>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="vd-billing-service-feedback" id="finalServiceSelectionFeedback" aria-live="polite"></div>
+                    <div class="mt-3 d-none" id="finalServiceChangeReasonGroup">
+                        <label class="vd-label form-label" for="finalServiceChangeReason">Reason for service change</label>
+                        <textarea class="form-control vd-input" id="finalServiceChangeReason" rows="2" minlength="3" maxlength="255" placeholder="Example: Dentist recommended a more appropriate treatment."></textarea>
+                        <small class="text-muted">Required when the performed services differ from the booking.</small>
+                    </div>
+                </section>
                 <div class="row g-3">
                     <div class="col-md-6"><label class="vd-label form-label" for="finalServiceAmount">Actual treatment charge</label><input type="number" min="0" step="0.01" class="form-control vd-input" id="finalServiceAmount" required></div>
                     <div class="col-md-6"><label class="vd-label form-label" for="finalCashTendered">Cash tendered</label><input type="number" min="0" step="0.01" class="form-control vd-input" id="finalCashTendered" value="0" required></div>
@@ -403,6 +464,63 @@ function dashboardBillingPayload(array $entry): string
         const serviceAmountInput = document.getElementById('finalServiceAmount');
         const cashTenderedInput = document.getElementById('finalCashTendered');
         const completeBillingButton = document.getElementById('recordPaymentAndComplete');
+        const maxServicesPerVisit = <?= $maxServicesPerVisit ?>;
+        const performedServiceInputs = Array.from(document.querySelectorAll('[data-final-service]'));
+        const serviceChangeReasonInput = document.getElementById('finalServiceChangeReason');
+
+        const selectedServiceInputs = () => performedServiceInputs.filter(input => input.checked);
+        const sortedServiceIds = inputs => inputs.map(input => Number(input.value)).sort((a, b) => a - b);
+        const selectionsMatch = (left, right) => left.length === right.length && left.every((value, index) => value === right[index]);
+
+        function serviceSelectionState() {
+            const selectedInputs = selectedServiceInputs();
+            const selectedIds = sortedServiceIds(selectedInputs);
+            const originalIds = [...(activeBillingAppointment?.originalServiceIds || [])].sort((a, b) => a - b);
+            return {
+                selectedInputs,
+                selectedIds,
+                changed: !selectionsMatch(selectedIds, originalIds)
+            };
+        }
+
+        function updateServiceSelection() {
+            const state = serviceSelectionState();
+            const selectedCount = state.selectedInputs.length;
+            const originalIds = activeBillingAppointment?.originalServiceIds || [];
+            const feedback = document.getElementById('finalServiceSelectionFeedback');
+            const counter = document.getElementById('finalServiceSelectionCount');
+            const reasonGroup = document.getElementById('finalServiceChangeReasonGroup');
+            const overLimit = state.changed && selectedCount > maxServicesPerVisit;
+
+            performedServiceInputs.forEach(input => {
+                const isOriginal = originalIds.includes(Number(input.value));
+                const isInactiveAddition = input.dataset.serviceActive !== '1' && !isOriginal;
+                const selectionIsFull = selectedCount >= maxServicesPerVisit && !input.checked;
+                input.disabled = !activeBillingAppointment || isInactiveAddition || selectionIsFull;
+            });
+
+            counter.textContent = originalIds.length > maxServicesPerVisit && !state.changed
+                ? `${selectedCount} selected · existing booking retained`
+                : `${selectedCount} of ${maxServicesPerVisit} selected`;
+            reasonGroup.classList.toggle('d-none', !state.changed);
+            serviceChangeReasonInput.required = state.changed;
+
+            feedback.className = 'vd-billing-service-feedback';
+            if (!selectedCount) {
+                feedback.textContent = 'Select at least one service performed.';
+                feedback.classList.add('is-error');
+            } else if (overLimit) {
+                feedback.textContent = `Reduce the edited selection to ${maxServicesPerVisit} services or fewer.`;
+                feedback.classList.add('is-error');
+            } else if (state.changed) {
+                feedback.textContent = 'The performed services differ from the booking. Add a short reason below.';
+                feedback.classList.add('is-changed');
+            } else {
+                feedback.textContent = 'The performed services match the original booking.';
+            }
+
+            return selectedCount > 0 && !overLimit;
+        }
 
         function updateFinalBillingSummary() {
             const charge = Math.max(0, Number(serviceAmountInput.value) || 0);
@@ -415,7 +533,10 @@ function dashboardBillingPayload(array $entry): string
             document.getElementById('finalAmountDueDisplay').textContent = money(due);
             document.getElementById('finalCashDisplay').textContent = money(cash);
             document.getElementById('finalChangeDisplay').textContent = money(change);
-            completeBillingButton.disabled = serviceAmountInput.value === '' || cash < due;
+            const servicesValid = updateServiceSelection();
+            const selection = serviceSelectionState();
+            const changeReasonValid = !selection.changed || serviceChangeReasonInput.value.trim().length >= 3;
+            completeBillingButton.disabled = serviceAmountInput.value === '' || cash < due || !servicesValid || !changeReasonValid;
             const error = document.getElementById('finalBillingError');
             if (serviceAmountInput.value !== '' && cash < due) {
                 error.textContent = `Cash tendered is ${money(due - cash)} short of the amount due.`;
@@ -427,10 +548,17 @@ function dashboardBillingPayload(array $entry): string
         }
 
         document.querySelectorAll('[data-complete-with-billing]').forEach(button => button.addEventListener('click', () => {
+            let originalServiceIds = [];
+            try {
+                originalServiceIds = JSON.parse(button.dataset.serviceIds || '[]').map(Number).filter(Number.isInteger);
+            } catch (error) {
+                console.error('Unable to read the booked services.', error);
+            }
             activeBillingAppointment = {
                 id: button.dataset.appointmentId,
                 patient: button.dataset.patient,
                 services: button.dataset.services,
+                originalServiceIds,
                 clinic: button.dataset.clinic,
                 deposit: Number(button.dataset.deposit || 0)
             };
@@ -439,20 +567,56 @@ function dashboardBillingPayload(array $entry): string
             const details = document.getElementById('finalBillingVisitDetails');
             details.replaceChildren();
             addBillingDetail(details, 'Patient', activeBillingAppointment.patient);
-            addBillingDetail(details, 'Services', activeBillingAppointment.services);
+            addBillingDetail(details, 'Booked services', activeBillingAppointment.services);
             addBillingDetail(details, 'Clinic', activeBillingAppointment.clinic);
             addBillingDetail(details, 'Verified deposit', money(activeBillingAppointment.deposit));
+            performedServiceInputs.forEach(input => {
+                input.checked = originalServiceIds.includes(Number(input.value));
+            });
             serviceAmountInput.value = '';
             cashTenderedInput.value = '0';
             document.getElementById('finalBillingNotes').value = '';
+            serviceChangeReasonInput.value = '';
             updateFinalBillingSummary();
             finalBillingModal = bootstrap.Modal.getOrCreateInstance(finalBillingModalElement);
             finalBillingModal.show();
         }));
-        [serviceAmountInput, cashTenderedInput].forEach(input => input?.addEventListener('input', updateFinalBillingSummary));
+        [serviceAmountInput, cashTenderedInput, serviceChangeReasonInput].forEach(input => input?.addEventListener('input', updateFinalBillingSummary));
+        performedServiceInputs.forEach(input => input.addEventListener('change', updateFinalBillingSummary));
 
         completeBillingButton?.addEventListener('click', async function() {
             if (!activeBillingAppointment) return;
+            updateFinalBillingSummary();
+            if (this.disabled) return;
+            const selection = serviceSelectionState();
+            const performedServiceNames = selection.selectedInputs.map(input => input.dataset.serviceName);
+            const confirmationDetails = [{
+                    label: 'Patient',
+                    value: activeBillingAppointment.patient
+                },
+                {
+                    label: 'Services performed',
+                    value: performedServiceNames.join(', ')
+                },
+                {
+                    label: 'Amount due',
+                    value: document.getElementById('finalAmountDueDisplay').textContent
+                },
+                {
+                    label: 'Cash tendered',
+                    value: document.getElementById('finalCashDisplay').textContent
+                },
+                {
+                    label: 'Change',
+                    value: document.getElementById('finalChangeDisplay').textContent
+                }
+            ];
+            if (selection.changed) {
+                confirmationDetails.push({
+                    label: 'Service change reason',
+                    value: serviceChangeReasonInput.value.trim()
+                });
+            }
             const confirmation = await window.showActionModal({
                 title: 'Confirm Final Payment',
                 kicker: 'Complete transaction',
@@ -460,23 +624,7 @@ function dashboardBillingPayload(array $entry): string
                 confirmText: 'Confirm & Complete',
                 icon: 'ti-cash-check',
                 tone: 'success',
-                details: [{
-                        label: 'Patient',
-                        value: activeBillingAppointment.patient
-                    },
-                    {
-                        label: 'Amount due',
-                        value: document.getElementById('finalAmountDueDisplay').textContent
-                    },
-                    {
-                        label: 'Cash tendered',
-                        value: document.getElementById('finalCashDisplay').textContent
-                    },
-                    {
-                        label: 'Change',
-                        value: document.getElementById('finalChangeDisplay').textContent
-                    }
-                ]
+                details: confirmationDetails
             });
             if (!confirmation.confirmed) return;
             LoadingUI.setButton(this, true, 'Completing...');
@@ -487,6 +635,8 @@ function dashboardBillingPayload(array $entry): string
             body.append('service_amount', serviceAmountInput.value);
             body.append('cash_received', cashTenderedInput.value);
             body.append('notes', document.getElementById('finalBillingNotes').value);
+            selection.selectedIds.forEach(serviceId => body.append('service_ids[]', String(serviceId)));
+            body.append('service_change_reason', serviceChangeReasonInput.value.trim());
             try {
                 const response = await fetch('../../controllers/billingController.php', {
                     method: 'POST',
@@ -499,12 +649,19 @@ function dashboardBillingPayload(array $entry): string
                 document.querySelector('[data-page="dashboard-content.php"]')?.click();
             } catch (error) {
                 LoadingUI.setButton(this, false);
+                const errorBox = document.getElementById('finalBillingError');
+                errorBox.textContent = error.message || 'Unable to complete the transaction.';
+                errorBox.classList.remove('d-none');
                 window.showToast(error.message, false);
             }
         });
 
         finalBillingModalElement?.addEventListener('hidden.bs.modal', () => {
             activeBillingAppointment = null;
+            performedServiceInputs.forEach(input => {
+                input.checked = false;
+                input.disabled = input.dataset.serviceActive !== '1';
+            });
             LoadingUI.setButton(completeBillingButton, false);
         });
 

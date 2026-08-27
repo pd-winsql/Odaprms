@@ -75,8 +75,8 @@ if ($validDate) {
                                     <?php elseif ($isToday && $entry['appointment_status'] === 'Checked In'): ?>
                                         <button type="button" class="btn vd-btn-outline btn-sm" data-open-today-queue>Manage Queue</button>
                                     <?php elseif ($isToday && $entry['appointment_status'] === 'In Progress'): ?>
-                                        <button type="button" class="btn vd-btn-gold btn-sm" data-visit-status="Completed" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
-                                            <i class="ti ti-check me-1"></i>Complete Visit
+                                        <button type="button" class="btn vd-btn-gold btn-sm" data-open-today-queue>
+                                            <i class="ti ti-cash-check me-1"></i>Open Final Billing
                                         </button>
                                     <?php elseif ($entry['appointment_status'] === 'Completed'): ?>
                                         <span class="vd-appt-meta">Visit completed</span>

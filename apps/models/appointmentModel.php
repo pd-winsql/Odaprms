@@ -8,12 +8,15 @@ class Appointment {
     private $conn;
     private $auditLog;
     private $emailNotifications;
+    private $maxServicesPerVisit;
 
     public function __construct($conn) 
     {
         $this->conn = $conn;
         $this->auditLog = new AuditLog($conn);
         $this->emailNotifications = new EmailNotificationModel($conn);
+        $appointmentRules = require __DIR__ . '/../../config/appointment.php';
+        $this->maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
     }
 
     /**
@@ -85,7 +88,15 @@ class Appointment {
         // Normalize and validate service IDs: cast to ints, remove falsy values,
         // deduplicate and reindex the array. If no services remain, abort.
         $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
-        if (empty($service_ids)) return false;
+        if (empty($service_ids)) {
+            return ['success' => false, 'message' => 'Please select at least one service.'];
+        }
+        if (count($service_ids) > $this->maxServicesPerVisit) {
+            return [
+                'success' => false,
+                'message' => "You can select up to {$this->maxServicesPerVisit} services per visit.",
+            ];
+        }
 
         try {
             $this->conn->beginTransaction();
@@ -449,7 +460,9 @@ class Appointment {
             'Payment Under Review' => [],
             'Confirmed' => ['Checked In', 'Cancelled', 'No-show'],
             'Checked In' => ['In Progress'],
-            'In Progress' => ['Completed'],
+            // Completion is coupled to final billing in BillingModel so the
+            // performed services, payment, and status commit together.
+            'In Progress' => [],
             'Completed' => [],
             'Cancelled' => [],
             'No-show' => [],

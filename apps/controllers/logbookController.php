@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'updateVisitStatus') {
     $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
     $status = trim($_POST['status'] ?? '');
 
-    if ($appointmentId <= 0 || !in_array($status, ['In Progress', 'Completed'], true)) {
+    if ($appointmentId <= 0 || $status !== 'In Progress') {
         echo json_encode(['success' => false, 'message' => 'Invalid visit status request.']);
         exit;
     }

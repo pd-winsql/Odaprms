@@ -14,11 +14,20 @@ if (!validate_csrf()) {
 if (($_POST['action'] ?? '') !== 'settleAndComplete') {
     echo json_encode(['success' => false, 'message' => 'Invalid request.']); exit;
 }
+$serviceIds = array_values(array_unique(array_filter(array_map(
+    'intval',
+    (array) ($_POST['service_ids'] ?? [])
+))));
+if (!$serviceIds) {
+    echo json_encode(['success' => false, 'message' => 'Select at least one service performed.']); exit;
+}
 $model = new BillingModel((new Database())->connect());
 echo json_encode($model->settleAndCompleteVisit(
     (int) ($_POST['appointment_id'] ?? 0),
     (float) ($_POST['service_amount'] ?? -1),
     (float) ($_POST['cash_received'] ?? -1),
     (int) $_SESSION['user_id'],
-    trim($_POST['notes'] ?? '')
+    trim($_POST['notes'] ?? ''),
+    $serviceIds,
+    trim($_POST['service_change_reason'] ?? '')
 ));

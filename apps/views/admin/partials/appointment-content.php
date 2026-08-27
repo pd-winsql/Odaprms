@@ -284,9 +284,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <?php elseif ($appt['status'] === 'Checked In'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-open-today-queue><i class="ti ti-list-check" aria-hidden="true"></i><span>Manage queue</span></button>
                         <?php elseif ($appt['status'] === 'In Progress'): ?>
-                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-primary" data-status-action="Completed"
-                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-circle-check" aria-hidden="true"></i><span>Complete appointment</span></button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-primary" data-open-today-queue><i class="ti ti-cash-check" aria-hidden="true"></i><span>Open final billing</span></button>
                         <?php elseif ($appt['status'] === 'Cancelled' && ($appt['deposit_status'] ?? '') === 'For Refund'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-record-refund="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-cash-banknote-off" aria-hidden="true"></i><span>Record refund</span></button>
                         <?php endif; ?>
@@ -630,7 +628,9 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 document.querySelector('[data-page="dashboard-content.php"]')?.click();
             }, 'ti-list-check'));
         } else if (details.status === 'In Progress') {
-            addStatusAction('Complete appointment', 'Completed', 'ti-circle-check', 'primary');
+            actionGroup.append(makeActionButton('Open final billing', `${menuClass} vd-appt-menu-primary`, () => {
+                document.querySelector('[data-page="dashboard-content.php"]')?.click();
+            }, 'ti-cash-check'));
         } else if (details.status === 'Cancelled' && details.deposit?.status === 'For Refund') {
             addDepositAction('Record refund', 'recordRefund', button => runRecordRefund(button), 'ti-cash-banknote-off');
         }
@@ -1034,8 +1034,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 'Awaiting Deposit': ['Accept Appointment Request', 'Accept Appointment', 'The patient will be asked to submit the required deposit.'],
                 'Cancelled': ['Cancel Appointment', 'Cancel Appointment', 'This action updates the appointment and notifies the patient.'],
                 'No-show': ['Mark Patient as No-show', 'Mark No-show', 'The verified deposit will be marked as forfeited.'],
-                'In Progress': ['Start Treatment', 'Start Treatment', 'Confirm that the patient profile and check-in are ready.'],
-                'Completed': ['Complete Appointment', 'Mark Completed', 'Confirm that treatment for this appointment is complete.']
+                'In Progress': ['Start Treatment', 'Start Treatment', 'Confirm that the patient profile and check-in are ready.']
             };
             const copy = labels[newStatus] || ['Update Appointment', 'Confirm', `Change this appointment to ${newStatus}.`];
             const confirmation = await window.showActionModal({

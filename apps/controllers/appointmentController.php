@@ -187,6 +187,8 @@ class AppointmentController {
             $schedule_id = $_POST['schedule_id'] ?? '';
             $service_ids = $_POST['service_ids'] ?? ($_POST['service_id'] ?? []);
             $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
+            $appointmentRules = require __DIR__ . '/../../config/appointment.php';
+            $maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 
             if (!$clinic_id || !$schedule_id) {
                 echo json_encode([
@@ -200,6 +202,14 @@ class AppointmentController {
                 echo json_encode([
                     'success' => false,
                     'message' => 'Please select at least one service.'
+                ]);
+                exit;
+            }
+
+            if (count($service_ids) > $maxServicesPerVisit) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => "You can select up to {$maxServicesPerVisit} services per visit."
                 ]);
                 exit;
             }
