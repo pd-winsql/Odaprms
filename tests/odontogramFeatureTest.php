@@ -18,6 +18,9 @@ vdRenderOdontogramWorkspace('editableChart', false, true);
 $editable = ob_get_clean();
 odontogramExpect(substr_count($editable, 'data-tooth=') === 52, 'The chart renders all 32 permanent and 20 primary teeth.');
 odontogramExpect(str_contains($editable, 'data-dentition="Mixed"'), 'Mixed dentition can display both tooth sets.');
+odontogramExpect(str_contains($editable, '>Teeth displayed</span>') && str_contains($editable, 'aria-labelledby="editableChartDentitionLabel"'), 'Teeth displayed is a separate label for the segmented control.');
+odontogramExpect(substr_count($editable, 'data-dentition=') === 3 && str_contains($editable, '>Mixed / Both</button>'), 'Only the three dentition options are selectable.');
+odontogramExpect(substr_count($editable, 'aria-pressed="true"') === 1 && substr_count($editable, 'aria-pressed="false"') === 2, 'Dentition options expose their selected state to assistive technology.');
 odontogramExpect(str_contains($editable, 'data-finding-form') && str_contains($editable, 'data-save-odontogram'), 'Admin chart renders finding and save controls.');
 odontogramExpect(str_contains($editable, 'Procedure and settlement ledger'), 'The clinic treatment ledger is included.');
 

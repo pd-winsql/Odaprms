@@ -31,11 +31,13 @@ function vdRenderOdontogramWorkspace(string $id, bool $readOnly, bool $billingCo
             </div>
         </header>
 
-        <div class="vd-odontogram-toolbar" role="group" aria-label="Dentition displayed">
-            <span>Dentition</span>
-            <button type="button" data-dentition="Permanent" class="is-active">Permanent</button>
-            <button type="button" data-dentition="Primary">Primary</button>
-            <button type="button" data-dentition="Mixed">Both</button>
+        <div class="vd-odontogram-toolbar">
+            <span id="<?= htmlspecialchars($id) ?>DentitionLabel">Teeth displayed</span>
+            <div class="vd-odontogram-dentition-options" role="group" aria-labelledby="<?= htmlspecialchars($id) ?>DentitionLabel">
+                <button type="button" data-dentition="Permanent" class="is-active" aria-pressed="true">Permanent</button>
+                <button type="button" data-dentition="Primary" aria-pressed="false">Primary</button>
+                <button type="button" data-dentition="Mixed" aria-pressed="false">Mixed / Both</button>
+            </div>
         </div>
 
         <div class="vd-odontogram-workspace">

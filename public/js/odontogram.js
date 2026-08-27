@@ -110,7 +110,11 @@
 
         showDentition(dentition) {
             const visible = ['Permanent', 'Primary', 'Mixed'].includes(dentition) ? dentition : 'Permanent';
-            this.root.querySelectorAll('[data-dentition]').forEach(button => button.classList.toggle('is-active', button.dataset.dentition === visible));
+            this.root.querySelectorAll('[data-dentition]').forEach(button => {
+                const selected = button.dataset.dentition === visible;
+                button.classList.toggle('is-active', selected);
+                button.setAttribute('aria-pressed', String(selected));
+            });
             this.root.querySelectorAll('[data-dentition-chart]').forEach(chart => { chart.hidden = visible !== 'Mixed' && chart.dataset.dentitionChart !== visible; });
         }
 
