@@ -26,7 +26,7 @@ try {
     $clinicId = (int) $conn->lastInsertId();
 
     $insertSchedule = $conn->prepare("INSERT INTO schedules (clinic_id, sched_date, start_time, end_time, max_appointments) VALUES (:clinic, :date, '00:00:00', '23:59:59', 10)");
-    foreach ([date('Y-m-d'), date('Y-m-d', strtotime('+1 day'))] as $date) {
+    foreach ([date('Y-m-d', strtotime('-1 day')), date('Y-m-d'), date('Y-m-d', strtotime('+1 day'))] as $date) {
         $insertSchedule->execute([':clinic' => $clinicId, ':date' => $date]);
         $scheduleIds[$date] = (int) $conn->lastInsertId();
     }
@@ -70,6 +70,8 @@ try {
     noShowExpect(!$futureResult['success'] && str_contains($futureResult['message'], 'appointment date'), 'A future appointment cannot be marked as no-show.');
 
     $today = date('Y-m-d');
+    $pastAppointmentId = $makeAppointment('PastUnarrived', date('Y-m-d', strtotime('-1 day')));
+    noShowExpect($appointments->updateAppointmentStatus($pastAppointmentId, 'No-show', $staffId)['success'], 'An unarrived confirmed patient can be marked as no-show after the appointment date.');
     $validAppointmentId = $makeAppointment('Unarrived', $today);
     $validResult = $appointments->updateAppointmentStatus($validAppointmentId, 'No-show', $staffId);
     noShowExpect($validResult['success'], 'An unarrived confirmed patient can be marked as no-show after today\'s clinic window begins.');

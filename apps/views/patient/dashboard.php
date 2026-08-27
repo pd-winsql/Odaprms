@@ -21,6 +21,8 @@ if ($_SESSION['user_role'] !== 'Patient') {
 
 $db   = new Database();
 $conn = $db->connect();
+require_once __DIR__ . '/../../models/depositModel.php';
+(new DepositModel($conn))->expireUnpaidAppointments();
 $patientModel = new Patient($conn);
 $branding = vdLoadSiteBranding($conn);
 

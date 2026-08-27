@@ -1,5 +1,6 @@
 <?php
 require_once '../models/appointmentModel.php';
+require_once '../models/depositModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../models/rescheduleModel.php';
@@ -19,6 +20,7 @@ class AppointmentController {
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
+        (new DepositModel($conn))->expireUnpaidAppointments();
         $this->appointmentModel = new Appointment($conn);
         $this->patientModel = new Patient($conn);
         $this->rescheduleModel = new RescheduleModel($conn);

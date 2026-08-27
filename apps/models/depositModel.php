@@ -27,68 +27,55 @@ class DepositModel {
         return $code;
     }
 
+    // Run from the existing dashboard/payment checks, using the clinic timezone.
     public function expireUnpaidAppointments(): int {
+        $ownsTransaction = !$this->conn->inTransaction();
         try {
-            $this->conn->beginTransaction();
-            $stmt = $this->conn->query("
-                SELECT a.appointment_id, a.status
+            if ($ownsTransaction) $this->conn->beginTransaction();
+            $stmt = $this->conn->prepare("
+                SELECT a.appointment_id, a.status, a.date, d.deposit_id
                 FROM appointments a
-                JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
-                WHERE a.status = 'Awaiting Deposit'
-                    AND d.status IN ('Awaiting Submission', 'Rejected')
-                    AND COALESCE(d.resubmission_deadline_at, a.payment_deadline_at) <= NOW()
+                LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
+                WHERE (a.status = 'Pending Review' AND a.date < :review_today)
+                   OR (a.status = 'Awaiting Deposit'
+                       AND (d.deposit_id IS NULL OR d.status IN ('Awaiting Submission', 'Rejected'))
+                       AND (a.date < :deposit_today
+                            OR COALESCE(d.resubmission_deadline_at, a.payment_deadline_at) <= NOW()))
                 FOR UPDATE
             ");
+            $today = date('Y-m-d');
+            $stmt->execute([':review_today' => $today, ':deposit_today' => $today]);
             $expired = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if (!$expired) {
-                $this->conn->commit();
-                return 0;
-            }
-
-            $appointmentIds = array_map('intval', array_column($expired, 'appointment_id'));
-            $placeholders = implode(',', array_fill(0, count($appointmentIds), '?'));
-
-            $depositStmt = $this->conn->prepare("
-                UPDATE appointment_deposits
-                SET status = 'Expired',
-                    rejection_reason = 'Payment submission deadline expired.'
-                WHERE appointment_id IN ({$placeholders})
+            $updateAppointment = $this->conn->prepare("
+                UPDATE appointments SET status = :status,
+                    rejected_at = CASE WHEN :is_rejected = 1 THEN NOW() ELSE rejected_at END,
+                    rejection_reason = CASE WHEN :set_rejection = 1 THEN :rejection_reason ELSE rejection_reason END,
+                    cancelled_at = CASE WHEN :is_cancelled = 1 THEN NOW() ELSE cancelled_at END,
+                    cancellation_reason = CASE WHEN :set_cancellation = 1 THEN :cancellation_reason ELSE cancellation_reason END
+                WHERE appointment_id = :id
             ");
-            $depositStmt->execute($appointmentIds);
-
-            $appointmentStmt = $this->conn->prepare("
-                UPDATE appointments
-                SET status = 'Cancelled',
-                    cancelled_at = NOW(),
-                    cancellation_reason = 'Payment submission deadline expired.'
-                WHERE appointment_id IN ({$placeholders})
-            ");
-            $appointmentStmt->execute($appointmentIds);
-
-            $actor = [
-                'user_id' => null,
-                'name' => 'System',
-                'role' => 'System',
-                'source' => 'System',
-            ];
+            $updateDeposit = $this->conn->prepare("UPDATE appointment_deposits SET status = 'Expired', rejection_reason = :reason WHERE deposit_id = :id");
+            $actor = ['user_id' => null, 'name' => 'System', 'role' => 'System', 'source' => 'System'];
             foreach ($expired as $row) {
-                $this->auditLog->record(
-                    'appointment',
-                    (int) $row['appointment_id'],
-                    'status_changed',
-                    "Cancelled appointment #{$row['appointment_id']} after its payment deadline expired.",
-                    ['status' => $row['status']],
-                    ['status' => 'Cancelled'],
-                    $actor
-                );
+                $rejected = $row['status'] === 'Pending Review';
+                $status = $rejected ? 'Rejected' : 'Cancelled';
+                $reason = $rejected ? 'Appointment date passed before approval.'
+                    : ($row['date'] < $today ? 'Appointment date passed before deposit submission.' : 'Payment submission deadline expired.');
+                $updateAppointment->execute([
+                    ':status' => $status, ':is_rejected' => (int) $rejected, ':set_rejection' => (int) $rejected,
+                    ':rejection_reason' => $reason, ':is_cancelled' => (int) !$rejected, ':set_cancellation' => (int) !$rejected,
+                    ':cancellation_reason' => $reason, ':id' => $row['appointment_id'],
+                ]);
+                if (!$rejected && $row['deposit_id']) $updateDeposit->execute([':reason' => $reason, ':id' => $row['deposit_id']]);
+                $this->auditLog->record('appointment', (int) $row['appointment_id'], 'status_changed',
+                    $reason, ['status' => $row['status']], ['status' => $status, 'reason' => $reason], $actor);
             }
-
-            $this->conn->commit();
+            if ($ownsTransaction) $this->conn->commit();
             return count($expired);
         } catch (Throwable $e) {
-            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            if ($ownsTransaction && $this->conn->inTransaction()) $this->conn->rollBack();
             error_log('expireUnpaidAppointments error: ' . $e->getMessage());
+            if (!$ownsTransaction) throw $e;
             return 0;
         }
     }

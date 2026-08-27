@@ -8,12 +8,14 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental A
 
 require_once  __DIR__ . '/../../../../config/conn.php';
 require_once  __DIR__ . '/../../../models/appointmentModel.php';
+require_once  __DIR__ . '/../../../models/depositModel.php';
 require_once  __DIR__ . '/../../../models/rescheduleModel.php';
 require_once  __DIR__ . '/../../../helpers/paymentSettings.php';
 require_once  __DIR__ . '/../../../helpers/serviceImage.php';
 
 $db   = new Database();
 $conn = $db->connect();
+(new DepositModel($conn))->expireUnpaidAppointments();
 $appointmentModel = new Appointment($conn);
 $rescheduleModel = new RescheduleModel($conn);
 $pendingReschedules = $rescheduleModel->getPendingRequestsForStaff();
@@ -24,6 +26,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
 $past     = $appointmentModel->getAdminPastAppointments();
+$overduePaymentCount = count(array_filter($past, static fn($row) => $row['status'] === 'Payment Under Review'));
 $appointmentIds = array_merge(
     array_column($upcoming, 'appointment_id'),
     array_column($past, 'appointment_id')
@@ -234,7 +237,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     <!-- VIEW TOGGLE (Upcoming / Past) -->
     <div class="vd-view-toggle mb-2">
         <button type="button" class="vd-toggle-btn active" data-view="upcoming">Upcoming</button>
-        <button type="button" class="vd-toggle-btn" data-view="past">Past</button>
+        <button type="button" class="vd-toggle-btn" data-view="past">Past<?= $overduePaymentCount ? ' · ' . $overduePaymentCount . ' payments to review' : '' ?></button>
     </div>
 
     <!-- ── UPCOMING APPOINTMENTS ── -->
@@ -472,6 +475,12 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <span class="<?= statusClass($appt['status']) ?>">
                         <?= htmlspecialchars($appt['status']) ?>
                         </span>
+                        <?php if ($appt['date'] < date('Y-m-d') && $appt['status'] === 'Payment Under Review'): ?>
+                            <small class="d-block text-warning">Past appointment date · review payment</small>
+                        <?php elseif ($appt['date'] < date('Y-m-d') && $appt['status'] === 'Confirmed' && empty($appt['has_checkin'])): ?>
+                            <small class="d-block text-warning">Attendance unresolved</small>
+                        <?php endif; ?>
+
                     </td>
                     <td class="vd-activity-cell">
                         <?php if (!empty($appt['status_changed_by'])): ?>
@@ -516,6 +525,18 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             <i class="ti ti-eye" aria-hidden="true"></i>
                             <span>View details</span>
                         </button>
+                        <?php if ($appt['status'] === 'Confirmed' && empty($appt['has_checkin'])): ?>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-danger" data-status-action="No-show"
+                            data-appointment-id="<?= (int) $appt['appointment_id'] ?>" data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
+                            <i class="ti ti-user-off" aria-hidden="true"></i><span>Mark No-show</span>
+                        </button>
+                        <?php elseif ($appt['status'] === 'Payment Under Review'): ?>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-primary"
+                            data-appointment-details="<?= appointmentDetailsPayload($appt, $servicesByAppointment[(int) $appt['appointment_id']] ?? []) ?>">
+                            <i class="ti ti-receipt" aria-hidden="true"></i><span>Review payment</span>
+                        </button>
+                        <?php endif; ?>
+
                         </div>
                         </div>
                         </div>
@@ -1231,14 +1252,15 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     const requestedStatusFilter = sessionStorage.getItem('venturaAppointmentStatusFilter');
     if (requestedStatusFilter) {
         sessionStorage.removeItem('venturaAppointmentStatusFilter');
-        const requestedButton = document.querySelector(`#upcomingStatusToggles [data-status="${CSS.escape(requestedStatusFilter)}"]`);
-        const requestedSelect = document.querySelector('#upcomingStatusToggles [data-status-select]');
-        if (requestedButton) {
-            requestedButton.click();
-        } else if (requestedSelect && Array.from(requestedSelect.options).some(option => option.value === requestedStatusFilter)) {
-            requestedSelect.value = requestedStatusFilter;
-            requestedSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+        ['upcomingStatusToggles', 'pastStatusToggles'].forEach(toggleId => {
+            const requestedButton = document.querySelector(`#${toggleId} [data-status="${CSS.escape(requestedStatusFilter)}"]`);
+            const requestedSelect = document.querySelector(`#${toggleId} [data-status-select]`);
+            if (requestedButton) requestedButton.click();
+            else if (requestedSelect && Array.from(requestedSelect.options).some(option => option.value === requestedStatusFilter)) {
+                requestedSelect.value = requestedStatusFilter;
+                requestedSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
     }
 
     // Toggle between Upcoming and Past views (uses same design as services-content)
@@ -1260,6 +1282,11 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 }
             });
         });
+    }
+
+    if (requestedStatusFilter && !document.querySelector(`#upcomingApptTable tr[data-status="${CSS.escape(requestedStatusFilter)}"]`)
+        && document.querySelector(`#pastApptTable tr[data-status="${CSS.escape(requestedStatusFilter)}"]`)) {
+        document.querySelector('[data-view="past"]')?.click();
     }
 
     async function runStatusAction(button, payload, newStatus) {
@@ -1294,13 +1321,14 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             const labels = {
                 'Awaiting Deposit': ['Accept Appointment Request', 'Accept Appointment', 'The patient will be asked to submit the required deposit.'],
                 'Cancelled': ['Cancel Appointment', 'Cancel Appointment', 'This action updates the appointment and notifies the patient.'],
+                'No-show': ['Mark Patient as No-show', 'Mark No-show', 'Confirm that the patient never checked in. Any verified deposit will be forfeited.'],
                 'In Progress': ['Start Treatment', 'Start Treatment', 'Confirm that the patient profile and check-in are ready.']
             };
             const copy = labels[newStatus] || ['Update Appointment', 'Confirm', `Change this appointment to ${newStatus}.`];
             const confirmation = await window.showActionModal({
                 title: copy[0], kicker: 'Appointment action', message: copy[2], confirmText: copy[1],
                 icon: newStatus === 'Awaiting Deposit' ? 'ti-calendar-check' : 'ti-calendar-cog',
-                tone: newStatus === 'Cancelled' ? 'warning' : 'success',
+                tone: ['Cancelled', 'No-show'].includes(newStatus) ? 'warning' : 'success',
                 details: [{ label: 'Patient', value: name }]
             });
             if (!confirmation.confirmed) return;

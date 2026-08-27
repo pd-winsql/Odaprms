@@ -301,6 +301,7 @@ class Appointment
                 FROM vw_appointment_overview a
                 WHERE a.email = :email
                 AND a.date >= CURDATE()
+                AND a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
                 ORDER BY a.date ASC
             ");
             $stmt->execute([':email' => $email]);
@@ -318,7 +319,8 @@ class Appointment
     {
         try {
             $stmt = $this->conn->prepare("
-                SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
+                SELECT EXISTS (SELECT 1 FROM appointment_checkins ac WHERE ac.appointment_id = a.appointment_id) AS has_checkin,
+                    a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
                     a.phone_number, a.email, a.clinic_name, a.service_name,
                     a.date, a.start_time, a.end_time, a.status, a.payment_deadline_at, a.appointment_code,
                     payment.deposit_id, payment.deposit_amount, payment.gcash_reference,
@@ -336,8 +338,10 @@ class Appointment
                     ON payment.appointment_id = a.appointment_id
                 LEFT JOIN vw_appointment_latest_status_change status_change
                     ON status_change.appointment_id = a.appointment_id
-                WHERE a.date <= CURDATE()
-                    AND a.status NOT IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
+                WHERE a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                    OR (
+                        a.date < CURDATE()
+                    )
                 ORDER BY a.date DESC
             ");
             $stmt->execute();
@@ -398,8 +402,8 @@ class Appointment
                     ON payment.appointment_id = a.appointment_id
                 LEFT JOIN vw_appointment_latest_status_change status_change
                     ON status_change.appointment_id = a.appointment_id
-                WHERE a.date >= CURDATE()
-                    OR a.status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
+                WHERE a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                    AND a.date >= CURDATE()
                 ORDER BY a.date ASC, a.status ASC, a.created_at ASC
             ");
             $stmt->execute();
@@ -471,11 +475,11 @@ class Appointment
 
             if ($status === 'No-show') {
                 $today = date('Y-m-d');
-                if ($currentAppointment['date'] !== $today) {
+                if ($currentAppointment['date'] > $today) {
                     $this->conn->rollBack();
-                    return ['success' => false, 'message' => 'A patient can only be marked as no-show on the appointment date.'];
+                    return ['success' => false, 'message' => 'A patient cannot be marked as no-show before the appointment date.'];
                 }
-                if (date('H:i:s') < $currentAppointment['start_time']) {
+                if ($currentAppointment['date'] === $today && date('H:i:s') < $currentAppointment['start_time']) {
                     $this->conn->rollBack();
                     return ['success' => false, 'message' => 'Wait until the clinic window begins before marking a patient as no-show.'];
                 }

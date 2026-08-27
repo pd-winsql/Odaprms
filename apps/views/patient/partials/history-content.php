@@ -15,6 +15,8 @@ require_once __DIR__ . '/../../../helpers/csrf.php';
 
 $db   = new Database();
 $conn = $db->connect();
+require_once __DIR__ . '/../../../models/depositModel.php';
+(new DepositModel($conn))->expireUnpaidAppointments();
 
 $patientModel     = new Patient($conn);
 $appointmentModel = new Appointment($conn);
