@@ -48,9 +48,9 @@ $today    = date('l, F j Y');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../../../public/css/styles.css">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260813-brand-logo-2">
-    <link rel="stylesheet" href="../../../public/css/patient-dashboard.css?v=5">
+    <link rel="stylesheet" href="../../../public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../../public/css/styles.css') ?>">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=<?= filemtime(__DIR__ . '/../../../public/css/dashboard.css') ?>">
+    <link rel="stylesheet" href="../../../public/css/patient-dashboard.css?v=<?= filemtime(__DIR__ . '/../../../public/css/patient-dashboard.css') ?>">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
 </head>
@@ -109,7 +109,8 @@ $today    = date('l, F j Y');
         <!-- Topbar -->
         <div class="vd-dash-topbar">
         <div class="vd-dash-topbar-left">
-            <button class="vd-menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
+            <button class="vd-menu-toggle" id="menuToggle" aria-label="Open navigation menu"
+                aria-controls="sidebar" aria-expanded="false">
             <i class="ti ti-menu-2"></i>
             </button>
             <span class="vd-dash-title" id="dashTitle">Home</span>
@@ -160,10 +161,14 @@ $today    = date('l, F j Y');
         function openSidebar() {
         sidebar.classList.add('open');
         overlay.classList.add('active');
+        menuToggle.setAttribute('aria-expanded', 'true');
+        menuToggle.setAttribute('aria-label', 'Close navigation menu');
         }
         function closeSidebar() {
         sidebar.classList.remove('open');
         overlay.classList.remove('active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.setAttribute('aria-label', 'Open navigation menu');
         }
 
         menuToggle.addEventListener('click', () => {

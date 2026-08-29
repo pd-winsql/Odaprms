@@ -102,6 +102,25 @@ CREATE TABLE IF NOT EXISTS `appointment_billings` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `appointment_billing_items`
+--
+
+CREATE TABLE IF NOT EXISTS `appointment_billing_items` (
+  `billing_item_id` bigint(20) UNSIGNED NOT NULL,
+  `billing_id` bigint(20) UNSIGNED NOT NULL,
+  `service_id` int(11) DEFAULT NULL,
+  `service_name_snapshot` varchar(100) NOT NULL,
+  `quantity` decimal(8,2) NOT NULL DEFAULT 1.00,
+  `unit_price` decimal(10,2) DEFAULT NULL,
+  `line_total` decimal(10,2) GENERATED ALWAYS AS (CASE WHEN `unit_price` IS NULL THEN NULL ELSE round(`quantity` * `unit_price`, 2) END) STORED,
+  `pricing_source` varchar(32) NOT NULL DEFAULT 'legacy-unknown',
+  `sort_order` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `appointment_checkins`
 --
 
@@ -212,7 +231,9 @@ CREATE TABLE IF NOT EXISTS `appointment_email_notifications` (
 
 CREATE TABLE IF NOT EXISTS `appointment_services` (
   `appointment_id` int(11) NOT NULL,
-  `service_id` int(11) NOT NULL
+  `service_id` int(11) NOT NULL,
+  `quantity` decimal(8,2) NOT NULL DEFAULT 1.00 COMMENT 'Number of units of this service for the appointment.',
+  `unit_price_snapshot` decimal(10,2) DEFAULT NULL COMMENT 'Price captured for this appointment; NULL for legacy/unpriced records.'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -599,6 +620,7 @@ CREATE TABLE IF NOT EXISTS `services` (
   `service_name` varchar(100) NOT NULL,
   `service_description` varchar(255) DEFAULT NULL,
   `service_icon` varchar(100) DEFAULT NULL,
+  `default_price` decimal(10,2) DEFAULT NULL COMMENT 'Current catalog price; NULL until service pricing is configured.',
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `display_order` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -845,6 +867,14 @@ ALTER TABLE `appointment_billings`
   ADD KEY `idx_appointment_billing_actor` (`recorded_by_user_id`);
 
 --
+-- Indexes for table `appointment_billing_items`
+--
+ALTER TABLE `appointment_billing_items`
+  ADD PRIMARY KEY (`billing_item_id`),
+  ADD UNIQUE KEY `uq_billing_item_service` (`billing_id`,`service_id`),
+  ADD KEY `idx_billing_items_service` (`service_id`);
+
+--
 -- Indexes for table `appointment_checkins`
 --
 ALTER TABLE `appointment_checkins`
@@ -1039,6 +1069,12 @@ ALTER TABLE `appointment_billings`
   MODIFY `billing_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `appointment_billing_items`
+--
+ALTER TABLE `appointment_billing_items`
+  MODIFY `billing_item_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `appointment_checkins`
 --
 ALTER TABLE `appointment_checkins`
@@ -1173,6 +1209,13 @@ ALTER TABLE `appointment_billings`
   ADD CONSTRAINT `fk_appointment_billing_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON UPDATE CASCADE;
 
 --
+-- Constraints for table `appointment_billing_items`
+--
+ALTER TABLE `appointment_billing_items`
+  ADD CONSTRAINT `fk_billing_items_billing` FOREIGN KEY (`billing_id`) REFERENCES `appointment_billings` (`billing_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_billing_items_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
 -- Constraints for table `appointment_checkins`
 --
 ALTER TABLE `appointment_checkins`
@@ -1277,6 +1320,23 @@ ALTER TABLE `services`
 --
 ALTER TABLE `staffs`
   ADD CONSTRAINT `fk_staff_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Backfill itemized billing lines without guessing multi-service prices
+--
+INSERT IGNORE INTO `appointment_billing_items` (`billing_id`, `service_id`, `service_name_snapshot`, `quantity`, `unit_price`, `pricing_source`, `sort_order`)
+SELECT `billing`.`billing_id`, `service`.`service_id`, `service`.`service_name`, 1.00,
+  CASE WHEN `service_count`.`total_services` = 1 THEN `billing`.`actual_service_amount` ELSE NULL END,
+  CASE WHEN `service_count`.`total_services` = 1 AND `billing`.`actual_service_amount` IS NOT NULL THEN 'legacy-total' ELSE 'legacy-unknown' END,
+  `service`.`display_order`
+FROM `appointment_billings` AS `billing`
+INNER JOIN (
+  SELECT `appointment_id`, count(*) AS `total_services`
+  FROM `appointment_services`
+  GROUP BY `appointment_id`
+) AS `service_count` ON `service_count`.`appointment_id` = `billing`.`appointment_id`
+INNER JOIN `appointment_services` AS `appointment_service` ON `appointment_service`.`appointment_id` = `billing`.`appointment_id`
+INNER JOIN `services` AS `service` ON `service`.`service_id` = `appointment_service`.`service_id`;
 
 --
 -- Operational read views

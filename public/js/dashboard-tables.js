@@ -149,11 +149,16 @@
             if (resetPage) currentPage = 1;
             currentPage = Math.min(currentPage, totalPages);
 
-            rows.forEach((row) => setRowOnPage(row, false));
+            rows.forEach((row) => {
+                setRowOnPage(row, false);
+                row.classList.remove('vd-last-visible-row');
+            });
 
             const startIndex = (currentPage - 1) * PAGE_SIZE;
             const endIndex = Math.min(startIndex + PAGE_SIZE, totalRows);
-            availableRows.slice(startIndex, endIndex).forEach((row) => setRowOnPage(row, true));
+            const pageRows = availableRows.slice(startIndex, endIndex);
+            pageRows.forEach((row) => setRowOnPage(row, true));
+            pageRows.at(-1)?.classList.add('vd-last-visible-row');
 
             pagination.classList.toggle('d-none', totalRows === 0);
             summary.textContent = `Showing ${totalRows ? startIndex + 1 : 0}–${endIndex} of ${totalRows}`;
@@ -191,6 +196,38 @@
         }
 
         render();
+    }
+
+    function trackHorizontalOverflow(table) {
+        const tableWrap = table.closest('.vd-appt-table-wrap');
+        if (!tableWrap) return;
+
+        const update = () => {
+            tableWrap.classList.toggle(
+                'vd-table-has-horizontal-overflow',
+                table.scrollWidth > tableWrap.clientWidth + 1
+            );
+        };
+
+        if ('ResizeObserver' in window) {
+            const observer = new ResizeObserver(update);
+            observer.observe(tableWrap);
+            observer.observe(table);
+        } else {
+            window.addEventListener('resize', update, { passive: true });
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    function ensureTableFrame(table) {
+        const tableWrap = table.closest('.vd-appt-table-wrap');
+        if (!tableWrap || tableWrap.parentElement?.classList.contains('vd-table-frame')) return;
+
+        const frame = document.createElement('div');
+        frame.className = 'vd-table-frame';
+        tableWrap.insertAdjacentElement('beforebegin', frame);
+        frame.appendChild(tableWrap);
     }
 
     function enhanceTable(table) {
@@ -237,23 +274,23 @@
                 if (header.classList.contains('vd-table-actions-column')) cell.classList.add('vd-table-actions-column');
             });
 
-            if (!row.querySelector('.vd-appointment-details-btn')) {
+            // Tables with an explicit Action(s) column own their actions. Do not
+            // inject a second eye button beside purpose-built appointment,
+            // billing, receipt, or workflow controls. Generated row details are
+            // reserved for read-only tables that do not have an action column.
+            if (actionIndex === -1) {
                 const detailsButton = createDetailsButton(table, row);
-                if (actionIndex >= 0 && row.children[actionIndex]) {
-                    const actionCell = row.children[actionIndex];
-                    const actionGroup = actionCell.querySelector('.vd-action-group') || actionCell;
-                    actionGroup.prepend(detailsButton);
-                } else {
-                    const detailsCell = document.createElement('td');
-                    detailsCell.className = 'vd-generated-details-cell vd-table-actions-column';
-                    detailsCell.dataset.label = 'Details';
-                    detailsCell.appendChild(detailsButton);
-                    row.appendChild(detailsCell);
-                }
+                const detailsCell = document.createElement('td');
+                detailsCell.className = 'vd-generated-details-cell vd-table-actions-column';
+                detailsCell.dataset.label = 'Details';
+                detailsCell.appendChild(detailsButton);
+                row.appendChild(detailsCell);
             }
         });
 
+        trackHorizontalOverflow(table);
         createPagination(table, rows);
+        ensureTableFrame(table);
     }
 
     function enhance(root) {

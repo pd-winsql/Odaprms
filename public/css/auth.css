@@ -371,3 +371,117 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* Readable controls and stronger focus treatment. */
+.vd-auth-body {
+  font-weight: 400;
+}
+
+.vd-auth-sub,
+.vd-auth-tagline,
+.vd-auth-input,
+.vd-auth-input::placeholder {
+  font-weight: 400;
+}
+
+.vd-auth-sub,
+.vd-auth-footer,
+.vd-auth-forgot a,
+.vd-auth-hint {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.vd-auth-input {
+  min-height: 44px;
+  padding: 9px 44px 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white-bg);
+  font-size: 14px;
+}
+
+.vd-auth-input::placeholder {
+  color: #746957;
+  opacity: .78;
+}
+
+.vd-auth-input:focus,
+.vd-auth-input:focus-visible {
+  border-color: var(--gold);
+  outline: 3px solid rgba(128, 97, 31, .24);
+  outline-offset: 1px;
+}
+
+.vd-auth-btn {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.2;
+  letter-spacing: .12em;
+  text-align: center;
+}
+
+.vd-auth-btn:hover:not(:disabled),
+.vd-auth-btn:focus-visible {
+  background: var(--gold-hover);
+}
+
+.vd-pw-toggle {
+  right: 2px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.vd-pw-toggle:focus-visible {
+  outline: 3px solid rgba(128, 97, 31, .4);
+  outline-offset: 1px;
+}
+
+@media (max-width: 767px) {
+  .vd-auth-body {
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .vd-auth-left {
+    min-height: 150px;
+    padding: 22px 28px;
+  }
+
+  .vd-auth-logo-img {
+    max-height: 118px;
+  }
+
+  .vd-auth-right {
+    padding: 28px 24px 32px;
+  }
+
+  .vd-auth-sub {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vd-auth-body {
+    padding: 14px;
+  }
+
+  .vd-auth-left {
+    min-height: 130px;
+    padding: 18px 24px;
+  }
+
+  .vd-auth-logo-img {
+    max-height: 96px;
+  }
+
+  .vd-auth-right {
+    padding: 26px 20px 30px;
+  }
+}

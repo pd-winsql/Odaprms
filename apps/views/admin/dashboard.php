@@ -54,8 +54,8 @@ $today = date('l, F j Y');
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="../../../public/css/styles.css?v=20260809-feature-ui-2">
-    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=20260826-medical-readiness-1">
+    <link rel="stylesheet" href="../../../public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../../public/css/styles.css') ?>">
+    <link rel="stylesheet" href="../../../public/css/dashboard.css?v=<?= filemtime(__DIR__ . '/../../../public/css/dashboard.css') ?>">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
 </head>
@@ -150,7 +150,8 @@ $today = date('l, F j Y');
         <!-- Topbar -->
         <div class="vd-dash-topbar">
             <div class="vd-dash-topbar-left">
-                <button class="vd-menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
+                <button class="vd-menu-toggle" id="menuToggle" aria-label="Open navigation menu"
+                    aria-controls="sidebar" aria-expanded="false">
                     <i class="ti ti-menu-2"></i>
                 </button>
                 <span class="vd-dash-title" id="dashTitle">Dashboard</span>
@@ -188,8 +189,9 @@ $today = date('l, F j Y');
     <script src="../../../public/js/bootstrap.bundle.min.js"></script>
     <script src="../../../public/js/action-modal.js?v=3"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
-    <script src="../../../public/js/dashboard-tables.js?v=5"></script>
+    <script src="../../../public/js/dashboard-tables.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-tables.js') ?>"></script>
     <script src="../../../public/js/dashboard-topbar.js?v=20260824-2"></script>
+    <script src="../../../public/js/dashboard-sidebar.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-sidebar.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="../../../public/js/admin-analytics.js?v=5"></script>
@@ -216,11 +218,15 @@ $today = date('l, F j Y');
         function openSidebar() {
             sidebar.classList.add('open');
             overlay.classList.add('active');
+            menuToggle.setAttribute('aria-expanded', 'true');
+            menuToggle.setAttribute('aria-label', 'Close navigation menu');
         }
 
         function closeSidebar() {
             sidebar.classList.remove('open');
             overlay.classList.remove('active');
+            menuToggle.setAttribute('aria-expanded', 'false');
+            menuToggle.setAttribute('aria-label', 'Open navigation menu');
         }
 
         menuToggle.addEventListener('click', () => {

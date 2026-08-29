@@ -54,6 +54,7 @@ function dashboardBillingPayload(array $entry): string
     $amountDue = max(0, (float) ($entry['remaining_balance'] ?? 0));
     $cash = (float) ($entry['cash_received'] ?? 0);
     return htmlspecialchars(json_encode([
+        'billingId' => (int) ($entry['billing_id'] ?? 0),
         'appointmentId' => (int) $entry['appointment_id'],
         'patient' => trim(($entry['firstname'] ?? '') . ' ' . ($entry['lastname'] ?? '')),
         'services' => $entry['service_name'] ?? '',
@@ -64,6 +65,7 @@ function dashboardBillingPayload(array $entry): string
         'cashTendered' => $cash,
         'change' => max(0, $cash - $amountDue),
         'status' => $entry['payment_status'] ?? '',
+        'recordedBy' => $entry['billing_recorded_by'] ?? '',
         'recordedAt' => $entry['billing_recorded_at'] ?? '',
         'notes' => $entry['billing_notes'] ?? '',
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
@@ -132,16 +134,13 @@ function dashboardBillingPayload(array $entry): string
                 <div class="vd-empty-state">No confirmed appointments scheduled for today.</div>
             <?php else: ?>
                 <div class="vd-appt-table-wrap">
-                    <table class="vd-appt-table w-100">
+                    <table class="vd-appt-table vd-today-logbook-table w-100" id="todayLogbookTable">
                         <thead>
                             <tr>
                                 <th>Queue</th>
                                 <th>Patient</th>
-                                <th>Services</th>
-                                <th>Clinic</th>
-                                <th>Arrival</th>
-                                <th>Profile</th>
-                                <th>Check-in</th>
+                                <th>Visit</th>
+                                <th>Readiness</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -160,14 +159,20 @@ function dashboardBillingPayload(array $entry): string
                                     <td>
                                         <div class="vd-appt-name"><?= htmlspecialchars($entry['lastname'] . ', ' . $entry['firstname']) ?></div>
                                         <div class="vd-appt-meta"><?= htmlspecialchars($entry['email']) ?></div>
+                                        <div class="vd-logbook-arrival"><i class="ti ti-clock" aria-hidden="true"></i><?= $entry['arrived_at'] ? 'Arrived ' . date('g:i A', strtotime($entry['arrived_at'])) : 'Not arrived' ?></div>
                                     </td>
-                                    <td class="vd-appt-meta"><?= htmlspecialchars($entry['service_name'] ?: '—') ?></td>
-                                    <td class="vd-appt-meta"><?= htmlspecialchars($entry['clinic_name']) ?></td>
-                                    <td class="vd-appt-meta"><?= $entry['arrived_at'] ? date('g:i A', strtotime($entry['arrived_at'])) : 'Not arrived' ?></td>
-                                    <td><span class="<?= dashboardStatusClass($entry['profile_completed_at'] ? 'Complete' : 'Incomplete') ?>"><?= $entry['profile_completed_at'] ? 'Complete' : 'Incomplete' ?></span></td>
                                     <td>
-                                        <?php if ($entry['checkin_status']): ?><span class="<?= dashboardStatusClass($entry['checkin_status']) ?>"><?= htmlspecialchars($entry['checkin_status']) ?></span>
-                                        <?php else: ?><span class="vd-status vd-status-pending">Not Arrived</span><?php endif; ?>
+                                        <div class="vd-appt-name"><?= htmlspecialchars($entry['service_name'] ?: 'Service not listed') ?></div>
+                                        <div class="vd-appt-meta"><i class="ti ti-building-hospital" aria-hidden="true"></i><?= htmlspecialchars($entry['clinic_name']) ?></div>
+                                    </td>
+                                    <td>
+                                        <div class="vd-readiness-stack">
+                                            <div><span>Profile</span><span class="<?= dashboardStatusClass($entry['profile_completed_at'] ? 'Complete' : 'Incomplete') ?>"><?= $entry['profile_completed_at'] ? 'Complete' : 'Incomplete' ?></span></div>
+                                            <div><span>Check-in</span>
+                                                <?php if ($entry['checkin_status']): ?><span class="<?= dashboardStatusClass($entry['checkin_status']) ?>"><?= htmlspecialchars($entry['checkin_status']) ?></span>
+                                                <?php else: ?><span class="vd-status vd-status-not-arrived">Not arrived</span><?php endif; ?>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         <?php if (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
@@ -267,18 +272,35 @@ function dashboardBillingPayload(array $entry): string
     </div>
 </div>
 
-<div class="modal fade" id="logbookBillingDetailsModal" tabindex="-1" aria-labelledby="logbookBillingDetailsTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content vd-modal-content">
+<div class="modal fade vd-transaction-receipt-modal" id="logbookBillingDetailsModal" tabindex="-1" aria-labelledby="logbookBillingDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content vd-modal-content vd-receipt-modal-content">
             <div class="modal-header">
                 <div>
                     <div class="vd-action-modal-kicker">Completed transaction</div>
-                    <h5 class="modal-title vd-modal-title" id="logbookBillingDetailsTitle">Billing Details</h5>
+                    <h5 class="modal-title vd-modal-title" id="logbookBillingDetailsTitle">Payment receipt</h5>
+                    <p class="vd-receipt-modal-subtitle mb-0" id="logbookBillingDetailsSubtitle"></p>
                 </div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="vd-appointment-detail-grid" id="logbookBillingDetailsGrid"></div>
-                <div class="vd-appointment-payment-note d-none" id="logbookBillingNotes"></div>
+                <article class="vd-transaction-receipt" aria-label="Completed transaction receipt">
+                    <div class="vd-receipt-brand">
+                        <span class="vd-receipt-mark"><i class="ti ti-tooth" aria-hidden="true"></i></span>
+                        <div><strong>Dr. Aprille Ventura</strong><span>Clinica Dental</span></div>
+                        <span class="vd-status vd-status-paid" id="logbookReceiptStatus">Paid</span>
+                    </div>
+                    <div class="vd-receipt-visit">
+                        <div><span>Patient</span><strong id="logbookReceiptPatient"></strong></div>
+                        <div><span>Clinic</span><strong id="logbookReceiptClinic"></strong></div>
+                    </div>
+                    <section class="vd-receipt-services" aria-labelledby="logbookReceiptServicesHeading">
+                        <div class="vd-receipt-section-heading"><h6 id="logbookReceiptServicesHeading">Services availed</h6><span>Service prices pending setup</span></div>
+                        <ul id="logbookReceiptServices"></ul>
+                    </section>
+                    <section class="vd-receipt-totals" id="logbookReceiptTotals" aria-label="Payment breakdown"></section>
+                    <div class="vd-receipt-meta" id="logbookReceiptMeta"></div>
+                    <div class="vd-appointment-payment-note d-none" id="logbookBillingNotes"></div>
+                </article>
             </div>
             <div class="modal-footer"><button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button></div>
         </div>
@@ -419,17 +441,43 @@ function dashboardBillingPayload(array $entry): string
 
         document.querySelectorAll('[data-view-logbook-billing]').forEach(button => button.addEventListener('click', () => {
             const billing = JSON.parse(button.dataset.viewLogbookBilling);
-            document.getElementById('logbookBillingDetailsTitle').textContent = `Billing · ${billing.patient}`;
-            const grid = document.getElementById('logbookBillingDetailsGrid');
-            grid.replaceChildren();
-            addBillingDetail(grid, 'Appointment', `#${billing.appointmentId}`);
-            addBillingDetail(grid, 'Services', billing.services);
-            addBillingDetail(grid, 'Actual charge', money(billing.serviceAmount));
-            addBillingDetail(grid, 'Deposit applied', money(billing.depositApplied));
-            addBillingDetail(grid, 'Amount due', money(billing.amountDue));
-            addBillingDetail(grid, 'Cash tendered', money(billing.cashTendered));
-            addBillingDetail(grid, 'Change', money(billing.change));
-            addBillingDetail(grid, 'Payment status', billing.status);
+            document.getElementById('logbookBillingDetailsTitle').textContent = `Receipt #${billing.billingId || billing.appointmentId}`;
+            document.getElementById('logbookBillingDetailsSubtitle').textContent = `Appointment #${billing.appointmentId}`;
+            document.getElementById('logbookReceiptPatient').textContent = billing.patient || 'Patient';
+            document.getElementById('logbookReceiptClinic').textContent = billing.clinic || 'Clinic not listed';
+            const status = document.getElementById('logbookReceiptStatus');
+            status.className = `vd-status vd-status-${String(billing.status || 'paid').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            status.textContent = billing.status || 'Paid';
+
+            const services = document.getElementById('logbookReceiptServices');
+            services.replaceChildren();
+            String(billing.services || 'Service not listed').split(',').map(item => item.trim()).filter(Boolean).forEach(service => {
+                const item = document.createElement('li');
+                item.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>';
+                const name = document.createElement('span');
+                name.textContent = service;
+                item.appendChild(name);
+                services.appendChild(item);
+            });
+
+            const totals = document.getElementById('logbookReceiptTotals');
+            totals.replaceChildren();
+            [['Treatment total', money(billing.serviceAmount)], ['Deposit applied', `−${money(billing.depositApplied)}`], ['Amount due', money(billing.amountDue)], ['Cash tendered', money(billing.cashTendered)], ['Change', money(billing.change)]].forEach(([label, value], index) => {
+                const row = document.createElement('div');
+                if (index === 2) row.className = 'vd-receipt-amount-due';
+                const term = document.createElement('span');
+                term.textContent = label;
+                const amount = document.createElement('strong');
+                amount.textContent = value;
+                row.append(term, amount);
+                totals.appendChild(row);
+            });
+
+            const recordedAt = billing.recordedAt ? new Date(String(billing.recordedAt).replace(' ', 'T')).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not recorded';
+            document.getElementById('logbookReceiptMeta').innerHTML = `<span>Recorded by <strong></strong></span><span>Recorded <strong></strong></span>`;
+            const metaValues = document.querySelectorAll('#logbookReceiptMeta strong');
+            metaValues[0].textContent = billing.recordedBy || 'Clinic staff';
+            metaValues[1].textContent = recordedAt;
             const note = document.getElementById('logbookBillingNotes');
             note.textContent = billing.notes || '';
             note.classList.toggle('d-none', !billing.notes);

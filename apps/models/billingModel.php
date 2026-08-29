@@ -11,6 +11,56 @@ class BillingModel {
         $this->auditLog = new AuditLog($conn);
     }
 
+    /**
+     * Keeps receipt line snapshots complete while per-service pricing is being
+     * phased in. A known appointment price wins; otherwise only a single-service
+     * bill can safely inherit the entered treatment total.
+     */
+    private function syncBillingItems(int $billingId, int $appointmentId, float $serviceAmount): void {
+        $items = $this->conn->prepare("
+            INSERT INTO appointment_billing_items
+                (billing_id, service_id, service_name_snapshot, quantity, unit_price, pricing_source, sort_order)
+            SELECT
+                :billing_id,
+                s.service_id,
+                s.service_name,
+                aps.quantity,
+                CASE
+                    WHEN aps.unit_price_snapshot IS NOT NULL THEN aps.unit_price_snapshot
+                    WHEN service_count.total_services = 1
+                        THEN :service_amount / NULLIF(aps.quantity, 0)
+                    ELSE NULL
+                END,
+                CASE
+                    WHEN aps.unit_price_snapshot IS NOT NULL THEN 'appointment-snapshot'
+                    WHEN service_count.total_services = 1 THEN 'billing-total'
+                    ELSE 'legacy-unknown'
+                END,
+                s.display_order
+            FROM appointment_services aps
+            JOIN services s ON s.service_id = aps.service_id
+            JOIN (
+                SELECT appointment_id, COUNT(*) AS total_services
+                FROM appointment_services
+                WHERE appointment_id = :count_appointment_id
+                GROUP BY appointment_id
+            ) service_count ON service_count.appointment_id = aps.appointment_id
+            WHERE aps.appointment_id = :appointment_id
+            ON DUPLICATE KEY UPDATE
+                service_name_snapshot = VALUES(service_name_snapshot),
+                quantity = VALUES(quantity),
+                unit_price = VALUES(unit_price),
+                pricing_source = VALUES(pricing_source),
+                sort_order = VALUES(sort_order)
+        ");
+        $items->execute([
+            ':billing_id' => $billingId,
+            ':service_amount' => $serviceAmount,
+            ':count_appointment_id' => $appointmentId,
+            ':appointment_id' => $appointmentId,
+        ]);
+    }
+
     public function getStaffBillings(): array {
         $stmt = $this->conn->query("
             SELECT a.appointment_id, a.date, a.status AS appointment_status,
@@ -90,6 +140,7 @@ class BillingModel {
                 ':user_id' => $userId,
                 ':notes' => trim($notes) ?: null,
             ]);
+            $this->syncBillingItems((int) $this->conn->lastInsertId(), $appointmentId, $serviceAmount);
 
             $this->conn->prepare("UPDATE appointments SET status='Completed', completed_at=NOW() WHERE appointment_id=:id")
                 ->execute([':id' => $appointmentId]);
@@ -160,6 +211,7 @@ class BillingModel {
                     (:appointment_id, :service_amount, :deposit, :balance,
                      :cash_received, :status, :user_id, NOW(), CASE WHEN :paid_status = 'Paid' THEN NOW() ELSE NULL END, :notes)
                 ON DUPLICATE KEY UPDATE
+                    billing_id = LAST_INSERT_ID(billing_id),
                     actual_service_amount = VALUES(actual_service_amount), deposit_applied = VALUES(deposit_applied),
                     remaining_balance = VALUES(remaining_balance), cash_received = VALUES(cash_received),
                     payment_status = VALUES(payment_status), recorded_by_user_id = VALUES(recorded_by_user_id),
@@ -172,6 +224,7 @@ class BillingModel {
                 ':status' => $status, ':paid_status' => $status, ':user_id' => $userId,
                 ':notes' => trim($notes) ?: null,
             ]);
+            $this->syncBillingItems((int) $this->conn->lastInsertId(), $appointmentId, $serviceAmount);
             $actor = $this->auditLog->getUserActor($userId);
             $this->auditLog->record('appointment', $appointmentId, 'cash_billing_recorded',
                 "Recorded the final cash billing for appointment #{$appointmentId}.", null,

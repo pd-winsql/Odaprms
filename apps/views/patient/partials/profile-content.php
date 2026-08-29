@@ -42,7 +42,7 @@ $allConditions = [
 ];
 ?>
 
-<div class="d-flex flex-column gap-4">
+<div class="d-flex flex-column gap-4 vd-profile-sections">
 
     <!-- ── PERSONAL INFORMATION ── -->
     <div class="vd-dash-card">
@@ -50,7 +50,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Personal Information</span>
         </div>
         <div class="vd-profile-body">
-        <form id="personalForm" inert>
+        <form id="personalForm" class="vd-readonly-profile" aria-label="Personal information">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">First Name</label>
@@ -142,7 +142,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Guardian / Physician</span>
         </div>
         <div class="vd-profile-body">
-        <form id="minorsForm" inert>
+        <form id="minorsForm" class="vd-readonly-profile" aria-label="Guardian and physician information">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Guardian Name</label>
@@ -180,7 +180,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Dental History</span>
         </div>
         <div class="vd-profile-body">
-        <form id="dentalForm" inert>
+        <form id="dentalForm" class="vd-readonly-profile" aria-label="Dental history">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Previous Dentist</label>
@@ -218,7 +218,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Health Questionnaire</span>
         </div>
         <div class="vd-profile-body">
-        <form id="healthForm" inert>
+        <form id="healthForm" class="vd-readonly-profile" aria-label="Health questionnaire">
             <?php
             $yesnoFields = [
                 'good_health'        => 'Are you in good health?',
@@ -250,12 +250,13 @@ $allConditions = [
             <tbody>
                 <?php foreach ($yesnoFields as $field => $label): ?>
                 <tr>
-                <td>
+                <td id="health-question-<?= htmlspecialchars($field) ?>">
                     <?= $label ?>
                     <?php if (isset($detailFields[$field])): ?>
                     <br>
                     <input type="text" name="<?= $detailFields[$field] ?>"
                         class="form-control vd-input mt-1"
+                        aria-label="Details for <?= htmlspecialchars($label) ?>"
                         placeholder="If yes, specify…"
                         value="<?= htmlspecialchars($patient[$detailFields[$field]] ?? '') ?>"
                         <?= ($patient[$field] ?? null) ? '' : 'disabled' ?>>
@@ -263,10 +264,12 @@ $allConditions = [
                 </td>
                 <td class="text-center">
                     <input type="radio" name="<?= $field ?>" value="1" class="form-check-input vd-radio"
+                    aria-label="<?= htmlspecialchars($label) ?> Yes"
                     <?= ($patient[$field] ?? null) == 1 ? 'checked' : '' ?>>
                 </td>
                 <td class="text-center">
                     <input type="radio" name="<?= $field ?>" value="0" class="form-check-input vd-radio"
+                    aria-label="<?= htmlspecialchars($label) ?> No"
                     <?= isset($patient[$field]) && $patient[$field] == 0 ? 'checked' : '' ?>>
                 </td>
                 </tr>
@@ -280,10 +283,12 @@ $allConditions = [
                 <td><?= $label ?></td>
                 <td class="text-center">
                     <input type="radio" name="<?= $field ?>" value="1" class="form-check-input vd-radio"
+                    aria-label="<?= htmlspecialchars($label) ?> Yes"
                     <?= ($patient[$field] ?? null) == 1 ? 'checked' : '' ?>>
                 </td>
                 <td class="text-center">
                     <input type="radio" name="<?= $field ?>" value="0" class="form-check-input vd-radio"
+                    aria-label="<?= htmlspecialchars($label) ?> No"
                     <?= isset($patient[$field]) && $patient[$field] == 0 ? 'checked' : '' ?>>
                 </td>
                 </tr>
@@ -314,7 +319,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Medical Conditions</span>
         </div>
         <div class="vd-profile-body">
-        <form id="conditionsForm" inert>
+        <form id="conditionsForm" class="vd-readonly-profile" aria-label="Medical conditions">
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-1 mb-3">
             <?php foreach ($allConditions as $cond): ?>
             <div class="col">
@@ -343,7 +348,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Consent</span>
         </div>
         <div class="vd-profile-body">
-        <form id="consentForm" inert>
+        <form id="consentForm" class="vd-readonly-profile" aria-label="Consent information">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Consent Name</label>
@@ -372,3 +377,56 @@ $allConditions = [
     </div>
 
 </div>
+
+<script>
+(function () {
+    const root = document.querySelector('.vd-profile-sections');
+    if (!root) return;
+
+    root.querySelectorAll('.vd-readonly-profile').forEach((form) => {
+        form.addEventListener('submit', event => event.preventDefault());
+
+        form.querySelectorAll('.vd-profile-field').forEach((field, index) => {
+            const label = field.querySelector(':scope > label');
+            const control = field.querySelector(':scope > input, :scope > select, :scope > textarea');
+            if (!label || !control) return;
+            if (!control.id) control.id = `${form.id}-${control.name || index}`;
+            label.htmlFor = control.id;
+        });
+
+        form.querySelectorAll('input, textarea').forEach((control) => {
+            if (['radio', 'checkbox'].includes(control.type)) {
+                control.disabled = true;
+            } else {
+                control.readOnly = true;
+            }
+        });
+        form.querySelectorAll('select').forEach(control => control.disabled = true);
+    });
+
+    const mobileProfile = window.matchMedia('(max-width: 575px)').matches;
+    root.querySelectorAll(':scope > .vd-dash-card').forEach((card, index) => {
+        const header = card.querySelector(':scope > .vd-dash-card-header');
+        const body = card.querySelector(':scope > .vd-profile-body');
+        const title = header?.querySelector('.vd-dash-card-title')?.textContent.trim();
+        if (!header || !body || !title) return;
+
+        const bodyId = `profile-section-body-${index}`;
+        body.id = bodyId;
+        body.hidden = mobileProfile;
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'vd-profile-section-toggle';
+        toggle.setAttribute('aria-controls', bodyId);
+        toggle.setAttribute('aria-expanded', String(!mobileProfile));
+        toggle.innerHTML = `<span>${title}</span><i class="ti ti-chevron-down" aria-hidden="true"></i>`;
+        toggle.addEventListener('click', () => {
+            const opening = body.hidden;
+            body.hidden = !opening;
+            toggle.setAttribute('aria-expanded', String(opening));
+        });
+        header.replaceChildren(toggle);
+    });
+})();
+</script>

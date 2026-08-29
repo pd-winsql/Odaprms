@@ -50,6 +50,7 @@ class LogbookModel
                 payment.cash_received,
                 payment.payment_status,
                 payment.billing_recorded_at,
+                payment.billing_recorded_by,
                 payment.billing_notes,
                 COALESCE(
                     NULLIF(TRIM(CONCAT_WS(' ', st.firstname, st.middlename, st.lastname)), ''),

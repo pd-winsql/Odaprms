@@ -99,8 +99,8 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="public/css/styles.css">
-  <link rel="stylesheet" href="public/css/index.css?v=20260821-1">
+  <link rel="stylesheet" href="public/css/styles.css?v=<?= filemtime(__DIR__ . '/public/css/styles.css') ?>">
+  <link rel="stylesheet" href="public/css/index.css?v=<?= filemtime(__DIR__ . '/public/css/index.css') ?>">
   <link rel="stylesheet" href="public/css/loading.css">
   <script src="public/js/loading.js" defer></script>
 </head>
@@ -113,7 +113,8 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
       <a class="navbar-brand vd-navbar-brand-wrap" href="#hero-section">
         <?= vdRenderSiteBranding($settings, 'public/assets', 'navbar') ?>
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"
+        aria-controls="navMenu" aria-expanded="false" aria-label="Open navigation menu">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navMenu">

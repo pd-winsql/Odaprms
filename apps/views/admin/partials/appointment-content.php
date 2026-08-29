@@ -157,13 +157,13 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         <!-- Date filter bar -->
         <div class="vd-filter-bar">
         <div class="vd-filter-group">
-            <label class="vd-label form-label">Start Date</label>
+            <label class="vd-label form-label" for="filterDateFromUpcoming">Start Date</label>
             <input type="date" id="filterDateFromUpcoming" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($upcomingFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($upcomingFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">End Date</label>
+            <label class="vd-label form-label" for="filterDateToUpcoming">End Date</label>
             <input type="date" id="filterDateToUpcoming" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($upcomingFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($upcomingFilters['maxDate']) ?>">
@@ -233,7 +233,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     <td class="vd-appt-actions-cell">
                         <div class="dropdown vd-appt-action-menu">
                         <button type="button" class="btn vd-appt-action-toggle" id="apptActions-<?= (int)$appt['appointment_id'] ?>"
-                            data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false"
+                            data-bs-toggle="dropdown" data-bs-auto-close="true" data-bs-boundary="viewport" data-bs-offset="0,6" aria-expanded="false"
                             aria-label="Open actions for <?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
                             <i class="ti ti-dots" aria-hidden="true"></i>
                             <span>Actions</span>
@@ -316,13 +316,13 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         <!-- Date filter bar -->
         <div class="vd-filter-bar">
         <div class="vd-filter-group">
-            <label class="vd-label form-label">Start Date</label>
+            <label class="vd-label form-label" for="filterDateFromPast">Start Date</label>
             <input type="date" id="filterDateFromPast" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($pastFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($pastFilters['maxDate']) ?>">
         </div>
         <div class="vd-filter-group">
-            <label class="vd-label form-label">End Date</label>
+            <label class="vd-label form-label" for="filterDateToPast">End Date</label>
             <input type="date" id="filterDateToPast" class="form-control vd-input vd-filter-select"
                 min="<?= htmlspecialchars($pastFilters['minDate']) ?>"
                 max="<?= htmlspecialchars($pastFilters['maxDate']) ?>">
@@ -392,7 +392,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     <td class="vd-appt-actions-cell">
                         <div class="dropdown vd-appt-action-menu">
                         <button type="button" class="btn vd-appt-action-toggle" id="pastApptActions-<?= (int)$appt['appointment_id'] ?>"
-                            data-bs-toggle="dropdown" aria-expanded="false"
+                            data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-offset="0,6" aria-expanded="false"
                             aria-label="Open actions for <?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
                             <i class="ti ti-dots" aria-hidden="true"></i>
                             <span>Actions</span>
@@ -1083,6 +1083,34 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             patientName: button.dataset.name,
             email: button.dataset.email
         }, button.dataset.statusAction));
+    });
+
+    // Render an open action menu at document level. A dropdown left inside a
+    // horizontally scrollable table becomes part of that scroll box and forces
+    // a vertical scrollbar. Portalling preserves the popup while keeping the
+    // table's scrolling strictly horizontal.
+    document.querySelectorAll('.vd-appt-action-menu').forEach(menu => {
+        const row = menu.closest('tr');
+        const dropdown = menu.querySelector('.vd-appt-action-dropdown');
+        let placeholder = null;
+
+        menu.addEventListener('show.bs.dropdown', () => {
+            row?.classList.add('vd-action-row-open');
+            if (!dropdown || dropdown.parentElement === document.body) return;
+            placeholder = document.createComment('appointment-action-menu');
+            dropdown.before(placeholder);
+            dropdown.classList.add('vd-appt-action-dropdown-portal');
+            document.body.appendChild(dropdown);
+        });
+
+        menu.addEventListener('hidden.bs.dropdown', () => {
+            row?.classList.remove('vd-action-row-open');
+            if (dropdown && placeholder?.parentNode) {
+                placeholder.replaceWith(dropdown);
+                dropdown.classList.remove('vd-appt-action-dropdown-portal');
+            }
+            placeholder = null;
+        });
     });
 
     document.querySelectorAll('[data-open-today-queue]').forEach(button => button.addEventListener('click', () => {

@@ -606,3 +606,75 @@
     .vd-home-profile-notice-copy { flex-basis: calc(100% - 52px); }
     .vd-home-profile-notice .btn { width: 100%; }
 }
+
+/* Patient-facing readability and booking completion cues. */
+.vd-pat-quick-card,
+.vd-clinic-switch-btn,
+.vd-booking-schedule-card span,
+.vd-booking-schedule-card small,
+.vd-booking-selected-date,
+.vd-booking-service-category-name {
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.vd-home-next-cta,
+.vd-clinic-switch-btn {
+    min-height: 44px;
+    font-size: 13px;
+}
+
+.vd-booking-service-option input:focus-visible + .vd-booking-service-card {
+    outline: 3px solid rgba(128, 97, 31, .4);
+    outline-offset: 2px;
+}
+
+.vd-booking-submit-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 24px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(255, 253, 249, .96);
+    box-shadow: 0 8px 24px rgba(74, 63, 48, .1);
+}
+
+.vd-booking-selection-summary {
+    margin: 0;
+    color: var(--mid);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.vd-booking-selection-summary strong {
+    display: block;
+    color: var(--dark);
+    font-size: 14px;
+}
+
+@media (max-width: 575px) {
+    .vd-pat-quick-card,
+    .vd-clinic-switch-btn {
+        font-size: 12px;
+    }
+
+    .vd-booking-schedule-card {
+        min-height: 120px;
+        padding: 14px 10px;
+    }
+
+    .vd-booking-submit-bar {
+        position: sticky;
+        bottom: 10px;
+        z-index: 20;
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .vd-booking-submit-bar .btn {
+        width: 100%;
+    }
+}

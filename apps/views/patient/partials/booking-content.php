@@ -135,8 +135,12 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
                     <?php endforeach; ?>
                 </div>
 
-                <div id="dashboardBookingError" class="alert alert-danger d-none mt-3"></div>
-                <div class="d-flex justify-content-end mt-4">
+                <div id="dashboardBookingError" class="alert alert-danger d-none mt-3" role="alert" aria-live="polite"></div>
+                <div class="vd-booking-submit-bar">
+                    <p class="vd-booking-selection-summary" id="bookingSelectionSummary" aria-live="polite">
+                        <strong>No services selected</strong>
+                        Choose at least one service to continue.
+                    </p>
                     <button type="submit" class="btn vd-btn-gold px-4" id="dashboardBookingSubmit">
                         Request Appointment
                     </button>
@@ -158,6 +162,18 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
     const clinicLabel = document.getElementById('bookingClinicLabel');
     const selectedDate = document.getElementById('bookingSelectedDate');
     const errorBox = document.getElementById('dashboardBookingError');
+    const selectionSummary = document.getElementById('bookingSelectionSummary');
+    const serviceCheckboxes = Array.from(document.querySelectorAll('input[name="service_ids[]"]'));
+
+    function updateSelectionSummary() {
+        const selectedCount = serviceCheckboxes.filter(input => input.checked).length;
+        selectionSummary.innerHTML = selectedCount
+            ? `<strong>${selectedCount} service${selectedCount === 1 ? '' : 's'} selected</strong>Review your choices, then request the appointment.`
+            : '<strong>No services selected</strong>Choose at least one service to continue.';
+    }
+
+    serviceCheckboxes.forEach(input => input.addEventListener('change', updateSelectionSummary));
+    updateSelectionSummary();
 
     function parseLocalDate(dateString) {
         const [year, month, day] = dateString.split('-').map(Number);

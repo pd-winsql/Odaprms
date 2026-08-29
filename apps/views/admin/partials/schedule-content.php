@@ -134,17 +134,18 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                 </div>
                                 <?php if (!$isPast): ?>
                                 <div class="vd-sched-actions">
-                                <button class="vd-sched-btn vd-edit-sched-btn"
+                                <button type="button" class="vd-sched-btn vd-edit-sched-btn"
                                     data-id="<?= $sched['schedule_id'] ?>"
                                     data-max="<?= $sched['max_appointments'] ?>"
-                                    title="Edit">
-                                    <i class="ti ti-pencil"></i>
+                                    title="Edit schedule" aria-label="Edit this schedule">
+                                    <i class="ti ti-pencil" aria-hidden="true"></i>
                                 </button>
-                                <button class="vd-sched-btn vd-delete-btn"
+                                <button type="button" class="vd-sched-btn vd-delete-btn"
                                     data-id="<?= $sched['schedule_id'] ?>"
                                     <?= $booked > 0 ? 'disabled' : '' ?>
-                                    title="<?= $booked > 0 ? 'Schedules with bookings cannot be deleted' : 'Delete schedule' ?>">
-                                    <i class="ti ti-trash"></i>
+                                    title="<?= $booked > 0 ? 'Schedules with bookings cannot be deleted' : 'Delete schedule' ?>"
+                                    aria-label="<?= $booked > 0 ? 'Cannot delete this schedule because it has bookings' : 'Delete this schedule' ?>">
+                                    <i class="ti ti-trash" aria-hidden="true"></i>
                                 </button>
                                 </div>
                                 <?php endif; ?>
@@ -152,18 +153,18 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
                             <!-- Inline edit form — hidden by default -->
                             <div class="vd-sched-card-edit d-none">
-                                <label class="vd-label" style="font-size:8px;">Max Slots</label>
+                                <label class="vd-label">Max Slots</label>
                                 <input type="number" class="form-control vd-input vd-edit-max-input"
                                 value="<?= $capacity ?>" min="<?= max(1, $booked) ?>" max="50"
                                 style="text-align:center; font-size:14px;">
                                 <small class="vd-sched-edit-help">Minimum: <?= max(1, $booked) ?> based on current bookings</small>
                                 <div class="vd-sched-actions mt-2">
-                                <button class="vd-sched-btn vd-save-sched-btn"
-                                    data-id="<?= $sched['schedule_id'] ?>" title="Save">
-                                    <i class="ti ti-check"></i>
+                                <button type="button" class="vd-sched-btn vd-save-sched-btn"
+                                    data-id="<?= $sched['schedule_id'] ?>" title="Save schedule" aria-label="Save schedule changes">
+                                    <i class="ti ti-check" aria-hidden="true"></i>
                                 </button>
-                                <button class="vd-sched-btn vd-cancel-sched-btn" title="Cancel">
-                                    <i class="ti ti-x"></i>
+                                <button type="button" class="vd-sched-btn vd-cancel-sched-btn" title="Cancel editing" aria-label="Cancel schedule changes">
+                                    <i class="ti ti-x" aria-hidden="true"></i>
                                 </button>
                                 </div>
                             </div>

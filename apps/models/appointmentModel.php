@@ -288,12 +288,22 @@ class Appointment {
     public function getPatientPastAppointments($patient_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT a.*
+                SELECT a.*,
+                    payment.billing_id,
+                    payment.actual_service_amount,
+                    payment.deposit_applied,
+                    payment.remaining_balance,
+                    payment.cash_received,
+                    payment.payment_status,
+                    payment.billing_recorded_at,
+                    payment.billing_notes
                 FROM vw_appointment_overview a
+                LEFT JOIN vw_appointment_payment_summary payment
+                    ON payment.appointment_id = a.appointment_id
                 WHERE a.patient_id = :patient_id
                 AND a.date < CURDATE()
 
-                ORDER BY a.date ASC
+                ORDER BY a.date DESC
             ");
             $stmt->execute([':patient_id' => $patient_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

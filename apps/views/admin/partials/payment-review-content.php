@@ -55,7 +55,7 @@ sort($depositStatuses);
             <div class="vd-empty-state">No deposit records found.</div>
         <?php else: ?>
             <div class="vd-appt-table-wrap">
-                <table class="vd-appt-table w-100" id="depositRecordsTable">
+                <table class="vd-appt-table vd-deposit-records-table w-100" id="depositRecordsTable">
                     <thead><tr><th>Patient</th><th>Appointment</th><th>Deposit</th><th>Status</th><th>Reviewed</th><th>Receipt</th></tr></thead>
                     <tbody>
                     <?php foreach ($records as $record): ?>
