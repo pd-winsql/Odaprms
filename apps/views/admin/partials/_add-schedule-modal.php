@@ -30,14 +30,19 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <label class="vd-label form-label" for="scheduleStartTime">Opening time</label>
-                            <input type="text" id="scheduleStartTime" name="start_time" class="form-control vd-input vd-schedule-time-input" placeholder="Select opening time" autocomplete="off" required>
+                            <clock-timepicker id="scheduleStartPicker" class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:00" maximum="23:50" required vibrate="false">
+                                <input type="text" id="scheduleStartTime" name="start_time" class="form-control vd-input vd-schedule-time-input" placeholder="Select opening time" autocomplete="off" inputmode="numeric" required>
+                            </clock-timepicker>
                         </div>
                         <div class="col-6">
                             <label class="vd-label form-label" for="scheduleEndTime">Closing time</label>
-                            <input type="text" id="scheduleEndTime" name="end_time" class="form-control vd-input vd-schedule-time-input" placeholder="Select closing time" autocomplete="off" required>
+                            <clock-timepicker id="scheduleEndPicker" class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:05" maximum="23:55" required vibrate="false">
+                                <input type="text" id="scheduleEndTime" name="end_time" class="form-control vd-input vd-schedule-time-input" placeholder="Select closing time" autocomplete="off" inputmode="numeric" required>
+                            </clock-timepicker>
                         </div>
                     </div>
                     <div class="vd-schedule-selection-count vd-schedule-time-help"><i class="ti ti-clock-hour-4 me-1" aria-hidden="true"></i>Times are selected in five-minute increments.</div>
+                    <div id="scheduleTimeAvailability" class="vd-schedule-availability d-none" role="status" aria-live="polite"></div>
                     <div id="scheduleEditLockNote" class="vd-schedule-lock-note d-none"><i class="ti ti-lock" aria-hidden="true"></i><span>This schedule already has bookings, so its date and clinic hours are locked. Capacity can still be adjusted.</span></div>
                     <div class="vd-schedule-policy-note"><i class="ti ti-user-clock" aria-hidden="true"></i><span>Patients will be instructed to arrive by the opening time or earlier and will be served first come, first served.</span></div>
 
@@ -70,8 +75,11 @@
     const maxAppointmentsInput = document.getElementById('scheduleMaxAppointments');
     const startTimeInput = document.getElementById('scheduleStartTime');
     const endTimeInput = document.getElementById('scheduleEndTime');
+    const startTimePicker = document.getElementById('scheduleStartPicker');
+    const endTimePicker = document.getElementById('scheduleEndPicker');
     const selectionCount = document.getElementById('selectedScheduleCount');
     const errorElement = document.getElementById('scheduleFormError');
+    const availabilityElement = document.getElementById('scheduleTimeAvailability');
     const batchDateGroup = document.getElementById('scheduleBatchDateGroup');
     const singleDateGroup = document.getElementById('scheduleSingleDateGroup');
     const modalAction = document.getElementById('scheduleModalAction');
@@ -82,6 +90,8 @@
     const scheduleIdInput = document.getElementById('modalScheduleId');
     const submitButton = document.getElementById('scheduleModalSubmit');
     const occupiedDatesByClinic = <?= json_encode($occupiedScheduleDatesByClinic ?? []) ?>;
+    const existingScheduleWindows = <?= json_encode($scheduleWindows ?? []) ?>;
+    const transitionMinutes = <?= (int) ($scheduleModel->getTransitionMinutes() ?? 90) ?>;
     const csrfToken = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
 
     if (!modalElement || !form) return;
@@ -103,34 +113,124 @@
         errorElement.classList.toggle('d-none', !message);
     }
 
-    function buildTimePicker(input) {
-        return flatpickr(input, {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: 'h:i K',
-            minuteIncrement: 5,
-            time_24hr: false,
-            allowInput: false,
-            disableMobile: true,
-            onReady(selectedDates, dateString, instance) {
-                instance.calendarContainer.classList.add('vd-schedule-time-picker');
-            }
-        });
+    function pickerTime(picker, input) {
+        return String(picker?.value || input.value || '').trim();
     }
 
-    function pickerTime(instance) {
-        return instance.selectedDates[0]
-            ? flatpickr.formatDate(instance.selectedDates[0], 'H:i')
-            : '';
+    function setPickerValue(picker, input, value) {
+        input.value = value;
+        if (customElements.get('clock-timepicker')) picker.value = value;
     }
 
-    function setPickerEnabled(instance, enabled) {
+    function setClockPickerEnabled(picker, input, enabled) {
+        if (customElements.get('clock-timepicker')) picker.disabled = !enabled;
+        input.classList.toggle('vd-input-locked', !enabled);
+        input.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+    }
+
+    function setDatePickerEnabled(instance, enabled) {
         instance._input.disabled = !enabled;
         instance._input.classList.toggle('vd-input-locked', !enabled);
     }
 
     function isFiveMinuteTime(value) {
         return /^\d{2}:\d{2}$/.test(value) && Number(value.slice(3, 5)) % 5 === 0;
+    }
+
+    function timeToMinutes(value) {
+        if (!/^\d{2}:\d{2}$/.test(value)) return null;
+        const [hours, minutes] = value.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    function minutesToTime(totalMinutes) {
+        const safeMinutes = Math.max(0, Math.min(1439, totalMinutes));
+        return `${String(Math.floor(safeMinutes / 60)).padStart(2, '0')}:${String(safeMinutes % 60).padStart(2, '0')}`;
+    }
+
+    function formatTime(value) {
+        const minutes = timeToMinutes(value);
+        if (minutes === null) return value;
+        const hour24 = Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        const hour12 = hour24 % 12 || 12;
+        return `${hour12}:${String(minute).padStart(2, '0')} ${hour24 >= 12 ? 'PM' : 'AM'}`;
+    }
+
+    function resetTimeBounds() {
+        if (!customElements.get('clock-timepicker')) return;
+        startTimePicker.minimum = '00:00';
+        startTimePicker.maximum = '23:50';
+        endTimePicker.minimum = '00:05';
+        endTimePicker.maximum = '23:55';
+    }
+
+    function selectedScheduleDates() {
+        if ((form.dataset.mode || 'add') === 'edit') {
+            const selectedDate = editDatePicker.selectedDates[0];
+            return selectedDate ? [flatpickr.formatDate(selectedDate, 'Y-m-d')] : [];
+        }
+        return datePicker.selectedDates.map(date => flatpickr.formatDate(date, 'Y-m-d'));
+    }
+
+    function getTimeConflict() {
+        const clinicId = Number(document.getElementById('modalClinicId').value);
+        const scheduleId = Number(scheduleIdInput.value || 0);
+        const startMinutes = timeToMinutes(pickerTime(startTimePicker, startTimeInput));
+        const endMinutes = timeToMinutes(pickerTime(endTimePicker, endTimeInput));
+        const selectedDates = selectedScheduleDates();
+        if (!clinicId || startMinutes === null || endMinutes === null || startMinutes >= endMinutes || selectedDates.length === 0) return null;
+
+        return existingScheduleWindows.find(windowItem => {
+            if (Number(windowItem.schedule_id) === scheduleId || !selectedDates.includes(windowItem.sched_date)) return false;
+            if (Number(windowItem.clinic_id) === clinicId) return true;
+            const existingStart = timeToMinutes(windowItem.start_time);
+            const existingEnd = timeToMinutes(windowItem.end_time);
+            return !(startMinutes >= existingEnd + transitionMinutes || existingStart >= endMinutes + transitionMinutes);
+        }) || null;
+    }
+
+    function availabilityMessage(conflict) {
+        const clinicId = Number(document.getElementById('modalClinicId').value);
+        if (Number(conflict.clinic_id) === clinicId) {
+            return 'This clinic already has an availability window on the selected date.';
+        }
+        const before = timeToMinutes(conflict.start_time) - transitionMinutes;
+        const after = timeToMinutes(conflict.end_time) + transitionMinutes;
+        const choices = [];
+        if (before > 0) choices.push(`closes by ${formatTime(minutesToTime(before))}`);
+        if (after < 1440) choices.push(`opens from ${formatTime(minutesToTime(after))}`);
+        const requirement = choices.length ? ` Choose a window that ${choices.join(' or ')}.` : '';
+        return `${conflict.clinic_name} operates ${formatTime(conflict.start_time)}–${formatTime(conflict.end_time)} on this date.${requirement}`;
+    }
+
+    function updateTimeAvailability() {
+        const conflict = getTimeConflict();
+        const dates = selectedScheduleDates();
+        const relatedWindows = existingScheduleWindows.filter(windowItem =>
+            dates.includes(windowItem.sched_date)
+            && Number(windowItem.clinic_id) !== Number(document.getElementById('modalClinicId').value)
+            && Number(windowItem.schedule_id) !== Number(scheduleIdInput.value || 0)
+        );
+        availabilityElement.classList.toggle('d-none', !conflict && relatedWindows.length === 0);
+        availabilityElement.classList.toggle('is-conflict', Boolean(conflict));
+        availabilityElement.replaceChildren();
+        if (conflict) {
+            const icon = document.createElement('i');
+            const message = document.createElement('span');
+            icon.className = 'ti ti-alert-circle';
+            icon.setAttribute('aria-hidden', 'true');
+            message.textContent = availabilityMessage(conflict);
+            availabilityElement.append(icon, message);
+        } else if (relatedWindows.length > 0) {
+            const icon = document.createElement('i');
+            const message = document.createElement('span');
+            icon.className = 'ti ti-circle-check';
+            icon.setAttribute('aria-hidden', 'true');
+            message.textContent = `The selected hours keep the required ${transitionMinutes}-minute separation from the other clinic.`;
+            availabilityElement.append(icon, message);
+        }
+        return conflict;
     }
 
     const today = new Date();
@@ -145,6 +245,7 @@
         disableMobile: true,
         onChange(selectedDates) {
             updateSelectionCount(selectedDates.length);
+            updateTimeAvailability();
         },
         onReady(selectedDates, dateString, instance) {
             instance.calendarContainer.classList.add('vd-schedule-calendar');
@@ -157,12 +258,17 @@
         dateFormat: 'Y-m-d',
         disable: [],
         disableMobile: true,
+        onChange() {
+            updateTimeAvailability();
+        },
         onReady(selectedDates, dateString, instance) {
             instance.calendarContainer.classList.add('vd-schedule-calendar');
         }
     });
-    const startTimePicker = buildTimePicker(startTimeInput);
-    const endTimePicker = buildTimePicker(endTimeInput);
+    [startTimePicker, endTimePicker].forEach(picker => {
+        picker.addEventListener('input', updateTimeAvailability);
+        picker.addEventListener('change', updateTimeAvailability);
+    });
 
     function configureAddMode(button) {
         form.dataset.mode = 'add';
@@ -182,16 +288,18 @@
         maxAppointmentsInput.min = '1';
         maxAppointmentsInput.value = 8;
         submitButton.textContent = 'Add Schedules';
-        setPickerEnabled(editDatePicker, true);
-        setPickerEnabled(startTimePicker, true);
-        setPickerEnabled(endTimePicker, true);
-        startTimePicker.setDate(button.dataset.defaultStart || '08:00', false, 'H:i');
-        endTimePicker.setDate(button.dataset.defaultEnd || '17:00', false, 'H:i');
+        setDatePickerEnabled(editDatePicker, true);
+        setClockPickerEnabled(startTimePicker, startTimeInput, true);
+        setClockPickerEnabled(endTimePicker, endTimeInput, true);
+        resetTimeBounds();
+        setPickerValue(startTimePicker, startTimeInput, button.dataset.defaultStart || '08:00');
+        setPickerValue(endTimePicker, endTimeInput, button.dataset.defaultEnd || '17:00');
         datePicker.set('disable', occupiedDatesByClinic[button.dataset.clinicId] || []);
         datePicker.clear();
         editDatePicker.clear();
         updateSelectionCount(0);
         setError('');
+        updateTimeAvailability();
     }
 
     function configureEditMode(button) {
@@ -224,14 +332,16 @@
         const blockedDates = (occupiedDatesByClinic[clinicId] || []).filter(date => date !== originalDate);
         editDatePicker.set('disable', blockedDates);
         editDatePicker.setDate(originalDate, false, 'Y-m-d');
-        startTimePicker.setDate(button.dataset.startTime, false, 'H:i');
-        endTimePicker.setDate(button.dataset.endTime, false, 'H:i');
-        setPickerEnabled(editDatePicker, !locked);
-        setPickerEnabled(startTimePicker, !locked);
-        setPickerEnabled(endTimePicker, !locked);
+        resetTimeBounds();
+        setPickerValue(startTimePicker, startTimeInput, button.dataset.startTime);
+        setPickerValue(endTimePicker, endTimeInput, button.dataset.endTime);
+        setDatePickerEnabled(editDatePicker, !locked);
+        setClockPickerEnabled(startTimePicker, startTimeInput, !locked);
+        setClockPickerEnabled(endTimePicker, endTimeInput, !locked);
         datePicker.clear();
         updateSelectionCount(0);
         setError('');
+        updateTimeAvailability();
     }
 
     modalElement.addEventListener('show.bs.modal', function(event) {
@@ -263,8 +373,8 @@
         let selectedDates = [];
         if (mode === 'add') {
             selectedDates = [...datePicker.selectedDates].sort((a, b) => a - b);
-            const start = pickerTime(startTimePicker);
-            const end = pickerTime(endTimePicker);
+            const start = pickerTime(startTimePicker, startTimeInput);
+            const end = pickerTime(endTimePicker, endTimeInput);
             if (selectedDates.length === 0) {
                 setError('Select at least one schedule date.');
                 return;
@@ -275,6 +385,11 @@
             }
             if (start >= end) {
                 setError('Closing time must be later than opening time.');
+                return;
+            }
+            const conflict = updateTimeAvailability();
+            if (conflict) {
+                setError(availabilityMessage(conflict));
                 return;
             }
             selectedDates.forEach((date, index) => {
@@ -291,8 +406,8 @@
             formData.append('action', booked === 0 ? 'update_schedule_window' : 'edit_schedule');
             if (booked === 0) {
                 const selectedDate = editDatePicker.selectedDates[0];
-                const start = pickerTime(startTimePicker);
-                const end = pickerTime(endTimePicker);
+                const start = pickerTime(startTimePicker, startTimeInput);
+                const end = pickerTime(endTimePicker, endTimeInput);
                 if (!selectedDate) {
                     setError('Select a schedule date.');
                     return;
@@ -303,6 +418,11 @@
                 }
                 if (start >= end) {
                     setError('Closing time must be later than opening time.');
+                    return;
+                }
+                const conflict = updateTimeAvailability();
+                if (conflict) {
+                    setError(availabilityMessage(conflict));
                     return;
                 }
                 formData.append('sched_date', flatpickr.formatDate(selectedDate, 'Y-m-d'));

@@ -3266,39 +3266,48 @@ button.vd-stat-card {
 .vd-schedule-lock-note i { margin-top: 2px; color: #765714; font-size: 16px; }
 .vd-schedule-time-input { cursor: pointer; }
 .vd-schedule-time-help { margin-top: -10px; }
+.vd-clock-timepicker {
+    display: block;
+    width: 100%;
+    --clock-timepicker-accent-color: var(--gold);
+    --clock-timepicker-face-color: #f5f0e7;
+    --clock-timepicker-face-hover-color: #e8dcc6;
+    --clock-timepicker-face-selection-color: var(--gold);
+    --clock-timepicker-outer-numbers-color: var(--dark);
+    --clock-timepicker-inner-numbers-color: #776b5b;
+    --clock-timepicker-disabled-numbers-color: #c9c0b3;
+    --clock-timepicker-font-family: 'Jost', sans-serif;
+    --clock-timepicker-popup-background: #fffdf9;
+    --clock-timepicker-popup-border: 1px solid var(--border);
+    --clock-timepicker-popup-border-radius: 10px;
+    --clock-timepicker-popup-shadow: 0 16px 38px rgba(38, 32, 24, .18);
+    --clock-timepicker-popup-size: 248px;
+}
+.vd-clock-timepicker > .vd-schedule-time-input { width: 100%; }
 .vd-input-locked {
     cursor: not-allowed !important;
     background: #f2eee7 !important;
     color: #776f63 !important;
 }
-.vd-schedule-time-picker.flatpickr-calendar {
-    z-index: 1065;
-    width: 260px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: 0 14px 34px rgba(38, 32, 24, .16);
-    font-family: 'Jost', sans-serif;
+.vd-schedule-availability {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: -8px;
+    padding: 9px 11px;
+    border: 1px solid #cdddbf;
+    border-radius: 7px;
+    background: #f2f7ec;
+    color: #466036;
+    font-size: 12px;
+    line-height: 1.45;
 }
-.vd-schedule-time-picker .flatpickr-time {
-    height: 54px;
-    border-top: 0;
-    border-radius: 10px;
+.vd-schedule-availability i { margin-top: 1px; font-size: 16px; }
+.vd-schedule-availability.is-conflict {
+    border-color: #e3c7b8;
+    background: #fbf1ec;
+    color: #824829;
 }
-.vd-schedule-time-picker .flatpickr-time input,
-.vd-schedule-time-picker .flatpickr-time .flatpickr-am-pm {
-    color: var(--dark);
-    font-family: 'Jost', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-}
-.vd-schedule-time-picker .flatpickr-time input:hover,
-.vd-schedule-time-picker .flatpickr-time .flatpickr-am-pm:hover,
-.vd-schedule-time-picker .flatpickr-time input:focus,
-.vd-schedule-time-picker .flatpickr-time .flatpickr-am-pm:focus {
-    background: var(--gold-pale);
-}
-.vd-schedule-time-picker .numInputWrapper span.arrowUp::after { border-bottom-color: var(--gold); }
-.vd-schedule-time-picker .numInputWrapper span.arrowDown::after { border-top-color: var(--gold); }
 .vd-clinic-hours-list { display: flex; flex-direction: column; }
 .vd-clinic-hours-row {
     display: grid;

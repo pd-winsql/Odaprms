@@ -46,6 +46,19 @@ if (in_array($case, ['staff-patient-form', 'staff-checkin-form'], true)) $_GET['
 ob_start();
 include $files[$case];
 $html = ob_get_clean();
+if (in_array($case, ['schedules', 'dental-schedules'], true)) {
+    if (!str_contains($html, '<clock-timepicker')
+        || !str_contains($html, 'precision="00:05"')
+        || !str_contains($html, 'scheduleTimeAvailability')) {
+        fwrite(STDERR, "Schedule management clock picker or availability feedback did not render.\n");
+        exit(1);
+    }
+}
+if (in_array($case, ['settings', 'dental-settings'], true)
+    && substr_count($html, '<clock-timepicker') < 2) {
+    fwrite(STDERR, "Clinic schedule default clock pickers did not render.\n");
+    exit(1);
+}
 if ($case === 'dental-settings') {
     if (!str_contains($html, 'Clinic Schedule Defaults') || str_contains($html, 'Brand &amp; Logo')) {
         fwrite(STDERR, "Dental Assistant schedule-settings access was not correctly scoped.\n");

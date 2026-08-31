@@ -49,11 +49,15 @@ function sv($settings, $key)
                     </div>
                     <div>
                         <label class="vd-label form-label" for="clinicStart<?= (int) $clinic['clinic_id'] ?>">Opens</label>
-                        <input type="text" id="clinicStart<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-start value="<?= htmlspecialchars(substr($clinic['default_start_time'] ?? '08:00:00', 0, 5)) ?>" autocomplete="off" required>
+                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:00" maximum="23:50" required vibrate="false" data-default-start-picker>
+                            <input type="text" id="clinicStart<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-start value="<?= htmlspecialchars(substr($clinic['default_start_time'] ?? '08:00:00', 0, 5)) ?>" autocomplete="off" inputmode="numeric" required>
+                        </clock-timepicker>
                     </div>
                     <div>
                         <label class="vd-label form-label" for="clinicEnd<?= (int) $clinic['clinic_id'] ?>">Closes</label>
-                        <input type="text" id="clinicEnd<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-end value="<?= htmlspecialchars(substr($clinic['default_end_time'] ?? '17:00:00', 0, 5)) ?>" autocomplete="off" required>
+                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:05" maximum="23:55" required vibrate="false" data-default-end-picker>
+                            <input type="text" id="clinicEnd<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-end value="<?= htmlspecialchars(substr($clinic['default_end_time'] ?? '17:00:00', 0, 5)) ?>" autocomplete="off" inputmode="numeric" required>
+                        </clock-timepicker>
                     </div>
                     <button type="button" class="btn vd-btn-gold vd-save-clinic-hours"><i class="ti ti-check" aria-hidden="true"></i><span>Save</span></button>
                 </div>
@@ -273,38 +277,17 @@ function sv($settings, $key)
             window.location.reload();
         }
 
-        function pickerTime(instance, fallbackInput) {
-            if (!instance || !instance.selectedDates[0]) return fallbackInput.value;
-            return flatpickr.formatDate(instance.selectedDates[0], 'H:i');
+        function pickerTime(picker, fallbackInput) {
+            return String(picker?.value || fallbackInput.value || '').trim();
         }
 
-        if (typeof flatpickr === 'function') {
-            document.querySelectorAll('[data-clinic-hours-row]').forEach(row => {
-                const startInput = row.querySelector('[data-default-start]');
-                const endInput = row.querySelector('[data-default-end]');
-                const buildPicker = input => {
-                    const initialValue = input.value;
-                    const picker = flatpickr(input, {
-                        enableTime: true,
-                        noCalendar: true,
-                        dateFormat: 'h:i K',
-                        minuteIncrement: 5,
-                        time_24hr: false,
-                        allowInput: false,
-                        disableMobile: true,
-                        onReady(selectedDates, dateString, instance) {
-                            instance.calendarContainer.classList.add('vd-schedule-time-picker');
-                        }
-                    });
-                    picker.setDate(initialValue, false, 'H:i');
-                    return picker;
-                };
-                clinicTimePickers.set(row, {
-                    start: buildPicker(startInput),
-                    end: buildPicker(endInput),
-                });
-            });
-        }
+        document.querySelectorAll('[data-clinic-hours-row]').forEach(row => {
+            const pickers = {
+                start: row.querySelector('[data-default-start-picker]'),
+                end: row.querySelector('[data-default-end-picker]'),
+            };
+            clinicTimePickers.set(row, pickers);
+        });
 
         const confirmModalEl = document.getElementById('settingsConfirmModal');
         const confirmMessageEl = document.getElementById('settingsConfirmMessage');

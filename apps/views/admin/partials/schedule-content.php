@@ -42,8 +42,23 @@ $activeSummary = $firstClinic
 // A clinic can only have one window per date. The other clinic may use that
 // same date when its time window preserves the transition interval.
 $occupiedScheduleDatesByClinic = [];
+$scheduleWindows = [];
+$clinicNamesById = [];
+foreach ($clinics as $clinic) {
+    $clinicNamesById[(int) $clinic['clinic_id']] = $clinic['clinic_name'];
+}
 foreach ($schedulesByClinic as $clinicId => $clinicSchedules) {
     $occupiedScheduleDatesByClinic[$clinicId] = array_values(array_unique(array_column($clinicSchedules, 'sched_date')));
+    foreach ($clinicSchedules as $schedule) {
+        $scheduleWindows[] = [
+            'schedule_id' => (int) $schedule['schedule_id'],
+            'clinic_id' => (int) $clinicId,
+            'clinic_name' => $clinicNamesById[(int) $clinicId] ?? 'Another clinic',
+            'sched_date' => $schedule['sched_date'],
+            'start_time' => substr($schedule['start_time'], 0, 5),
+            'end_time' => substr($schedule['end_time'], 0, 5),
+        ];
+    }
 }
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>

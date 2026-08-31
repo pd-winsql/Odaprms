@@ -194,6 +194,7 @@ $today = date('l, F j Y');
     <script src="../../../public/js/dashboard-topbar.js?v=20260824-2"></script>
     <script src="../../../public/js/dashboard-sidebar.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-sidebar.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script type="module" src="../../../public/js/vendor/clock-timepicker/clock-timepicker.js?v=<?= filemtime(__DIR__ . '/../../../public/js/vendor/clock-timepicker/clock-timepicker.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="../../../public/js/admin-analytics.js?v=5"></script>
     <script>
