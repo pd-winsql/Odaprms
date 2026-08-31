@@ -24,6 +24,7 @@ $files = [
     'patient-billing' => __DIR__ . '/../apps/views/patient/partials/billing-content.php',
     'patient-booking' => __DIR__ . '/../apps/views/patient/partials/booking-content.php',
     'patient-home' => __DIR__ . '/../apps/views/patient/partials/home-content.php',
+    'patient-history' => __DIR__ . '/../apps/views/patient/partials/history-content.php',
     'staff-patient-form' => __DIR__ . '/../apps/views/admin/partials/_patient-form.php',
     'staff-checkin-form' => __DIR__ . '/../apps/views/admin/partials/_patient-checkin-form.php',
     'patient-profile' => __DIR__ . '/../apps/views/patient/partials/profile-content.php',
@@ -32,7 +33,7 @@ $files = [
     'dental-change-password' => __DIR__ . '/../apps/views/dental_asst/partials/change-password-content.php',
     'patient-change-password' => __DIR__ . '/../apps/views/patient/partials/change-password-content.php',
     'settings' => __DIR__ . '/../apps/views/admin/partials/siteSettings-content.php',
-    'dental-settings' => __DIR__ . '/../apps/views/admin/partials/siteSettings-content.php',
+    'dental-settings' => __DIR__ . '/../apps/views/dental_asst/partials/siteSettings-content.php',
 ];
 
 if (!isset($files[$case])) {
@@ -46,11 +47,11 @@ ob_start();
 include $files[$case];
 $html = ob_get_clean();
 if ($case === 'dental-settings') {
-    if (!str_contains($html, 'Unauthorized.')) {
-        fwrite(STDERR, "Dental Assistant unexpectedly accessed admin settings.\n");
+    if (!str_contains($html, 'Clinic Schedule Defaults') || str_contains($html, 'Brand &amp; Logo')) {
+        fwrite(STDERR, "Dental Assistant schedule-settings access was not correctly scoped.\n");
         exit(1);
     }
-    echo "PASS: Dental Assistant is denied access to admin settings.\n";
+    echo "PASS: Dental Assistant can access schedule defaults without admin-only settings.\n";
     exit(0);
 }
 if (strlen($html) < 300) {

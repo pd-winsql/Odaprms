@@ -39,14 +39,12 @@ $activeSummary = $firstClinic
     ? $scheduleSummaryByClinic[(int) $firstClinic['clinic_id']]
     : ['upcoming' => 0, 'capacity' => 0, 'booked' => 0, 'available' => 0];
 
-// Build one global blocked-date list because schedules are unique across clinics.
-$occupiedScheduleDates = [];
-foreach ($schedulesByClinic as $clinicSchedules) {
-    foreach ($clinicSchedules as $schedule) {
-        $occupiedScheduleDates[] = $schedule['sched_date'];
-    }
+// A clinic can only have one window per date. The other clinic may use that
+// same date when its time window preserves the transition interval.
+$occupiedScheduleDatesByClinic = [];
+foreach ($schedulesByClinic as $clinicId => $clinicSchedules) {
+    $occupiedScheduleDatesByClinic[$clinicId] = array_values(array_unique(array_column($clinicSchedules, 'sched_date')));
 }
-$occupiedScheduleDates = array_values(array_unique($occupiedScheduleDates));
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
@@ -60,8 +58,11 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             </div>
             <button type="button" class="btn vd-btn-gold align-self-start" id="addScheduleForActiveClinic"
                 data-bs-toggle="modal" data-bs-target="#addScheduleModal"
+                data-schedule-mode="add"
                 data-clinic-id="<?= (int) ($firstClinic['clinic_id'] ?? 0) ?>"
                 data-clinic-name="<?= htmlspecialchars($firstClinic['clinic_name'] ?? '', ENT_QUOTES) ?>"
+                data-default-start="<?= htmlspecialchars(substr($firstClinic['default_start_time'] ?? '08:00:00', 0, 5)) ?>"
+                data-default-end="<?= htmlspecialchars(substr($firstClinic['default_end_time'] ?? '17:00:00', 0, 5)) ?>"
                 <?= $firstClinic ? '' : 'disabled' ?>>
                 <i class="ti ti-calendar-plus me-1"></i> Add Schedule
             </button>
@@ -74,6 +75,8 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 class="vd-clinic-switch-btn vd-schedule-clinic-btn <?= $index === 0 ? 'active' : '' ?>"
                 data-clinic-id="<?= (int) $clinic['clinic_id'] ?>"
                 data-clinic-name="<?= htmlspecialchars($clinic['clinic_name'], ENT_QUOTES) ?>"
+                data-default-start="<?= htmlspecialchars(substr($clinic['default_start_time'] ?? '08:00:00', 0, 5)) ?>"
+                data-default-end="<?= htmlspecialchars(substr($clinic['default_end_time'] ?? '17:00:00', 0, 5)) ?>"
                 data-upcoming="<?= $summary['upcoming'] ?>"
                 data-capacity="<?= $summary['capacity'] ?>"
                 data-booked="<?= $summary['booked'] ?>"
@@ -114,9 +117,12 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             $capacity = (int) $sched['max_appointments'];
                             $available = max(0, (int) $sched['available_slots']);
                             $usagePercent = $capacity > 0 ? min(100, (int) round(($booked / $capacity) * 100)) : 0;
+                            $timeRange = Schedule::formatTimeRange($sched['start_time'], $sched['end_time']);
                         ?>
                         <div class="vd-sched-card <?= $isPast ? 'past' : '' ?>"
-                            id="schedCard-<?= $sched['schedule_id'] ?>" data-booked="<?= $booked ?>" data-capacity="<?= $capacity ?>">
+                            id="schedCard-<?= $sched['schedule_id'] ?>" data-booked="<?= $booked ?>" data-capacity="<?= $capacity ?>"
+                            data-clinic-id="<?= (int) $clinic['clinic_id'] ?>" data-date="<?= htmlspecialchars($sched['sched_date']) ?>"
+                            data-start-time="<?= htmlspecialchars(substr($sched['start_time'], 0, 5)) ?>" data-end-time="<?= htmlspecialchars(substr($sched['end_time'], 0, 5)) ?>">
 
                             <!-- Default view -->
                             <div class="vd-sched-card-view">
@@ -125,6 +131,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                 <span class="vd-sched-daynum"><?= $d->format('d') ?></span>
                                 <span class="vd-sched-month"><?= $d->format('M Y') ?></span>
                                 </div>
+                                <div class="vd-sched-window"><i class="ti ti-clock" aria-hidden="true"></i><span><?= htmlspecialchars($timeRange) ?></span></div>
                                 <span class="vd-sched-slots" id="slots-<?= $sched['schedule_id'] ?>">
                                 <?= $available ?> available
                                 </span>
@@ -135,7 +142,14 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                 <?php if (!$isPast): ?>
                                 <div class="vd-sched-actions">
                                 <button type="button" class="vd-sched-btn vd-edit-sched-btn"
+                                    data-bs-toggle="modal" data-bs-target="#addScheduleModal" data-schedule-mode="edit"
                                     data-id="<?= $sched['schedule_id'] ?>"
+                                    data-clinic-id="<?= (int) $clinic['clinic_id'] ?>"
+                                    data-clinic-name="<?= htmlspecialchars($clinic['clinic_name'], ENT_QUOTES) ?>"
+                                    data-booked="<?= $booked ?>"
+                                    data-date="<?= htmlspecialchars($sched['sched_date']) ?>"
+                                    data-start-time="<?= htmlspecialchars(substr($sched['start_time'], 0, 5)) ?>"
+                                    data-end-time="<?= htmlspecialchars(substr($sched['end_time'], 0, 5)) ?>"
                                     data-max="<?= $sched['max_appointments'] ?>"
                                     title="Edit schedule" aria-label="Edit this schedule">
                                     <i class="ti ti-pencil" aria-hidden="true"></i>
@@ -149,24 +163,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                 </button>
                                 </div>
                                 <?php endif; ?>
-                            </div>
-
-                            <!-- Inline edit form — hidden by default -->
-                            <div class="vd-sched-card-edit d-none">
-                                <label class="vd-label">Max Slots</label>
-                                <input type="number" class="form-control vd-input vd-edit-max-input"
-                                value="<?= $capacity ?>" min="<?= max(1, $booked) ?>" max="50"
-                                style="text-align:center; font-size:14px;">
-                                <small class="vd-sched-edit-help">Minimum: <?= max(1, $booked) ?> based on current bookings</small>
-                                <div class="vd-sched-actions mt-2">
-                                <button type="button" class="vd-sched-btn vd-save-sched-btn"
-                                    data-id="<?= $sched['schedule_id'] ?>" title="Save schedule" aria-label="Save schedule changes">
-                                    <i class="ti ti-check" aria-hidden="true"></i>
-                                </button>
-                                <button type="button" class="vd-sched-btn vd-cancel-sched-btn" title="Cancel editing" aria-label="Cancel schedule changes">
-                                    <i class="ti ti-x" aria-hidden="true"></i>
-                                </button>
-                                </div>
                             </div>
 
                             </div>
@@ -231,6 +227,8 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         clinicPanels.forEach(panel => panel.classList.toggle('d-none', panel.dataset.clinicPanel !== button.dataset.clinicId));
         addScheduleButton.dataset.clinicId = button.dataset.clinicId;
         addScheduleButton.dataset.clinicName = button.dataset.clinicName;
+        addScheduleButton.dataset.defaultStart = button.dataset.defaultStart;
+        addScheduleButton.dataset.defaultEnd = button.dataset.defaultEnd;
         updateScheduleSummary(button);
     }));
 
@@ -247,76 +245,6 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             history.replaceState(null, '', window.location.pathname);
         }
     })();
-
-    // ── Edit max appointments ──
-    document.querySelectorAll('.vd-edit-sched-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const card     = document.getElementById('schedCard-' + btn.dataset.id);
-            const cardView = card.querySelector('.vd-sched-card-view');
-            const cardEdit = card.querySelector('.vd-sched-card-edit');
-            cardView.classList.add('d-none');
-            cardEdit.classList.remove('d-none');
-        });
-    });
-
-    document.querySelectorAll('.vd-cancel-sched-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const card     = btn.closest('.vd-sched-card');
-            card.querySelector('.vd-sched-card-view').classList.remove('d-none');
-            card.querySelector('.vd-sched-card-edit').classList.add('d-none');
-        });
-    });
-
-    document.querySelectorAll('.vd-save-sched-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const id      = btn.dataset.id;
-            const card    = document.getElementById('schedCard-' + id);
-            const newMax  = card.querySelector('.vd-edit-max-input').value;
-
-            if (!newMax || newMax < 1) {
-                showToast('Please enter a valid number.', false);
-                return;
-            }
-
-            const fd = new FormData();
-            fd.append('action',          'edit_schedule');
-            fd.append('schedule_id',     id);
-            fd.append('max_appointments', newMax);
-            fd.append('csrf_token', csrfToken);
-            LoadingUI.setButton(btn, true, 'Saving…');
-
-            try {
-                const res    = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: fd });
-                const result = await res.text();
-
-                if (result.trim() === 'success') {
-                    const booked = Number(card.dataset.booked || 0);
-                    const capacity = Number(newMax);
-                    const previousCapacity = Number(card.dataset.capacity || 0);
-                    document.getElementById('slots-' + id).textContent = Math.max(0, capacity - booked) + ' available';
-                    document.getElementById('usage-' + id).textContent = booked + ' booked of ' + capacity;
-                    document.getElementById('progress-' + id).style.width = Math.min(100, Math.round((booked / capacity) * 100)) + '%';
-                    card.dataset.capacity = String(capacity);
-                    const activeClinicButton = clinicButtons.find(item => item.classList.contains('active'));
-                    if (activeClinicButton) {
-                        activeClinicButton.dataset.capacity = String(Number(activeClinicButton.dataset.capacity || 0) + capacity - previousCapacity);
-                        activeClinicButton.dataset.available = String(Number(activeClinicButton.dataset.available || 0) + capacity - previousCapacity);
-                        updateScheduleSummary(activeClinicButton);
-                    }
-                    card.querySelector('.vd-sched-card-view').classList.remove('d-none');
-                    card.querySelector('.vd-sched-card-edit').classList.add('d-none');
-                    showToast('Schedule updated.', true);
-                } else {
-                    showToast(result.trim() || 'Failed to update. Please try again.', false);
-                }
-            } catch (err) {
-                showToast('Network error.', false);
-                console.error(err);
-            } finally {
-                LoadingUI.setButton(btn, false);
-            }
-        });
-    });
 
     // ── Delete schedule via confirmation modal ──
     let scheduleToDelete = null;

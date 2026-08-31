@@ -62,7 +62,7 @@ if ($validDate) {
                                     <?php else: ?><span class="text-muted small">—</span><?php endif; ?>
                                 </td>
                                 <td><div class="vd-appt-name"><?= htmlspecialchars($entry['lastname'] . ', ' . $entry['firstname']) ?></div><div class="vd-appt-meta"><?= htmlspecialchars($entry['email']) ?></div></td>
-                                <td><div class="vd-appt-name"><?= htmlspecialchars($entry['clinic_name']) ?></div><div class="vd-appt-meta"><?= htmlspecialchars($entry['service_name'] ?: '—') ?></div></td>
+                                <td><div class="vd-appt-name"><?= htmlspecialchars($entry['clinic_name']) ?></div><div class="vd-appt-meta"><?= date('g:i A', strtotime($entry['start_time'])) ?>–<?= date('g:i A', strtotime($entry['end_time'])) ?> · <?= htmlspecialchars($entry['service_name'] ?: '—') ?></div></td>
                                 <td class="vd-appt-meta"><?= $entry['arrived_at'] ? date('g:i A', strtotime($entry['arrived_at'])) : 'Did not arrive' ?></td>
                                 <td class="vd-appt-meta"><?= $entry['checkin_id'] ? ($entry['profile_required_at_arrival'] ? 'Profile required' : 'Complete') : '—' ?></td>
                                 <td class="vd-appt-meta"><?= htmlspecialchars($entry['checked_in_by'] ?: '—') ?></td>

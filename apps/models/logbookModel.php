@@ -22,7 +22,7 @@ class LogbookModel
                 a.appointment_id,
                 a.appointment_code,
                 a.patient_id,
-                a.date,
+                a.date, a.start_time, a.end_time,
                 a.status AS appointment_status,
                 a.firstname,
                 a.lastname,

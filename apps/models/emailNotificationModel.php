@@ -22,9 +22,12 @@ class EmailNotificationModel {
         string $deduplicationKey
     ): ?array {
         $recipientStmt = $this->conn->prepare("
-            SELECT p.user_id, p.email, p.firstname, p.lastname
+            SELECT p.user_id, p.email, p.firstname, p.lastname,
+                   a.date, s.start_time, s.end_time, c.clinic_name
             FROM appointments a
             JOIN patients p ON p.patient_id = a.patient_id
+            JOIN schedules s ON s.schedule_id = a.schedule_id
+            JOIN clinics c ON c.clinic_id = a.clinic_id
             WHERE a.appointment_id = :appointment_id
             LIMIT 1
         ");
@@ -45,6 +48,13 @@ class EmailNotificationModel {
         }
 
         $name = trim(($recipient['firstname'] ?? '') . ' ' . ($recipient['lastname'] ?? ''));
+        $scheduleSummary = sprintf(
+            '%s — %s, %s–%s.',
+            $recipient['clinic_name'],
+            date('F j, Y', strtotime($recipient['date'])),
+            date('g:i A', strtotime($recipient['start_time'])),
+            date('g:i A', strtotime($recipient['end_time']))
+        );
         $paymentStmt = $this->conn->prepare("
             SELECT COALESCE(d.amount, ss.deposit_amount, 400) AS deposit_amount,
                    COALESCE(ss.payment_deadline_minutes, 480) AS payment_deadline_minutes
@@ -62,6 +72,8 @@ class EmailNotificationModel {
             'template_variables' => [
                 '{deposit_amount}' => vdFormatPesoAmount((float) ($payment['deposit_amount'] ?? 400)),
                 '{payment_deadline}' => vdFormatDurationMinutes((int) ($payment['payment_deadline_minutes'] ?? 480)),
+                '{schedule_summary}' => $scheduleSummary,
+                '{arrival_instruction}' => 'Please arrive by ' . date('g:i A', strtotime($recipient['start_time'])) . ' or earlier. Patients are served first come, first served.',
             ],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 

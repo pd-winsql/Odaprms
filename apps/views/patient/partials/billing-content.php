@@ -76,6 +76,7 @@ function depositStatusClass($status) {
                         <div class="vd-booking-profile-grid mb-3">
                             <div class="vd-booking-profile-item"><span>Clinic</span><strong><?= htmlspecialchars($deposit['clinic_name']) ?></strong></div>
                             <div class="vd-booking-profile-item"><span>Date</span><strong><?= date('F j, Y', strtotime($deposit['date'])) ?></strong></div>
+                            <div class="vd-booking-profile-item"><span>Clinic window</span><strong><?= date('g:i A', strtotime($deposit['start_time'])) ?>–<?= date('g:i A', strtotime($deposit['end_time'])) ?><small class="d-block mt-1">Arrive by <?= date('g:i A', strtotime($deposit['start_time'])) ?> or earlier</small></strong></div>
                             <div class="vd-booking-profile-item"><span>Services</span><strong><?= htmlspecialchars($deposit['service_name'] ?: '—') ?></strong></div>
                             <div class="vd-booking-profile-item"><span>Required deposit</span><strong>₱<?= number_format((float) $deposit['amount'], 2) ?></strong></div>
                         </div>
@@ -161,7 +162,7 @@ function depositStatusClass($status) {
                                 <tr>
                                     <td>
                                         <div class="vd-appt-name">#<?= (int) $deposit['appointment_id'] ?> · <?= date('M d, Y', strtotime($deposit['date'])) ?></div>
-                                        <div class="vd-appt-meta"><?= htmlspecialchars($deposit['clinic_name']) ?> · <?= htmlspecialchars($deposit['service_name'] ?: 'No service') ?></div>
+                                        <div class="vd-appt-meta"><?= htmlspecialchars($deposit['clinic_name']) ?> · <?= date('g:i A', strtotime($deposit['start_time'])) ?>–<?= date('g:i A', strtotime($deposit['end_time'])) ?> · <?= htmlspecialchars($deposit['service_name'] ?: 'No service') ?></div>
                                     </td>
                                     <td>
                                         <div class="vd-appt-name">₱<?= number_format((float) $deposit['amount'], 2) ?></div>

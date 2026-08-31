@@ -218,8 +218,12 @@
                         <?php endforeach; ?>
                     </div>
 
-                    <!-- DATE & TIME -->
+                    <!-- DATE & CLINIC WINDOW -->
                     <p class="vd-section-label">Preferred Schedule</p>
+                    <div class="vd-notice d-flex gap-2 p-3 mb-3 rounded">
+                        <span class="vd-notice-icon">ℹ</span>
+                        <span class="small"><strong>Arrive by the opening time or earlier.</strong> Patients are served first come, first served during the clinic window. The displayed time is not an individual appointment slot.</span>
+                    </div>
 
                     <!-- Prompt: shown before clinic is selected -->
                     <div id="schedulePrompt" class="vd-schedule-prompt">
@@ -427,7 +431,8 @@
             const scheduleLabel = selectedSchedCard
                 ? selectedSchedCard.querySelector('.vd-schedule-dayname').textContent + ' ' +
                   selectedSchedCard.querySelector('.vd-schedule-daynum').textContent + ' ' +
-                  selectedSchedCard.querySelector('.vd-schedule-month').textContent
+                  selectedSchedCard.querySelector('.vd-schedule-month').textContent + ' · ' +
+                  selectedSchedCard.querySelector('.vd-schedule-window').textContent.trim()
                 : '—';
 
             document.getElementById('reviewSummary').innerHTML = `
@@ -507,6 +512,12 @@
         scheduleInput.value = scheduleId;
         }
 
+        function formatScheduleTime(timeString) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            const suffix = hours >= 12 ? 'PM' : 'AM';
+            return `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${suffix}`;
+        }
+
         function renderScheduleCards(schedules) {
         scheduleGrid.innerHTML = '';
         scheduleInput.value = '';
@@ -528,6 +539,8 @@
                 <span class="vd-schedule-daynum">${dayNum}</span>
                 <span class="vd-schedule-month">${month} ${year}</span>
             </div>
+            <div class="vd-schedule-window"><i class="fa-regular fa-clock"></i> ${formatScheduleTime(schedule.start_time)}–${formatScheduleTime(schedule.end_time)}</div>
+            <div class="vd-schedule-arrival">Arrive by ${formatScheduleTime(schedule.start_time)} or earlier</div>
             <div class="vd-schedule-slots ${isFull ? 'full' : remaining <= 3 ? 'low' : ''}">
                 ${isFull ? 'Fully booked' : remaining + ' slot' + (remaining === 1 ? '' : 's') + ' left'}
             </div>`;

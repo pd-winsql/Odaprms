@@ -94,6 +94,8 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         'gender' => $appointment['gender'] ?? '',
         'clinic' => $appointment['clinic_name'] ?? '',
         'date' => $appointment['date'] ?? '',
+        'startTime' => $appointment['start_time'] ?? '',
+        'endTime' => $appointment['end_time'] ?? '',
         'status' => $appointment['status'] ?? '',
         'deposit' => !empty($appointment['deposit_id']) ? [
             'id' => (int) $appointment['deposit_id'],
@@ -208,7 +210,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                     </td>
                     <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
-                    <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
+                    <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?><small class="d-block"><?= date('g:i A', strtotime($appt['start_time'])) ?>–<?= date('g:i A', strtotime($appt['end_time'])) ?></small></td>
                     <td>
                         <span class="<?= statusClass($appt['status']) ?>" id="pill-<?= $appt['appointment_id'] ?>">
                         <?= htmlspecialchars($appt['status']) ?>
@@ -372,7 +374,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <div class="vd-appt-meta"><?= htmlspecialchars($appt['email']) ?></div>
                     </td>
                     <td class="vd-appt-meta"><?= htmlspecialchars($appt['clinic_name']) ?></td>
-                    <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?></td>
+                    <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?><small class="d-block"><?= date('g:i A', strtotime($appt['start_time'])) ?>–<?= date('g:i A', strtotime($appt['end_time'])) ?></small></td>
                     <td>
                         <span class="<?= statusClass($appt['status']) ?>">
                         <?= htmlspecialchars($appt['status']) ?>
@@ -796,12 +798,18 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         activeAppointmentPayload = payload;
 
         title.textContent = payload.patientName || 'Patient appointment';
-        subtitle.textContent = [formatDateTime(payload.date, true), payload.clinic].filter(Boolean).join(' · ');
+        const formatTimeOnly = value => value
+            ? new Date(`1970-01-01T${value}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+            : 'Not recorded';
+        const clinicWindow = `${formatTimeOnly(payload.startTime)}–${formatTimeOnly(payload.endTime)}`;
+        subtitle.textContent = [formatDateTime(payload.date, true), clinicWindow, payload.clinic].filter(Boolean).join(' · ');
         detailGrid.replaceChildren();
         appendAppointmentDetail(detailGrid, 'Appointment number', `#${payload.appointmentId}`);
         appendAppointmentDetail(detailGrid, 'Status', payload.status, 'vd-appointment-detail-status');
         appendAppointmentDetail(detailGrid, 'Clinic', payload.clinic);
         appendAppointmentDetail(detailGrid, 'Date', formatDateTime(payload.date, true));
+        appendAppointmentDetail(detailGrid, 'Clinic window', clinicWindow);
+        appendAppointmentDetail(detailGrid, 'Patient arrival', `By ${formatTimeOnly(payload.startTime)} or earlier`);
         appendAppointmentDetail(detailGrid, 'Email', payload.email);
         appendAppointmentDetail(detailGrid, 'Contact number', payload.phone);
         appendAppointmentDetail(detailGrid, 'Age', payload.age ? String(payload.age) : 'Not provided');

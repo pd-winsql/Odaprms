@@ -705,6 +705,7 @@ button.vd-stat-card {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
     gap: 12px;
+    align-items: start;
     padding: 16px 20px;
 }
 
@@ -754,6 +755,23 @@ button.vd-stat-card {
     letter-spacing: 0.06em;
 }
 
+.vd-sched-window {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    border: 1px solid #dfc78f;
+    border-radius: 999px;
+    background: var(--gold-pale);
+    color: #765714;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.vd-sched-window i { color: var(--gold); }
+
 .vd-sched-slots {
     font-size: 9px;
     font-weight: 500;
@@ -785,18 +803,6 @@ button.vd-stat-card {
     background: var(--gold);
     transition: width 0.2s ease;
 }
-.vd-sched-card-edit {
-    width: 100%;
-}
-.vd-sched-edit-help {
-    display: block;
-    margin-top: 5px;
-    color: var(--mid);
-    font-size: 9px;
-    line-height: 1.35;
-    text-align: center;
-}
-
 .vd-sched-actions {
     display: flex;
     gap: 5px;
@@ -3224,8 +3230,7 @@ button.vd-stat-card {
     margin-bottom: 4px;
 }
 
-.vd-sched-card-view,
-.vd-sched-card-edit {
+.vd-sched-card-view {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3233,11 +3238,156 @@ button.vd-stat-card {
     width: 100%;
 }
 
-.vd-sched-card-edit .vd-input {
-    width: 100%;
-    text-align: center;
+.vd-schedule-policy-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--gold);
+    background: var(--gold-pale);
+    color: var(--mid);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.vd-schedule-policy-note i { margin-top: 2px; color: var(--gold); font-size: 16px; }
+.vd-schedule-lock-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 11px 13px;
+    border: 1px solid #e2d5bd;
+    border-radius: 7px;
+    background: #f7f4ee;
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.vd-schedule-lock-note i { margin-top: 2px; color: #765714; font-size: 16px; }
+.vd-schedule-time-input { cursor: pointer; }
+.vd-schedule-time-help { margin-top: -10px; }
+.vd-input-locked {
+    cursor: not-allowed !important;
+    background: #f2eee7 !important;
+    color: #776f63 !important;
+}
+.vd-schedule-time-picker.flatpickr-calendar {
+    z-index: 1065;
+    width: 260px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 14px 34px rgba(38, 32, 24, .16);
+    font-family: 'Jost', sans-serif;
+}
+.vd-schedule-time-picker .flatpickr-time {
+    height: 54px;
+    border-top: 0;
+    border-radius: 10px;
+}
+.vd-schedule-time-picker .flatpickr-time input,
+.vd-schedule-time-picker .flatpickr-time .flatpickr-am-pm {
+    color: var(--dark);
+    font-family: 'Jost', sans-serif;
     font-size: 14px;
-    padding: 6px 0;
+    font-weight: 500;
+}
+.vd-schedule-time-picker .flatpickr-time input:hover,
+.vd-schedule-time-picker .flatpickr-time .flatpickr-am-pm:hover,
+.vd-schedule-time-picker .flatpickr-time input:focus,
+.vd-schedule-time-picker .flatpickr-time .flatpickr-am-pm:focus {
+    background: var(--gold-pale);
+}
+.vd-schedule-time-picker .numInputWrapper span.arrowUp::after { border-bottom-color: var(--gold); }
+.vd-schedule-time-picker .numInputWrapper span.arrowDown::after { border-top-color: var(--gold); }
+.vd-clinic-hours-list { display: flex; flex-direction: column; }
+.vd-clinic-hours-row {
+    display: grid;
+    grid-template-columns: minmax(190px, 1fr) 140px 140px auto;
+    gap: 14px;
+    align-items: end;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+}
+.vd-clinic-hours-row:first-child { border-top: 0; padding-top: 0; }
+.vd-clinic-hours-name { display: flex; align-items: center; gap: 11px; align-self: center; }
+.vd-clinic-hours-name > i { color: var(--gold); font-size: 22px; }
+.vd-clinic-hours-name span { display: flex; flex-direction: column; gap: 2px; }
+.vd-clinic-hours-name strong { color: var(--dark); font-size: 14px; }
+.vd-clinic-hours-name small { color: var(--mid); font-size: 10px; }
+.vd-clinic-hours-row .vd-save-clinic-hours {
+    min-width: 96px;
+    height: 44px;
+    gap: 7px;
+    padding: 0 18px;
+    border-radius: 7px;
+    font-size: 11px;
+    letter-spacing: .12em;
+}
+.vd-clinic-hours-row .vd-save-clinic-hours i { font-size: 16px; }
+
+/* Schedule creation uses a deliberate, readable modal type scale. */
+#addScheduleModal .modal-dialog { max-width: 640px; }
+#addScheduleModal .modal-header { padding: 22px 24px 18px; }
+#addScheduleModal .modal-body {
+    gap: 20px !important;
+    padding: 20px 24px;
+    font-size: 15px;
+    line-height: 1.55;
+}
+#addScheduleModal .modal-footer { padding: 16px 24px 20px; }
+#addScheduleModal .vd-action-modal-kicker {
+    margin-bottom: 4px;
+    font-size: 11px;
+    line-height: 1.35;
+}
+#addScheduleModal .vd-modal-title {
+    font-size: 26px;
+    line-height: 1.12;
+    letter-spacing: .055em;
+}
+#addScheduleModal .vd-schedule-modal-intro {
+    color: var(--mid);
+    font-size: 14px;
+    line-height: 1.55;
+}
+#addScheduleModal .vd-label {
+    margin-bottom: 7px;
+    font-size: 12px;
+    line-height: 1.35;
+}
+#addScheduleModal .vd-input {
+    min-height: 48px;
+    font-size: 15px;
+}
+#addScheduleModal .vd-schedule-selection-count {
+    margin-top: 7px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+#addScheduleModal .vd-schedule-policy-note {
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+#addScheduleModal .modal-footer .btn {
+    min-height: 44px;
+    padding: 10px 18px;
+    font-size: 12px;
+}
+
+@media (max-width: 767px) {
+    .vd-clinic-hours-row { grid-template-columns: 1fr 1fr; }
+    .vd-clinic-hours-name { grid-column: 1 / -1; }
+    .vd-clinic-hours-row .vd-save-clinic-hours { grid-column: 1 / -1; width: 100%; }
+}
+
+@media (max-width: 575px) {
+    #addScheduleModal .modal-dialog { margin: 10px; }
+    #addScheduleModal .modal-header { padding: 18px 18px 15px; }
+    #addScheduleModal .modal-body { gap: 16px !important; padding: 17px 18px; }
+    #addScheduleModal .modal-footer { padding: 14px 18px 18px; }
+    #addScheduleModal .vd-modal-title { font-size: 23px; }
+    #addScheduleModal .vd-schedule-modal-intro { font-size: 13px; }
 }
 
 /* ── Services management */
@@ -4509,7 +4659,10 @@ button.vd-stat-card {
 
 /* Keep the table's bottom edge visible above its native horizontal scrollbar. */
 .vd-appt-table-wrap.vd-table-has-horizontal-overflow
-    .vd-appt-table tbody tr.vd-last-visible-row td {
+    .vd-appt-table
+    tbody
+    tr.vd-last-visible-row
+    td {
     border-bottom: 1px solid rgba(217, 201, 168, 0.82);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;

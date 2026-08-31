@@ -1,19 +1,22 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
     echo '<div class="vd-empty-state">Unauthorized.</div>';
     return;
 }
 
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/siteSettingsModel.php';
+require_once __DIR__ . '/../../../models/clinicModel.php';
 
 $db   = new Database();
 $conn = $db->connect();
 $settingsModel = new SiteSettingsModel($conn);
 
 $settings = $settingsModel->getSettings();
+$clinics = (new Clinic($conn))->getAllClinics();
+$isAdmin = ($_SESSION['user_role'] ?? '') === 'Admin';
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 function sv($settings, $key)
@@ -26,8 +29,41 @@ function sv($settings, $key)
 
     <div class="vd-empty-state" style="background: var(--gold-pale); border: 1px solid var(--border); color: var(--mid); text-align: left; padding: 14px 18px;">
         <i class="ti ti-info-circle me-1"></i>
-        Changes here update branding and public-facing content across the system. Each section below saves independently.
+        <?= $isAdmin
+            ? 'Changes here update clinic operations and public-facing content. Each section saves independently.'
+            : 'Default clinic hours prefill new schedules. Existing schedules keep their saved time windows.' ?>
     </div>
+
+    <div class="vd-dash-card vd-schedule-defaults-card">
+        <div class="vd-dash-card-header">
+            <span class="vd-dash-card-title">Clinic Schedule Defaults</span>
+        </div>
+        <div class="vd-dash-card-body">
+            <p class="vd-appt-meta mb-3">These hours prefill the schedule form and can be adjusted for an individual date in five-minute increments. Patients never select a separate appointment time.</p>
+            <div class="vd-clinic-hours-list">
+                <?php foreach ($clinics as $clinic): ?>
+                <div class="vd-clinic-hours-row" data-clinic-hours-row data-clinic-id="<?= (int) $clinic['clinic_id'] ?>">
+                    <div class="vd-clinic-hours-name">
+                        <i class="ti ti-building-hospital" aria-hidden="true"></i>
+                        <span><strong><?= htmlspecialchars($clinic['clinic_name']) ?></strong><small>Default availability window</small></span>
+                    </div>
+                    <div>
+                        <label class="vd-label form-label" for="clinicStart<?= (int) $clinic['clinic_id'] ?>">Opens</label>
+                        <input type="text" id="clinicStart<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-start value="<?= htmlspecialchars(substr($clinic['default_start_time'] ?? '08:00:00', 0, 5)) ?>" autocomplete="off" required>
+                    </div>
+                    <div>
+                        <label class="vd-label form-label" for="clinicEnd<?= (int) $clinic['clinic_id'] ?>">Closes</label>
+                        <input type="text" id="clinicEnd<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-end value="<?= htmlspecialchars(substr($clinic['default_end_time'] ?? '17:00:00', 0, 5)) ?>" autocomplete="off" required>
+                    </div>
+                    <button type="button" class="btn vd-btn-gold vd-save-clinic-hours"><i class="ti ti-check" aria-hidden="true"></i><span>Save</span></button>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="vd-schedule-policy-note mt-3"><i class="ti ti-route" aria-hidden="true"></i><span>Different clinics may operate on the same date when their windows are separated by at least 90 minutes.</span></div>
+        </div>
+    </div>
+
+    <?php if ($isAdmin): ?>
 
     <!-- ── BRAND & LOGO ── -->
     <div class="vd-dash-card">
@@ -187,6 +223,8 @@ function sv($settings, $key)
         </div>
     </div>
 
+    <?php endif; ?>
+
 </div>
 
 
@@ -213,6 +251,7 @@ function sv($settings, $key)
     (function() {
         const CONTROLLER = '../../../apps/controllers/siteSettingsController.php';
         const settingsCsrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
+        const clinicTimePickers = new WeakMap();
 
         const groupLabels = {
             brand: 'Brand Text',
@@ -232,6 +271,39 @@ function sv($settings, $key)
 
         function refreshPage() {
             window.location.reload();
+        }
+
+        function pickerTime(instance, fallbackInput) {
+            if (!instance || !instance.selectedDates[0]) return fallbackInput.value;
+            return flatpickr.formatDate(instance.selectedDates[0], 'H:i');
+        }
+
+        if (typeof flatpickr === 'function') {
+            document.querySelectorAll('[data-clinic-hours-row]').forEach(row => {
+                const startInput = row.querySelector('[data-default-start]');
+                const endInput = row.querySelector('[data-default-end]');
+                const buildPicker = input => {
+                    const initialValue = input.value;
+                    const picker = flatpickr(input, {
+                        enableTime: true,
+                        noCalendar: true,
+                        dateFormat: 'h:i K',
+                        minuteIncrement: 5,
+                        time_24hr: false,
+                        allowInput: false,
+                        disableMobile: true,
+                        onReady(selectedDates, dateString, instance) {
+                            instance.calendarContainer.classList.add('vd-schedule-time-picker');
+                        }
+                    });
+                    picker.setDate(initialValue, false, 'H:i');
+                    return picker;
+                };
+                clinicTimePickers.set(row, {
+                    start: buildPicker(startInput),
+                    end: buildPicker(endInput),
+                });
+            });
         }
 
         const confirmModalEl = document.getElementById('settingsConfirmModal');
@@ -273,6 +345,46 @@ function sv($settings, $key)
                 this.textContent = 'Confirm & Save';
                 pendingConfirmAction = null;
             }
+        });
+
+        document.querySelectorAll('.vd-save-clinic-hours').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('[data-clinic-hours-row]');
+                const startInput = row.querySelector('[data-default-start]');
+                const endInput = row.querySelector('[data-default-end]');
+                const pickers = clinicTimePickers.get(row);
+                const startTime = pickerTime(pickers?.start, startInput);
+                const endTime = pickerTime(pickers?.end, endInput);
+                const usesFiveMinuteSteps = [startTime, endTime].every(value => /^\d{2}:\d{2}$/.test(value) && Number(value.slice(3, 5)) % 5 === 0);
+                if (!startTime || !endTime || startTime >= endTime) {
+                    showToast('Default closing time must be later than opening time.', false);
+                    return;
+                }
+                if (!usesFiveMinuteSteps) {
+                    showToast('Default clinic hours must use five-minute increments.', false);
+                    return;
+                }
+                const clinicName = row.querySelector('.vd-clinic-hours-name strong').textContent.trim();
+                const saveButton = this;
+                askForSaveConfirmation(`Save the default schedule hours for ${clinicName}?`, async function() {
+                    const formData = new FormData();
+                    formData.append('action', 'updateClinicHours');
+                    formData.append('csrf_token', settingsCsrfToken);
+                    formData.append('clinic_id', row.dataset.clinicId);
+                    formData.append('default_start_time', startTime);
+                    formData.append('default_end_time', endTime);
+                    LoadingUI.setButton(saveButton, true, 'Saving…');
+                    try {
+                        const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+                        const result = await response.json();
+                        showToast(result.message || 'Unable to save clinic hours.', result.success);
+                    } catch (error) {
+                        showToast('Network error. Please try again.', false);
+                    } finally {
+                        LoadingUI.setButton(saveButton, false);
+                    }
+                });
+            });
         });
 
         // ── Save a text/textarea group ──

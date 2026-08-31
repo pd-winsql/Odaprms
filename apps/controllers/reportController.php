@@ -73,10 +73,10 @@ if ($isUtilization) {
         ]);
     }
 } else {
-    writeCsvRow($output, ['Appointment ID', 'Date', 'Patient', 'Service', 'Clinic', 'Status']);
+    writeCsvRow($output, ['Appointment ID', 'Date', 'Opening Time', 'Closing Time', 'Patient', 'Service', 'Clinic', 'Status']);
     foreach ($rows as $row) {
         writeCsvRow($output, [
-            $row['appointment_id'], $row['date'], $row['patient_name'],
+            $row['appointment_id'], $row['date'], $row['start_time'], $row['end_time'], $row['patient_name'],
             $row['service_name'], $row['clinic_name'], $row['status'],
         ]);
     }

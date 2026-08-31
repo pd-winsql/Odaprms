@@ -304,7 +304,9 @@ CREATE TABLE IF NOT EXISTS `clinics` (
   `clinic_address` varchar(100) NOT NULL,
   `clinic_contact` varchar(15) NOT NULL,
   `embed_url` text DEFAULT NULL,
-  `clinic_image` varchar(255) DEFAULT NULL
+  `clinic_image` varchar(255) DEFAULT NULL,
+  `default_start_time` time NOT NULL DEFAULT '08:00:00',
+  `default_end_time` time NOT NULL DEFAULT '17:00:00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -580,6 +582,8 @@ CREATE TABLE IF NOT EXISTS `schedules` (
   `schedule_id` int(11) NOT NULL,
   `clinic_id` int(11) NOT NULL,
   `sched_date` date NOT NULL,
+  `start_time` time NOT NULL DEFAULT '08:00:00',
+  `end_time` time NOT NULL DEFAULT '17:00:00',
   `max_appointments` smallint(6) NOT NULL DEFAULT 8
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1016,7 +1020,8 @@ ALTER TABLE `patient_medical_history`
 --
 ALTER TABLE `schedules`
   ADD PRIMARY KEY (`schedule_id`),
-  ADD UNIQUE KEY `uq_schedules_sched_date` (`sched_date`),
+  ADD UNIQUE KEY `uq_schedules_clinic_date` (`clinic_id`,`sched_date`),
+  ADD KEY `idx_schedules_date_window` (`sched_date`,`start_time`,`end_time`),
   ADD KEY `fkclinic_id` (`clinic_id`);
 
 --
@@ -1344,6 +1349,7 @@ INNER JOIN `services` AS `service` ON `service`.`service_id` = `appointment_serv
 CREATE OR REPLACE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_appointment_overview` AS
 SELECT `a`.`appointment_id` AS `appointment_id`, `a`.`patient_id` AS `patient_id`,
   `a`.`schedule_id` AS `schedule_id`, `a`.`clinic_id` AS `clinic_id`, `a`.`date` AS `date`,
+  `schedule_row`.`start_time` AS `start_time`, `schedule_row`.`end_time` AS `end_time`,
   `a`.`status` AS `status`, `a`.`deposit_required` AS `deposit_required`,
   `a`.`payment_deadline_at` AS `payment_deadline_at`, `a`.`reviewed_at` AS `reviewed_at`,
   `a`.`accepted_for_payment_at` AS `accepted_for_payment_at`, `a`.`rejected_at` AS `rejected_at`,
@@ -1360,8 +1366,9 @@ SELECT `a`.`appointment_id` AS `appointment_id`, `a`.`patient_id` AS `patient_id
   (SELECT group_concat(`s`.`service_name` order by `s`.`display_order`,`s`.`service_name` separator ', ')
    FROM (`appointment_services` `aps` JOIN `services` `s` ON (`s`.`service_id` = `aps`.`service_id`))
    WHERE `aps`.`appointment_id` = `a`.`appointment_id`) AS `service_name`
-FROM ((`appointments` `a` JOIN `patients` `p` ON (`p`.`patient_id` = `a`.`patient_id`))
-LEFT JOIN `clinics` `c` ON (`c`.`clinic_id` = `a`.`clinic_id`));
+FROM (((`appointments` `a` JOIN `patients` `p` ON (`p`.`patient_id` = `a`.`patient_id`))
+LEFT JOIN `clinics` `c` ON (`c`.`clinic_id` = `a`.`clinic_id`))
+LEFT JOIN `schedules` `schedule_row` ON (`schedule_row`.`schedule_id` = `a`.`schedule_id`));
 
 CREATE OR REPLACE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_appointment_payment_summary` AS
 SELECT `a`.`appointment_id` AS `appointment_id`, `d`.`deposit_id` AS `deposit_id`,
@@ -1405,6 +1412,7 @@ WHERE `current_log`.`entity_type` = 'appointment' AND `current_log`.`action` = '
 CREATE OR REPLACE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_schedule_utilization` AS
 SELECT `s`.`schedule_id` AS `schedule_id`, `s`.`clinic_id` AS `clinic_id`,
   `c`.`clinic_name` AS `clinic_name`, `s`.`sched_date` AS `sched_date`,
+  `s`.`start_time` AS `start_time`, `s`.`end_time` AS `end_time`,
   `s`.`max_appointments` AS `capacity`,
   count(case when `a`.`status` in ('Pending Review','Awaiting Deposit','Payment Under Review','Confirmed','Checked In','In Progress','Completed') then `a`.`appointment_id` end) AS `booked`,
   count(case when `a`.`status` = 'Completed' then `a`.`appointment_id` end) AS `completed`,
@@ -1413,7 +1421,7 @@ SELECT `s`.`schedule_id` AS `schedule_id`, `s`.`clinic_id` AS `clinic_id`,
   case when `s`.`max_appointments` = 0 then 0 else round(count(case when `a`.`status` in ('Pending Review','Awaiting Deposit','Payment Under Review','Confirmed','Checked In','In Progress','Completed') then `a`.`appointment_id` end) * 100 / `s`.`max_appointments`,1) end AS `utilization_rate`
 FROM ((`schedules` `s` JOIN `clinics` `c` ON (`c`.`clinic_id` = `s`.`clinic_id`))
 LEFT JOIN `appointments` `a` ON (`a`.`schedule_id` = `s`.`schedule_id`))
-GROUP BY `s`.`schedule_id`,`s`.`clinic_id`,`c`.`clinic_name`,`s`.`sched_date`,`s`.`max_appointments`;
+GROUP BY `s`.`schedule_id`,`s`.`clinic_id`,`c`.`clinic_name`,`s`.`sched_date`,`s`.`start_time`,`s`.`end_time`,`s`.`max_appointments`;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

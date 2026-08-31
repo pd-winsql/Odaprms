@@ -3,15 +3,55 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../models/siteSettingsModel.php';
+require_once '../models/clinicModel.php';
+require_once '../models/scheduleModel.php';
 require_once '../helpers/csrf.php';
 
 class SiteSettingsController {
     private $settings;
+    private $clinics;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->settings = new SiteSettingsModel($conn);
+        $this->clinics = new Clinic($conn);
+    }
+
+    private function requireScheduleSettingsAccess(): void {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
+            exit;
+        }
+        if (!validate_csrf()) {
+            echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
+            exit;
+        }
+    }
+
+    public function updateClinicHours(): void {
+        $this->requireScheduleSettingsAccess();
+        $clinicId = (int) ($_POST['clinic_id'] ?? 0);
+        $startTime = Schedule::normalizeTime((string) ($_POST['default_start_time'] ?? ''));
+        $endTime = Schedule::normalizeTime((string) ($_POST['default_end_time'] ?? ''));
+        if (!$clinicId || !$this->clinics->getClinicById($clinicId)) {
+            echo json_encode(['success' => false, 'message' => 'Select a valid clinic.']);
+            exit;
+        }
+        if (!$startTime || !$endTime || $startTime >= $endTime) {
+            echo json_encode(['success' => false, 'message' => 'Default closing time must be later than opening time.']);
+            exit;
+        }
+        if (!Schedule::usesFiveMinuteIncrement($startTime) || !Schedule::usesFiveMinuteIncrement($endTime)) {
+            echo json_encode(['success' => false, 'message' => 'Default clinic hours must use five-minute increments.']);
+            exit;
+        }
+        $saved = $this->clinics->updateDefaultHours($clinicId, $startTime, $endTime);
+        echo json_encode($saved
+            ? ['success' => true, 'message' => 'Default clinic hours saved.']
+            : ['success' => false, 'message' => 'Unable to save the default clinic hours.']);
+        exit;
     }
 
     private function requireAdmin() {
@@ -195,6 +235,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->removeLogo();
     } elseif ($action === 'updateGcashQr') {
         $controller->updateGcashQr();
+    } elseif ($action === 'updateClinicHours') {
+        $controller->updateClinicHours();
     } else {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Unknown action.']);

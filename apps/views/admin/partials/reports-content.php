@@ -202,11 +202,11 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
                             <?php endforeach; ?>
                             </tbody>
                         <?php else: ?>
-                            <thead><tr><th>Date</th><th>Patient</th><th>Service</th><th>Clinic</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Schedule</th><th>Patient</th><th>Service</th><th>Clinic</th><th>Status</th></tr></thead>
                             <tbody>
                             <?php foreach ($rows as $row): ?>
                                 <tr>
-                                    <td><?= date('M d, Y', strtotime($row['date'])) ?></td>
+                                    <td><?= date('M d, Y', strtotime($row['date'])) ?><div class="vd-appt-meta"><?= date('g:i A', strtotime($row['start_time'])) ?>–<?= date('g:i A', strtotime($row['end_time'])) ?></div></td>
                                     <td><div class="vd-appt-name"><?= reportEscape($row['patient_name']) ?></div><div class="vd-appt-meta">#<?= (int) $row['appointment_id'] ?></div></td>
                                     <td><?= reportEscape($row['service_name']) ?></td>
                                     <td><?= reportEscape($row['clinic_name']) ?></td>

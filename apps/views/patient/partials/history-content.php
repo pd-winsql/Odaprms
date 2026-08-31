@@ -29,6 +29,8 @@ function patientHistoryPayload(array $appointment, array $services): string {
         'appointmentId' => (int) $appointment['appointment_id'],
         'appointmentCode' => $appointment['appointment_code'] ?? '',
         'date' => $appointment['date'] ?? '',
+        'startTime' => $appointment['start_time'] ?? '',
+        'endTime' => $appointment['end_time'] ?? '',
         'clinic' => $appointment['clinic_name'] ?? '',
         'status' => $appointment['status'] ?? '',
         'services' => array_map(static fn(array $service): array => [
@@ -80,7 +82,7 @@ function patientHistoryPayload(array $appointment, array $services): string {
             <div class="vd-appt-info">
                 <div class="vd-appt-name"><?= htmlspecialchars($appt['service_name']) ?></div>
                 <div class="vd-appt-meta">
-                <?= htmlspecialchars($appt['clinic_name'] ?? $appt['clinic'] ?? '—') ?>
+                <?= htmlspecialchars($appt['clinic_name'] ?? $appt['clinic'] ?? '—') ?> · <?= date('g:i A', strtotime($appt['start_time'])) ?>–<?= date('g:i A', strtotime($appt['end_time'])) ?>
                 </div>
             </div>
             <div class="vd-history-row-actions">
@@ -152,6 +154,9 @@ function patientHistoryPayload(array $appointment, array $services): string {
         const date = new Date(String(value).replace(' ', 'T'));
         return Number.isNaN(date.getTime()) ? value : date.toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     };
+    const formatTime = value => value
+        ? new Date(`1970-01-01T${value}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        : 'Not recorded';
     const addDetail = (container, label, value) => {
         const item = document.createElement('div');
         item.className = 'vd-appointment-detail-item';
@@ -183,6 +188,7 @@ function patientHistoryPayload(array $appointment, array $services): string {
         addDetail(visitGrid, 'Appointment number', `#${appointment.appointmentId}`);
         addDetail(visitGrid, 'Appointment code', appointment.appointmentCode || 'Not issued');
         addDetail(visitGrid, 'Visit date', formatDate(appointment.date));
+        addDetail(visitGrid, 'Clinic window', `${formatTime(appointment.startTime)}–${formatTime(appointment.endTime)}`);
         addDetail(visitGrid, 'Final status', appointment.status);
 
         const serviceList = document.getElementById('patientHistoryServiceList');

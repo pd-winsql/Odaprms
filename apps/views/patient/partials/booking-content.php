@@ -82,6 +82,7 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
             <span class="vd-dash-card-title">Available Schedules</span>
             <span class="vd-topbar-date" id="bookingClinicLabel"></span>
         </div>
+        <div class="vd-booking-arrival-policy"><i class="ti ti-user-clock" aria-hidden="true"></i><span><strong>Arrive by the opening time or earlier.</strong> Patients are served first come, first served during the clinic window.</span></div>
         <div class="vd-booking-schedule-grid" id="bookingScheduleGrid"></div>
         <div class="vd-empty-state d-none" id="bookingScheduleEmpty">No available schedules for this clinic right now.</div>
     </div>
@@ -186,6 +187,17 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
         return new Date(year, month - 1, day);
     }
 
+    function formatTime(timeString) {
+        const [hours, minutes] = timeString.split(':').map(Number);
+        const suffix = hours >= 12 ? 'PM' : 'AM';
+        const hour = hours % 12 || 12;
+        return `${hour}:${String(minutes).padStart(2, '0')} ${suffix}`;
+    }
+
+    function formatWindow(schedule) {
+        return `${formatTime(schedule.start_time)}–${formatTime(schedule.end_time)}`;
+    }
+
     function chooseSchedule(card, clinicId, schedule) {
         grid.querySelectorAll('.vd-booking-schedule-card').forEach(item => item.classList.remove('selected'));
         card.classList.add('selected');
@@ -193,7 +205,7 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
         scheduleInput.value = schedule.schedule_id;
         selectedDate.textContent = parseLocalDate(schedule.sched_date).toLocaleDateString('en-PH', {
             weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-        });
+        }) + ` · ${formatWindow(schedule)} · Arrive by ${formatTime(schedule.start_time)}`;
         details.classList.remove('d-none');
         details.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -220,8 +232,10 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
             card.innerHTML = `
                 <span class="vd-booking-schedule-weekday">${date.toLocaleDateString('en-PH', { weekday: 'short' })}</span>
                 <strong>${String(date.getDate()).padStart(2, '0')}</strong>
-                <span>${date.toLocaleDateString('en-PH', { month: 'short', year: 'numeric' })}</span>
-                <small>${isFull ? 'Fully booked' : remaining + ' slot' + (remaining === 1 ? '' : 's') + ' left'}</small>`;
+                <span class="vd-booking-schedule-month">${date.toLocaleDateString('en-PH', { month: 'short', year: 'numeric' })}</span>
+                <span class="vd-booking-schedule-window"><i class="ti ti-clock" aria-hidden="true"></i>${formatWindow(schedule)}</span>
+                <small class="vd-booking-arrive-by">Arrive by ${formatTime(schedule.start_time)} or earlier</small>
+                <small class="vd-booking-slots">${isFull ? 'Fully booked' : remaining + ' slot' + (remaining === 1 ? '' : 's') + ' left'}</small>`;
             if (!isFull) card.addEventListener('click', () => chooseSchedule(card, clinicId, schedule));
             grid.appendChild(card);
         });

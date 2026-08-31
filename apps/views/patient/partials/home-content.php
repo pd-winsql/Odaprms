@@ -70,7 +70,9 @@ $missingProfileFields = array_keys(array_filter(
         <div class="vd-next-appt-meta">
         <span><i class="ti ti-building"></i> <?= htmlspecialchars($next['clinic_name'] ?? $next['clinic'] ?? '—') ?></span>
         <span><i class="ti ti-calendar"></i> <?= date('F d, Y', strtotime($next['date'])) ?></span>
+        <span><i class="ti ti-clock"></i> <?= date('g:i A', strtotime($next['start_time'])) ?>–<?= date('g:i A', strtotime($next['end_time'])) ?></span>
         </div>
+        <div class="vd-home-arrival-note"><i class="ti ti-user-clock"></i> Arrive by <?= date('g:i A', strtotime($next['start_time'])) ?> or earlier · First come, first served</div>
         <span class="vd-status vd-status-<?= htmlspecialchars(strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $next['status']))) ?>">
         <?= htmlspecialchars($next['status']) ?>
         </span>
@@ -111,6 +113,7 @@ $missingProfileFields = array_keys(array_filter(
                         <div class="vd-other-appt-meta">
                             <span><i class="ti ti-building"></i> <?= htmlspecialchars($appointment['clinic_name'] ?? $appointment['clinic'] ?? '—') ?></span>
                             <span><i class="ti ti-calendar"></i> <?= date('F d, Y', strtotime($appointment['date'])) ?></span>
+                            <span><i class="ti ti-clock"></i> <?= date('g:i A', strtotime($appointment['start_time'])) ?>–<?= date('g:i A', strtotime($appointment['end_time'])) ?></span>
                         </div>
                     </div>
                     <span class="vd-status vd-status-<?= htmlspecialchars($statusClass) ?>">

@@ -127,7 +127,7 @@ class Appointment {
             // the past.
             // -----------------------------------------------------------------
             $scheduleStmt = $this->conn->prepare("
-                SELECT schedule_id, clinic_id, sched_date, max_appointments
+                SELECT schedule_id, clinic_id, sched_date, start_time, end_time, max_appointments
                 FROM schedules
                 WHERE schedule_id = :schedule_id
                 FOR UPDATE
@@ -335,7 +335,7 @@ class Appointment {
                     a.email,
                     a.clinic_name,
                     a.service_name,
-                    a.date,
+                    a.date, a.start_time, a.end_time,
                     a.status
                 FROM vw_appointment_overview a
                 WHERE a.email = :email
@@ -359,7 +359,7 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
                     a.phone_number, a.email, a.clinic_name, a.service_name,
-                    a.date, a.status, a.payment_deadline_at, a.appointment_code,
+                    a.date, a.start_time, a.end_time, a.status, a.payment_deadline_at, a.appointment_code,
                     payment.deposit_id, payment.deposit_amount, payment.gcash_reference,
                     payment.deposit_status, payment.submitted_at, payment.verified_at,
                     payment.payment_rejection_reason,
@@ -421,7 +421,7 @@ class Appointment {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
                     a.phone_number, a.email, a.clinic_name, a.service_name,
-                    a.date, a.status, a.payment_deadline_at, a.appointment_code,
+                    a.date, a.start_time, a.end_time, a.status, a.payment_deadline_at, a.appointment_code,
                     payment.deposit_id, payment.deposit_amount, payment.gcash_reference,
                     payment.deposit_status, payment.submitted_at, payment.verified_at,
                     payment.payment_rejection_reason,
@@ -752,7 +752,8 @@ class Appointment {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
-                    a.phone_number, a.email, a.clinic_name, a.service_name, a.date, a.status
+                    a.phone_number, a.email, a.clinic_name, a.service_name,
+                    a.date, a.start_time, a.end_time, a.status
                 FROM vw_appointment_overview a
                 WHERE a.date >= CURDATE()
                 AND a.status = :status
@@ -777,7 +778,7 @@ class Appointment {
                 SELECT
                     a.appointment_id,
                     a.service_name,
-                    a.date,
+                    a.date, a.start_time, a.end_time,
                     a.status,
                     a.clinic_name
                 FROM vw_appointment_overview a

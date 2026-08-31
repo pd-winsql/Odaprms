@@ -44,6 +44,24 @@ class Clinic {
         }
     }
 
+    public function updateDefaultHours(int $id, string $startTime, string $endTime): bool {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE clinics
+                SET default_start_time = :start_time, default_end_time = :end_time
+                WHERE clinic_id = :id
+            ");
+            return $stmt->execute([
+                ':id' => $id,
+                ':start_time' => $startTime,
+                ':end_time' => $endTime,
+            ]) && $stmt->rowCount() >= 0;
+        } catch (PDOException $e) {
+            error_log('updateDefaultHours error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function clinicNameExists(string $name): bool {
         $stmt = $this->conn->prepare("SELECT 1 FROM clinics WHERE LOWER(TRIM(clinic_name)) = LOWER(TRIM(:name)) LIMIT 1");
         $stmt->execute([':name' => $name]);

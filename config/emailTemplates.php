@@ -48,7 +48,7 @@ return [
             'Your appointment request has been received successfully.',
 
         'instruction' =>
-            'Our clinic will review your appointment shortly.',
+            'Our clinic will review your appointment shortly. Schedule: {schedule_summary} {arrival_instruction}',
 
         'label' => 'Appointment Status',
 
@@ -66,7 +66,7 @@ return [
             'Great news! Your appointment has been confirmed.',
 
         'instruction' =>
-            'Please arrive early for your appointment. Queue positions may change when clinic staff need to prioritize another ready patient.',
+            'Schedule: {schedule_summary} {arrival_instruction}',
 
         'label' => 'Appointment Status',
 
@@ -84,7 +84,7 @@ return [
             'Unfortunately, your appointment has been cancelled.',
 
         'instruction' =>
-            'Please contact the clinic if you wish to schedule another appointment.',
+            'Cancelled schedule: {schedule_summary} Please contact the clinic if you wish to schedule another appointment.',
 
         'label' => 'Appointment Status',
 
@@ -96,7 +96,7 @@ return [
         'subject' => 'Appointment Accepted - Deposit Required',
         'heading' => 'Deposit Required',
         'intro' => 'The clinic has tentatively accepted your appointment request.',
-        'instruction' => 'Please open Billing in your patient dashboard and submit the {deposit_amount} GCash deposit within {payment_deadline}. Your slot remains reserved during this period.',
+        'instruction' => 'Schedule: {schedule_summary} {arrival_instruction} Please open Billing in your patient dashboard and submit the {deposit_amount} GCash deposit within {payment_deadline}. Your slot remains reserved during this period.',
         'label' => 'Appointment Status',
         'footer' => 'Your appointment becomes fully confirmed after the clinic verifies your payment.'
     ],
@@ -105,7 +105,7 @@ return [
         'subject' => 'Appointment Request Not Accepted',
         'heading' => 'Appointment Rejected',
         'intro' => 'The clinic was unable to accept your appointment request.',
-        'instruction' => 'The reason provided by the clinic is shown below. You may submit another appointment request.',
+        'instruction' => 'Requested schedule: {schedule_summary} The reason provided by the clinic is shown below. You may submit another appointment request.',
         'label' => 'Reason',
         'footer' => 'Please contact the clinic if you need assistance.'
     ],
@@ -114,7 +114,7 @@ return [
         'subject' => 'Deposit Proof Needs Correction',
         'heading' => 'Payment Proof Rejected',
         'intro' => 'The clinic could not verify your submitted GCash payment proof.',
-        'instruction' => 'Review the reason below and upload corrected proof for the {deposit_amount} deposit within {payment_deadline}.',
+        'instruction' => 'Schedule: {schedule_summary} {arrival_instruction} Review the reason below and upload corrected proof for the {deposit_amount} deposit within {payment_deadline}.',
         'label' => 'Reason',
         'footer' => 'The expiration timer is paused again after corrected proof is submitted.'
     ],
@@ -123,7 +123,7 @@ return [
         'subject' => 'Appointment Confirmed - Your Check-in Code',
         'heading' => 'Appointment Confirmed',
         'intro' => 'Your deposit has been verified and your appointment is now confirmed.',
-        'instruction' => 'Present the appointment code below to the front desk on your appointment date.',
+        'instruction' => 'Schedule: {schedule_summary} {arrival_instruction} Present the appointment code below to the front desk.',
         'label' => 'Appointment Code',
         'footer' => 'Keep this code private and bring it with you to the clinic.'
     ],

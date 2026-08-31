@@ -108,6 +108,9 @@ $today = date('l, F j Y');
             <a href="#" class="vd-nav-item" data-page="change-password-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
             </a>
+            <a href="#" class="vd-nav-item" data-page="siteSettings-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-settings"></i></span> Schedule Settings
+            </a>
             <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
                 <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
             </a>

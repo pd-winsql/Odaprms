@@ -111,7 +111,7 @@ class DepositModel {
             SELECT
                 a.appointment_id,
                 a.patient_id,
-                a.date,
+                a.date, overview.start_time, overview.end_time,
                 a.status AS appointment_status,
                 a.payment_deadline_at,
                 overview.firstname,
@@ -145,7 +145,7 @@ class DepositModel {
         $stmt = $this->conn->prepare("
             SELECT
                 a.appointment_id,
-                a.date,
+                a.date, a.start_time, a.end_time,
                 a.status AS appointment_status,
                 a.payment_deadline_at,
                 a.clinic_name,
@@ -260,7 +260,7 @@ class DepositModel {
                 a.lastname,
                 a.email,
                 a.clinic_name,
-                a.date,
+                a.date, a.start_time, a.end_time,
                 a.service_name
             FROM vw_appointment_overview a
             JOIN vw_appointment_payment_summary payment
@@ -285,7 +285,7 @@ class DepositModel {
                 payment.payment_rejection_reason AS rejection_reason,
                 payment.refunded_at,
                 payment.has_receipt,
-                a.date,
+                a.date, a.start_time, a.end_time,
                 a.status AS appointment_status,
                 a.appointment_code,
                 a.firstname,

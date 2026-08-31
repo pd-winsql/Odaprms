@@ -106,6 +106,8 @@ class ReportModel
                 COALESCE(a.clinic_name, 'Unassigned') AS clinic_name,
                 COALESCE(a.service_name, 'No service') AS service_name,
                 a.date,
+                a.start_time,
+                a.end_time,
                 a.status
             FROM vw_appointment_overview a
             WHERE " . implode(' AND ', $conditions) . "

@@ -543,7 +543,7 @@ class AnalyticsModel
         $offset = ($pagination['page'] - 1) * $pagination['per_page'];
 
         $stmt = $this->conn->prepare("
-            SELECT sched_date, clinic_name, capacity, booked, available_slots, utilization_rate
+            SELECT sched_date, start_time, end_time, clinic_name, capacity, booked, available_slots, utilization_rate
             FROM vw_schedule_utilization
             WHERE {$where}
             ORDER BY sched_date DESC, clinic_name
@@ -554,9 +554,10 @@ class AnalyticsModel
         return [
             'title' => 'Schedule Utilization',
             'kind' => 'schedules',
-            'columns' => ['Date', 'Clinic', 'Capacity', 'Booked', 'Open', 'Utilization'],
+            'columns' => ['Date', 'Window', 'Clinic', 'Capacity', 'Booked', 'Open', 'Utilization'],
             'rows' => array_map(static fn(array $row): array => [
                 date('M j, Y', strtotime($row['sched_date'])),
+                date('g:i A', strtotime($row['start_time'])) . '–' . date('g:i A', strtotime($row['end_time'])),
                 $row['clinic_name'],
                 (int) $row['capacity'],
                 (int) $row['booked'],

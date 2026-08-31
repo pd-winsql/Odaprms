@@ -216,7 +216,11 @@ class AppointmentController {
 
             $clinic = $clinicModel->getClinicById($clinic_id);
             $schedule = $scheduleModel->getScheduleById($schedule_id);
-            if (!$clinic || !$schedule || (int) $schedule['clinic_id'] !== (int) $clinic_id || $schedule['sched_date'] < date('Y-m-d')) {
+            $scheduleStartAt = $schedule
+                ? strtotime($schedule['sched_date'] . ' ' . ($schedule['start_time'] ?? '00:00:00'))
+                : false;
+            if (!$clinic || !$schedule || (int) $schedule['clinic_id'] !== (int) $clinic_id
+                || $scheduleStartAt === false || $scheduleStartAt < time()) {
                 echo json_encode([
                     'success'=>false,
                     'message'=>'Invalid clinic or schedule.'
