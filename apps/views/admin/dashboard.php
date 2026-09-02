@@ -167,7 +167,7 @@ $today = date('l, F j Y');
                     <time class="vd-topbar-date" id="vdTopbarDate"><?= $today ?></time>
                     <time class="vd-topbar-clock" id="vdTopbarClock" aria-label="Current time in Manila">--:--:-- --</time>
                 </div>
-                <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
+                <?php include __DIR__ . '/../shared/staff-notification-center.php'; ?>
                 <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
             </div>
         </div>
@@ -193,6 +193,7 @@ $today = date('l, F j Y');
     <script src="../../../public/js/dashboard-tables.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-tables.js') ?>"></script>
     <script src="../../../public/js/dashboard-topbar.js?v=20260824-2"></script>
     <script src="../../../public/js/dashboard-sidebar.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-sidebar.js') ?>"></script>
+    <script src="../../../public/js/staff-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/staff-appointment-notifications.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script type="module" src="../../../public/js/vendor/clock-timepicker/clock-timepicker.js?v=<?= filemtime(__DIR__ . '/../../../public/js/vendor/clock-timepicker/clock-timepicker.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -288,6 +289,23 @@ $today = date('l, F j Y');
         let lastKnownAppointmentId = <?= (int) $latestAppointmentId ?>;
         let lastKnownDepositVersion = <?= json_encode($depositFeedVersion) ?>;
         let appointmentRefreshInFlight = false;
+        const appointmentNotificationCenter = window.StaffAppointmentNotifications?.create({
+            userId: <?= json_encode((string) $_SESSION['user_id']) ?>,
+            initialAppointmentId: lastKnownAppointmentId,
+            initialDepositVersion: lastKnownDepositVersion,
+            buttonId: 'staffNotificationButton',
+            panelId: 'staffNotificationPanel',
+            listId: 'staffNotificationList',
+            emptyId: 'staffNotificationEmpty',
+            markAllId: 'staffNotificationMarkAll',
+            dotId: 'staffNotificationDot',
+            onNavigate(notification) {
+                if (notification.type === 'appointment_created') {
+                    sessionStorage.setItem('venturaAppointmentStatusFilter', 'Pending Review');
+                }
+                document.querySelector(`.vd-nav-item[data-page="${notification.destination}"]`)?.click();
+            }
+        });
 
         function appointmentViewState() {
             return {
@@ -349,11 +367,16 @@ $today = date('l, F j Y');
                 });
                 if (!response.ok) return;
                 const result = await response.json();
+                if (!result.success) return;
                 const latestId = Number(result.latest_appointment_id || 0);
                 const depositVersion = String(result.deposit_feed_version || '0:0:0');
+                appointmentNotificationCenter?.observe({
+                    appointmentId: latestId,
+                    depositVersion
+                });
                 const hasNewAppointment = latestId > lastKnownAppointmentId;
                 const hasDepositChange = depositVersion !== lastKnownDepositVersion;
-                if (!result.success || (!hasNewAppointment && !hasDepositChange)) return;
+                if (!hasNewAppointment && !hasDepositChange) return;
 
                 if (!['appointment-content.php', 'payment-review-content.php'].includes(currentPage)) {
                     lastKnownAppointmentId = latestId;
@@ -374,10 +397,6 @@ $today = date('l, F j Y');
                 else restoreDepositViewState(state);
                 lastKnownAppointmentId = latestId;
                 lastKnownDepositVersion = depositVersion;
-                const message = hasDepositChange && !hasNewAppointment ?
-                    'A deposit record changed. The list has been updated.' :
-                    'A new appointment was added. The list has been updated.';
-                window.showToast(message, true);
             } catch (error) {
                 console.debug('Automatic appointment refresh skipped:', error);
             } finally {

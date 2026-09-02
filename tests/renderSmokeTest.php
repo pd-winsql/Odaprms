@@ -59,6 +59,13 @@ if (in_array($case, ['settings', 'dental-settings'], true)
     fwrite(STDERR, "Clinic schedule default clock pickers did not render.\n");
     exit(1);
 }
+if ($case === 'historical-logbook'
+    && (!str_contains($html, 'enable: recordDates')
+        || !str_contains($html, 'historicalLogbookDateValue')
+        || str_contains($html, 'type="date"'))) {
+    fwrite(STDERR, "The historical logbook did not render its record-aware date picker.\n");
+    exit(1);
+}
 if ($case === 'dental-settings') {
     if (!str_contains($html, 'Clinic Schedule Defaults') || str_contains($html, 'Brand &amp; Logo')) {
         fwrite(STDERR, "Dental Assistant schedule-settings access was not correctly scoped.\n");

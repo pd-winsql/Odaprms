@@ -123,7 +123,7 @@
     padding: 6px 12px;
     margin: 2px 10px;
     color: var(--mid);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 300;
     text-decoration: none;
     border-radius: 10px;
@@ -605,16 +605,18 @@ button.vd-stat-card {
     min-width: 0;
 }
 .vd-appt-name {
-    font-size: 13px;
-    font-weight: 400;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--dark);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .vd-appt-meta {
-    font-size: 12px;
-    color: var(--mid);
+    font-size: 13px;
+    font-weight: 400;
+    color: #62584d;
+    line-height: 1.5;
     margin-top: 2px;
     white-space: nowrap;
     overflow: hidden;
@@ -1461,7 +1463,6 @@ button.vd-stat-card {
     border-bottom: 1px solid var(--border);
     background: #f8f3e9;
     color: var(--mid);
-    font-size: 9px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-align: left;
@@ -1472,7 +1473,7 @@ button.vd-stat-card {
     padding: 12px 14px;
     border-bottom: 1px solid #eee6d7;
     color: var(--mid);
-    font-size: 11px;
+    font-weight: 400;
 }
 .vd-report-table tbody tr:last-child td {
     border-bottom: none;
@@ -1796,8 +1797,6 @@ button.vd-stat-card {
 .vd-appt-table {
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 13.5px;
-    font-weight: 300;
     min-width: 900px;
 }
 
@@ -1809,7 +1808,6 @@ button.vd-stat-card {
     position: sticky;
     top: 0;
     z-index: 2;
-    font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1838,13 +1836,6 @@ button.vd-stat-card {
 }
 .vd-appt-table tbody tr:last-child td {
     border-bottom: none;
-}
-
-.vd-appt-table .vd-appt-name {
-    font-weight: 500;
-}
-.vd-appt-table .vd-appt-meta {
-    color: #6d6255;
 }
 
 /* Appointment audit activity */
@@ -2243,9 +2234,6 @@ button.vd-stat-card {
         overflow-wrap: anywhere;
         vertical-align: top;
     }
-    .vd-responsive-table .vd-appt-meta {
-        font-size: 11px;
-    }
     .vd-responsive-table .vd-action-group {
         align-items: center;
         align-content: flex-start;
@@ -2299,9 +2287,6 @@ button.vd-stat-card {
     .vd-responsive-table thead th,
     .vd-responsive-table td {
         padding: 11px 7px;
-    }
-    .vd-responsive-table .vd-appt-name {
-        font-size: 12px;
     }
     .vd-table-details-item {
         grid-template-columns: 1fr;
@@ -2532,7 +2517,6 @@ button.vd-stat-card {
     width: 232px;
 }
 .vd-dash-body .vd-nav-item {
-    font-size: 12.5px;
     padding: 6px 12px;
     margin: 2px 10px;
 }
@@ -2708,13 +2692,9 @@ button.vd-stat-card {
 
 .vd-profile-hq-table {
     border-collapse: collapse;
-    font-size: 12px;
-    font-weight: 300;
 }
 
 .vd-profile-hq-table thead th {
-    font-size: 9px;
-    font-weight: 500;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--gold);
@@ -2738,8 +2718,6 @@ button.vd-stat-card {
 }
 
 .vd-hq-section-row td {
-    font-size: 9px;
-    font-weight: 500;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--gold);
@@ -4650,7 +4628,6 @@ button.vd-stat-card {
 
 .vd-dash-body small,
 .vd-dash-body .small,
-.vd-appt-meta,
 .vd-activity-meta,
 .vd-dashboard-welcome-copy,
 .vd-profile-sub,
@@ -4689,6 +4666,7 @@ button.vd-stat-card {
 .vd-dash-body table th,
 .vd-profile-hq-table thead th {
     font-size: 12px;
+    font-weight: 600;
     line-height: 1.35;
     letter-spacing: 0.08em;
 }
@@ -4696,6 +4674,7 @@ button.vd-stat-card {
 .vd-dash-body table td,
 .vd-profile-hq-table {
     font-size: 14px;
+    font-weight: 400;
     line-height: 1.45;
 }
 
@@ -4751,12 +4730,19 @@ button.vd-stat-card {
 
 .vd-profile-label,
 .vd-profile-hq-table thead th,
-.vd-hq-section-row td,
 .vd-table-details-eyebrow,
 .vd-table-details-item dt {
     font-size: 12px;
     color: var(--mid);
     letter-spacing: 0.09em;
+}
+
+.vd-dash-body .vd-profile-hq-table .vd-hq-section-row td {
+    color: var(--mid);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    line-height: 1.35;
 }
 
 .vd-profile-hq-table .form-check-input {
@@ -4874,10 +4860,6 @@ button.vd-stat-card {
     .vd-responsive-table thead th,
     .vd-responsive-table td {
         padding: 12px 8px;
-    }
-
-    .vd-responsive-table thead th {
-        font-size: 11px;
     }
 
     .vd-responsive-table .vd-status {
@@ -5405,5 +5387,170 @@ button.vd-stat-card {
 
     .vd-today-logbook-table {
         min-width: 920px;
+    }
+}
+
+/* Staff appointment notification center */
+.vd-topbar-notifications {
+    position: relative;
+}
+
+button.vd-topbar-bell {
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.vd-topbar-bell[aria-expanded="true"] {
+    background: var(--gold-pale);
+    color: var(--gold);
+}
+
+.vd-notification-panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    z-index: 420;
+    width: min(360px, calc(100vw - 28px));
+    max-height: min(480px, calc(100vh - 92px));
+    overflow: auto;
+    background: var(--white-bg);
+    border: 1px solid rgba(181, 146, 76, 0.28);
+    border-radius: 14px;
+    box-shadow: 0 18px 48px rgba(38, 30, 20, 0.18);
+}
+
+.vd-notification-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px 14px;
+    background: rgba(255, 253, 249, 0.97);
+    border-bottom: 1px solid var(--border);
+}
+
+.vd-notification-kicker {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.vd-notification-header h2 {
+    margin: 0;
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.vd-dash-body .vd-notification-mark-all {
+    min-height: 32px;
+    padding: 5px 0;
+    background: transparent;
+    border: 0;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.vd-notification-mark-all:hover {
+    color: var(--dark);
+}
+
+.vd-notification-list {
+    display: grid;
+}
+
+.vd-dash-body .vd-notification-item {
+    width: 100%;
+    min-height: 72px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 18px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(217, 201, 168, 0.62);
+    color: var(--dark);
+    text-align: left;
+    transition: background-color 0.16s ease;
+}
+
+.vd-notification-item:hover,
+.vd-notification-item.is-unread {
+    background: rgba(246, 237, 218, 0.68);
+}
+
+.vd-notification-item-icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--gold-pale);
+    color: var(--gold);
+    font-size: 17px;
+}
+
+.vd-notification-item-copy {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.vd-notification-item-message {
+    color: var(--dark);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.vd-notification-item.is-unread .vd-notification-item-message {
+    font-weight: 500;
+}
+
+.vd-notification-item-time {
+    color: var(--mid);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.vd-notification-empty {
+    margin: 0;
+    padding: 28px 20px;
+    color: var(--mid);
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+}
+
+.vd-notification-mark-all:focus-visible,
+.vd-notification-item:focus-visible {
+    position: relative;
+    z-index: 2;
+    outline: 3px solid rgba(128, 97, 31, 0.4);
+    outline-offset: -3px;
+}
+
+@media (max-width: 575px) {
+    .vd-notification-panel {
+        position: fixed;
+        top: 66px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-height: calc(100vh - 78px);
     }
 }

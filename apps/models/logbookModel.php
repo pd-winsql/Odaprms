@@ -97,6 +97,26 @@ class LogbookModel
         return $this->annotateQueue($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
+    // Gets the historical dates that contain at least one visible logbook record.
+    public function getRecordDates(): array
+    {
+        $stmt = $this->conn->query("
+            SELECT DISTINCT a.date
+            FROM vw_appointment_overview a
+            LEFT JOIN vw_appointment_payment_summary payment
+                ON payment.appointment_id = a.appointment_id
+            WHERE a.date <= CURDATE()
+              AND (
+                a.deposit_required = 0
+                OR payment.deposit_status IN ('Verified', 'Transferred')
+              )
+              AND a.status IN ('Confirmed', 'Checked In', 'In Progress', 'Completed', 'No-show', 'Cancelled')
+            ORDER BY a.date ASC
+        ");
+
+        return array_values(array_filter($stmt->fetchAll(PDO::FETCH_COLUMN)));
+    }
+
     // Gets all logbook entries scheduled for today.
     public function getToday(): array
     {

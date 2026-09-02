@@ -11,11 +11,14 @@ require_once __DIR__ . '/../../../models/logbookModel.php';
 
 $selectedDate = trim($_GET['date'] ?? '');
 $validDate = $selectedDate !== '' && DateTime::createFromFormat('Y-m-d', $selectedDate)?->format('Y-m-d') === $selectedDate;
-$isToday = $validDate && $selectedDate === date('Y-m-d');
+$db = new Database();
+$logbookModel = new LogbookModel($db->connect());
+$recordDates = $logbookModel->getRecordDates();
+$hasSelectedRecordDate = $validDate && in_array($selectedDate, $recordDates, true);
+$isToday = $hasSelectedRecordDate && $selectedDate === date('Y-m-d');
 $entries = [];
-if ($validDate) {
-    $db = new Database();
-    $entries = (new LogbookModel($db->connect()))->getForDate($selectedDate);
+if ($hasSelectedRecordDate) {
+    $entries = $logbookModel->getForDate($selectedDate);
 }
 ?>
 
@@ -23,23 +26,23 @@ if ($validDate) {
     <div>
         <div class="vd-welcome-greet">HISTORICAL LOGBOOK</div>
         <div class="vd-welcome-name">Daily patient arrivals</div>
-        <p class="text-muted small mb-0 mt-2">Select a date before displaying logbook records.</p>
+        <p class="text-muted small mb-0 mt-2">Only dates with logbook records can be selected.</p>
     </div>
 
     <div class="vd-dash-card">
         <div class="vd-filter-bar">
             <div class="vd-filter-group">
                 <label for="historicalLogbookDate" class="vd-label form-label">Logbook date</label>
-                <input type="date" id="historicalLogbookDate" class="form-control vd-input vd-filter-select" max="<?= date('Y-m-d') ?>" value="<?= $validDate ? htmlspecialchars($selectedDate) : '' ?>">
+                <input type="text" id="historicalLogbookDateValue" class="form-control vd-input vd-filter-select" value="<?= $hasSelectedRecordDate ? htmlspecialchars($selectedDate) : '' ?>" placeholder="Select a date" autocomplete="off" readonly>
             </div>
             <div class="vd-filter-group vd-filter-clear">
-                <button type="button" class="btn vd-btn-gold" id="loadHistoricalLogbook">View Logbook</button>
+                <button type="button" class="btn vd-btn-gold" id="loadHistoricalLogbook" <?= $recordDates ? '' : 'disabled' ?>>View Logbook</button>
             </div>
         </div>
     </div>
 
-    <?php if (!$validDate): ?>
-        <div class="vd-dash-card"><div class="vd-empty-state">Select a date to view logbook records.</div></div>
+    <?php if (!$hasSelectedRecordDate): ?>
+        <div class="vd-dash-card"><div class="vd-empty-state"><?= $recordDates ? 'Select a date to view logbook records.' : 'No logbook records are available yet.' ?></div></div>
     <?php else: ?>
         <div class="vd-dash-card">
             <div class="vd-dash-card-header"><span class="vd-dash-card-title"><?= date('F j, Y', strtotime($selectedDate)) ?></span><span class="vd-topbar-date"><?= count($entries) ?> record<?= count($entries) === 1 ? '' : 's' ?></span></div>
@@ -97,10 +100,35 @@ if ($validDate) {
 
 <script>
 (function () {
+    const recordDates = <?= json_encode($recordDates) ?>;
+    const dateInput = document.getElementById('historicalLogbookDateValue');
+    let datePicker = null;
+
+    if (dateInput && typeof flatpickr === 'function') {
+        datePicker = flatpickr(dateInput, {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'F j, Y',
+            allowInput: false,
+            disableMobile: true,
+            enable: recordDates,
+            defaultDate: <?= $hasSelectedRecordDate ? json_encode($selectedDate) : 'null' ?>,
+            onReady(selectedDates, dateString, instance) {
+                instance.calendarContainer.classList.add('vd-schedule-calendar');
+                if (instance.altInput) instance.altInput.id = 'historicalLogbookDate';
+                if (selectedDates.length === 0 && recordDates.length > 0) {
+                    instance.jumpToDate(recordDates[recordDates.length - 1]);
+                }
+            }
+        });
+    }
+
     document.getElementById('loadHistoricalLogbook')?.addEventListener('click', async () => {
-        const date = document.getElementById('historicalLogbookDate').value;
+        const date = datePicker?.input.value || dateInput?.value || '';
         if (!date) { window.showToast('Select a logbook date.', false); return; }
         const content = document.querySelector('.vd-dash-content');
+        datePicker?.destroy();
+        datePicker = null;
         LoadingUI.showContent(content, { label: 'Loading logbook…' });
         try {
             const response = await fetch(`partials/logbook-content.php?date=${encodeURIComponent(date)}`);

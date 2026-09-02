@@ -30,14 +30,12 @@
 
 .vd-dash-body small,
 .vd-dash-body .small,
-.vd-dash-body .vd-appt-meta,
 .vd-dash-body .vd-topbar-date {
     font-size: var(--vd-text-sm);
     line-height: 1.5;
 }
 
-.vd-dash-body .vd-label,
-.vd-dash-body .vd-appt-table thead th {
+.vd-dash-body .vd-label {
     font-size: var(--vd-text-xs);
     line-height: 1.35;
 }
