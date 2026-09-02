@@ -165,7 +165,9 @@ CREATE TABLE IF NOT EXISTS `appointment_deposits` (
   `deposit_id` int(11) NOT NULL,
   `appointment_id` int(11) NOT NULL,
   `amount` decimal(10,2) NOT NULL DEFAULT 400.00,
+  `receipt_amount` decimal(10,2) DEFAULT NULL,
   `gcash_reference` varchar(100) DEFAULT NULL,
+  `gcash_transaction_at` datetime DEFAULT NULL,
   `receipt_path` varchar(255) DEFAULT NULL,
   `receipt_mime` varchar(100) DEFAULT NULL,
   `status` enum('Awaiting Submission','Under Review','Verified','Rejected','Expired','Transferred','Forfeited','For Refund','Refunded') NOT NULL DEFAULT 'Awaiting Submission',
@@ -193,11 +195,11 @@ CREATE TABLE IF NOT EXISTS `appointment_deposits` (
 -- Dumping data for table `appointment_deposits`
 --
 
-INSERT INTO `appointment_deposits` (`deposit_id`, `appointment_id`, `amount`, `gcash_reference`, `receipt_path`, `receipt_mime`, `status`, `submitted_at`, `verified_by_user_id`, `verified_at`, `rejection_reason`, `resubmission_deadline_at`, `deadline_extended_by_user_id`, `deadline_extended_at`, `deadline_extension_reason`, `transferred_from_appointment_id`, `transferred_by_user_id`, `transferred_at`, `transfer_reason`, `refund_reason`, `refunded_by_user_id`, `refunded_at`, `refund_notes`, `created_at`, `updated_at`) VALUES
-(10, 38, 400.00, '123456789', 'storage/payment_receipts/47de4d4f65a4f9635de21232c102ce9fb39c4084.png', 'image/png', 'Under Review', '2026-08-05 14:53:22', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:52:41', '2026-08-05 06:53:22'),
-(11, 39, 400.00, '12345678910', 'storage/payment_receipts/33f52d7a4e9c92dedc91a7cf95e25e1d1a9c14f4.png', 'image/png', 'Verified', '2026-08-05 14:55:25', 7, '2026-08-05 14:56:25', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:55:04', '2026-08-05 06:56:25'),
-(12, 40, 400.00, NULL, NULL, NULL, 'Expired', NULL, NULL, NULL, 'Payment submission deadline expired.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 10:12:11', '2026-08-09 00:45:54'),
-(13, 41, 400.00, '1234567891011', 'storage/payment_receipts/487099509dbe1f3a060bbd4ac68e5eba5ece9a2c.png', 'image/png', 'Verified', '2026-08-05 18:28:13', 7, '2026-08-05 18:32:14', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 10:17:46', '2026-08-05 10:32:14');
+INSERT INTO `appointment_deposits` (`deposit_id`, `appointment_id`, `amount`, `receipt_amount`, `gcash_reference`, `gcash_transaction_at`, `receipt_path`, `receipt_mime`, `status`, `submitted_at`, `verified_by_user_id`, `verified_at`, `rejection_reason`, `resubmission_deadline_at`, `deadline_extended_by_user_id`, `deadline_extended_at`, `deadline_extension_reason`, `transferred_from_appointment_id`, `transferred_by_user_id`, `transferred_at`, `transfer_reason`, `refund_reason`, `refunded_by_user_id`, `refunded_at`, `refund_notes`, `created_at`, `updated_at`) VALUES
+(10, 38, 400.00, NULL, '123456789', NULL, 'storage/payment_receipts/47de4d4f65a4f9635de21232c102ce9fb39c4084.png', 'image/png', 'Under Review', '2026-08-05 14:53:22', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:52:41', '2026-08-05 06:53:22'),
+(11, 39, 400.00, NULL, '12345678910', NULL, 'storage/payment_receipts/33f52d7a4e9c92dedc91a7cf95e25e1d1a9c14f4.png', 'image/png', 'Verified', '2026-08-05 14:55:25', 7, '2026-08-05 14:56:25', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 06:55:04', '2026-08-05 06:56:25'),
+(12, 40, 400.00, NULL, NULL, NULL, NULL, NULL, 'Expired', NULL, NULL, NULL, 'Payment submission deadline expired.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 10:12:11', '2026-08-09 00:45:54'),
+(13, 41, 400.00, NULL, '1234567891011', NULL, 'storage/payment_receipts/487099509dbe1f3a060bbd4ac68e5eba5ece9a2c.png', 'image/png', 'Verified', '2026-08-05 18:28:13', 7, '2026-08-05 18:32:14', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-08-05 10:17:46', '2026-08-05 10:32:14');
 
 -- --------------------------------------------------------
 
@@ -1372,9 +1374,9 @@ LEFT JOIN `schedules` `schedule_row` ON (`schedule_row`.`schedule_id` = `a`.`sch
 
 CREATE OR REPLACE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_appointment_payment_summary` AS
 SELECT `a`.`appointment_id` AS `appointment_id`, `d`.`deposit_id` AS `deposit_id`,
-  `d`.`amount` AS `deposit_amount`,
+  `d`.`amount` AS `deposit_amount`, `d`.`receipt_amount` AS `receipt_amount`,
   case when `d`.`status` in ('Verified','Transferred') then coalesce(`d`.`amount`,0) else 0 end AS `verified_deposit`,
-  `d`.`gcash_reference` AS `gcash_reference`, `d`.`receipt_path` AS `receipt_path`,
+  `d`.`gcash_reference` AS `gcash_reference`, `d`.`gcash_transaction_at` AS `gcash_transaction_at`, `d`.`receipt_path` AS `receipt_path`,
   `d`.`receipt_mime` AS `receipt_mime`, `d`.`status` AS `deposit_status`,
   `d`.`submitted_at` AS `submitted_at`, `d`.`verified_at` AS `verified_at`,
   `d`.`rejection_reason` AS `payment_rejection_reason`,

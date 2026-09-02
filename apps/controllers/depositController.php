@@ -6,6 +6,7 @@ require_once '../../config/conn.php';
 require_once '../models/depositModel.php';
 require_once '../models/patientModel.php';
 require_once '../helpers/csrf.php';
+require_once '../support/GcashReceiptOcr.php';
 
 class DepositController {
     private $conn;
@@ -51,19 +52,7 @@ class DepositController {
         return $this->deposits->getPaymentContext($appointmentId, null, trim($_POST['payment_token'] ?? ''));
     }
 
-    public function submit(): void {
-        $this->requireCsrf();
-        $this->deposits->expireUnpaidAppointments();
-        $context = $this->paymentContextFromRequest();
-        if (!$context) {
-            $this->json(['success' => false, 'message' => 'Payment request not found or access denied.']);
-        }
-
-        $reference = strtoupper(preg_replace('/\s+/', '', trim($_POST['gcash_reference'] ?? '')));
-        if (!preg_match('/^[A-Z0-9-]{6,100}$/', $reference)) {
-            $this->json(['success' => false, 'message' => 'Enter a valid GCash reference number.']);
-        }
-
+    private function receiptImageUpload(): array {
         if (!isset($_FILES['receipt']) || $_FILES['receipt']['error'] !== UPLOAD_ERR_OK) {
             $this->json(['success' => false, 'message' => 'Please upload a valid payment receipt.']);
         }
@@ -73,19 +62,98 @@ class DepositController {
 
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($_FILES['receipt']['tmp_name']);
-        $extensions = [
-            'image/jpeg' => 'jpg',
-            'image/png' => 'png',
-            'application/pdf' => 'pdf',
-        ];
+        $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png'];
         if (!isset($extensions[$mime])) {
-            $this->json(['success' => false, 'message' => 'Receipt must be a JPG, PNG, or PDF file.']);
+            $this->json(['success' => false, 'message' => 'Receipt must be a JPG or PNG image.']);
         }
 
-        $filename = bin2hex(random_bytes(20)) . '.' . $extensions[$mime];
+        return [
+            'tmp_name' => $_FILES['receipt']['tmp_name'],
+            'mime' => $mime,
+            'extension' => $extensions[$mime],
+        ];
+    }
+
+    public function extract(): void {
+        $this->requireCsrf();
+        $this->deposits->expireUnpaidAppointments();
+        $context = $this->paymentContextFromRequest();
+        if (!$context) {
+            $this->json(['success' => false, 'message' => 'Payment request not found or access denied.']);
+        }
+
+        $upload = $this->receiptImageUpload();
+        try {
+            $result = (new GcashReceiptOcr())->extract($upload['tmp_name']);
+        } catch (Throwable $exception) {
+            error_log('GCash receipt OCR error: ' . $exception->getMessage());
+            $this->json(['success' => false, 'message' => $exception->getMessage()]);
+        }
+
+        if (!$result['recognized_receipt']) {
+            $this->json([
+                'success' => false,
+                'message' => 'This does not appear to be a standard GCash receipt. You can still enter the details manually.',
+            ]);
+        }
+
+        $labels = [
+            'amount' => 'amount',
+            'reference_number' => 'reference number',
+            'transaction_at' => 'transaction date',
+        ];
+        $missing = array_map(static fn($key) => $labels[$key] ?? $key, $result['missing']);
+        $message = $missing
+            ? 'Receipt scanned. Please enter the missing ' . implode(', ', $missing) . '.'
+            : 'Receipt scanned. Review the details before submitting.';
+
+        $this->json([
+            'success' => true,
+            'fields' => $result['fields'],
+            'missing' => $result['missing'],
+            'message' => $message,
+        ]);
+    }
+
+    public function submit(): void {
+        $this->requireCsrf();
+        $this->deposits->expireUnpaidAppointments();
+        $context = $this->paymentContextFromRequest();
+        if (!$context) {
+            $this->json(['success' => false, 'message' => 'Payment request not found or access denied.']);
+        }
+
+        $reference = preg_replace('/\D+/', '', trim($_POST['gcash_reference'] ?? ''));
+        if (!preg_match('/^\d{10,20}$/', $reference)) {
+            $this->json(['success' => false, 'message' => 'Enter the 10–20 digit GCash reference number shown on the receipt.']);
+        }
+
+        $receiptAmountInput = str_replace([',', '₱', 'PHP', ' '], '', strtoupper(trim($_POST['receipt_amount'] ?? '')));
+        if (!preg_match('/^\d{1,8}(?:\.\d{1,2})?$/', $receiptAmountInput)) {
+            $this->json(['success' => false, 'message' => 'Enter the amount shown on the GCash receipt.']);
+        }
+        $receiptAmount = number_format((float) $receiptAmountInput, 2, '.', '');
+        if (abs((float) $receiptAmount - (float) $context['amount']) > 0.009) {
+            $this->json([
+                'success' => false,
+                'message' => 'The receipt amount must match the required deposit of ₱' . number_format((float) $context['amount'], 2) . '.',
+            ]);
+        }
+
+        $transactionInput = trim($_POST['gcash_transaction_at'] ?? '');
+        $transactionAt = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i', $transactionInput);
+        if (!$transactionAt || $transactionAt->format('Y-m-d\TH:i') !== $transactionInput) {
+            $this->json(['success' => false, 'message' => 'Enter the transaction date and time shown on the receipt.']);
+        }
+        if ($transactionAt > new DateTimeImmutable('+5 minutes')) {
+            $this->json(['success' => false, 'message' => 'The GCash transaction date cannot be in the future.']);
+        }
+
+        $upload = $this->receiptImageUpload();
+        $filename = bin2hex(random_bytes(20)) . '.' . $upload['extension'];
         $relativePath = 'storage/payment_receipts/' . $filename;
         $absolutePath = dirname(__DIR__, 2) . '/' . $relativePath;
-        if (!move_uploaded_file($_FILES['receipt']['tmp_name'], $absolutePath)) {
+        if (!move_uploaded_file($upload['tmp_name'], $absolutePath)) {
             $this->json(['success' => false, 'message' => 'Unable to store the uploaded receipt.']);
         }
 
@@ -93,7 +161,9 @@ class DepositController {
             (int) $context['appointment_id'],
             $reference,
             $relativePath,
-            $mime
+            $upload['mime'],
+            $receiptAmount,
+            $transactionAt->format('Y-m-d H:i:s')
         );
 
         if (!$result['success']) {
@@ -165,7 +235,9 @@ class DepositController {
 $controller = new DepositController();
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'submit') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'extract') {
+    $controller->extract();
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'submit') {
     $controller->submit();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'verify') {
     $controller->verify();

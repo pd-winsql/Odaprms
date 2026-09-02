@@ -1,0 +1,202 @@
+.vd-receipt-assistant {
+    --receipt-ink: #2f2a23;
+    --receipt-muted: #766e63;
+    --receipt-line: #ded5c7;
+    --receipt-soft: #f8f4ed;
+    --receipt-gold: #a67c24;
+    overflow: hidden;
+    border: 1px solid var(--receipt-line);
+    border-radius: 12px;
+    background:
+        radial-gradient(circle at 100% 0, rgba(196, 160, 88, 0.14), transparent 42%),
+        #fffdfa;
+}
+
+.vd-receipt-assistant-head {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(222, 213, 199, 0.72);
+}
+
+.vd-receipt-kicker {
+    margin-bottom: 4px;
+    color: var(--receipt-gold);
+    font-family: "Jost", sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.vd-receipt-assistant-title {
+    margin: 0;
+    color: var(--receipt-ink);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 25px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.vd-receipt-assistant-copy {
+    margin: 7px 0 0;
+    color: var(--receipt-muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.vd-receipt-assistant-body {
+    padding: 18px 20px 20px;
+}
+
+.vd-receipt-upload {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 13px;
+}
+
+.vd-receipt-preview-shell {
+    display: grid;
+    width: 84px;
+    height: 100px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px dashed #c9bfae;
+    border-radius: 9px;
+    background: var(--receipt-soft);
+}
+
+.vd-receipt-preview-shell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: vdReceiptReveal 220ms ease-out both;
+}
+
+.vd-receipt-preview-empty {
+    padding: 8px;
+    color: #958b7c;
+    font-size: 10px;
+    line-height: 1.35;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.vd-receipt-file-name {
+    display: block;
+    overflow: hidden;
+    margin-top: 6px;
+    color: var(--receipt-muted);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vd-ocr-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin: 0 0 17px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #f1eee8;
+    color: #625b52;
+    font-size: 11px;
+    line-height: 1.45;
+    transition: background-color 180ms ease, color 180ms ease;
+}
+
+.vd-ocr-status::before {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    margin-top: 4px;
+    border-radius: 50%;
+    background: #9b9183;
+    content: "";
+}
+
+.vd-ocr-status[data-state="scanning"]::before {
+    background: var(--receipt-gold);
+    animation: vdOcrPulse 900ms ease-in-out infinite;
+}
+
+.vd-ocr-status[data-state="ready"] {
+    background: #eaf4ee;
+    color: #386248;
+}
+
+.vd-ocr-status[data-state="ready"]::before { background: #4c8a61; }
+
+.vd-ocr-status[data-state="manual"] {
+    background: #fff5df;
+    color: #765714;
+}
+
+.vd-ocr-status[data-state="manual"]::before { background: #b98416; }
+
+.vd-receipt-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: 13px;
+}
+
+.vd-receipt-field-wide { grid-column: 1 / -1; }
+
+.vd-receipt-fields .form-label {
+    margin-bottom: 6px;
+    color: #5f574d;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.vd-receipt-fields .form-control {
+    min-height: 44px;
+    border-color: #d8cfc1;
+    background-color: #fff;
+}
+
+.vd-receipt-fields .form-control.is-ocr-filled {
+    border-color: #9ebb9f;
+    background-color: #f5fbf6;
+    animation: vdOcrFieldFill 420ms ease-out both;
+}
+
+.vd-receipt-review-note {
+    margin: 13px 0 16px;
+    color: var(--receipt-muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+@keyframes vdOcrPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(166, 124, 36, 0.16); }
+    50% { box-shadow: 0 0 0 5px rgba(166, 124, 36, 0); }
+}
+
+@keyframes vdReceiptReveal {
+    from { opacity: 0; transform: scale(1.035); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes vdOcrFieldFill {
+    from { box-shadow: 0 0 0 3px rgba(76, 138, 97, 0.16); }
+    to { box-shadow: 0 0 0 0 rgba(76, 138, 97, 0); }
+}
+
+@media (max-width: 575px) {
+    .vd-receipt-assistant-head,
+    .vd-receipt-assistant-body { padding-left: 16px; padding-right: 16px; }
+    .vd-receipt-upload { grid-template-columns: 68px minmax(0, 1fr); }
+    .vd-receipt-preview-shell { width: 68px; height: 84px; }
+    .vd-receipt-fields { grid-template-columns: 1fr; }
+    .vd-receipt-field-wide { grid-column: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vd-receipt-preview-shell img,
+    .vd-ocr-status[data-state="scanning"]::before,
+    .vd-receipt-fields .form-control.is-ocr-filled { animation: none; }
+}

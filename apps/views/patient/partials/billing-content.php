@@ -92,7 +92,12 @@ function depositStatusClass($status) {
                                 <strong>Reason:</strong> <?= htmlspecialchars($deposit['rejection_reason'] ?: 'The submitted proof could not be verified.') ?>
                             </div>
                         <?php elseif ($deposit['deposit_status'] === 'Under Review'): ?>
-                            <div class="alert alert-info small mb-0">Your receipt is waiting for staff verification. Your slot remains reserved.</div>
+                            <div class="alert alert-info small mb-0">
+                                Your receipt is waiting for staff verification. Your slot remains reserved.
+                                <?php if ($deposit['receipt_amount'] !== null && $deposit['gcash_transaction_at']): ?>
+                                    <span class="d-block mt-1">₱<?= number_format((float) $deposit['receipt_amount'], 2) ?> · <?= date('M d, Y g:i A', strtotime($deposit['gcash_transaction_at'])) ?></span>
+                                <?php endif; ?>
+                            </div>
                         <?php elseif ($deposit['deposit_status'] === 'Verified'): ?>
                             <div class="alert alert-success small mb-0">Deposit verified. Your appointment is confirmed.</div>
                         <?php elseif ($deposit['deposit_status'] === 'Expired'): ?>
@@ -116,21 +121,52 @@ function depositStatusClass($status) {
                                     <span class="text-muted small"><?= htmlspecialchars($settings['gcash_account_number']) ?></span>
                                 <?php endif; ?>
                             </div>
-                            <form class="depositSubmissionForm" enctype="multipart/form-data">
+                            <form class="depositSubmissionForm" enctype="multipart/form-data" data-deposit-ocr-form
+                                data-ocr-endpoint="../../controllers/depositController.php"
+                                data-required-amount="<?= htmlspecialchars(number_format((float) $deposit['amount'], 2, '.', '')) ?>">
                                 <input type="hidden" name="action" value="submit">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                                 <input type="hidden" name="appointment_id" value="<?= (int) $deposit['appointment_id'] ?>">
-                                <div class="mb-3">
-                                    <label class="vd-label form-label">GCash reference number</label>
-                                    <input type="text" name="gcash_reference" class="form-control vd-input" maxlength="100" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="vd-label form-label">Payment receipt</label>
-                                    <input type="file" name="receipt" class="form-control vd-input" accept="image/jpeg,image/png,application/pdf" required>
-                                    <small class="text-muted">JPG, PNG, or PDF; maximum 5 MB.</small>
+                                <div class="vd-receipt-assistant">
+                                    <div class="vd-receipt-assistant-head">
+                                        <div class="vd-receipt-kicker">Payment proof</div>
+                                        <h3 class="vd-receipt-assistant-title">Upload your GCash receipt</h3>
+                                        <p class="vd-receipt-assistant-copy">A clear screenshot will automatically fill the payment details below.</p>
+                                    </div>
+                                    <div class="vd-receipt-assistant-body">
+                                        <div class="vd-receipt-upload">
+                                            <div class="vd-receipt-preview-shell">
+                                                <span class="vd-receipt-preview-empty" data-receipt-empty>No receipt selected</span>
+                                                <img class="d-none" data-receipt-preview alt="Selected GCash receipt preview">
+                                            </div>
+                                            <div class="min-w-0">
+                                                <label class="vd-label form-label" for="depositReceipt<?= (int) $deposit['deposit_id'] ?>">Receipt screenshot</label>
+                                                <input id="depositReceipt<?= (int) $deposit['deposit_id'] ?>" type="file" name="receipt" class="form-control vd-input" accept="image/jpeg,image/png" required>
+                                                <small class="vd-receipt-file-name" data-receipt-filename>JPG or PNG · maximum 5 MB</small>
+                                            </div>
+                                        </div>
+                                        <div class="vd-ocr-status" data-ocr-status data-state="idle" role="status" aria-live="polite">
+                                            <span data-ocr-message>Choose a receipt screenshot to fill the details automatically.</span>
+                                        </div>
+                                        <div class="vd-receipt-fields">
+                                            <div>
+                                                <label class="form-label" for="depositAmount<?= (int) $deposit['deposit_id'] ?>">Amount on receipt</label>
+                                                <input id="depositAmount<?= (int) $deposit['deposit_id'] ?>" type="number" name="receipt_amount" class="form-control vd-input" min="0.01" step="0.01" inputmode="decimal" data-ocr-field required>
+                                            </div>
+                                            <div>
+                                                <label class="form-label" for="depositReference<?= (int) $deposit['deposit_id'] ?>">Reference number</label>
+                                                <input id="depositReference<?= (int) $deposit['deposit_id'] ?>" type="text" name="gcash_reference" class="form-control vd-input" maxlength="25" inputmode="numeric" data-ocr-field required>
+                                            </div>
+                                            <div class="vd-receipt-field-wide">
+                                                <label class="form-label" for="depositTransaction<?= (int) $deposit['deposit_id'] ?>">Transaction date and time</label>
+                                                <input id="depositTransaction<?= (int) $deposit['deposit_id'] ?>" type="datetime-local" name="gcash_transaction_at" class="form-control vd-input" data-ocr-field required>
+                                            </div>
+                                        </div>
+                                        <p class="vd-receipt-review-note">Review these details before submitting. You may correct anything that was read incorrectly.</p>
+                                        <button type="submit" class="btn vd-btn-gold w-100">Submit for Verification</button>
+                                    </div>
                                 </div>
                                 <div class="alert alert-danger d-none depositError"></div>
-                                <button type="submit" class="btn vd-btn-gold w-100">Submit for Verification</button>
                             </form>
                         </div>
                     </div>
@@ -196,6 +232,8 @@ function depositStatusClass($status) {
 
 <script>
 (function () {
+    window.DepositOcr?.initAll(document);
+
     document.querySelectorAll('[data-payment-deadline]').forEach(box => {
         const output = box.querySelector('[data-countdown]');
         const deadline = new Date(box.dataset.paymentDeadline).getTime();

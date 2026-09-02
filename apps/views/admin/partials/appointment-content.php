@@ -100,8 +100,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         'deposit' => !empty($appointment['deposit_id']) ? [
             'id' => (int) $appointment['deposit_id'],
             'amount' => $appointment['deposit_amount'] ?? '',
+            'receiptAmount' => $appointment['receipt_amount'] ?? '',
             'status' => $appointment['deposit_status'] ?? '',
             'reference' => $appointment['gcash_reference'] ?? '',
+            'transactionAt' => $appointment['gcash_transaction_at'] ?? '',
             'submittedAt' => $appointment['submitted_at'] ?? '',
             'verifiedAt' => $appointment['verified_at'] ?? '',
             'verifiedBy' => $appointment['payment_verified_by'] ?? '',
@@ -749,7 +751,12 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         statusPill.textContent = deposit.status || 'Unknown';
         const amount = Number(deposit.amount || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
         appendAppointmentDetail(grid, 'Deposit amount', amount);
+        if (deposit.receiptAmount) {
+            const receiptAmount = Number(deposit.receiptAmount).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+            appendAppointmentDetail(grid, 'Amount on receipt', receiptAmount);
+        }
         appendAppointmentDetail(grid, 'GCash reference', deposit.reference || 'Not submitted');
+        if (deposit.transactionAt) appendAppointmentDetail(grid, 'GCash transaction', formatDateTime(deposit.transactionAt));
         appendAppointmentDetail(grid, 'Submitted', deposit.submittedAt ? formatDateTime(deposit.submittedAt) : 'Not submitted');
         appendAppointmentDetail(grid, 'Payment deadline', deposit.deadlineAt ? formatDateTime(deposit.deadlineAt) : 'Not applicable');
         if (deposit.verifiedAt) appendAppointmentDetail(grid, 'Reviewed', formatDateTime(deposit.verifiedAt));

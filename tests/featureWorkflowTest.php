@@ -67,11 +67,13 @@ try {
     $queuedVariables=json_decode((string)$queuedPayload,true)['template_variables']??[];
     expectTrue(($queuedVariables['{deposit_amount}']??'')==='₱425.50' && ($queuedVariables['{payment_deadline}']??'')==='1 hour 15 minutes','Queued email carries the configured deposit and deadline.');
     $reference='TEST'.date('YmdHis').random_int(100,999);
-    $submitted=$deposits->submitReceipt($booking['appointment_id'],$reference,'storage/payment_receipts/test.jpg','image/jpeg'); expectTrue($submitted['success'],'Receipt submission pauses expiry and enters payment review.');
+    $gcashTransactionAt=date('Y-m-d H:i:s',strtotime('-5 minutes'));
+    $submitted=$deposits->submitReceipt($booking['appointment_id'],$reference,'storage/payment_receipts/test.jpg','image/jpeg','425.50',$gcashTransactionAt); expectTrue($submitted['success'],'Receipt submission pauses expiry and enters payment review.');
     $staffAppointment=array_values(array_filter($appointments->getAllUpcomingWithStatus(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
     expectTrue($staffAppointment&&$staffAppointment['deposit_status']==='Under Review'&&!empty($staffAppointment['has_receipt']),'The appointment workspace includes the submitted deposit and receipt context.');
     $depositRecord=array_values(array_filter($deposits->getAllRecords(),fn($row)=>(int)$row['appointment_id']===(int)$booking['appointment_id']))[0]??null;
     expectTrue($depositRecord&&$depositRecord['deposit_status']==='Under Review','The read-only deposit records query includes the pending payment.');
+    expectTrue((float)$depositRecord['receipt_amount']===425.5&&$depositRecord['gcash_transaction_at']===$gcashTransactionAt,'Receipt submission stores the patient-confirmed GCash amount and transaction time.');
     $verified=$deposits->verify((int)$deposit['deposit_id'],$staffId); expectTrue($verified['success'] && str_starts_with($verified['appointment_code'],'AVC-'),'Verification confirms the appointment and generates its code.');
     expectTrue(($verified['notification']['status'] ?? '') === 'Pending','Verification queues the appointment-code email.');
     $matches=$logbook->lookupToday($verified['appointment_code']); expectTrue(count($matches)===1,'The appointment code finds today’s confirmed appointment.');

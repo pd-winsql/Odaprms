@@ -71,7 +71,13 @@ sort($depositStatuses);
                             </td>
                             <td>
                                 <div class="vd-appt-name">₱<?= number_format((float)$record['amount'], 2) ?></div>
+                                <?php if ($record['receipt_amount'] !== null): ?>
+                                    <div class="vd-appt-meta">Receipt: ₱<?= number_format((float)$record['receipt_amount'], 2) ?></div>
+                                <?php endif; ?>
                                 <div class="vd-appt-meta">Ref: <?= htmlspecialchars($record['gcash_reference'] ?: 'Not submitted') ?></div>
+                                <?php if ($record['gcash_transaction_at']): ?>
+                                    <div class="vd-appt-meta">Paid <?= date('M d, Y g:i A', strtotime($record['gcash_transaction_at'])) ?></div>
+                                <?php endif; ?>
                                 <div class="vd-appt-meta"><?= $record['submitted_at'] ? date('M d, Y g:i A', strtotime($record['submitted_at'])) : 'No submission' ?></div>
                             </td>
                             <td>

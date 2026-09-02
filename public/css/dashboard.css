@@ -770,7 +770,9 @@ button.vd-stat-card {
     white-space: nowrap;
 }
 
-.vd-sched-window i { color: var(--gold); }
+.vd-sched-window i {
+    color: var(--gold);
+}
 
 .vd-sched-slots {
     font-size: 9px;
@@ -3111,6 +3113,7 @@ button.vd-stat-card {
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 -8px 24px rgba(50, 40, 20, 0.08);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .vd-logbook-row-highlight td {
@@ -3250,7 +3253,11 @@ button.vd-stat-card {
     line-height: 1.5;
 }
 
-.vd-schedule-policy-note i { margin-top: 2px; color: var(--gold); font-size: 16px; }
+.vd-schedule-policy-note i {
+    margin-top: 2px;
+    color: var(--gold);
+    font-size: 16px;
+}
 .vd-schedule-lock-note {
     display: flex;
     align-items: flex-start;
@@ -3263,9 +3270,17 @@ button.vd-stat-card {
     font-size: 12px;
     line-height: 1.5;
 }
-.vd-schedule-lock-note i { margin-top: 2px; color: #765714; font-size: 16px; }
-.vd-schedule-time-input { cursor: pointer; }
-.vd-schedule-time-help { margin-top: -10px; }
+.vd-schedule-lock-note i {
+    margin-top: 2px;
+    color: #765714;
+    font-size: 16px;
+}
+.vd-schedule-time-input {
+    cursor: pointer;
+}
+.vd-schedule-time-help {
+    margin-top: -10px;
+}
 .vd-clock-timepicker {
     display: block;
     width: 100%;
@@ -3276,14 +3291,16 @@ button.vd-stat-card {
     --clock-timepicker-outer-numbers-color: var(--dark);
     --clock-timepicker-inner-numbers-color: #776b5b;
     --clock-timepicker-disabled-numbers-color: #c9c0b3;
-    --clock-timepicker-font-family: 'Jost', sans-serif;
+    --clock-timepicker-font-family: "Jost", sans-serif;
     --clock-timepicker-popup-background: #fffdf9;
     --clock-timepicker-popup-border: 1px solid var(--border);
     --clock-timepicker-popup-border-radius: 10px;
-    --clock-timepicker-popup-shadow: 0 16px 38px rgba(38, 32, 24, .18);
+    --clock-timepicker-popup-shadow: 0 16px 38px rgba(38, 32, 24, 0.18);
     --clock-timepicker-popup-size: 248px;
 }
-.vd-clock-timepicker > .vd-schedule-time-input { width: 100%; }
+.vd-clock-timepicker > .vd-schedule-time-input {
+    width: 100%;
+}
 .vd-input-locked {
     cursor: not-allowed !important;
     background: #f2eee7 !important;
@@ -3302,13 +3319,19 @@ button.vd-stat-card {
     font-size: 12px;
     line-height: 1.45;
 }
-.vd-schedule-availability i { margin-top: 1px; font-size: 16px; }
+.vd-schedule-availability i {
+    margin-top: 1px;
+    font-size: 16px;
+}
 .vd-schedule-availability.is-conflict {
     border-color: #e3c7b8;
     background: #fbf1ec;
     color: #824829;
 }
-.vd-clinic-hours-list { display: flex; flex-direction: column; }
+.vd-clinic-hours-list {
+    display: flex;
+    flex-direction: column;
+}
 .vd-clinic-hours-row {
     display: grid;
     grid-template-columns: minmax(190px, 1fr) 140px 140px auto;
@@ -3317,12 +3340,33 @@ button.vd-stat-card {
     padding: 16px 0;
     border-top: 1px solid var(--border);
 }
-.vd-clinic-hours-row:first-child { border-top: 0; padding-top: 0; }
-.vd-clinic-hours-name { display: flex; align-items: center; gap: 11px; align-self: center; }
-.vd-clinic-hours-name > i { color: var(--gold); font-size: 22px; }
-.vd-clinic-hours-name span { display: flex; flex-direction: column; gap: 2px; }
-.vd-clinic-hours-name strong { color: var(--dark); font-size: 14px; }
-.vd-clinic-hours-name small { color: var(--mid); font-size: 10px; }
+.vd-clinic-hours-row:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+.vd-clinic-hours-name {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    align-self: center;
+}
+.vd-clinic-hours-name > i {
+    color: var(--gold);
+    font-size: 22px;
+}
+.vd-clinic-hours-name span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.vd-clinic-hours-name strong {
+    color: var(--dark);
+    font-size: 14px;
+}
+.vd-clinic-hours-name small {
+    color: var(--mid);
+    font-size: 10px;
+}
 .vd-clinic-hours-row .vd-save-clinic-hours {
     min-width: 96px;
     height: 44px;
@@ -3330,20 +3374,28 @@ button.vd-stat-card {
     padding: 0 18px;
     border-radius: 7px;
     font-size: 11px;
-    letter-spacing: .12em;
+    letter-spacing: 0.12em;
 }
-.vd-clinic-hours-row .vd-save-clinic-hours i { font-size: 16px; }
+.vd-clinic-hours-row .vd-save-clinic-hours i {
+    font-size: 16px;
+}
 
 /* Schedule creation uses a deliberate, readable modal type scale. */
-#addScheduleModal .modal-dialog { max-width: 640px; }
-#addScheduleModal .modal-header { padding: 22px 24px 18px; }
+#addScheduleModal .modal-dialog {
+    max-width: 640px;
+}
+#addScheduleModal .modal-header {
+    padding: 22px 24px 18px;
+}
 #addScheduleModal .modal-body {
     gap: 20px !important;
     padding: 20px 24px;
     font-size: 15px;
     line-height: 1.55;
 }
-#addScheduleModal .modal-footer { padding: 16px 24px 20px; }
+#addScheduleModal .modal-footer {
+    padding: 16px 24px 20px;
+}
 #addScheduleModal .vd-action-modal-kicker {
     margin-bottom: 4px;
     font-size: 11px;
@@ -3352,7 +3404,7 @@ button.vd-stat-card {
 #addScheduleModal .vd-modal-title {
     font-size: 26px;
     line-height: 1.12;
-    letter-spacing: .055em;
+    letter-spacing: 0.055em;
 }
 #addScheduleModal .vd-schedule-modal-intro {
     color: var(--mid);
@@ -3385,18 +3437,38 @@ button.vd-stat-card {
 }
 
 @media (max-width: 767px) {
-    .vd-clinic-hours-row { grid-template-columns: 1fr 1fr; }
-    .vd-clinic-hours-name { grid-column: 1 / -1; }
-    .vd-clinic-hours-row .vd-save-clinic-hours { grid-column: 1 / -1; width: 100%; }
+    .vd-clinic-hours-row {
+        grid-template-columns: 1fr 1fr;
+    }
+    .vd-clinic-hours-name {
+        grid-column: 1 / -1;
+    }
+    .vd-clinic-hours-row .vd-save-clinic-hours {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
 }
 
 @media (max-width: 575px) {
-    #addScheduleModal .modal-dialog { margin: 10px; }
-    #addScheduleModal .modal-header { padding: 18px 18px 15px; }
-    #addScheduleModal .modal-body { gap: 16px !important; padding: 17px 18px; }
-    #addScheduleModal .modal-footer { padding: 14px 18px 18px; }
-    #addScheduleModal .vd-modal-title { font-size: 23px; }
-    #addScheduleModal .vd-schedule-modal-intro { font-size: 13px; }
+    #addScheduleModal .modal-dialog {
+        margin: 10px;
+    }
+    #addScheduleModal .modal-header {
+        padding: 18px 18px 15px;
+    }
+    #addScheduleModal .modal-body {
+        gap: 16px !important;
+        padding: 17px 18px;
+    }
+    #addScheduleModal .modal-footer {
+        padding: 14px 18px 18px;
+    }
+    #addScheduleModal .vd-modal-title {
+        font-size: 23px;
+    }
+    #addScheduleModal .vd-schedule-modal-intro {
+        font-size: 13px;
+    }
 }
 
 /* ── Services management */

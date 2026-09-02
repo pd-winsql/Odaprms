@@ -120,7 +120,9 @@ class DepositModel {
                 overview.clinic_name,
                 payment.deposit_id,
                 payment.deposit_amount AS amount,
+                payment.receipt_amount,
                 payment.gcash_reference,
+                payment.gcash_transaction_at,
                 payment.receipt_path,
                 payment.deposit_status,
                 payment.submitted_at,
@@ -151,7 +153,9 @@ class DepositModel {
                 a.clinic_name,
                 payment.deposit_id,
                 payment.deposit_amount AS amount,
+                payment.receipt_amount,
                 payment.gcash_reference,
+                payment.gcash_transaction_at,
                 payment.deposit_status,
                 payment.submitted_at,
                 payment.verified_at,
@@ -170,7 +174,7 @@ class DepositModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function submitReceipt($appointmentId, $reference, $receiptPath, $receiptMime): array {
+    public function submitReceipt($appointmentId, $reference, $receiptPath, $receiptMime, $receiptAmount = null, $gcashTransactionAt = null): array {
         try {
             $this->conn->beginTransaction();
             $stmt = $this->conn->prepare("
@@ -217,6 +221,8 @@ class DepositModel {
             $update = $this->conn->prepare("
                 UPDATE appointment_deposits
                 SET gcash_reference = :reference,
+                    receipt_amount = :receipt_amount,
+                    gcash_transaction_at = :gcash_transaction_at,
                     receipt_path = :receipt_path,
                     receipt_mime = :receipt_mime,
                     status = 'Under Review',
@@ -227,6 +233,8 @@ class DepositModel {
             ");
             $update->execute([
                 ':reference' => $reference,
+                ':receipt_amount' => $receiptAmount,
+                ':gcash_transaction_at' => $gcashTransactionAt,
                 ':receipt_path' => $receiptPath,
                 ':receipt_mime' => $receiptMime,
                 ':deposit_id' => $deposit['deposit_id'],
@@ -253,7 +261,9 @@ class DepositModel {
                 payment.deposit_id,
                 a.appointment_id,
                 payment.deposit_amount AS amount,
+                payment.receipt_amount,
                 payment.gcash_reference,
+                payment.gcash_transaction_at,
                 payment.receipt_mime,
                 payment.submitted_at,
                 a.firstname,
@@ -278,7 +288,9 @@ class DepositModel {
                 payment.deposit_id,
                 a.appointment_id,
                 payment.deposit_amount AS amount,
+                payment.receipt_amount,
                 payment.gcash_reference,
+                payment.gcash_transaction_at,
                 payment.deposit_status,
                 payment.submitted_at,
                 payment.verified_at,
