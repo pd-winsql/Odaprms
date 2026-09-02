@@ -5421,6 +5421,22 @@ button.vd-topbar-bell {
     box-shadow: 0 18px 48px rgba(38, 30, 20, 0.18);
 }
 
+.vd-notification-panel:not([hidden]) {
+    transform-origin: top right;
+    animation: vd-notification-panel-in 0.15s ease-out;
+}
+
+@keyframes vd-notification-panel-in {
+    from {
+        opacity: 0;
+        transform: translateY(-5px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 .vd-notification-header {
     position: sticky;
     top: 0;
@@ -5454,18 +5470,40 @@ button.vd-topbar-bell {
 }
 
 .vd-dash-body .vd-notification-mark-all {
-    min-height: 32px;
-    padding: 5px 0;
+    min-height: 44px;
+    padding: 8px 4px;
     background: transparent;
     border: 0;
     color: var(--gold);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     white-space: nowrap;
 }
 
 .vd-notification-mark-all:hover {
     color: var(--dark);
+}
+
+.vd-notification-caught-up {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    padding: 9px 18px;
+    background: rgba(245, 239, 228, 0.55);
+    border-bottom: 1px solid rgba(217, 201, 168, 0.62);
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.vd-notification-caught-up[hidden] {
+    display: none;
+}
+
+.vd-notification-caught-up i {
+    color: var(--gold);
+    font-size: 15px;
 }
 
 .vd-notification-list {
@@ -5506,9 +5544,20 @@ button.vd-topbar-bell {
 }
 
 .vd-notification-item-copy {
+    flex: 1 1 auto;
     min-width: 0;
     display: grid;
     gap: 4px;
+}
+
+.vd-notification-unread-indicator {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    margin-top: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 3px rgba(128, 97, 31, 0.11);
 }
 
 .vd-notification-item-message {
@@ -5543,6 +5592,12 @@ button.vd-topbar-bell {
     z-index: 2;
     outline: 3px solid rgba(128, 97, 31, 0.4);
     outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vd-notification-panel:not([hidden]) {
+        animation: none;
+    }
 }
 
 /* Keep every appointment dropdown action on one icon/text alignment grid,

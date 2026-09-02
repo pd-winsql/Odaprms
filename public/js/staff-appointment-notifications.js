@@ -48,9 +48,10 @@
         const panel = document.getElementById(config.panelId);
         const list = document.getElementById(config.listId);
         const empty = document.getElementById(config.emptyId);
+        const caughtUp = document.getElementById(config.caughtUpId);
         const markAllButton = document.getElementById(config.markAllId);
         const dot = document.getElementById(config.dotId);
-        if (!button || !panel || !list || !empty || !markAllButton || !dot) return null;
+        if (!button || !panel || !list || !empty || !caughtUp || !markAllButton || !dot) return null;
 
         const storageKey = STORAGE_PREFIX + String(config.userId);
         const initialCursors = {
@@ -117,6 +118,7 @@
             );
             markAllButton.hidden = unread === 0;
             empty.hidden = state.notifications.length > 0;
+            caughtUp.hidden = state.notifications.length === 0 || unread > 0;
             list.replaceChildren();
 
             state.notifications.forEach(notification => {
@@ -135,6 +137,12 @@
 
                 const copy = document.createElement('span');
                 copy.className = 'vd-notification-item-copy';
+                if (!notification.read) {
+                    const unreadText = document.createElement('span');
+                    unreadText.className = 'visually-hidden';
+                    unreadText.textContent = 'Unread notification. ';
+                    copy.appendChild(unreadText);
+                }
                 const message = document.createElement('span');
                 message.className = 'vd-notification-item-message';
                 message.textContent = notification.message || type.message;
@@ -145,6 +153,12 @@
                 copy.append(message, time);
 
                 item.append(icon, copy);
+                if (!notification.read) {
+                    const unreadIndicator = document.createElement('span');
+                    unreadIndicator.className = 'vd-notification-unread-indicator';
+                    unreadIndicator.setAttribute('aria-hidden', 'true');
+                    item.appendChild(unreadIndicator);
+                }
                 item.addEventListener('click', () => {
                     notification.read = true;
                     saveState();
@@ -216,6 +230,9 @@
             state.notifications.forEach(item => { item.read = true; });
             saveState();
             render();
+            const firstItem = list.querySelector('.vd-notification-item');
+            if (firstItem) firstItem.focus();
+            else button.focus();
         });
 
         document.addEventListener('click', event => {

@@ -13,9 +13,13 @@
                 <h2 id="staffNotificationTitle">Appointment updates</h2>
             </div>
             <button type="button" class="vd-notification-mark-all" id="staffNotificationMarkAll" hidden>
-                Mark all read
+                Mark all as read
             </button>
         </div>
+        <p class="vd-notification-caught-up" id="staffNotificationCaughtUp" role="status" hidden>
+            <i class="ti ti-check" aria-hidden="true"></i>
+            <span>You’re all caught up.</span>
+        </p>
         <div class="vd-notification-list" id="staffNotificationList"></div>
         <p class="vd-notification-empty" id="staffNotificationEmpty">
             No appointment updates yet.

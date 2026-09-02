@@ -32,7 +32,9 @@ notificationExpect(
     str_contains($markup, '<button type="button" class="vd-topbar-bell"')
         && str_contains($markup, 'aria-controls="staffNotificationPanel"')
         && str_contains($markup, 'aria-expanded="false"')
-        && str_contains($markup, 'staffNotificationMarkAll'),
+        && str_contains($markup, 'staffNotificationMarkAll')
+        && str_contains($markup, 'Mark all as read')
+        && str_contains($markup, 'staffNotificationCaughtUp'),
     'Notification bell markup exposes accessible panel controls.'
 );
 
@@ -41,6 +43,9 @@ notificationExpect(
     str_contains($script, "appointment_created")
         && str_contains($script, "deposit_updated")
         && str_contains($script, 'window.localStorage')
+        && str_contains($script, 'vd-notification-unread-indicator')
+        && str_contains($script, "list.querySelector('.vd-notification-item')")
+        && str_contains($script, 'firstItem.focus()')
         && str_contains($script, 'window.StaffAppointmentNotifications = { create }'),
     'Shared notification behavior supports both feed events and browser-local persistence.'
 );

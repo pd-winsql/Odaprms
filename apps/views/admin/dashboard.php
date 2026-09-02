@@ -297,6 +297,7 @@ $today = date('l, F j Y');
             panelId: 'staffNotificationPanel',
             listId: 'staffNotificationList',
             emptyId: 'staffNotificationEmpty',
+            caughtUpId: 'staffNotificationCaughtUp',
             markAllId: 'staffNotificationMarkAll',
             dotId: 'staffNotificationDot',
             onNavigate(notification) {
