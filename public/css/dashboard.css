@@ -5398,6 +5398,7 @@ button.vd-stat-card {
 button.vd-topbar-bell {
     border: 0;
     background: transparent;
+    font-size: 20px;
     padding: 0;
 }
 
@@ -5542,6 +5543,31 @@ button.vd-topbar-bell {
     z-index: 2;
     outline: 3px solid rgba(128, 97, 31, 0.4);
     outline-offset: -3px;
+}
+
+/* Keep every appointment dropdown action on one icon/text alignment grid,
+   regardless of the button variant used by the action. */
+.vd-appt-action-dropdown .vd-action-group {
+    width: 100%;
+}
+
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item,
+.vd-dash-body .vd-appt-action-dropdown .vd-action-group .vd-btn-gold,
+.vd-dash-body .vd-appt-action-dropdown .vd-appointment-details-btn {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: center;
+    gap: 0 9px;
+    justify-content: initial;
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-item i {
+    width: 20px;
+}
+
+.vd-appt-action-dropdown .vd-appt-menu-item span {
+    min-width: 0;
+    text-align: left;
 }
 
 @media (max-width: 575px) {
