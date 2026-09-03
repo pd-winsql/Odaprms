@@ -21,6 +21,7 @@ $files = [
     'dental-schedules' => __DIR__ . '/../apps/views/dental_asst/partials/schedule-content.php',
     'historical-logbook' => __DIR__ . '/../apps/views/admin/partials/logbook-content.php',
     'analytics' => __DIR__ . '/../apps/views/admin/partials/analytics-content.php',
+    'reviews' => __DIR__ . '/../apps/views/admin/partials/reviews-content.php',
     'patient-billing' => __DIR__ . '/../apps/views/patient/partials/billing-content.php',
     'patient-booking' => __DIR__ . '/../apps/views/patient/partials/booking-content.php',
     'patient-home' => __DIR__ . '/../apps/views/patient/partials/home-content.php',
@@ -64,6 +65,23 @@ if ($case === 'historical-logbook'
         || !str_contains($html, 'historicalLogbookDateValue')
         || str_contains($html, 'type="date"'))) {
     fwrite(STDERR, "The historical logbook did not render its record-aware date picker.\n");
+    exit(1);
+}
+if ($case === 'reviews'
+    && (!str_contains($html, 'Visit Rating &amp; Feedback')
+        || !str_contains($html, 'Recent patient feedback'))) {
+    fwrite(STDERR, "The Admin patient feedback overview did not render.\n");
+    exit(1);
+}
+if ($case === 'patient-history'
+    && (!str_contains($html, 'visitRatingModal')
+        || !str_contains($html, 'Overall visit rating')
+        || !str_contains($html, 'vd-history-column-head')
+        || !str_contains($html, 'Review &amp; actions')
+        || !str_contains($html, 'vd-history-status')
+        || !str_contains($html, 'vd-history-review-slot')
+        || !str_contains($html, 'vd-history-details-slot'))) {
+    fwrite(STDERR, "The patient visit-rating interface did not render.\n");
     exit(1);
 }
 if ($case === 'dental-settings') {

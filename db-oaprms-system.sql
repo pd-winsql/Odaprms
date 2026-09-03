@@ -228,6 +228,21 @@ CREATE TABLE IF NOT EXISTS `appointment_email_notifications` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `appointment_reviews`
+--
+
+CREATE TABLE IF NOT EXISTS `appointment_reviews` (
+  `review_id` bigint(20) UNSIGNED NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `rating` tinyint(3) UNSIGNED NOT NULL,
+  `feedback` varchar(1000) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  CONSTRAINT `chk_appointment_reviews_rating` CHECK (`rating` between 1 and 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `appointment_services`
 --
 
@@ -919,6 +934,14 @@ ALTER TABLE `appointment_email_notifications`
   ADD KEY `idx_email_notification_recipient` (`recipient_user_id`);
 
 --
+-- Indexes for table `appointment_reviews`
+--
+ALTER TABLE `appointment_reviews`
+  ADD PRIMARY KEY (`review_id`),
+  ADD UNIQUE KEY `uq_appointment_reviews_appointment` (`appointment_id`),
+  ADD KEY `idx_appointment_reviews_created` (`created_at`);
+
+--
 -- Indexes for table `appointment_services`
 --
 ALTER TABLE `appointment_services`
@@ -1100,6 +1123,12 @@ ALTER TABLE `appointment_email_notifications`
   MODIFY `notification_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `appointment_reviews`
+--
+ALTER TABLE `appointment_reviews`
+  MODIFY `review_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
@@ -1249,6 +1278,12 @@ ALTER TABLE `appointment_deposits`
 ALTER TABLE `appointment_email_notifications`
   ADD CONSTRAINT `fk_email_notification_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_email_notification_recipient` FOREIGN KEY (`recipient_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `appointment_reviews`
+--
+ALTER TABLE `appointment_reviews`
+  ADD CONSTRAINT `fk_appointment_reviews_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `appointment_services`

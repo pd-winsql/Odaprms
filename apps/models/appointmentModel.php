@@ -282,7 +282,7 @@ class Appointment {
                 FROM vw_appointment_overview a
                 WHERE a.patient_id = :patient_id
                 AND a.date >= CURDATE()
-                AND a.status <> 'Cancelled'
+                AND a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
 
                 ORDER BY a.date ASC
             ");
@@ -312,7 +312,10 @@ class Appointment {
                 LEFT JOIN vw_appointment_payment_summary payment
                     ON payment.appointment_id = a.appointment_id
                 WHERE a.patient_id = :patient_id
-                AND a.date < CURDATE()
+                AND (
+                    a.date < CURDATE()
+                    OR a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                )
 
                 ORDER BY a.date DESC
             ");

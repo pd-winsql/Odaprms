@@ -351,6 +351,264 @@
 .vd-pat-appt-row:last-child { border-bottom: none; }
 .vd-pat-appt-row:hover { background: var(--gold-pale); }
 
+/* ── Patient visit history ── */
+.vd-patient-history-page {
+    max-width: 1360px;
+    width: 100%;
+}
+
+.vd-history-list.vd-dash-card-body {
+    padding: 0;
+}
+
+.vd-history-column-head,
+.vd-history-list .vd-pat-appt-row {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 52px minmax(230px, 1fr) 140px minmax(300px, 340px);
+}
+
+.vd-history-column-head {
+    align-items: center;
+    background: rgba(246, 239, 226, 0.52);
+    border-bottom: 1px solid #eadfc9;
+    color: #7b6c5b;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    padding: 10px 24px;
+    text-transform: uppercase;
+}
+
+.vd-history-column-visit {
+    grid-column: 1 / 3;
+}
+
+.vd-history-list .vd-pat-appt-row {
+    align-items: center;
+    min-height: 80px;
+    padding: 15px 24px;
+    transition: background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.vd-history-list .vd-pat-appt-row:hover {
+    background: rgba(246, 239, 226, 0.58);
+    box-shadow: inset 3px 0 0 rgba(181, 146, 76, 0.68);
+}
+
+.vd-history-list .vd-appt-date-box {
+    height: 48px;
+    width: 48px;
+}
+
+.vd-history-list .vd-appt-day {
+    font-size: 19px;
+}
+
+.vd-history-list .vd-appt-mon {
+    font-size: 9px;
+}
+
+.vd-history-list .vd-appt-name {
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.vd-history-list .vd-appt-meta {
+    color: #716558;
+    font-size: 12px;
+    line-height: 1.45;
+    margin-top: 3px;
+}
+
+.vd-history-status {
+    align-items: center;
+    display: flex;
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.vd-history-row-actions {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(138px, 1fr) max-content;
+    margin-left: 0;
+    min-width: 0;
+    width: 100%;
+}
+
+.vd-history-review-slot,
+.vd-history-details-slot {
+    align-items: center;
+    display: flex;
+    min-height: 44px;
+}
+
+.vd-history-review-slot {
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.vd-history-details-slot {
+    justify-content: flex-end;
+}
+
+.vd-review-submitted-state {
+    align-items: flex-start;
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 112px;
+}
+
+.vd-review-submitted-rating {
+    align-items: center;
+    display: flex;
+    gap: 7px;
+}
+
+.vd-review-submitted-stars {
+    align-items: center;
+    display: inline-flex;
+    gap: 1px;
+}
+
+.vd-review-submitted-stars > span {
+    color: #d8cdb8;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.vd-review-submitted-stars > span.is-filled {
+    color: var(--gold);
+}
+
+.vd-review-submitted-rating strong {
+    color: #66501d;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.vd-review-submitted-state > span {
+    color: #817568;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.vd-dash-body .vd-rate-visit-btn {
+    background: rgba(247, 239, 220, 0.92);
+    border: 1px solid rgba(159, 120, 37, 0.58);
+    box-shadow: none;
+    color: #715518 !important;
+    min-width: 128px;
+    min-height: 42px;
+    padding-inline: 14px;
+}
+
+.vd-dash-body .vd-rate-visit-btn:hover {
+    background: #8e6a1c;
+    border-color: #8e6a1c;
+    box-shadow: 0 4px 11px rgba(110, 82, 22, 0.16);
+    color: #fff !important;
+}
+
+.vd-dash-body .vd-history-details-btn {
+    background: transparent;
+    border: 1px solid rgba(181, 146, 76, 0.36);
+    color: #54493d;
+    min-height: 42px;
+    padding-inline: 13px;
+}
+
+.vd-dash-body .vd-history-details-btn:hover {
+    background: #fffdf9;
+    border-color: rgba(159, 120, 37, 0.66);
+    color: #715518;
+}
+
+.vd-dash-body .vd-rate-visit-btn:focus-visible,
+.vd-dash-body .vd-history-details-btn:focus-visible {
+    outline: 3px solid rgba(159, 120, 37, 0.26);
+    outline-offset: 2px;
+}
+
+@media (max-width: 1250px) {
+    .vd-history-column-head {
+        display: none;
+    }
+
+    .vd-history-list .vd-pat-appt-row {
+        gap: 10px 16px;
+        grid-template-columns: 52px minmax(0, 1fr) auto;
+    }
+
+    .vd-history-status {
+        grid-column: 3;
+    }
+
+    .vd-history-row-actions {
+        grid-column: 2 / 4;
+    }
+}
+
+@media (max-width: 700px) {
+    .vd-history-list .vd-pat-appt-row {
+        align-items: center;
+        gap: 10px 14px;
+        grid-template-columns: 44px minmax(0, 1fr);
+        padding: 16px 18px;
+    }
+
+    .vd-history-list .vd-appt-date-box {
+        height: 44px;
+        width: 44px;
+    }
+
+    .vd-history-list .vd-appt-meta {
+        white-space: normal;
+    }
+
+    .vd-history-status {
+        grid-column: 2;
+    }
+
+    .vd-history-row-actions {
+        border-top: 1px solid rgba(217, 201, 168, 0.58);
+        grid-column: 1 / -1;
+        margin-top: 2px;
+        padding-top: 11px;
+    }
+
+    .vd-history-details-btn span {
+        display: inline;
+    }
+}
+
+@media (max-width: 380px) {
+    .vd-history-list .vd-pat-appt-row {
+        padding-inline: 14px;
+    }
+
+    .vd-history-row-actions {
+        gap: 6px;
+        grid-template-columns: minmax(0, 1fr) 42px;
+    }
+
+    .vd-history-details-btn span {
+        display: none;
+    }
+
+    .vd-dash-body .vd-history-details-btn {
+        min-width: 42px;
+        padding-inline: 10px;
+    }
+}
+
 /* Patient dashboard booking */
 .vd-clinic-switch {
     display: inline-grid;

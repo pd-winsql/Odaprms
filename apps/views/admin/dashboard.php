@@ -114,6 +114,9 @@ $today = date('l, F j Y');
                 <a href="#" class="vd-nav-item" data-page="analytics-content.php">
                     <span class="vd-nav-icon"><i class="ti ti-chart-bar"></i></span> Analytics
                 </a>
+                <a href="#" class="vd-nav-item" data-page="reviews-content.php">
+                    <span class="vd-nav-icon"><i class="ti ti-message-star"></i></span> Patient Feedback
+                </a>
                 <a href="#" class="vd-nav-item" data-page="reports-content.php">
                     <span class="vd-nav-icon"><i class="ti ti-report-analytics"></i></span> Reports &amp; Export
                 </a>

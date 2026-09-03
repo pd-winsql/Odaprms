@@ -195,7 +195,7 @@ $today    = date('l, F j Y');
         async function loadPage(page) {
         LoadingUI.showContent(dashContent, { label: 'Loading dashboard…', page });
         try {
-            const response = await fetch(`partials/${page}`);
+            const response = await fetch(`partials/${page}`, { cache: 'no-store' });
             if (!response.ok) throw new Error('Failed to load');
             const html = await response.text();
             dashContent.innerHTML = html;

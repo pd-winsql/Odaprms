@@ -5635,3 +5635,688 @@ button.vd-topbar-bell {
         max-height: calc(100vh - 78px);
     }
 }
+
+/* ============================================================
+   Visit rating and patient feedback
+   ============================================================ */
+
+.vd-history-status-stack {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.vd-review-submitted-state {
+    align-items: center;
+    color: #725719;
+    display: inline-flex;
+    font-size: 10px;
+    font-weight: 500;
+    gap: 4px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.vd-review-submitted-state > span {
+    color: var(--gold);
+    font-family: Georgia, serif;
+    font-size: 12px;
+}
+
+.vd-rate-visit-btn {
+    align-items: center;
+    display: inline-flex;
+    gap: 7px;
+    justify-content: center;
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+.vd-history-buttons {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+
+.vd-rating-modal .modal-dialog {
+    max-width: 560px;
+}
+
+.vd-rating-modal .modal-content {
+    overflow: hidden;
+}
+
+.vd-rating-modal-header {
+    background:
+        linear-gradient(110deg, rgba(181, 146, 76, 0.13), rgba(255, 253, 249, 0.95)),
+        var(--white-bg);
+    border-bottom-color: rgba(181, 146, 76, 0.22);
+    padding-block: 20px;
+}
+
+.vd-rating-modal-body {
+    display: grid;
+    gap: 24px;
+    padding: 24px;
+}
+
+.vd-rating-fieldset {
+    border: 0;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+    text-align: center;
+}
+
+.vd-rating-fieldset legend {
+    color: var(--dark);
+    float: none;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+}
+
+.vd-rating-fieldset legend span {
+    color: #9b5f39;
+}
+
+.vd-rating-picker {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.vd-rating-picker label {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: #c9baa0;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: Georgia, serif;
+    font-size: 39px;
+    height: 52px;
+    justify-content: center;
+    transition: color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+    width: 52px;
+}
+
+.vd-rating-picker label:hover,
+.vd-rating-picker label.is-selected {
+    color: var(--gold);
+    transform: translateY(-2px);
+}
+
+.vd-rating-picker label.is-selected {
+    background: var(--gold-pale);
+}
+
+.vd-rating-picker input:focus-visible + label {
+    border-color: var(--gold);
+    outline: 3px solid rgba(128, 97, 31, 0.25);
+    outline-offset: 2px;
+}
+
+.vd-rating-meaning {
+    color: #725719;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 18px;
+    font-weight: 500;
+    min-height: 25px;
+    padding-top: 9px;
+}
+
+.vd-rating-feedback-field {
+    display: grid;
+    gap: 8px;
+}
+
+.vd-rating-label-row {
+    align-items: baseline;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.vd-rating-label-row label span {
+    color: var(--mid);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    margin-left: 4px;
+    text-transform: none;
+}
+
+.vd-rating-label-row > span,
+.vd-rating-feedback-field small {
+    color: var(--mid);
+    font-size: 11px;
+}
+
+.vd-rating-feedback-field textarea {
+    line-height: 1.55;
+    min-height: 118px;
+    resize: vertical;
+}
+
+.vd-review-form-alert {
+    background: #fff0e8;
+    border-left: 3px solid #ae6242;
+    border-radius: 7px;
+    color: #74412c;
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 10px 12px;
+}
+
+.vd-rating-modal .modal-footer .vd-btn-gold:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+}
+
+.vd-rating-modal .modal-footer .vd-btn-gold.is-loading i {
+    animation: vdReviewSending 0.8s ease-in-out infinite alternate;
+}
+
+.vd-appointment-review-section {
+    border-top: 1px solid #eadfc9;
+    margin-top: 22px;
+    padding-top: 20px;
+}
+
+.vd-review-date {
+    color: var(--mid);
+    font-size: 10px;
+}
+
+.vd-review-display-stars {
+    color: var(--gold);
+    display: flex;
+    font-size: 22px;
+    gap: 3px;
+    margin-top: 12px;
+}
+
+.vd-review-display-stars span,
+.vd-feedback-stars span,
+.vd-feedback-entry-rating > span span {
+    font-family: Georgia, serif;
+}
+
+.vd-review-display-feedback {
+    border-left: 3px solid var(--gold);
+    color: #41372c;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 19px;
+    font-style: italic;
+    line-height: 1.45;
+    margin: 12px 0 0;
+    padding: 3px 0 3px 14px;
+    white-space: pre-line;
+}
+
+.vd-review-display-empty {
+    color: var(--mid);
+    font-size: 12px;
+    margin: 10px 0 0;
+}
+
+.vd-feedback-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.vd-feedback-overview {
+    animation: vdFeedbackReveal 0.36s ease both;
+    background:
+        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.19), transparent 29%),
+        linear-gradient(128deg, #80611f 0%, #9b792d 58%, #b3924d 100%);
+    border-radius: 16px;
+    color: #fff;
+    display: grid;
+    gap: 28px;
+    grid-template-columns: 180px minmax(0, 1fr) 175px;
+    overflow: hidden;
+    padding: 28px 30px;
+    position: relative;
+}
+
+.vd-feedback-score {
+    align-content: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.25);
+    display: grid;
+    padding-right: 26px;
+}
+
+.vd-feedback-eyebrow,
+.vd-feedback-kicker {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+}
+
+.vd-feedback-score-line {
+    align-items: baseline;
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.vd-feedback-score-line strong {
+    font-family: "Cormorant Garamond", serif;
+    font-size: 58px;
+    font-weight: 400;
+    line-height: 0.95;
+}
+
+.vd-feedback-score-line span {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 14px;
+}
+
+.vd-feedback-stars {
+    color: #f4d990;
+    display: flex;
+    font-size: 17px;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.vd-feedback-intro {
+    align-self: center;
+    max-width: 600px;
+}
+
+.vd-feedback-intro h1 {
+    color: #fff;
+    font-family: "Cormorant Garamond", serif;
+    font-size: clamp(28px, 3vw, 39px);
+    font-weight: 400;
+    line-height: 1.05;
+    margin: 8px 0 9px;
+}
+
+.vd-feedback-intro p {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 12px;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 560px;
+}
+
+.vd-feedback-counts {
+    align-content: center;
+    display: grid;
+    gap: 15px;
+    margin: 0;
+}
+
+.vd-feedback-counts > div {
+    align-items: baseline;
+    display: flex;
+    justify-content: space-between;
+}
+
+.vd-feedback-counts dt {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.vd-feedback-counts dd {
+    font-family: "Cormorant Garamond", serif;
+    font-size: 27px;
+    line-height: 1;
+    margin: 0;
+}
+
+.vd-feedback-list-heading {
+    align-items: flex-end;
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 2px 0;
+}
+
+.vd-feedback-list-heading p {
+    color: var(--mid);
+    font-size: 11px;
+    margin: 4px 0 0;
+}
+
+.vd-feedback-total {
+    color: var(--mid);
+    font-size: 11px;
+}
+
+.vd-feedback-list {
+    background: var(--white-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.vd-feedback-entry {
+    animation: vdFeedbackEntry 0.32s ease both;
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 190px minmax(260px, 1fr) 215px;
+    padding: 22px 24px;
+}
+
+.vd-feedback-entry + .vd-feedback-entry {
+    border-top: 1px solid rgba(217, 201, 168, 0.7);
+}
+
+.vd-feedback-entry:nth-child(2) { animation-delay: 0.04s; }
+.vd-feedback-entry:nth-child(3) { animation-delay: 0.08s; }
+.vd-feedback-entry:nth-child(4) { animation-delay: 0.12s; }
+
+.vd-feedback-entry-person {
+    align-items: center;
+    display: flex;
+    gap: 11px;
+    min-width: 0;
+}
+
+.vd-feedback-avatar {
+    align-items: center;
+    background: var(--gold-pale);
+    border: 1px solid rgba(181, 146, 76, 0.3);
+    border-radius: 50%;
+    color: #785b19;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 17px;
+    font-weight: 600;
+    height: 44px;
+    justify-content: center;
+    width: 44px;
+}
+
+.vd-feedback-entry-person h2 {
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0;
+}
+
+.vd-feedback-entry-person span,
+.vd-feedback-no-comment {
+    color: var(--mid);
+    font-size: 11px;
+}
+
+.vd-feedback-entry-body {
+    min-width: 0;
+}
+
+.vd-feedback-entry-rating {
+    align-items: center;
+    display: flex;
+    gap: 9px;
+}
+
+.vd-feedback-entry-rating > span {
+    color: var(--gold);
+    display: inline-flex;
+    font-size: 17px;
+    gap: 1px;
+}
+
+.vd-feedback-entry-rating strong {
+    color: #69501b;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.vd-feedback-entry-body blockquote {
+    color: #41372c;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 18px;
+    line-height: 1.45;
+    margin: 8px 0 0;
+}
+
+.vd-feedback-no-comment {
+    font-style: italic;
+    margin: 9px 0 0;
+}
+
+.vd-feedback-entry-meta {
+    border-left: 1px solid #eadfc9;
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding-left: 20px;
+}
+
+.vd-feedback-entry-meta > div {
+    display: grid;
+    gap: 2px;
+}
+
+.vd-feedback-entry-meta dt {
+    align-items: center;
+    color: #8b7137;
+    display: flex;
+    font-size: 9px;
+    font-weight: 500;
+    gap: 5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.vd-feedback-entry-meta dd {
+    color: #5c5247;
+    font-size: 11px;
+    line-height: 1.35;
+    margin: 0;
+}
+
+.vd-feedback-empty {
+    align-items: center;
+    background: var(--white-bg);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    padding: 52px 24px;
+    text-align: center;
+}
+
+.vd-feedback-empty-icon {
+    align-items: center;
+    background: var(--gold-pale);
+    border-radius: 50%;
+    color: var(--gold);
+    display: inline-flex;
+    font-size: 25px;
+    height: 54px;
+    justify-content: center;
+    width: 54px;
+}
+
+.vd-feedback-empty h2 {
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 24px;
+    margin: 14px 0 4px;
+}
+
+.vd-feedback-empty p {
+    color: var(--mid);
+    font-size: 12px;
+    margin: 0;
+}
+
+@keyframes vdFeedbackReveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vdFeedbackEntry {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes vdReviewSending {
+    from { transform: translateX(0); }
+    to { transform: translateX(4px); }
+}
+
+@media (max-width: 1100px) {
+    .vd-feedback-overview {
+        grid-template-columns: 155px minmax(0, 1fr);
+    }
+
+    .vd-feedback-counts {
+        border-top: 1px solid rgba(255, 255, 255, 0.25);
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding-top: 18px;
+    }
+
+    .vd-feedback-counts > div {
+        justify-content: flex-start;
+        gap: 12px;
+    }
+
+    .vd-feedback-entry {
+        grid-template-columns: 180px minmax(0, 1fr);
+    }
+
+    .vd-feedback-entry-meta {
+        border-left: 0;
+        border-top: 1px solid #eadfc9;
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding: 14px 0 0;
+    }
+}
+
+@media (max-width: 700px) {
+    .vd-feedback-overview {
+        gap: 20px;
+        grid-template-columns: 1fr;
+        padding: 24px 22px;
+    }
+
+    .vd-feedback-score {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+        border-right: 0;
+        padding: 0 0 18px;
+    }
+
+    .vd-feedback-score-line strong {
+        font-size: 48px;
+    }
+
+    .vd-feedback-counts {
+        grid-column: auto;
+    }
+
+    .vd-feedback-entry {
+        gap: 16px;
+        grid-template-columns: 1fr;
+        padding: 19px 18px;
+    }
+
+    .vd-feedback-entry-meta {
+        grid-column: auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .vd-dash-body .vd-pat-appt-row {
+        align-items: center;
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        padding: 16px 18px;
+    }
+
+    .vd-history-row-actions {
+        align-items: center;
+        flex-direction: row;
+        grid-column: 1 / -1;
+        justify-content: space-between;
+        margin-left: 0;
+        margin-top: 3px;
+        width: 100%;
+    }
+
+    .vd-history-status-stack {
+        align-items: flex-start;
+    }
+
+    .vd-history-buttons {
+        justify-content: flex-end;
+    }
+
+    .vd-history-details-btn span {
+        display: none;
+    }
+
+    .vd-rate-visit-btn,
+    .vd-history-details-btn {
+        width: auto;
+    }
+
+    .vd-rating-modal-body {
+        gap: 20px;
+        padding: 20px 18px;
+    }
+
+    .vd-rating-picker {
+        gap: 2px;
+    }
+
+    .vd-rating-picker label {
+        font-size: 31px;
+        height: 46px;
+        width: 46px;
+    }
+
+    .vd-rating-label-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .vd-feedback-list-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .vd-feedback-counts {
+        grid-template-columns: 1fr;
+    }
+
+    .vd-feedback-entry-meta {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vd-feedback-overview,
+    .vd-feedback-entry,
+    .vd-rating-modal .modal-footer .vd-btn-gold.is-loading i {
+        animation: none;
+    }
+
+    .vd-rating-picker label {
+        transition: none;
+    }
+}
