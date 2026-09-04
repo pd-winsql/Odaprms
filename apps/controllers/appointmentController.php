@@ -347,10 +347,38 @@ class AppointmentController {
         ]);
         exit;
     }
+
+    public function patientNotificationSnapshot() {
+        header('Content-Type: application/json');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
+            exit;
+        }
+
+        if (($_SESSION['user_role'] ?? '') !== 'Patient') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
+            exit;
+        }
+
+        echo json_encode([
+            'success' => true,
+            'appointments' => $this->appointmentModel->getPatientNotificationSnapshot((int) $_SESSION['user_id']),
+        ]);
+        exit;
+    }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'latestAppointment') {
-    (new AppointmentController())->latestAppointment();
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = $_GET['action'] ?? '';
+    if ($action === 'latestAppointment') {
+        (new AppointmentController())->latestAppointment();
+    } elseif ($action === 'patientNotificationSnapshot') {
+        (new AppointmentController())->patientNotificationSnapshot();
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

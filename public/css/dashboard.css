@@ -3902,10 +3902,120 @@ button.vd-stat-card {
     color: var(--gold-dark);
     font-size: 18px;
 }
-/* Password visibility control inside dashboard forms */
-.vd-change-password-form {
-    max-width: 320px;
+/* Focused account-security form shared by every dashboard role. */
+.vd-password-page {
+    display: grid;
+    gap: 24px;
+    max-width: 620px;
     width: 100%;
+}
+
+.vd-password-heading {
+    padding-inline: 2px;
+}
+
+.vd-password-heading .vd-welcome-name {
+    margin-top: 2px;
+}
+
+.vd-password-heading p {
+    color: var(--mid);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 8px 0 0;
+}
+
+.vd-password-panel {
+    max-width: 580px;
+    width: 100%;
+}
+
+.vd-password-panel-body {
+    padding: 28px 30px 30px;
+}
+
+.vd-change-password-form {
+    display: grid;
+    gap: 20px;
+    width: 100%;
+}
+
+.vd-password-section {
+    display: grid;
+    gap: 8px;
+}
+
+.vd-password-section > .form-label {
+    margin-bottom: 0;
+}
+
+.vd-password-divider {
+    background: #eee3d1;
+    height: 1px;
+    margin-block: 2px;
+    width: 100%;
+}
+
+.vd-password-requirements {
+    display: grid;
+    gap: 7px 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    list-style: none;
+    margin: 2px 0 0;
+    padding: 0;
+}
+
+.vd-password-requirements li {
+    align-items: center;
+    color: #74695c;
+    display: flex;
+    font-size: 13px;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.vd-password-requirements li::before {
+    border: 1px solid #cfc2ad;
+    border-radius: 50%;
+    content: "";
+    flex: 0 0 16px;
+    height: 16px;
+    transition: background 0.16s ease, border-color 0.16s ease;
+    width: 16px;
+}
+
+.vd-password-requirements li.is-met {
+    color: #426522;
+}
+
+.vd-password-requirements li.is-met::before {
+    background: #5f8435;
+    border-color: #5f8435;
+    box-shadow: inset 0 0 0 3px #fffdf9;
+}
+
+.vd-field-feedback {
+    color: #9d3f36;
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.vd-field-feedback:empty {
+    display: none;
+}
+
+.vd-password-section .vd-auth-input[aria-invalid="true"] {
+    border-color: #b85a4f !important;
+    outline: 2px solid rgba(184, 90, 79, 0.14);
+}
+
+.vd-password-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 2px;
 }
 
 .vd-auth-input-wrap {
@@ -3916,7 +4026,8 @@ button.vd-stat-card {
 .vd-auth-input-wrap .vd-auth-input {
     box-sizing: border-box;
     display: block;
-    padding-right: 44px;
+    min-height: 52px;
+    padding-right: 92px !important;
     width: 100%;
 }
 
@@ -3928,15 +4039,21 @@ button.vd-stat-card {
     box-shadow: none !important;
     color: var(--mid);
     cursor: pointer;
-    display: flex;
-    height: 36px;
+    display: inline-flex;
+    gap: 6px;
+    height: 44px;
     justify-content: center;
-    padding: 0;
+    padding: 0 10px;
     position: absolute;
-    right: 4px;
+    right: 3px;
     top: 50%;
     transform: translateY(-50%);
-    width: 36px;
+    width: 82px;
+}
+
+.vd-auth-input-wrap .vd-pw-toggle span {
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .vd-auth-input-wrap .vd-pw-toggle:hover {
@@ -3950,6 +4067,29 @@ button.vd-stat-card {
 .vd-auth-input-wrap .vd-pw-toggle:focus-visible {
     outline: 2px solid var(--gold);
     outline-offset: -5px;
+}
+
+@media (max-width: 575px) {
+    .vd-password-page {
+        gap: 20px;
+    }
+
+    .vd-password-panel-body {
+        padding: 22px 20px 24px;
+    }
+
+    .vd-password-requirements {
+        grid-template-columns: 1fr;
+    }
+
+    .vd-password-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .vd-password-actions .btn {
+        width: 100%;
+    }
 }
 /* Admin analytics */
 .vd-analytics-page {

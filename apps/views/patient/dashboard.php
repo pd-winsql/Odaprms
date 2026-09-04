@@ -120,7 +120,7 @@ $today    = date('l, F j Y');
         </div>
         <div class="vd-topbar-right">
             <span class="vd-topbar-date"><?= $today ?></span>
-            <span class="vd-topbar-bell"><i class="ti ti-bell"></i><span class="vd-topbar-bell-dot"></span></span>
+            <?php include __DIR__ . '/../shared/patient-notification-center.php'; ?>
             <span class="vd-role-badge">Patient</span>
         </div>
         </div>
@@ -141,6 +141,7 @@ $today    = date('l, F j Y');
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
+    <script src="../../../public/js/patient-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/patient-appointment-notifications.js') ?>"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
         window.showToast = function(message, success = true, duration = 4000) {
@@ -235,6 +236,22 @@ $today    = date('l, F j Y');
             setDashboardTitle(page);
             await loadPage(page);
         });
+        });
+
+        window.PatientAppointmentNotifications?.create({
+            userId: <?= (int) $_SESSION['user_id'] ?>,
+            endpoint: '../../controllers/appointmentController.php?action=patientNotificationSnapshot',
+            pollInterval: 10000,
+            buttonId: 'patientNotificationButton',
+            panelId: 'patientNotificationPanel',
+            listId: 'patientNotificationList',
+            emptyId: 'patientNotificationEmpty',
+            caughtUpId: 'patientNotificationCaughtUp',
+            markAllId: 'patientNotificationMarkAll',
+            dotId: 'patientNotificationDot',
+            onNavigate(destination) {
+                document.querySelector(`.vd-nav-item[data-page="${destination}"]`)?.click();
+            }
         });
 
         // Restore last page on reload

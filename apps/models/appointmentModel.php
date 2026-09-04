@@ -631,6 +631,55 @@ class Appointment {
         }
     }
 
+    /**
+     * Return the small appointment-state snapshot used by the patient bell.
+     *
+     * The browser compares these values with its last locally stored snapshot;
+     * this deliberately avoids introducing a notification table in the first
+     * release. Access is scoped by the signed-in user's id, not a browser-
+     * supplied patient id.
+     */
+    public function getPatientNotificationSnapshot(int $userId): array {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT
+                    a.appointment_id,
+                    a.status,
+                    a.date,
+                    c.clinic_name,
+                    d.status AS deposit_status,
+                    d.amount AS deposit_amount,
+                    COALESCE(d.resubmission_deadline_at, a.payment_deadline_at) AS payment_deadline_at,
+                    CASE
+                        WHEN d.status = 'Rejected' THEN d.rejection_reason
+                        WHEN a.status = 'Rejected' THEN a.rejection_reason
+                        WHEN a.status = 'Cancelled' THEN a.cancellation_reason
+                        ELSE NULL
+                    END AS patient_reason,
+                    CASE
+                        WHEN d.status = 'Rejected' THEN d.updated_at
+                        WHEN a.status = 'Confirmed' THEN a.confirmed_at
+                        WHEN a.status = 'Rejected' THEN a.rejected_at
+                        WHEN a.status = 'Cancelled' THEN a.cancelled_at
+                        WHEN a.status = 'Awaiting Deposit' THEN a.accepted_for_payment_at
+                        ELSE a.created_at
+                    END AS state_changed_at
+                FROM appointments a
+                JOIN patients p ON p.patient_id = a.patient_id
+                LEFT JOIN clinics c ON c.clinic_id = a.clinic_id
+                LEFT JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
+                WHERE p.user_id = :user_id
+                ORDER BY a.appointment_id DESC
+                LIMIT 50
+            ");
+            $stmt->execute([':user_id' => $userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log('getPatientNotificationSnapshot error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     // ===== PERSISTENCE HELPERS =====
 
     public function getLastInsertedId() {
