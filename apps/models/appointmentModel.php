@@ -19,71 +19,7 @@ class Appointment {
         $this->maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
     }
 
-    /**
-     * A cheap cursor used by staff dashboards to notice newly-created bookings.
-     */
-    public function getLatestAppointmentId(): int {
-        try {
-            return (int) $this->conn->query('SELECT COALESCE(MAX(appointment_id), 0) FROM appointments')->fetchColumn();
-        } catch (PDOException $e) {
-            error_log('getLatestAppointmentId error: ' . $e->getMessage());
-            return 0;
-        }
-    }
-
-    /**
-     * Detects new deposits and receipt/status updates without returning payment data.
-     */
-    public function getDepositFeedVersion(): string {
-        try {
-            $sql = "
-                SELECT CONCAT(
-                    COUNT(*), ':',
-                    COALESCE(MAX(deposit_id), 0), ':',
-                    COALESCE(DATE_FORMAT(MAX(updated_at), '%Y%m%d%H%i%s'), '0')
-                )
-                FROM appointment_deposits
-            ";
-            return (string) $this->conn->query($sql)->fetchColumn();
-        } catch (PDOException $e) {
-            error_log('getDepositFeedVersion error: ' . $e->getMessage());
-            return '0:0:0';
-        }
-    }
-
-    public function getServiceDetailsForAppointments(array $appointmentIds): array {
-        $appointmentIds = array_values(array_unique(array_filter(array_map('intval', $appointmentIds))));
-        if (!$appointmentIds) return [];
-
-        try {
-            $placeholders = implode(',', array_fill(0, count($appointmentIds), '?'));
-            $stmt = $this->conn->prepare("
-                SELECT
-                    aps.appointment_id,
-                    s.service_id,
-                    s.service_name,
-                    s.service_description,
-                    s.service_icon,
-                    c.category_name
-                FROM appointment_services aps
-                JOIN services s ON s.service_id = aps.service_id
-                LEFT JOIN service_categories c ON c.category_id = s.category_id
-                WHERE aps.appointment_id IN ({$placeholders})
-                ORDER BY aps.appointment_id, s.display_order, s.service_name
-            ");
-            $stmt->execute($appointmentIds);
-
-            $grouped = [];
-            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $service) {
-                $grouped[(int) $service['appointment_id']][] = $service;
-            }
-            return $grouped;
-        } catch (PDOException $e) {
-            error_log('getServiceDetailsForAppointments error: ' . $e->getMessage());
-            return [];
-        }
-    }
-
+    // ===== BOOKING =====
     public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $performedByUserId = null) {
         // Normalize and validate service IDs: cast to ints, remove falsy values,
         // deduplicate and reindex the array. If no services remain, abort.
@@ -455,22 +391,7 @@ class Appointment {
 
     // Admin: update appointment status
     public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '') {
-        // Define allowed state transitions for appointments. This map drives
-        // validation so only permitted transitions are accepted.
-        $allowedTransitions = [
-            'Pending Review' => ['Awaiting Deposit', 'Rejected'],
-            'Awaiting Deposit' => ['Cancelled'],
-            'Payment Under Review' => [],
-            'Confirmed' => ['Checked In', 'Cancelled', 'No-show'],
-            'Checked In' => ['In Progress'],
-            // Completion is coupled to final billing in BillingModel so the
-            // performed services, payment, and status commit together.
-            'In Progress' => [],
-            'Completed' => [],
-            'Cancelled' => [],
-            'No-show' => [],
-            'Rejected' => [],
-        ];
+        $allowedTransitions = $this->getAllowedStatusTransitions();
 
         // Quick validation: ensure the requested target status is one of the
         // statuses known to the system (appears in allowedTransitions values).
@@ -528,84 +449,12 @@ class Appointment {
                 return ['success' => false, 'message' => 'The reason must not exceed 255 characters.'];
             }
 
-            // Additional readiness checks when transitioning to 'In Progress'.
-            // These ensure the patient profile and check-in state are correct,
-            // that the appointment is for today and the patient is actually
-            // next in the queue (respecting any one-time "serve next" override).
             if ($status === 'In Progress') {
-                $readiness = $this->conn->prepare("
-                    SELECT a.date, p.profile_status, ci.checkin_status,
-                        ci.queue_status, ci.serve_next_at
-                    FROM appointments a JOIN patients p ON p.patient_id=a.patient_id
-                    LEFT JOIN appointment_checkins ci ON ci.appointment_id=a.appointment_id
-                    WHERE a.appointment_id=:id
-                    FOR UPDATE
-                ");
-                $readiness->execute([':id'=>$appointment_id]);
-                $ready=$readiness->fetch(PDO::FETCH_ASSOC);
-
-                // Ensure patient profile is complete and check-in status is 'Ready'.
-                if(!$ready || $ready['profile_status']!=='Complete' || $ready['checkin_status']!=='Ready'){
+                $readinessError = $this->validateTreatmentStart($appointment_id);
+                if ($readinessError !== null) {
                     $this->conn->rollBack();
-                    return ['success'=>false,'message'=>'Complete the entire patient profile before starting treatment.'];
+                    return ['success' => false, 'message' => $readinessError];
                 }
-
-                // Appointment must be scheduled for today and be in the 'Waiting' queue state.
-                if ($ready['date'] !== date('Y-m-d') || $ready['queue_status'] !== 'Waiting') {
-                    $this->conn->rollBack();
-                    return ['success'=>false,'message'=>'Only a waiting patient in today\'s queue can start treatment.'];
-                }
-
-                // Prevent two patients being 'In Progress' at once: lock and check
-                // for any other appointment already in progress.
-                $active = $this->conn->prepare("
-                    SELECT appointment_id
-                    FROM appointments
-                    WHERE status = 'In Progress' AND appointment_id <> :id
-                    FOR UPDATE
-                ");
-                $active->execute([':id' => $appointment_id]);
-                if ($active->fetchColumn() !== false) {
-                    $this->conn->rollBack();
-                    return ['success'=>false,'message'=>'Complete the current patient\'s visit before starting the next patient.'];
-                }
-
-                // Determine who is next in the queue using consistent ordering.
-                // This query respects a one-time 'serve_next_at' override and
-                // then falls back to FIFO by arrival/queue_entered time.
-                $next = $this->conn->query("
-                    SELECT a.appointment_id
-                    FROM appointments a
-                    JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
-                    JOIN patients p ON p.patient_id = a.patient_id
-                    WHERE a.date = CURDATE()
-                        AND a.status = 'Checked In'
-                        AND p.profile_status = 'Complete'
-                        AND ci.checkin_status = 'Ready'
-                        AND ci.queue_status = 'Waiting'
-                    ORDER BY
-                      /* Serve Next is checked inside this transaction so two staff actions cannot bypass each other. */
-                        CASE WHEN ci.serve_next_at IS NOT NULL THEN 0 ELSE 1 END,
-                        ci.serve_next_at DESC,
-                        COALESCE(ci.queue_entered_at, ci.arrived_at) ASC,
-                        ci.arrived_at ASC,
-                        ci.checkin_id ASC
-                    LIMIT 1
-                    FOR UPDATE
-                ")->fetchColumn();
-
-                // If this appointment is not the current next patient, abort.
-                if ($next === false || (int) $next !== (int) $appointment_id) {
-                    $this->conn->rollBack();
-                    return ['success'=>false,'message'=>'This patient is not next in the queue. Use Today\'s Logbook to adjust the queue first.'];
-                }
-
-                /* Starting treatment consumes the one-time override; normal FIFO resumes afterward. */
-                $this->conn->prepare("
-                    UPDATE appointment_checkins
-                    SET serve_next_at = NULL, serve_next_reason = NULL, serve_next_by_user_id = NULL
-                    WHERE appointment_id = :id
-                ")->execute([':id' => $appointment_id]);
             }
 
             // Resolve the actor (the user performing the status change) for
@@ -616,87 +465,20 @@ class Appointment {
                 throw new RuntimeException('The authenticated user could not be found.');
             }
 
-            // Business rules related to deposits and payment when accepting
-            // an appointment for payment or marking a no-show/cancellation.
-            if ($oldStatus === 'Pending Review' && $status === 'Awaiting Deposit') {
-                // Create or update a deposit record with the configured amount
-                // and payment deadline minutes (defaults used when missing).
-                $settings = $this->conn->query("SELECT deposit_amount, payment_deadline_minutes FROM site_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC) ?: [];
-                $amount = (float) ($settings['deposit_amount'] ?? 400);
-                $minutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 480));
-                $this->conn->prepare("
-                    INSERT INTO appointment_deposits (appointment_id, amount, status)
-                    VALUES (:appointment_id, :amount, 'Awaiting Submission')
-                    ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'Awaiting Submission'
-                ")->execute([':appointment_id' => $appointment_id, ':amount' => $amount]);
-            }
-            if ($status === 'No-show') {
-                // Forfeiture: if the deposit was already verified, mark it forfeited.
-                $this->conn->prepare("UPDATE appointment_deposits SET status='Forfeited', refund_reason='Patient did not attend the confirmed appointment.' WHERE appointment_id=:id AND status='Verified'")
-                    ->execute([':id'=>$appointment_id]);
-            }
-            if ($status === 'Cancelled') {
-                // Keep a verified deposit available for refund or transfer.
-                $this->conn->prepare("
-                    UPDATE appointment_deposits SET
-                        refund_reason = CASE WHEN status='Verified' THEN :reason ELSE refund_reason END,
-                        status = CASE WHEN status='Verified' THEN 'For Refund' ELSE 'Expired' END
-                    WHERE appointment_id=:id AND status IN ('Verified','Awaiting Submission','Rejected')
-                ")->execute([':reason'=>trim($reason), ':id'=>$appointment_id]);
-            }
+            $paymentContext = $this->applyPaymentStatusChange($appointment_id, $oldStatus, $status, $reason);
+            $amount = $paymentContext['amount'];
+            $minutes = $paymentContext['minutes'];
+            $this->saveAppointmentStatus($appointment_id, $status, $performedByUserId, $reason, $minutes);
 
-            // Save the new status, timestamps, and cancellation reason.
-            $stmt = $this->conn->prepare("
-                UPDATE appointments SET
-                    status = :status,
-                    reviewed_by_user_id = CASE WHEN :status IN ('Awaiting Deposit','Rejected') THEN :reviewer ELSE reviewed_by_user_id END,
-                    reviewed_at = CASE WHEN :status IN ('Awaiting Deposit','Rejected') THEN NOW() ELSE reviewed_at END,
-                    accepted_for_payment_at = CASE WHEN :status = 'Awaiting Deposit' THEN NOW() ELSE accepted_for_payment_at END,
-                    payment_deadline_at = CASE WHEN :status = 'Awaiting Deposit' THEN DATE_ADD(NOW(), INTERVAL :deadline_minutes MINUTE) ELSE payment_deadline_at END,
-                    rejected_at = CASE WHEN :status = 'Rejected' THEN NOW() ELSE rejected_at END,
-                    rejection_reason = CASE WHEN :status = 'Rejected' THEN :reason ELSE rejection_reason END,
-                    treatment_started_at = CASE WHEN :status = 'In Progress' THEN NOW() ELSE treatment_started_at END,
-                    completed_at = CASE WHEN :status = 'Completed' THEN NOW() ELSE completed_at END,
-                    cancelled_at = CASE WHEN :status = 'Cancelled' THEN NOW() ELSE cancelled_at END,
-                    cancellation_reason = CASE WHEN :status = 'Cancelled' THEN :reason ELSE cancellation_reason END
-                WHERE appointment_id = :id
-            ");
-            $stmt->execute([
-                ':status' => $status,
-                ':reviewer' => $performedByUserId,
-                ':deadline_minutes' => isset($minutes) ? $minutes : 480,
-                ':reason' => trim($reason) ?: null,
-                ':id'     => $appointment_id,
-            ]);
-
-            // Create an audit record for the status change. The audit contains
-            // the old and new statuses and who performed the change.
-            $audit = $this->auditLog->record(
-                'appointment',
-                (int) $appointment_id,
-                'status_changed',
-                "Changed appointment #{$appointment_id} status from {$oldStatus} to {$status}.",
-                ['status' => $oldStatus],
-                ['status' => $status],
+            $sideEffects = $this->recordStatusChangeAndNotify(
+                $appointment_id,
+                $oldStatus,
+                $status,
+                $reason,
                 $actor
             );
-
-            // Queue notification inside the same transaction as the status
-            // change. A separate browser request handles the slow SMTP call.
-            $notification = null;
-            $notificationTemplates = [
-                'Awaiting Deposit' => 'appointment_awaiting_deposit',
-                'Rejected' => 'appointment_rejected',
-                'Cancelled' => 'appointment_cancelled',
-            ];
-            if (isset($notificationTemplates[$status])) {
-                $notification = $this->emailNotifications->enqueueAppointmentTemplate(
-                    (int) $appointment_id,
-                    $notificationTemplates[$status],
-                    trim($reason) !== '' ? trim($reason) : $status,
-                    'audit:' . $audit['audit_log_id'] . ':' . $notificationTemplates[$status]
-                );
-            }
+            $audit = $sideEffects['audit'];
+            $notification = $sideEffects['notification'];
 
             // Commit the transaction now that all updates and side-effects are done.
             $this->conn->commit();
@@ -731,8 +513,39 @@ class Appointment {
         }
     }
 
-        public function getLastInsertedId() {
-        return $this->conn->lastInsertId();
+    // ===== SHARED APPOINTMENT QUERIES =====
+
+    public function getServiceDetailsForAppointments(array $appointmentIds): array {
+        $appointmentIds = array_values(array_unique(array_filter(array_map('intval', $appointmentIds))));
+        if (!$appointmentIds) return [];
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($appointmentIds), '?'));
+            $stmt = $this->conn->prepare("
+                SELECT
+                    aps.appointment_id,
+                    s.service_id,
+                    s.service_name,
+                    s.service_description,
+                    s.service_icon,
+                    c.category_name
+                FROM appointment_services aps
+                JOIN services s ON s.service_id = aps.service_id
+                LEFT JOIN service_categories c ON c.category_id = s.category_id
+                WHERE aps.appointment_id IN ({$placeholders})
+                ORDER BY aps.appointment_id, s.display_order, s.service_name
+            ");
+            $stmt->execute($appointmentIds);
+
+            $grouped = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $service) {
+                $grouped[(int) $service['appointment_id']][] = $service;
+            }
+            return $grouped;
+        } catch (PDOException $e) {
+            error_log('getServiceDetailsForAppointments error: ' . $e->getMessage());
+            return [];
+        }
     }
 
     public function countAppointmentsBySchedule($schedule_id)
@@ -744,12 +557,39 @@ class Appointment {
                 AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
         ");
 
-        $stmt->execute([
-            ':schedule_id' => $schedule_id
-        ]);
-
+        $stmt->execute([':schedule_id' => $schedule_id]);
         return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     }
+
+    // ===== DASHBOARD FEED HELPERS =====
+
+    public function getLatestAppointmentId(): int {
+        try {
+            return (int) $this->conn->query('SELECT COALESCE(MAX(appointment_id), 0) FROM appointments')->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('getLatestAppointmentId error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getDepositFeedVersion(): string {
+        try {
+            $sql = "
+                SELECT CONCAT(
+                    COUNT(*), ':',
+                    COALESCE(MAX(deposit_id), 0), ':',
+                    COALESCE(DATE_FORMAT(MAX(updated_at), '%Y%m%d%H%i%s'), '0')
+                )
+                FROM appointment_deposits
+            ";
+            return (string) $this->conn->query($sql)->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('getDepositFeedVersion error: ' . $e->getMessage());
+            return '0:0:0';
+        }
+    }
+
+    // ===== ADDITIONAL APPOINTMENT QUERIES =====
 
     public function getAppointmentsByStatus($status) {
         try {
@@ -762,13 +602,8 @@ class Appointment {
                 AND a.status = :status
                 ORDER BY a.date ASC
             ");
-
-            $stmt->execute([
-                ':status' => $status
-            ]);
-
+            $stmt->execute([':status' => $status]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getAppointmentsByStatus error: " . $e->getMessage());
             return [];
@@ -790,10 +625,192 @@ class Appointment {
             ");
             $stmt->execute([':patient_id' => $patient_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getPatientTransactionHistory error: " . $e->getMessage());
             return [];
         }
     }
+
+    // ===== PERSISTENCE HELPERS =====
+
+    public function getLastInsertedId() {
+        return $this->conn->lastInsertId();
+    }
+
+    // ===== STATUS WORKFLOW HELPERS =====
+
+    private function getAllowedStatusTransitions(): array {
+        return [
+            'Pending Review' => ['Awaiting Deposit', 'Rejected'],
+            'Awaiting Deposit' => ['Cancelled'],
+            'Payment Under Review' => [],
+            'Confirmed' => ['Checked In', 'Cancelled', 'No-show'],
+            'Checked In' => ['In Progress'],
+            'In Progress' => [],
+            'Completed' => [],
+            'Cancelled' => [],
+            'No-show' => [],
+            'Rejected' => [],
+        ];
+    }
+
+    private function validateTreatmentStart($appointment_id): ?string {
+        $readiness = $this->conn->prepare("
+            SELECT a.date, p.profile_status, ci.checkin_status,
+                ci.queue_status, ci.serve_next_at
+            FROM appointments a
+            JOIN patients p ON p.patient_id = a.patient_id
+            LEFT JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
+            WHERE a.appointment_id = :id
+            FOR UPDATE
+        ");
+        $readiness->execute([':id' => $appointment_id]);
+        $ready = $readiness->fetch(PDO::FETCH_ASSOC);
+
+        if (!$ready || $ready['profile_status'] !== 'Complete' || $ready['checkin_status'] !== 'Ready') {
+            return 'Complete the entire patient profile before starting treatment.';
+        }
+        if ($ready['date'] !== date('Y-m-d') || $ready['queue_status'] !== 'Waiting') {
+            return 'Only a waiting patient in today\'s queue can start treatment.';
+        }
+
+        $active = $this->conn->prepare("
+            SELECT appointment_id
+            FROM appointments
+            WHERE status = 'In Progress' AND appointment_id <> :id
+            FOR UPDATE
+        ");
+        $active->execute([':id' => $appointment_id]);
+        if ($active->fetchColumn() !== false) {
+            return 'Complete the current patient\'s visit before starting the next patient.';
+        }
+
+        $next = $this->conn->query("
+            SELECT a.appointment_id
+            FROM appointments a
+            JOIN appointment_checkins ci ON ci.appointment_id = a.appointment_id
+            JOIN patients p ON p.patient_id = a.patient_id
+            WHERE a.date = CURDATE()
+                AND a.status = 'Checked In'
+                AND p.profile_status = 'Complete'
+                AND ci.checkin_status = 'Ready'
+                AND ci.queue_status = 'Waiting'
+            ORDER BY
+                CASE WHEN ci.serve_next_at IS NOT NULL THEN 0 ELSE 1 END,
+                ci.serve_next_at DESC,
+                COALESCE(ci.queue_entered_at, ci.arrived_at) ASC,
+                ci.arrived_at ASC,
+                ci.checkin_id ASC
+            LIMIT 1
+            FOR UPDATE
+        ")->fetchColumn();
+
+        if ($next === false || (int) $next !== (int) $appointment_id) {
+            return 'This patient is not next in the queue. Use Today\'s Logbook to adjust the queue first.';
+        }
+
+        $this->conn->prepare("
+            UPDATE appointment_checkins
+            SET serve_next_at = NULL, serve_next_reason = NULL, serve_next_by_user_id = NULL
+            WHERE appointment_id = :id
+        ")->execute([':id' => $appointment_id]);
+
+        return null;
+    }
+
+    private function applyPaymentStatusChange($appointment_id, $oldStatus, $status, $reason): array {
+        $amount = 0.0;
+        $minutes = 480;
+
+        if ($oldStatus === 'Pending Review' && $status === 'Awaiting Deposit') {
+            $settings = $this->conn->query("
+                SELECT deposit_amount, payment_deadline_minutes
+                FROM site_settings
+                WHERE id = 1
+            ")->fetch(PDO::FETCH_ASSOC) ?: [];
+            $amount = (float) ($settings['deposit_amount'] ?? 400);
+            $minutes = max(1, (int) ($settings['payment_deadline_minutes'] ?? 480));
+            $this->conn->prepare("
+                INSERT INTO appointment_deposits (appointment_id, amount, status)
+                VALUES (:appointment_id, :amount, 'Awaiting Submission')
+                ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'Awaiting Submission'
+            ")->execute([':appointment_id' => $appointment_id, ':amount' => $amount]);
+        }
+
+        if ($status === 'No-show') {
+            $this->conn->prepare("
+                UPDATE appointment_deposits
+                SET status = 'Forfeited',
+                    refund_reason = 'Patient did not attend the confirmed appointment.'
+                WHERE appointment_id = :id AND status = 'Verified'
+            ")->execute([':id' => $appointment_id]);
+        }
+
+        if ($status === 'Cancelled') {
+            $this->conn->prepare("
+                UPDATE appointment_deposits SET
+                    refund_reason = CASE WHEN status = 'Verified' THEN :reason ELSE refund_reason END,
+                    status = CASE WHEN status = 'Verified' THEN 'For Refund' ELSE 'Expired' END
+                WHERE appointment_id = :id
+                    AND status IN ('Verified', 'Awaiting Submission', 'Rejected')
+            ")->execute([':reason' => trim($reason), ':id' => $appointment_id]);
+        }
+
+        return ['amount' => $amount, 'minutes' => $minutes];
+    }
+
+    private function saveAppointmentStatus($appointment_id, $status, $performedByUserId, $reason, $minutes): void {
+        $stmt = $this->conn->prepare("
+            UPDATE appointments SET
+                status = :status,
+                reviewed_by_user_id = CASE WHEN :status IN ('Awaiting Deposit','Rejected') THEN :reviewer ELSE reviewed_by_user_id END,
+                reviewed_at = CASE WHEN :status IN ('Awaiting Deposit','Rejected') THEN NOW() ELSE reviewed_at END,
+                accepted_for_payment_at = CASE WHEN :status = 'Awaiting Deposit' THEN NOW() ELSE accepted_for_payment_at END,
+                payment_deadline_at = CASE WHEN :status = 'Awaiting Deposit' THEN DATE_ADD(NOW(), INTERVAL :deadline_minutes MINUTE) ELSE payment_deadline_at END,
+                rejected_at = CASE WHEN :status = 'Rejected' THEN NOW() ELSE rejected_at END,
+                rejection_reason = CASE WHEN :status = 'Rejected' THEN :reason ELSE rejection_reason END,
+                treatment_started_at = CASE WHEN :status = 'In Progress' THEN NOW() ELSE treatment_started_at END,
+                completed_at = CASE WHEN :status = 'Completed' THEN NOW() ELSE completed_at END,
+                cancelled_at = CASE WHEN :status = 'Cancelled' THEN NOW() ELSE cancelled_at END,
+                cancellation_reason = CASE WHEN :status = 'Cancelled' THEN :reason ELSE cancellation_reason END
+            WHERE appointment_id = :id
+        ");
+        $stmt->execute([
+            ':status' => $status,
+            ':reviewer' => $performedByUserId,
+            ':deadline_minutes' => $minutes,
+            ':reason' => trim($reason) ?: null,
+            ':id' => $appointment_id,
+        ]);
+    }
+
+    private function recordStatusChangeAndNotify($appointment_id, $oldStatus, $status, $reason, array $actor): array {
+        $audit = $this->auditLog->record(
+            'appointment',
+            (int) $appointment_id,
+            'status_changed',
+            "Changed appointment #{$appointment_id} status from {$oldStatus} to {$status}.",
+            ['status' => $oldStatus],
+            ['status' => $status],
+            $actor
+        );
+
+        $notification = null;
+        $notificationTemplates = [
+            'Awaiting Deposit' => 'appointment_awaiting_deposit',
+            'Rejected' => 'appointment_rejected',
+            'Cancelled' => 'appointment_cancelled',
+        ];
+        if (isset($notificationTemplates[$status])) {
+            $notification = $this->emailNotifications->enqueueAppointmentTemplate(
+                (int) $appointment_id,
+                $notificationTemplates[$status],
+                trim($reason) !== '' ? trim($reason) : $status,
+                'audit:' . $audit['audit_log_id'] . ':' . $notificationTemplates[$status]
+            );
+        }
+
+        return ['audit' => $audit, 'notification' => $notification];
+    }
+
 }
