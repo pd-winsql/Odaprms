@@ -93,6 +93,10 @@ $today = date('l, F j Y');
                 <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
             </a>
 
+            <a href="#" class="vd-nav-item" data-page="messages-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-message-circle" aria-hidden="true"></i></span>
+                <span>Messages</span><span data-chat-unread hidden></span>
+            </a>
             <div class="vd-nav-section">Manage</div>
             <a href="#" class="vd-nav-item" data-page="services-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Services
@@ -220,6 +224,7 @@ $today = date('l, F j Y');
         const dashTitle = document.getElementById('dashTitle');
 
         function getPageTitle(page) {
+            if (page === 'messages-content.php') return 'Messages';
             const nav = document.querySelector(`.vd-nav-item[data-page="${page}"]`);
             return nav ? nav.textContent.trim() : 'Dashboard';
         }
@@ -454,6 +459,7 @@ $today = date('l, F j Y');
             </div>
         </div>
     </div>
+<?php require __DIR__ . '/../shared/clinic-chat-shell.php'; ?>
 </body>
 
 </html>

@@ -294,5 +294,6 @@ $today    = date('l, F j Y');
         </div>
     </div>
 
+<?php require __DIR__ . '/../shared/clinic-chat-shell.php'; ?>
 </body>
 </html>
