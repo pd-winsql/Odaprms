@@ -84,6 +84,14 @@ if ($case === 'patient-history'
     fwrite(STDERR, "The patient visit-rating interface did not render.\n");
     exit(1);
 }
+if ($case === 'patient-profile'
+    && (!str_contains($html, 'saveOwnProfile')
+        || !str_contains($html, 'Save profile changes')
+        || !str_contains($html, 'Staff review required')
+        || str_contains($html, 'class="vd-readonly-profile"'))) {
+    fwrite(STDERR, "The editable patient profile or staff-review notice did not render.\n");
+    exit(1);
+}
 if ($case === 'dental-settings') {
     if (!str_contains($html, 'Clinic Schedule Defaults') || str_contains($html, 'Brand &amp; Logo')) {
         fwrite(STDERR, "Dental Assistant schedule-settings access was not correctly scoped.\n");

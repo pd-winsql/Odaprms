@@ -171,9 +171,12 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">Today’s Queue</span><span class="vd-topbar-date"><?= date('F j, Y') ?></span></div>
         <div class="vd-dash-card-body">
             <div class="d-flex flex-wrap gap-2 mb-4">
-                <input type="text" class="form-control vd-input flex-grow-1" id="checkinLookup"
-                    placeholder="Enter appointment code or patient name" aria-label="Appointment code or patient name"
-                    autocomplete="off">
+                <div class="vd-queue-search-field flex-grow-1 w-100">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input type="text" class="form-control vd-input" id="checkinLookup"
+                        placeholder="Enter appointment code or patient name" aria-label="Appointment code or patient name"
+                        autocomplete="off">
+                </div>
                 <button type="button" class="btn vd-btn-gold" id="findCheckinAppointment">Find Appointment</button>
             </div>
             <div class="vd-queue-overview mb-4">

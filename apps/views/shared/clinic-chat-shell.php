@@ -7,7 +7,9 @@ $chatPatient = ($_SESSION['user_role'] ?? '') === 'Patient';
     data-endpoint="../../controllers/chatController.php" data-csrf="<?= htmlspecialchars(get_csrf_token(), ENT_QUOTES, 'UTF-8') ?>" hidden></div>
 <?php if ($chatPatient): ?>
 <button type="button" class="vd-chat-launch" data-bs-toggle="modal" data-bs-target="#clinicChatModal">
-    <i class="ti ti-message-circle" aria-hidden="true"></i> Message clinic <span data-chat-unread hidden></span>
+    <i class="ti ti-message-circle" aria-hidden="true"></i>
+    <span class="vd-chat-launch-label">Message clinic</span>
+    <span data-chat-unread hidden></span>
 </button>
 <div class="modal fade vd-chat-modal" id="clinicChatModal" tabindex="-1" aria-labelledby="clinicChatTitle">
     <div class="modal-dialog"><div class="modal-content">

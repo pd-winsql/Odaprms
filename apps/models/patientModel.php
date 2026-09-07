@@ -648,9 +648,14 @@ class Patient {
         }
     }
 
-    public function completeProfileByStaff($patientId, array $data, $userId, bool $markComplete = true): array {
+    public function saveProfileByPatient($patientId, array $data, $userId): array {
+        return $this->completeProfileByStaff($patientId, $data, $userId, false, true);
+    }
+
+    public function completeProfileByStaff($patientId, array $data, $userId, bool $markComplete = true, bool $patientSubmitted = false): array {
         try {
             $this->conn->beginTransaction();
+            $updatedBy = $patientSubmitted ? 'patient' : 'staff:' . $userId;
 
             $personal = $this->conn->prepare("
                 UPDATE patients SET
@@ -694,7 +699,7 @@ class Patient {
                 ':patient_id' => $patientId, ':previous_dentist' => $data['previous_dentist'] ?: null,
                 ':last_dental_visit' => $data['last_dental_visit'] ?: null, ':treatment_done' => $data['treatment_done'] ?: null,
                 ':reason_for_visit' => $data['reason_for_visit'], ':referred_by' => $data['referred_by'] ?: null,
-                ':updated_by' => 'staff:' . $userId,
+                ':updated_by' => $updatedBy,
             ]);
 
             $medicalFields = [
@@ -711,7 +716,7 @@ class Patient {
                 VALUES (:patient_id, {$values}, :updated_by, NOW())
                 ON DUPLICATE KEY UPDATE {$updates}, last_updated_by = VALUES(last_updated_by), last_updated_at = NOW()
             ");
-            $medicalParams = [':patient_id' => $patientId, ':updated_by' => 'staff:' . $userId];
+            $medicalParams = [':patient_id' => $patientId, ':updated_by' => $updatedBy];
             foreach ($medicalFields as $field) {
                 $value = $data[$field] ?? null;
                 $medicalParams[':' . $field] = $value === '' ? null : $value;
@@ -735,13 +740,19 @@ class Patient {
             ");
             $consent->execute([
                 ':patient_id' => $patientId, ':consent_name' => $data['consent_name'],
-                ':consent_for' => $data['consent_for'], ':consent_date' => date('Y-m-d'),
+                ':consent_for' => $data['consent_for'],
+                ':consent_date' => $patientSubmitted ? ($data['consent_date'] ?: null) : date('Y-m-d'),
             ]);
 
             if ($markComplete) {
                 $this->conn->prepare("UPDATE patients SET profile_completed_at=NOW(),profile_completed_by_user_id=:user_id,profile_status='Complete' WHERE patient_id=:patient_id")
                     ->execute([':user_id'=>$userId,':patient_id'=>$patientId]);
                 $this->conn->prepare("UPDATE appointment_checkins ci JOIN appointments a ON a.appointment_id=ci.appointment_id SET ci.checkin_status='Ready',ci.ready_at=NOW() WHERE a.patient_id=:patient_id AND a.date=CURDATE() AND ci.checkin_status='Profile Required'")
+                    ->execute([':patient_id'=>$patientId]);
+            } elseif ($patientSubmitted) {
+                $this->conn->prepare("UPDATE patients SET profile_status='Draft',profile_completed_at=NULL,profile_completed_by_user_id=NULL WHERE patient_id=:patient_id")
+                    ->execute([':patient_id'=>$patientId]);
+                $this->conn->prepare("UPDATE appointment_checkins ci JOIN appointments a ON a.appointment_id=ci.appointment_id SET ci.checkin_status='Profile Required',ci.ready_at=NULL WHERE a.patient_id=:patient_id AND a.date=CURDATE() AND ci.checkin_status='Ready'")
                     ->execute([':patient_id'=>$patientId]);
             } else {
                 $this->conn->prepare("UPDATE patients SET profile_status='Draft' WHERE patient_id=:patient_id AND profile_completed_at IS NULL")
@@ -750,10 +761,13 @@ class Patient {
 
             $audit = new AuditLog($this->conn);
             $actor = $audit->getUserActor($userId);
-            if (!$actor) throw new RuntimeException('Staff account not found.');
+            if (!$actor) throw new RuntimeException('User account not found.');
             $audit->record(
-                'patient', $patientId, $markComplete ? 'profile_completed' : 'profile_draft_saved',
-                ($markComplete ? 'Completed' : 'Saved a draft of') . " the patient form for patient #{$patientId} at the front desk.",
+                'patient', $patientId,
+                $patientSubmitted ? 'profile_updated_by_patient' : ($markComplete ? 'profile_completed' : 'profile_draft_saved'),
+                $patientSubmitted
+                    ? "Updated the patient profile for patient #{$patientId}. Staff review is required at check-in."
+                    : (($markComplete ? 'Completed' : 'Saved a draft of') . " the patient form for patient #{$patientId} at the front desk."),
                 null, [
                     'profile_status' => $markComplete ? 'Complete' : 'Draft',
                     'contact_confirmed' => !empty($data['contact_confirmed']),
@@ -762,11 +776,14 @@ class Patient {
             );
 
             $this->conn->commit();
+            if ($patientSubmitted) {
+                return ['success' => true, 'message' => 'Profile changes saved. Clinic staff will review them during check-in.', 'profile_status' => 'Draft'];
+            }
             return ['success' => true, 'message' => $markComplete ? 'Patient form completed. The patient is ready.' : 'Patient form draft saved. Treatment remains unavailable until the form is completed.'];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log('completeProfileByStaff error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Unable to complete the patient form.'];
+            return ['success' => false, 'message' => $patientSubmitted ? 'Unable to save your profile changes.' : 'Unable to complete the patient form.'];
         }
     }
 }

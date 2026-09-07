@@ -1741,6 +1741,27 @@ button.vd-stat-card {
     margin-right: 3px;
 }
 
+.vd-queue-search-field {
+    position: relative;
+}
+.vd-queue-search-field > i {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    z-index: 2;
+    color: #948772;
+    font-size: 18px;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: color 0.16s ease;
+}
+.vd-queue-search-field .vd-input {
+    padding-left: 44px;
+}
+.vd-queue-search-field:focus-within > i {
+    color: var(--gold);
+}
+
 .vd-queue-badge {
     align-items: center;
     background: #f1efe8;
@@ -5344,7 +5365,7 @@ button.vd-stat-card {
     background: var(--gold-pale);
 }
 
-/* Read-only patient profile sections become a compact mobile accordion. */
+/* Patient profile sections become a compact mobile accordion. */
 .vd-profile-section-toggle {
     width: 100%;
     border: 0;
@@ -5375,6 +5396,137 @@ button.vd-stat-card {
     opacity: 1;
     cursor: default;
     -webkit-text-fill-color: var(--dark);
+}
+
+.vd-profile-review-note {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    border-radius: 12px;
+    background: linear-gradient(105deg, #fffaf0 0%, var(--white-bg) 58%);
+    box-shadow: 0 8px 24px rgba(77, 59, 27, 0.06);
+}
+
+.vd-profile-review-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--gold-pale);
+    color: var(--gold);
+    font-size: 23px;
+}
+
+.vd-profile-review-copy h2 {
+    margin: 2px 0 4px;
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 25px;
+    font-weight: 500;
+    line-height: 1.15;
+}
+
+.vd-profile-review-copy p {
+    margin: 0;
+    color: var(--mid);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.vd-profile-review-eyebrow {
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.vd-profile-review-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    border: 1px solid #dfc993;
+    border-radius: 999px;
+    background: #fff8e7;
+    color: #795814;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.vd-patient-profile-form .vd-input:not(:disabled) {
+    background-color: #fff;
+}
+
+.vd-patient-profile-form .vd-input:not(:disabled):hover {
+    border-color: #cbb37e;
+}
+
+.vd-patient-profile-form .vd-input:focus,
+.vd-patient-profile-form .form-check-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(128, 97, 31, 0.13);
+}
+
+.vd-profile-savebar {
+    position: sticky;
+    bottom: 12px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 20px;
+    padding: 14px 16px 14px 20px;
+    border: 1px solid rgba(186, 157, 92, 0.72);
+    border-radius: 12px;
+    background: rgba(255, 253, 248, 0.96);
+    box-shadow: 0 12px 32px rgba(61, 48, 25, 0.16);
+    backdrop-filter: blur(10px);
+}
+
+.vd-profile-savebar > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vd-profile-savebar strong {
+    color: var(--dark);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.vd-profile-savebar span {
+    color: var(--mid);
+    font-size: 11px;
+}
+
+.vd-profile-savebar .btn {
+    flex: 0 0 auto;
+    gap: 8px;
+    min-height: 44px;
+    font-weight: 500;
+}
+
+.vd-profile-save-alert {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 20px;
+}
+
+.vd-profile-save-alert i {
+    flex: 0 0 auto;
+    font-size: 18px;
 }
 
 @media (min-width: 768px) {
@@ -5463,6 +5615,39 @@ button.vd-stat-card {
 
     .vd-profile-body {
         padding: 16px;
+    }
+
+    .vd-profile-review-note {
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .vd-profile-review-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+
+    .vd-profile-review-copy h2 {
+        font-size: 22px;
+    }
+
+    .vd-profile-review-badge {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+
+    .vd-profile-savebar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+        bottom: 8px;
+        padding: 14px;
+    }
+
+    .vd-profile-savebar .btn {
+        width: 100%;
     }
 }
 

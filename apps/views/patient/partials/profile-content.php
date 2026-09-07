@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Patient') {
 
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/patientModel.php';
+require_once __DIR__ . '/../../../helpers/csrf.php';
 
 $db   = new Database();
 $conn = $db->connect();
@@ -26,21 +27,22 @@ $conditions = $patient['patient_conditions']
     ? explode(', ', $patient['patient_conditions'])
     : [];
 
-$allConditions = [
-    'High Blood Pressure','Heart Disease','Anemia',
-    'Low Blood Pressure','Heart Murmur','Angina',
-    'Epilepsy/Convulsions','Hepatitis/Liver Diseases','Asthma',
-    'AIDS or HIV Infection','Rheumatic Fever','Emphysema',
-    'Sexually Transmitted Disease','Hay Fever/Allergies','Bleeding Problems',
-    'Stomach Ulcers','Respiratory Problems','Blood Diseases',
-    'Fainting/Seizures','Hepatitis/Jaundice','Head Injuries',
-    'Rapid Weight Loss','Tuberculosis','Arthritis/Rheumatism',
-    'Joint Replacement','Swollen Ankles','Stroke',
-    'Heart Surgery','Kidney Disease','Cancer/Tumors',
-    'Heart Attack','Diabetes','G6PD',
-    'Thyroid Problem','Chest Pain'
-];
+$conditionGroups = require __DIR__ . '/../../../../config/medicalConditions.php';
+$allConditions = array_merge(...array_values($conditionGroups));
+$csrfToken = get_csrf_token();
 ?>
+
+<section class="vd-profile-review-note" aria-labelledby="profileReviewTitle">
+    <span class="vd-profile-review-icon" aria-hidden="true"><i class="ti ti-clipboard-check"></i></span>
+    <div class="vd-profile-review-copy">
+        <span class="vd-profile-review-eyebrow">Editable patient profile</span>
+        <h2 id="profileReviewTitle">Keep your information current</h2>
+        <p>Save your changes before your visit. Clinic staff will still review and confirm the information with you during check-in.</p>
+    </div>
+    <span class="vd-profile-review-badge"><i class="ti ti-clock-check" aria-hidden="true"></i> Staff review required</span>
+</section>
+
+<div id="patientProfileSaveAlert" class="alert d-none" role="status" aria-live="polite"></div>
 
 <div class="d-flex flex-column gap-4 vd-profile-sections">
 
@@ -50,12 +52,12 @@ $allConditions = [
         <span class="vd-dash-card-title">Personal Information</span>
         </div>
         <div class="vd-profile-body">
-        <form id="personalForm" class="vd-readonly-profile" aria-label="Personal information">
+        <form id="personalForm" class="vd-patient-profile-form" aria-label="Personal information">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">First Name</label>
                 <input type="text" name="firstname" class="form-control vd-input"
-                value="<?= htmlspecialchars($patient['firstname'] ?? '') ?>">
+                value="<?= htmlspecialchars($patient['firstname'] ?? '') ?>" required>
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Middle Name</label>
@@ -65,7 +67,7 @@ $allConditions = [
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Last Name</label>
                 <input type="text" name="lastname" class="form-control vd-input"
-                value="<?= htmlspecialchars($patient['lastname'] ?? '') ?>">
+                value="<?= htmlspecialchars($patient['lastname'] ?? '') ?>" required>
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Birthdate</label>
@@ -136,13 +138,12 @@ $allConditions = [
     </div>
 
     <!-- ── FOR MINORS ── -->
-    <div class="vd-dash-card" id="minorsCard"
-        style="<?= (empty($patient['guardian_name']) && (($patient['age'] ?? 99) >= 18)) ? 'display:none;' : '' ?>">
+    <div class="vd-dash-card" id="minorsCard">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Guardian / Physician</span>
         </div>
         <div class="vd-profile-body">
-        <form id="minorsForm" class="vd-readonly-profile" aria-label="Guardian and physician information">
+        <form id="minorsForm" class="vd-patient-profile-form" aria-label="Guardian and physician information">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Guardian Name</label>
@@ -180,7 +181,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Dental History</span>
         </div>
         <div class="vd-profile-body">
-        <form id="dentalForm" class="vd-readonly-profile" aria-label="Dental history">
+        <form id="dentalForm" class="vd-patient-profile-form" aria-label="Dental history">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Previous Dentist</label>
@@ -218,7 +219,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Health Questionnaire</span>
         </div>
         <div class="vd-profile-body">
-        <form id="healthForm" class="vd-readonly-profile" aria-label="Health questionnaire">
+        <form id="healthForm" class="vd-patient-profile-form" aria-label="Health questionnaire">
             <?php
             $yesnoFields = [
                 'good_health'        => 'Are you in good health?',
@@ -275,11 +276,11 @@ $allConditions = [
                 </tr>
                 <?php endforeach; ?>
 
-                <tr class="vd-hq-section-row">
+                <tr class="vd-hq-section-row" data-women-health>
                 <td colspan="3">For Women Only</td>
                 </tr>
                 <?php foreach (['pregnant' => 'Pregnant?', 'nursing' => 'Nursing?', 'birth_control' => 'Taking birth control pills?'] as $field => $label): ?>
-                <tr>
+                <tr data-women-health>
                 <td><?= $label ?></td>
                 <td class="text-center">
                     <input type="radio" name="<?= $field ?>" value="1" class="form-check-input vd-radio"
@@ -319,7 +320,12 @@ $allConditions = [
         <span class="vd-dash-card-title">Medical Conditions</span>
         </div>
         <div class="vd-profile-body">
-        <form id="conditionsForm" class="vd-readonly-profile" aria-label="Medical conditions">
+        <form id="conditionsForm" class="vd-patient-profile-form" aria-label="Medical conditions">
+            <label class="vd-no-condition-option mb-3">
+                <input type="checkbox" class="form-check-input" id="patientNoKnownConditions" name="no_known_conditions" value="1"
+                    <?= !empty($patient['no_known_conditions']) ? 'checked' : '' ?>>
+                <span>No known medical conditions</span>
+            </label>
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-1 mb-3">
             <?php foreach ($allConditions as $cond): ?>
             <div class="col">
@@ -348,7 +354,7 @@ $allConditions = [
         <span class="vd-dash-card-title">Consent</span>
         </div>
         <div class="vd-profile-body">
-        <form id="consentForm" class="vd-readonly-profile" aria-label="Consent information">
+        <form id="consentForm" class="vd-patient-profile-form" aria-label="Consent information">
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Consent Name</label>
@@ -378,12 +384,23 @@ $allConditions = [
 
 </div>
 
+<div class="vd-profile-savebar" aria-label="Save profile changes">
+    <div>
+        <strong>Ready to save?</strong>
+        <span>Your profile will remain pending until clinic staff review it at check-in.</span>
+    </div>
+    <button type="button" class="btn vd-btn-gold" id="savePatientProfile">
+        <i class="ti ti-device-floppy" aria-hidden="true"></i>
+        Save profile changes
+    </button>
+</div>
+
 <script>
 (function () {
     const root = document.querySelector('.vd-profile-sections');
     if (!root) return;
 
-    root.querySelectorAll('.vd-readonly-profile').forEach((form) => {
+    root.querySelectorAll('.vd-patient-profile-form').forEach((form) => {
         form.addEventListener('submit', event => event.preventDefault());
 
         form.querySelectorAll('.vd-profile-field').forEach((field, index) => {
@@ -394,15 +411,67 @@ $allConditions = [
             label.htmlFor = control.id;
         });
 
-        form.querySelectorAll('input, textarea').forEach((control) => {
-            if (['radio', 'checkbox'].includes(control.type)) {
-                control.disabled = true;
-            } else {
-                control.readOnly = true;
-            }
-        });
-        form.querySelectorAll('select').forEach(control => control.disabled = true);
     });
+
+    const getField = name => root.querySelector(`[name="${name}"]`);
+    const birthdate = getField('birthdate');
+    const age = getField('age');
+    const gender = getField('gender');
+    const phone = getField('phone_number');
+    const noKnownConditions = document.getElementById('patientNoKnownConditions');
+    const conditionInputs = [...root.querySelectorAll('[name="conditions[]"]')];
+    const otherCondition = getField('cond_others');
+
+    function calculateAge() {
+        if (!birthdate?.value) {
+            if (age) age.value = '';
+            return null;
+        }
+        const born = new Date(`${birthdate.value}T00:00:00`);
+        const today = new Date();
+        if (Number.isNaN(born.getTime()) || born > today) return null;
+        let years = today.getFullYear() - born.getFullYear();
+        const monthDifference = today.getMonth() - born.getMonth();
+        if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < born.getDate())) years--;
+        if (age) age.value = years;
+        return years;
+    }
+
+    function syncHealthDetails() {
+        const womenQuestionsApply = gender?.value === 'Female';
+        root.querySelectorAll('[data-women-health]').forEach(row => row.hidden = !womenQuestionsApply);
+        ['pregnant', 'nursing', 'birth_control'].forEach(name => {
+            root.querySelectorAll(`[name="${name}"]`).forEach(input => input.disabled = !womenQuestionsApply);
+        });
+        root.querySelectorAll('#healthForm input[type="radio"]').forEach(radio => {
+            if (radio.value !== '1') return;
+            const detail = getField(`${radio.name}_detail`);
+            if (detail) detail.disabled = !radio.checked;
+        });
+    }
+
+    function syncConditionChoice(source) {
+        if (source === noKnownConditions && noKnownConditions.checked) {
+            conditionInputs.forEach(input => input.checked = false);
+            if (otherCondition) otherCondition.value = '';
+        } else if (conditionInputs.some(input => input.checked) || otherCondition?.value.trim()) {
+            noKnownConditions.checked = false;
+        }
+    }
+
+    birthdate?.addEventListener('change', calculateAge);
+    gender?.addEventListener('change', syncHealthDetails);
+    phone?.addEventListener('input', () => {
+        phone.value = phone.value.replace(/\D/g, '').slice(0, 11);
+    });
+    root.querySelectorAll('#healthForm input[type="radio"]').forEach(radio => radio.addEventListener('change', syncHealthDetails));
+    noKnownConditions?.addEventListener('change', () => syncConditionChoice(noKnownConditions));
+    conditionInputs.forEach(input => input.addEventListener('change', () => syncConditionChoice(input)));
+    otherCondition?.addEventListener('input', () => syncConditionChoice(otherCondition));
+
+    calculateAge();
+    syncHealthDetails();
+    syncConditionChoice(null);
 
     const mobileProfile = window.matchMedia('(max-width: 575px)').matches;
     root.querySelectorAll(':scope > .vd-dash-card').forEach((card, index) => {
@@ -427,6 +496,61 @@ $allConditions = [
             toggle.setAttribute('aria-expanded', String(opening));
         });
         header.replaceChildren(toggle);
+    });
+
+    const saveButton = document.getElementById('savePatientProfile');
+    const alertBox = document.getElementById('patientProfileSaveAlert');
+    const forms = [...root.querySelectorAll('.vd-patient-profile-form')];
+
+    function setSaving(saving) {
+        saveButton.disabled = saving;
+        saveButton.innerHTML = saving
+            ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Saving changes…'
+            : '<i class="ti ti-device-floppy" aria-hidden="true"></i> Save profile changes';
+    }
+
+    saveButton?.addEventListener('click', async () => {
+        alertBox.classList.add('d-none');
+        const invalidForm = forms.find(form => !form.checkValidity());
+        if (invalidForm) {
+            const invalidCard = invalidForm.closest('.vd-dash-card');
+            const invalidBody = invalidCard?.querySelector(':scope > .vd-profile-body');
+            const invalidToggle = invalidCard?.querySelector('.vd-profile-section-toggle');
+            if (invalidBody?.hidden) {
+                invalidBody.hidden = false;
+                invalidToggle?.setAttribute('aria-expanded', 'true');
+            }
+            invalidCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            invalidForm.reportValidity();
+            return;
+        }
+
+        const body = new FormData();
+        forms.forEach(form => {
+            new FormData(form).forEach((value, key) => body.append(key, value));
+        });
+        body.set('action', 'saveOwnProfile');
+        body.set('csrf_token', <?= json_encode($csrfToken) ?>);
+
+        setSaving(true);
+        try {
+            const response = await fetch('../../controllers/patientController.php', { method: 'POST', body });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || 'Unable to save your profile.');
+            alertBox.className = 'alert alert-success vd-profile-save-alert';
+            alertBox.innerHTML = '<i class="ti ti-circle-check" aria-hidden="true"></i><span></span>';
+            alertBox.querySelector('span').textContent = result.message;
+            window.showToast?.(result.message, true);
+            alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (error) {
+            alertBox.className = 'alert alert-danger vd-profile-save-alert';
+            alertBox.innerHTML = '<i class="ti ti-alert-circle" aria-hidden="true"></i><span></span>';
+            alertBox.querySelector('span').textContent = error.message || 'Unable to save your profile.';
+            window.showToast?.(error.message || 'Unable to save your profile.', false);
+            alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } finally {
+            setSaving(false);
+        }
     });
 })();
 </script>

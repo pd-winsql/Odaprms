@@ -2,7 +2,8 @@
 .vd-chat-page, .vd-chat-modal { --chat-gold: #80611f; --chat-ink: #41372c; --chat-line: #e5d8c1; --chat-paper: #fffdf9; }
 [data-chat-unread][hidden], .vd-chat-thread [hidden] { display: none !important; }
 [data-chat-unread], .vd-chat-count { display:inline-flex; align-items:center; justify-content:center; min-width:22px; padding:2px 6px; border-radius:12px; background:#80611f; color:white; font-size:11px; line-height:18px; }
-.vd-chat-launch { position:fixed; bottom:24px; right:24px; z-index:1035; display:flex; align-items:center; gap:9px; min-height:48px; padding:12px 18px; background:#80611f; color:#fffdf9; border:1px solid #80611f; border-radius:24px; box-shadow:0 4px 20px #41372c24; font:500 14px Jost,sans-serif; }
+.vd-chat-launch { position:fixed; bottom:24px; right:24px; z-index:1035; display:flex; align-items:center; gap:9px; min-height:48px; padding:12px 18px; background:#80611f; color:#fffdf9; border:1px solid #80611f; border-radius:24px; box-shadow:0 4px 20px #41372c24; font:500 14px Jost,sans-serif; transition:bottom .2s ease, background-color .2s ease, box-shadow .2s ease; }
+.vd-dash-body:has(.vd-profile-savebar) .vd-chat-launch { bottom:136px; }
 .vd-chat-launch [data-chat-unread] { background:#fffdf9; color:#80611f; }
 .vd-chat-modal .modal-dialog { max-width:440px; margin:24px 24px 24px auto; height:calc(100dvh - 48px); display:flex; align-items:flex-end; }
 .vd-chat-modal .modal-content { max-height:100%; overflow:hidden; border:1px solid var(--chat-line); border-radius:18px; background:var(--chat-paper); }
@@ -61,4 +62,6 @@
     .vd-chat-single { height:min(610px, calc(100dvh - 124px)); }
     .vd-chat-log, .vd-chat-compose { padding:14px; }
     .vd-chat-message { max-width:90%; }
+    .vd-dash-body:has(.vd-profile-savebar) .vd-chat-launch { bottom:160px; width:48px; padding-inline:0; justify-content:center; }
+    .vd-dash-body:has(.vd-profile-savebar) .vd-chat-launch-label { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 }

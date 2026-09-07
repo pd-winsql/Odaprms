@@ -171,12 +171,116 @@ class PatientController {
         exit;
     }
 
+    public function saveOwnProfile() {
+        header('Content-Type: application/json');
+        $patientId = $this->requirePatient();
+
+        if (!validate_csrf()) {
+            echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
+            exit;
+        }
+
+        $firstname = trim($_POST['firstname'] ?? '');
+        $lastname = trim($_POST['lastname'] ?? '');
+        if ($firstname === '' || $lastname === '') {
+            echo json_encode(['success' => false, 'message' => 'First name and last name are required.']);
+            exit;
+        }
+
+        $submittedPhone = trim($_POST['phone_number'] ?? '');
+        if ($submittedPhone !== '' && !preg_match('/^\d{1,11}$/', $submittedPhone)) {
+            echo json_encode(['success' => false, 'message' => 'Phone number must contain numbers only and cannot exceed 11 digits.']);
+            exit;
+        }
+
+        $email = trim($_POST['email'] ?? '');
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid email address or leave the field blank.']);
+            exit;
+        }
+
+        $birthdate = trim($_POST['birthdate'] ?? '');
+        $birth = $birthdate !== '' ? DateTime::createFromFormat('Y-m-d', $birthdate) : null;
+        $today = new DateTime('today');
+        if ($birthdate !== '' && (!$birth || $birth->format('Y-m-d') !== $birthdate || $birth > $today)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid birthdate.']);
+            exit;
+        }
+
+        $gender = trim($_POST['gender'] ?? '');
+        if ($gender !== '' && !in_array($gender, ['Male', 'Female', 'Prefer not to say'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Select a valid gender.']);
+            exit;
+        }
+        $civilStatus = trim($_POST['civil_status'] ?? '');
+        if ($civilStatus !== '' && !in_array($civilStatus, ['Single', 'Married', 'Widowed', 'Separated'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Select a valid civil status.']);
+            exit;
+        }
+        $consentFor = trim($_POST['consent_for'] ?? '');
+        if ($consentFor !== '' && !in_array($consentFor, ['myself', 'spouse', 'son', 'daughter', 'others'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Select a valid consent option.']);
+            exit;
+        }
+
+        $booleanFields = ['good_health','medical_condition','serious_illness','hospitalized','medication','smoke','alcohol','drugs','allergy','pregnant','nursing','birth_control'];
+        $data = [];
+        foreach ($booleanFields as $field) {
+            $data[$field] = $this->toBool($_POST[$field] ?? null);
+        }
+
+        $medicalContext = ['gender' => $gender ?: null];
+        foreach (MedicalQuestionnaire::groups() as $group) {
+            if (MedicalQuestionnaire::groupApplies($group, $medicalContext)) continue;
+            foreach (array_keys($group['questions']) as $field) $data[$field] = null;
+        }
+
+        $textFields = [
+            'firstname','lastname','middlename','home_address','work_address','occupation','office_contact','fb_account',
+            'guardian_name','guardian_contact','physician_name','physician_contact','physician_address','previous_dentist',
+            'last_dental_visit','treatment_done','reason_for_visit','referred_by','medical_condition_detail',
+            'serious_illness_detail','hospitalized_detail','medication_detail','allergy_detail','blood_type','blood_pressure',
+            'cond_others','consent_name'
+        ];
+        foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        foreach (MedicalQuestionnaire::groups() as $group) {
+            foreach ($group['questions'] as $field => $question) {
+                $detailField = $question['detail_field'] ?? null;
+                if ($detailField && ($data[$field] ?? null) !== 1) $data[$detailField] = '';
+            }
+        }
+
+        $data['gender'] = $gender ?: null;
+        $data['civil_status'] = $civilStatus;
+        $data['phone_number'] = Patient::normalizePhone($submittedPhone);
+        $data['email'] = $email;
+        $data['birthdate'] = $birthdate ?: null;
+        $data['age'] = $birth ? $birth->diff($today)->y : null;
+        $data['consent_for'] = $consentFor ?: null;
+        $consentDate = trim($_POST['consent_date'] ?? '');
+        $parsedConsentDate = $consentDate !== '' ? DateTime::createFromFormat('Y-m-d', $consentDate) : null;
+        $data['consent_date'] = $parsedConsentDate && $parsedConsentDate->format('Y-m-d') === $consentDate ? $consentDate : null;
+
+        $submittedConditions = array_map('trim', (array) ($_POST['conditions'] ?? []));
+        $conditionGroups = require __DIR__ . '/../../config/medicalConditions.php';
+        $allowedConditions = array_merge(...array_values($conditionGroups));
+        $data['conditions'] = array_values(array_intersect($submittedConditions, $allowedConditions));
+        $data['no_known_conditions'] = !empty($_POST['no_known_conditions']) ? 1 : 0;
+        if ($data['no_known_conditions']) {
+            $data['conditions'] = [];
+            $data['cond_others'] = '';
+        }
+
+        echo json_encode($this->patients->saveProfileByPatient($patientId, $data, (int) $_SESSION['user_id']));
+        exit;
+    }
+
     private function toBool($value) {
-        if ($value === 'yes') {
+        if ($value === 'yes' || $value === '1' || $value === 1 || $value === true) {
             return 1;
         }
 
-        if ($value === 'no') {
+        if ($value === 'no' || $value === '0' || $value === 0 || $value === false) {
             return 0;
         }
 
@@ -311,6 +415,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->updateConditions();
     } elseif ($action === 'updateConsent') {
         $controller->updateConsent();
+    } elseif ($action === 'saveOwnProfile') {
+        $controller->saveOwnProfile();
     } elseif ($action === 'completeProfileByStaff') {
         $controller->completeProfileByStaff();
     } elseif ($action === 'authorizeAccountLink') {
