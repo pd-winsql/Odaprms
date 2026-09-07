@@ -24,7 +24,14 @@ class Schedule {
 
     public static function usesFiveMinuteIncrement(string $time): bool {
         $normalized = self::normalizeTime($time);
-        return $normalized !== null && ((int) substr($normalized, 3, 2)) % 5 === 0;
+        return $normalized !== null && ((int) substr($normalized, 3, 2)) % 5 === 0 && substr($normalized, 6, 2) === '00';
+    }
+
+    public static function isWithinOperatingHours(string $startTime, string $endTime): bool {
+        $start = self::normalizeTime($startTime);
+        $end = self::normalizeTime($endTime);
+        return $start !== null && $end !== null
+            && $start >= '08:00:00' && $end <= '17:30:00' && $start < $end;
     }
 
     public static function formatTimeRange(?string $startTime, ?string $endTime): string {
@@ -126,6 +133,68 @@ class Schedule {
     }
 
     /**
+     * Returns secured appointments grouped by schedule. An appointment becomes
+     * secured only after it reaches the Confirmed status.
+     */
+    public function getConfirmedAppointmentsByScheduleIds(array $scheduleIds): array {
+        $scheduleIds = array_values(array_unique(array_filter(array_map('intval', $scheduleIds))));
+        if (!$scheduleIds) return [];
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($scheduleIds), '?'));
+            $stmt = $this->conn->prepare("
+                SELECT appointment.appointment_id, appointment.schedule_id,
+                    appointment.patient_name, appointment.appointment_code,
+                    appointment.status, appointment.service_name, appointment.clinic_name,
+                    appointment.date, appointment.start_time, appointment.end_time,
+                    appointment.email, appointment.phone_number, appointment.age, appointment.gender,
+                    payment.deposit_amount, payment.deposit_status, payment.gcash_reference
+                FROM vw_appointment_overview appointment
+                LEFT JOIN vw_appointment_payment_summary payment
+                    ON payment.appointment_id = appointment.appointment_id
+                WHERE appointment.schedule_id IN ({$placeholders})
+                  AND appointment.status = 'Confirmed'
+                ORDER BY appointment.patient_name, appointment.appointment_id
+            ");
+            $stmt->execute($scheduleIds);
+
+            $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $appointmentIds = array_map('intval', array_column($appointments, 'appointment_id'));
+            $servicesByAppointment = [];
+            if ($appointmentIds) {
+                $servicePlaceholders = implode(',', array_fill(0, count($appointmentIds), '?'));
+                $serviceStmt = $this->conn->prepare("
+                    SELECT appointment_service.appointment_id, service.service_name,
+                        service.service_icon
+                    FROM appointment_services appointment_service
+                    JOIN services service
+                        ON service.service_id = appointment_service.service_id
+                    WHERE appointment_service.appointment_id IN ({$servicePlaceholders})
+                    ORDER BY appointment_service.appointment_id,
+                        service.display_order, service.service_name
+                ");
+                $serviceStmt->execute($appointmentIds);
+                foreach ($serviceStmt->fetchAll(PDO::FETCH_ASSOC) as $service) {
+                    $servicesByAppointment[(int) $service['appointment_id']][] = [
+                        'service_name' => $service['service_name'],
+                        'service_icon' => $service['service_icon'],
+                    ];
+                }
+            }
+
+            $grouped = [];
+            foreach ($appointments as $appointment) {
+                $appointment['services'] = $servicesByAppointment[(int) $appointment['appointment_id']] ?? [];
+                $grouped[(int) $appointment['schedule_id']][] = $appointment;
+            }
+            return $grouped;
+        } catch (PDOException $e) {
+            error_log('getConfirmedAppointmentsByScheduleIds error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Returns the first schedule that violates either the one-window-per-
      * clinic rule or the required transition time between different clinics.
      */
@@ -173,6 +242,11 @@ class Schedule {
      * Each item must contain sched_date and max_appointments.
      */
     public function addSchedules($clinic_id, array $schedules): array {
+        foreach ($schedules as $schedule) {
+            if (!self::isWithinOperatingHours($schedule['start_time'], $schedule['end_time'])) {
+                return ['success' => false, 'message' => 'Clinic schedules must stay between 8:00 AM and 5:30 PM.'];
+            }
+        }
         try {
             $this->conn->beginTransaction();
             $insert = $this->conn->prepare(
@@ -221,6 +295,9 @@ class Schedule {
         string $endTime,
         int $maxAppointments
     ): array {
+        if (!self::isWithinOperatingHours($startTime, $endTime)) {
+            return ['success' => false, 'message' => 'Clinic schedules must stay between 8:00 AM and 5:30 PM.'];
+        }
         try {
             $this->conn->beginTransaction();
             $booked = $this->getBookedCountForSchedule($scheduleId, true);

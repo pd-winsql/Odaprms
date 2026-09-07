@@ -81,23 +81,11 @@ $today = date('l, F j Y');
             <a href="#" class="vd-nav-item" data-page="appointment-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
             </a>
-            <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
-            </a>
-            <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
-            </a>
-            <a href="#" class="vd-nav-item" data-page="logbook-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
-            </a>
-            <a href="#" class="vd-nav-item" data-page="patient-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
-            </a>
-
             <a href="#" class="vd-nav-item" data-page="messages-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-message-circle" aria-hidden="true"></i></span>
                 <span>Messages</span><span data-chat-unread hidden></span>
             </a>
+
             <div class="vd-nav-section">Manage</div>
             <a href="#" class="vd-nav-item" data-page="den-assist-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-nurse"></i></span> Dental Assistants
@@ -111,6 +99,20 @@ $today = date('l, F j Y');
 
             <a href="#" class="vd-nav-item" data-page="schedule-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
+            </a>
+
+            <div class="vd-nav-section">Records</div>
+            <a href="#" class="vd-nav-item" data-page="patient-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
+            </a>
+            <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
+            </a>
+            <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
+            </a>
+            <a href="#" class="vd-nav-item" data-page="logbook-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
             </a>
 
             <?php if (($_SESSION['user_role'] ?? '') === 'Admin'): ?>
@@ -485,7 +487,7 @@ $today = date('l, F j Y');
             </div>
         </div>
     </div>
-<?php require __DIR__ . '/../shared/clinic-chat-shell.php'; ?>
+    <?php require __DIR__ . '/../shared/clinic-chat-shell.php'; ?>
 </body>
 
 </html>

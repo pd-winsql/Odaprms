@@ -34,6 +34,11 @@ foreach ($clinics as $clinic) {
         'available' => max(0, $clinicCapacity - $clinicBooked),
     ];
 }
+$scheduleIds = [];
+foreach ($schedulesByClinic as $clinicSchedules) {
+    $scheduleIds = array_merge($scheduleIds, array_column($clinicSchedules, 'schedule_id'));
+}
+$confirmedAppointmentsBySchedule = $scheduleModel->getConfirmedAppointmentsByScheduleIds($scheduleIds);
 $firstClinic = $clinics[0] ?? null;
 $activeSummary = $firstClinic
     ? $scheduleSummaryByClinic[(int) $firstClinic['clinic_id']]
@@ -133,13 +138,13 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             $available = max(0, (int) $sched['available_slots']);
                             $usagePercent = $capacity > 0 ? min(100, (int) round(($booked / $capacity) * 100)) : 0;
                             $timeRange = Schedule::formatTimeRange($sched['start_time'], $sched['end_time']);
+                            $confirmedAppointments = $confirmedAppointmentsBySchedule[(int) $sched['schedule_id']] ?? [];
                         ?>
                         <div class="vd-sched-card <?= $isPast ? 'past' : '' ?>"
                             id="schedCard-<?= $sched['schedule_id'] ?>" data-booked="<?= $booked ?>" data-capacity="<?= $capacity ?>"
                             data-clinic-id="<?= (int) $clinic['clinic_id'] ?>" data-date="<?= htmlspecialchars($sched['sched_date']) ?>"
                             data-start-time="<?= htmlspecialchars(substr($sched['start_time'], 0, 5)) ?>" data-end-time="<?= htmlspecialchars(substr($sched['end_time'], 0, 5)) ?>">
 
-                            <!-- Default view -->
                             <div class="vd-sched-card-view">
                                 <div class="vd-sched-date">
                                 <span class="vd-sched-dayname"><?= $d->format('D') ?></span>
@@ -178,9 +183,18 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                 </button>
                                 </div>
                                 <?php endif; ?>
+                                <button type="button" class="btn <?= $confirmedAppointments ? 'vd-btn-gold' : 'vd-btn-outline' ?> vd-sched-patients-button"
+                                    data-view-schedule-patients="<?= (int) $sched['schedule_id'] ?>"
+                                    data-schedule-label="<?= htmlspecialchars($clinic['clinic_name'] . ' · ' . $d->format('M j, Y'), ENT_QUOTES) ?>"
+                                    data-schedule-window="<?= htmlspecialchars($timeRange, ENT_QUOTES) ?>"
+                                    aria-label="View <?= count($confirmedAppointments) ?> confirmed patient<?= count($confirmedAppointments) === 1 ? '' : 's' ?>"
+                                    <?= $confirmedAppointments ? '' : 'disabled' ?>>
+                                    <i class="ti ti-users" aria-hidden="true"></i>
+                                    <span>View Patients</span>
+                                    <strong><?= count($confirmedAppointments) ?></strong>
+                                </button>
                             </div>
-
-                            </div>
+                        </div>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
@@ -188,6 +202,97 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         </div>
         <?php endforeach; ?>
         
+</div>
+
+<!-- Confirmed patients for one schedule -->
+<div class="modal fade vd-schedule-patients-modal" id="schedulePatientsModal" tabindex="-1"
+    aria-labelledby="schedulePatientsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="vd-appointment-details-kicker">Schedule roster</div>
+                    <h5 class="modal-title vd-modal-title" id="schedulePatientsModalTitle">Confirmed patients</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="vd-schedule-roster-context">
+                    <span class="vd-schedule-roster-context-icon"><i class="ti ti-calendar-event" aria-hidden="true"></i></span>
+                    <span class="vd-schedule-roster-context-copy">
+                        <strong id="schedulePatientsModalSubtitle"></strong>
+                        <small id="schedulePatientsModalWindow"></small>
+                    </span>
+                    <span class="vd-schedule-roster-count" id="schedulePatientsModalCount"></span>
+                </div>
+                <div class="vd-schedule-patient-modal-list" id="schedulePatientsModalList"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full details for the selected confirmed appointment -->
+<div class="modal fade vd-appointment-details-modal vd-schedule-appointment-modal" id="scheduleAppointmentModal" tabindex="-1"
+    aria-labelledby="scheduleAppointmentModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header vd-schedule-appointment-header">
+                <div class="vd-schedule-appointment-identity">
+                    <span class="vd-schedule-appointment-avatar" id="scheduleAppointmentAvatar">?</span>
+                    <span>
+                        <span class="vd-appointment-details-kicker">Confirmed appointment</span>
+                        <h5 class="modal-title vd-modal-title" id="scheduleAppointmentModalTitle">Patient appointment</h5>
+                        <p class="vd-appointment-details-subtitle mb-0" id="scheduleAppointmentModalSubtitle"></p>
+                    </span>
+                </div>
+                <span class="vd-schedule-confirmed-mark"><i class="ti ti-circle-check-filled" aria-hidden="true"></i> Confirmed</span>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="vd-schedule-visit-banner">
+                    <span class="vd-schedule-visit-date-icon"><i class="ti ti-calendar" aria-hidden="true"></i></span>
+                    <span class="vd-schedule-visit-date">
+                        <small>Visit date</small>
+                        <strong id="scheduleAppointmentVisitDate"></strong>
+                    </span>
+                    <span class="vd-schedule-visit-divider" aria-hidden="true"></span>
+                    <span class="vd-schedule-visit-meta">
+                        <span><i class="ti ti-clock" aria-hidden="true"></i><span id="scheduleAppointmentVisitTime"></span></span>
+                        <span><i class="ti ti-building-hospital" aria-hidden="true"></i><span id="scheduleAppointmentVisitClinic"></span></span>
+                    </span>
+                </div>
+
+                <div class="vd-schedule-detail-columns">
+                    <section class="vd-schedule-detail-section" aria-labelledby="scheduleAppointmentRecordHeading">
+                        <h6 class="vd-appointment-details-section-title" id="scheduleAppointmentRecordHeading">Appointment record</h6>
+                        <dl class="vd-schedule-detail-list" id="scheduleAppointmentRecordList"></dl>
+                    </section>
+                    <section class="vd-schedule-detail-section" aria-labelledby="schedulePatientInformationHeading">
+                        <h6 class="vd-appointment-details-section-title" id="schedulePatientInformationHeading">Patient information</h6>
+                        <dl class="vd-schedule-detail-list" id="schedulePatientInformationList"></dl>
+                    </section>
+                </div>
+
+                <section class="vd-schedule-detail-section vd-schedule-services-section" aria-labelledby="scheduleAppointmentServicesHeading">
+                    <h6 class="vd-appointment-details-section-title" id="scheduleAppointmentServicesHeading">Selected services</h6>
+                    <div class="vd-schedule-appointment-services" id="scheduleAppointmentServices"></div>
+                </section>
+                <section class="vd-schedule-detail-section vd-schedule-deposit-section" aria-labelledby="scheduleAppointmentPaymentHeading">
+                    <h6 class="vd-appointment-details-section-title" id="scheduleAppointmentPaymentHeading">Deposit information</h6>
+                    <dl class="vd-schedule-detail-list vd-schedule-deposit-list" id="scheduleAppointmentPaymentList"></dl>
+                </section>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline me-auto" id="backToSchedulePatients">
+                    <i class="ti ti-arrow-left me-1" aria-hidden="true"></i> Back to patients
+                </button>
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Delete confirmation modal -->
@@ -212,6 +317,10 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 <script>
 (function () {
     const csrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
+    const confirmedAppointmentsBySchedule = <?= json_encode(
+        $confirmedAppointmentsBySchedule,
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ) ?>;
     function refreshPage() {
         if (typeof loadpage === 'function') loadpage('schedule-content.php');
     }
@@ -246,6 +355,161 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         addScheduleButton.dataset.defaultEnd = button.dataset.defaultEnd;
         updateScheduleSummary(button);
     }));
+
+    const patientsModalElement = document.getElementById('schedulePatientsModal');
+    const appointmentModalElement = document.getElementById('scheduleAppointmentModal');
+    const patientsModal = bootstrap.Modal.getOrCreateInstance(patientsModalElement);
+    const appointmentModal = bootstrap.Modal.getOrCreateInstance(appointmentModalElement);
+    const patientsList = document.getElementById('schedulePatientsModalList');
+    const patientsSubtitle = document.getElementById('schedulePatientsModalSubtitle');
+    const patientsWindow = document.getElementById('schedulePatientsModalWindow');
+    const patientsCount = document.getElementById('schedulePatientsModalCount');
+    let activeScheduleId = null;
+    let returnToPatientList = false;
+
+    function formatScheduleDate(value) {
+        if (!value) return 'Date unavailable';
+        return new Date(`${value}T00:00:00`).toLocaleDateString([], {
+            month: 'long', day: 'numeric', year: 'numeric'
+        });
+    }
+
+    function formatScheduleTime(value) {
+        if (!value) return 'Time unavailable';
+        return new Date(`1970-01-01T${value}`).toLocaleTimeString([], {
+            hour: 'numeric', minute: '2-digit'
+        });
+    }
+
+    function patientInitials(name) {
+        const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return '?';
+        return `${parts[0][0]}${parts.length > 1 ? parts[parts.length - 1][0] : ''}`.toUpperCase();
+    }
+
+    function appendDetailRow(container, label, value) {
+        const item = document.createElement('div');
+        item.className = 'vd-schedule-detail-row';
+        const term = document.createElement('span');
+        term.className = 'vd-schedule-detail-term';
+        term.textContent = label;
+        const description = document.createElement('strong');
+        description.className = 'vd-schedule-detail-value';
+        description.textContent = value || 'Not provided';
+        item.append(term, description);
+        container.appendChild(item);
+    }
+
+    function showAppointmentDetails(appointment) {
+        document.getElementById('scheduleAppointmentModalTitle').textContent = appointment.patient_name || 'Patient appointment';
+        document.getElementById('scheduleAppointmentModalSubtitle').textContent =
+            appointment.appointment_code || `Appointment #${appointment.appointment_id}`;
+        document.getElementById('scheduleAppointmentAvatar').textContent = patientInitials(appointment.patient_name);
+        document.getElementById('scheduleAppointmentVisitDate').textContent = formatScheduleDate(appointment.date);
+        document.getElementById('scheduleAppointmentVisitTime').textContent = `${formatScheduleTime(appointment.start_time)}–${formatScheduleTime(appointment.end_time)}`;
+        document.getElementById('scheduleAppointmentVisitClinic').textContent = appointment.clinic_name || 'Clinic unavailable';
+
+        const recordList = document.getElementById('scheduleAppointmentRecordList');
+        recordList.replaceChildren();
+        appendDetailRow(recordList, 'Appointment number', `#${appointment.appointment_id}`);
+        appendDetailRow(recordList, 'Reference', appointment.appointment_code || 'Reference pending');
+        appendDetailRow(recordList, 'Status', appointment.status);
+
+        const patientList = document.getElementById('schedulePatientInformationList');
+        patientList.replaceChildren();
+        appendDetailRow(patientList, 'Email', appointment.email);
+        appendDetailRow(patientList, 'Contact number', appointment.phone_number);
+        appendDetailRow(patientList, 'Age', appointment.age ? String(appointment.age) : 'Not provided');
+        appendDetailRow(patientList, 'Gender', appointment.gender);
+
+        const paymentList = document.getElementById('scheduleAppointmentPaymentList');
+        paymentList.replaceChildren();
+        const depositAmount = appointment.deposit_amount === null || appointment.deposit_amount === ''
+            ? 'Not provided'
+            : new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(appointment.deposit_amount));
+        appendDetailRow(paymentList, 'Deposit status', appointment.deposit_status);
+        appendDetailRow(paymentList, 'Deposit amount', depositAmount);
+        appendDetailRow(paymentList, 'GCash reference', appointment.gcash_reference);
+
+        const services = document.getElementById('scheduleAppointmentServices');
+        services.replaceChildren();
+        const selectedServices = Array.isArray(appointment.services) && appointment.services.length
+            ? appointment.services
+            : String(appointment.service_name || 'Service not specified').split(',').map(serviceName => ({
+                service_name: serviceName.trim(),
+                service_icon: 'fa-solid fa-tooth'
+            }));
+        selectedServices.forEach(selectedService => {
+            const service = document.createElement('div');
+            service.className = 'vd-schedule-appointment-service';
+            const serviceIcon = document.createElement('span');
+            serviceIcon.className = 'vd-schedule-appointment-service-icon';
+            const serviceIconGlyph = document.createElement('i');
+            serviceIconGlyph.className = selectedService.service_icon || 'fa-solid fa-tooth';
+            serviceIconGlyph.setAttribute('aria-hidden', 'true');
+            serviceIcon.appendChild(serviceIconGlyph);
+            const serviceText = document.createElement('strong');
+            serviceText.textContent = selectedService.service_name || 'Service';
+            const included = document.createElement('span');
+            included.className = 'vd-schedule-appointment-service-status';
+            included.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Included';
+            service.append(serviceIcon, serviceText, included);
+            services.appendChild(service);
+        });
+
+        patientsModalElement.addEventListener('hidden.bs.modal', () => appointmentModal.show(), { once: true });
+        patientsModal.hide();
+    }
+
+    function showSchedulePatients(button) {
+        activeScheduleId = String(button.dataset.viewSchedulePatients);
+        const appointments = confirmedAppointmentsBySchedule[activeScheduleId] || [];
+        patientsSubtitle.textContent = button.dataset.scheduleLabel || '';
+        patientsWindow.textContent = button.dataset.scheduleWindow || '';
+        patientsCount.textContent = `${appointments.length} confirmed`;
+        patientsList.replaceChildren();
+
+        appointments.forEach(appointment => {
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'vd-schedule-patient-option';
+            row.setAttribute('aria-label', `View full appointment details for ${appointment.patient_name || 'patient'}`);
+            const avatar = document.createElement('span');
+            avatar.className = 'vd-schedule-patient-avatar';
+            avatar.textContent = patientInitials(appointment.patient_name);
+            const copy = document.createElement('div');
+            copy.className = 'vd-schedule-patient-modal-copy';
+            const name = document.createElement('strong');
+            name.textContent = appointment.patient_name || 'Patient';
+            const service = document.createElement('span');
+            service.textContent = appointment.service_name || 'Service not specified';
+            const reference = document.createElement('small');
+            reference.textContent = `${appointment.appointment_code || 'Reference pending'} · Confirmed`;
+            copy.append(name, service, reference);
+            const arrow = document.createElement('span');
+            arrow.className = 'vd-schedule-patient-option-arrow';
+            arrow.innerHTML = '<span>View details</span><i class="ti ti-chevron-right" aria-hidden="true"></i>';
+            row.addEventListener('click', () => showAppointmentDetails(appointment));
+            row.append(avatar, copy, arrow);
+            patientsList.appendChild(row);
+        });
+
+        patientsModal.show();
+    }
+
+    document.querySelectorAll('[data-view-schedule-patients]').forEach(button => {
+        button.addEventListener('click', () => showSchedulePatients(button));
+    });
+
+    document.getElementById('backToSchedulePatients').addEventListener('click', () => {
+        returnToPatientList = true;
+        appointmentModal.hide();
+    });
+    appointmentModalElement.addEventListener('hidden.bs.modal', () => {
+        if (!returnToPatientList || !activeScheduleId) return;
+        returnToPatientList = false;
+        patientsModal.show();
+    });
 
     // Show toast for query param results (e.g., edit conflict) — use global showToast if available
     (function () {

@@ -30,18 +30,18 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <label class="vd-label form-label" for="scheduleStartTime">Opening time</label>
-                            <clock-timepicker id="scheduleStartPicker" class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:00" maximum="23:50" required vibrate="false">
+                            <clock-timepicker id="scheduleStartPicker" class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="08:00" maximum="17:25" required vibrate="false">
                                 <input type="text" id="scheduleStartTime" name="start_time" class="form-control vd-input vd-schedule-time-input" placeholder="Select opening time" autocomplete="off" inputmode="numeric" required>
                             </clock-timepicker>
                         </div>
                         <div class="col-6">
                             <label class="vd-label form-label" for="scheduleEndTime">Closing time</label>
-                            <clock-timepicker id="scheduleEndPicker" class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:05" maximum="23:55" required vibrate="false">
+                            <clock-timepicker id="scheduleEndPicker" class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="08:05" maximum="17:30" required vibrate="false">
                                 <input type="text" id="scheduleEndTime" name="end_time" class="form-control vd-input vd-schedule-time-input" placeholder="Select closing time" autocomplete="off" inputmode="numeric" required>
                             </clock-timepicker>
                         </div>
                     </div>
-                    <div class="vd-schedule-selection-count vd-schedule-time-help"><i class="ti ti-clock-hour-4 me-1" aria-hidden="true"></i>Times are selected in five-minute increments.</div>
+                    <div class="vd-schedule-selection-count vd-schedule-time-help"><i class="ti ti-clock-hour-4 me-1" aria-hidden="true"></i>Select times from 8:00 AM to 5:30 PM in five-minute increments.</div>
                     <div id="scheduleTimeAvailability" class="vd-schedule-availability d-none" role="status" aria-live="polite"></div>
                     <div id="scheduleEditLockNote" class="vd-schedule-lock-note d-none"><i class="ti ti-lock" aria-hidden="true"></i><span>This schedule already has bookings, so its date and clinic hours are locked. Capacity can still be adjusted.</span></div>
                     <div class="vd-schedule-policy-note"><i class="ti ti-user-clock" aria-hidden="true"></i><span>Patients will be instructed to arrive by the opening time or earlier and will be served first come, first served.</span></div>
@@ -159,10 +159,10 @@
 
     function resetTimeBounds() {
         if (!customElements.get('clock-timepicker')) return;
-        startTimePicker.minimum = '00:00';
-        startTimePicker.maximum = '23:50';
-        endTimePicker.minimum = '00:05';
-        endTimePicker.maximum = '23:55';
+        startTimePicker.minimum = '08:00';
+        startTimePicker.maximum = '17:25';
+        endTimePicker.minimum = '08:05';
+        endTimePicker.maximum = '17:30';
     }
 
     function selectedScheduleDates() {
@@ -198,9 +198,9 @@
         const before = timeToMinutes(conflict.start_time) - transitionMinutes;
         const after = timeToMinutes(conflict.end_time) + transitionMinutes;
         const choices = [];
-        if (before > 0) choices.push(`closes by ${formatTime(minutesToTime(before))}`);
-        if (after < 1440) choices.push(`opens from ${formatTime(minutesToTime(after))}`);
-        const requirement = choices.length ? ` Choose a window that ${choices.join(' or ')}.` : '';
+        if (before >= 485) choices.push(`closes by ${formatTime(minutesToTime(before))}`);
+        if (after <= 1045) choices.push(`opens from ${formatTime(minutesToTime(after))}`);
+        const requirement = choices.length ? ` Choose a window that ${choices.join(' or ')} within 8:00 AM–5:30 PM.` : ' No window remains between 8:00 AM and 5:30 PM with the required clinic transition.';
         return `${conflict.clinic_name} operates ${formatTime(conflict.start_time)}–${formatTime(conflict.end_time)} on this date.${requirement}`;
     }
 
@@ -383,6 +383,10 @@
                 setError('Opening and closing times must use five-minute increments.');
                 return;
             }
+            if (start < '08:00' || end > '17:30') {
+                setError('Clinic schedules must stay between 8:00 AM and 5:30 PM.');
+                return;
+            }
             if (start >= end) {
                 setError('Closing time must be later than opening time.');
                 return;
@@ -414,6 +418,10 @@
                 }
                 if (!isFiveMinuteTime(start) || !isFiveMinuteTime(end)) {
                     setError('Opening and closing times must use five-minute increments.');
+                    return;
+                }
+                if (start < '08:00' || end > '17:30') {
+                    setError('Clinic schedules must stay between 8:00 AM and 5:30 PM.');
                     return;
                 }
                 if (start >= end) {

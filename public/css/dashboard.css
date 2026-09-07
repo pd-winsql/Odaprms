@@ -3910,6 +3910,448 @@ button.vd-stat-card {
     width: 100%;
 }
 
+.vd-sched-patients-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.vd-sched-patients-button:not(:disabled):hover,
+.vd-sched-patients-button:not(:disabled):focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(104, 80, 31, 0.12);
+}
+.vd-sched-patients-button:disabled {
+    background: #f8f6f1;
+    border-color: #e6e0d5;
+    opacity: 0.72;
+}
+.vd-sched-patients-button strong {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.22);
+    font-size: 9px;
+    font-weight: 400;
+    line-height: 1;
+}
+.vd-sched-patients-button.vd-btn-outline strong {
+    background: #ece7dd;
+    color: var(--mid);
+}
+
+.vd-schedule-patients-modal .modal-dialog {
+    max-width: 680px;
+}
+.vd-schedule-patients-modal .modal-content,
+.vd-schedule-appointment-modal .modal-content {
+    border: 1px solid #dfd2b9;
+    border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(61, 48, 31, 0.2);
+    overflow: hidden;
+}
+.vd-schedule-patients-modal .modal-header,
+.vd-schedule-patients-modal .modal-footer {
+    padding: 19px 24px;
+    border-color: #eee5d5;
+}
+.vd-schedule-patients-modal .modal-body {
+    padding: 0;
+}
+.vd-schedule-roster-context {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 16px 24px;
+    border-bottom: 1px solid #eadfc9;
+    background: linear-gradient(120deg, #fbf6ec, #f7edd7);
+}
+.vd-schedule-roster-context-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--gold);
+    box-shadow: inset 0 0 0 1px #e4d2a8;
+    font-size: 18px;
+}
+.vd-schedule-roster-context-copy {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    min-width: 0;
+}
+.vd-schedule-roster-context-copy strong {
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.15;
+}
+.vd-schedule-roster-context-copy small {
+    color: var(--mid);
+    font-size: 11px;
+}
+.vd-schedule-roster-count {
+    flex: 0 0 auto;
+    color: #72581f;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.vd-schedule-patient-modal-list {
+    display: grid;
+    gap: 0;
+    padding: 6px 24px 12px;
+}
+.vd-schedule-patient-option {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+    padding: 14px 10px;
+    border: 0;
+    border-bottom: 1px solid #eee5d5;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    transition: background 0.16s ease, padding-left 0.16s ease;
+}
+.vd-schedule-patient-option:last-child {
+    border-bottom: 0;
+}
+.vd-schedule-patient-option:hover,
+.vd-schedule-patient-option:focus-visible {
+    outline: 0;
+    background: #fbf6ec;
+    padding-left: 14px;
+}
+.vd-schedule-patient-avatar,
+.vd-schedule-appointment-avatar {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--gold-pale), #e5cf9f);
+    color: #6f5622;
+    box-shadow: inset 0 0 0 1px rgba(144, 108, 34, 0.18);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.vd-schedule-patient-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 11px;
+}
+.vd-schedule-patient-modal-copy {
+    min-width: 0;
+    flex: 1;
+    display: grid;
+    gap: 3px;
+}
+.vd-schedule-patient-modal-copy strong {
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.15;
+}
+.vd-schedule-patient-modal-copy span,
+.vd-schedule-patient-modal-copy small {
+    color: var(--mid);
+    font-size: 11px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.vd-schedule-patient-option-arrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #80672f;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.vd-schedule-patient-option-arrow i {
+    transition: transform 0.16s ease;
+}
+.vd-schedule-patient-option:hover .vd-schedule-patient-option-arrow i {
+    transform: translateX(3px);
+}
+
+.vd-schedule-appointment-modal .modal-dialog {
+    max-width: 900px;
+}
+.vd-schedule-appointment-header {
+    gap: 18px;
+}
+.vd-schedule-appointment-identity {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 14px;
+    min-width: 0;
+}
+.vd-schedule-appointment-avatar {
+    flex: 0 0 52px;
+    width: 52px;
+    height: 52px;
+    font-size: 13px;
+}
+.vd-schedule-appointment-identity > span:last-child {
+    min-width: 0;
+}
+.vd-schedule-appointment-modal #scheduleAppointmentModalTitle {
+    overflow: hidden;
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.vd-schedule-confirmed-mark {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 5px;
+    color: #42631f;
+    font-size: 11px;
+    font-weight: 600;
+}
+.vd-schedule-confirmed-mark i {
+    color: #638f31;
+    font-size: 16px;
+}
+.vd-schedule-visit-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 17px 18px;
+    border: 1px solid #e5d5b4;
+    border-radius: 10px;
+    background: linear-gradient(120deg, #fffdf8, #f7ecd5);
+}
+.vd-schedule-visit-date-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--gold);
+    font-size: 19px;
+    box-shadow: inset 0 0 0 1px #ead7ae;
+}
+.vd-schedule-visit-date {
+    display: grid;
+    min-width: 170px;
+}
+.vd-schedule-visit-date small {
+    color: var(--mid);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+.vd-schedule-visit-date strong {
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.15;
+}
+.vd-schedule-visit-divider {
+    align-self: stretch;
+    width: 1px;
+    background: #dfcfad;
+}
+.vd-schedule-visit-meta {
+    display: grid;
+    gap: 5px;
+    color: #6c604e;
+    font-size: 12px;
+}
+.vd-schedule-visit-meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+.vd-schedule-visit-meta i {
+    color: var(--gold);
+}
+.vd-schedule-detail-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 34px;
+    margin-top: 26px;
+}
+.vd-schedule-detail-section {
+    min-width: 0;
+}
+.vd-schedule-detail-list {
+    margin: 0;
+}
+.vd-schedule-detail-row {
+    display: grid;
+    grid-template-columns: minmax(125px, 0.8fr) minmax(0, 1.2fr);
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee6d7;
+}
+.vd-schedule-detail-row:last-child {
+    border-bottom: 0;
+}
+.vd-schedule-detail-term {
+    color: var(--mid);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.vd-schedule-detail-value {
+    color: var(--dark);
+    font-size: 12px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+    text-align: right;
+}
+.vd-schedule-services-section,
+.vd-schedule-deposit-section {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #eee6d7;
+}
+.vd-schedule-appointment-services {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 20px;
+}
+.vd-schedule-appointment-service {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee6d7;
+    color: var(--dark);
+    font-size: 12px;
+}
+.vd-schedule-appointment-service-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--gold-pale);
+    color: var(--gold);
+    font-size: 15px;
+}
+.vd-schedule-appointment-service strong {
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+.vd-schedule-appointment-service-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #607d35;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.vd-schedule-deposit-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 22px;
+}
+.vd-schedule-deposit-list .vd-schedule-detail-row {
+    display: block;
+}
+.vd-schedule-deposit-list .vd-schedule-detail-term,
+.vd-schedule-deposit-list .vd-schedule-detail-value {
+    display: block;
+    text-align: left;
+}
+.vd-schedule-deposit-list .vd-schedule-detail-value {
+    margin-top: 3px;
+}
+@media (max-width: 575px) {
+    .vd-schedule-roster-context {
+        padding-inline: 18px;
+    }
+    .vd-schedule-roster-count,
+    .vd-schedule-patient-option-arrow span,
+    .vd-schedule-confirmed-mark {
+        display: none;
+    }
+    .vd-schedule-patient-modal-list {
+        padding-inline: 10px;
+    }
+    .vd-schedule-patient-option {
+        grid-template-columns: 40px minmax(0, 1fr) auto;
+        gap: 10px;
+    }
+    .vd-schedule-patient-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    .vd-schedule-appointment-modal .modal-header {
+        padding: 17px 18px;
+    }
+    .vd-schedule-appointment-avatar {
+        flex-basis: 44px;
+        width: 44px;
+        height: 44px;
+    }
+    .vd-schedule-appointment-modal #scheduleAppointmentModalTitle {
+        font-size: 23px;
+    }
+    .vd-schedule-visit-banner {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 10px 12px;
+    }
+    .vd-schedule-visit-divider {
+        display: none;
+    }
+    .vd-schedule-visit-meta {
+        width: 100%;
+        padding-left: 54px;
+    }
+    .vd-schedule-detail-columns,
+    .vd-schedule-appointment-services,
+    .vd-schedule-deposit-list {
+        grid-template-columns: 1fr;
+    }
+    .vd-schedule-detail-columns {
+        gap: 24px;
+    }
+    .vd-schedule-detail-row {
+        grid-template-columns: minmax(105px, 0.8fr) minmax(0, 1.2fr);
+    }
+}
+
 .vd-password-heading {
     padding-inline: 2px;
 }

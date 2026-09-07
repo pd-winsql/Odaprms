@@ -38,6 +38,9 @@ class ScheduleController {
         if ($start >= $end) {
             return ['success' => false, 'message' => 'Closing time must be later than opening time.'];
         }
+        if (!Schedule::isWithinOperatingHours($start, $end)) {
+            return ['success' => false, 'message' => 'Clinic schedules must stay between 8:00 AM and 5:30 PM.'];
+        }
         return ['success' => true, 'start_time' => $start, 'end_time' => $end];
     }
 
