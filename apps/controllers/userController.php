@@ -40,6 +40,12 @@ class UserController {
             exit;
         }
 
+        if ($user['user_role'] === 'Dental Assistant' && ($user['staff_employment_status'] ?? '') !== 'Active') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Your account is inactive. Please contact the administrator.']);
+            exit;
+        }
+
         // Set session
         $_SESSION['user_id']   = $user['id'];
         $_SESSION['email']     = $user['email'];

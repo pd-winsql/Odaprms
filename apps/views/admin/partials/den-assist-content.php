@@ -238,6 +238,28 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         if (typeof loadpage === 'function') loadpage('den-assist-content.php');
     }
 
+    async function postStaffAction(formData) {
+        const response = await fetch(CONTROLLER, {
+            method: 'POST',
+            headers: { Accept: 'application/json' },
+            body: formData
+        });
+        const responseText = await response.text();
+
+        try {
+            return JSON.parse(responseText);
+        } catch (error) {
+            console.error('Invalid staff-controller response:', responseText);
+            throw new Error('The server returned an invalid response. Please refresh and try again.');
+        }
+    }
+
+    function requestErrorMessage(error) {
+        return error instanceof TypeError
+            ? 'Network error. Check your connection and try again.'
+            : error.message;
+    }
+
     // Phone numbers must remain numeric and exactly 11 digits long.
     document.querySelectorAll('.vd-staff-phone, .vd-edit-phone').forEach(input => {
         input.addEventListener('input', function () {
@@ -265,8 +287,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         LoadingUI.setButton(submitButton, true, 'Creating…');
 
         try {
-        const res    = await fetch(CONTROLLER, { method: 'POST', body: formData });
-        const result = await res.json();
+        const result = await postStaffAction(formData);
 
         if (result.success) {
             document.getElementById('generatedLoginEmail').textContent = result.email;
@@ -278,7 +299,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             errorEl.classList.remove('d-none');
         }
         } catch (err) {
-        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.textContent = requestErrorMessage(err);
         errorEl.classList.remove('d-none');
         console.error(err);
         } finally {
@@ -346,8 +367,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         LoadingUI.setButton(btn, true, 'Saving…');
 
         try {
-            const res    = await fetch(CONTROLLER, { method: 'POST', body: fd });
-            const result = await res.json();
+            const result = await postStaffAction(fd);
 
             if (result.success) {
             // Update displayed values in the row
@@ -360,7 +380,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             showToast(result.message || 'Failed to update.', false);
             }
         } catch (err) {
-            showToast('Network error.', false);
+            showToast(requestErrorMessage(err), false);
             console.error(err);
         } finally {
             LoadingUI.setButton(btn, false);
@@ -383,8 +403,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         fd.append('staff_id', id);
 
         try {
-            const res    = await fetch(CONTROLLER, { method: 'POST', body: fd });
-            const result = await res.json();
+            const result = await postStaffAction(fd);
 
             if (result.success) {
             const pill = document.getElementById('statusPill-' + id);
@@ -396,7 +415,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             showToast(result.message || 'Failed to update status.', false);
             }
         } catch (err) {
-            showToast('Network error.', false);
+            showToast(requestErrorMessage(err), false);
             console.error(err);
         }
     }

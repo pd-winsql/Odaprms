@@ -4,13 +4,14 @@ require_once __DIR__ . '/auditLogModel.php';
 require_once __DIR__ . '/emailNotificationModel.php';
 require_once __DIR__ . '/../helpers/paymentSettings.php';
 
-class Appointment {
+class Appointment
+{
     private $conn;
     private $auditLog;
     private $emailNotifications;
     private $maxServicesPerVisit;
 
-    public function __construct($conn) 
+    public function __construct($conn)
     {
         $this->conn = $conn;
         $this->auditLog = new AuditLog($conn);
@@ -20,7 +21,8 @@ class Appointment {
     }
 
     // ===== BOOKING =====
-    public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $performedByUserId = null) {
+    public function bookAppointment($patient_id, $clinic_id, $service_ids, $date, $schedule_id, $performedByUserId = null)
+    {
         // Normalize and validate service IDs: cast to ints, remove falsy values,
         // deduplicate and reindex the array. If no services remain, abort.
         $service_ids = array_values(array_unique(array_filter(array_map('intval', (array) $service_ids))));
@@ -71,10 +73,12 @@ class Appointment {
             $scheduleStmt->execute([':schedule_id' => $schedule_id]);
             $schedule = $scheduleStmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$schedule
+            if (
+                !$schedule
                 || (int) $schedule['clinic_id'] !== (int) $clinic_id
                 || $schedule['sched_date'] !== $date
-                || $schedule['sched_date'] < date('Y-m-d')) {
+                || $schedule['sched_date'] < date('Y-m-d')
+            ) {
                 // Invalid schedule (mismatch or past date) — rollback and abort.
                 $this->conn->rollBack();
                 return false;
@@ -185,9 +189,12 @@ class Appointment {
             // otherwise attribute it to the patient.
             $actor = $performedByUserId ? $this->auditLog->getUserActor($performedByUserId) : null;
             $this->auditLog->record(
-                'appointment', $appointment_id, 'appointment_requested',
+                'appointment',
+                $appointment_id,
+                'appointment_requested',
                 "Submitted appointment request #{$appointment_id} for staff review.",
-                null, ['status' => 'Pending Review'],
+                null,
+                ['status' => 'Pending Review'],
                 $actor ?: ['user_id' => null, 'name' => 'Patient', 'role' => 'Patient', 'source' => 'User']
             );
 
@@ -199,10 +206,10 @@ class Appointment {
                 'status' => 'Pending Review',
                 'message' => 'Appointment request submitted for clinic review.',
             ];
-        } catch(Throwable $e){
+        } catch (Throwable $e) {
             // Ensure the transaction is rolled back on any error and log it.
             if ($this->conn->inTransaction()) $this->conn->rollBack();
-            error_log("bookAppointment error: ".$e->getMessage());
+            error_log("bookAppointment error: " . $e->getMessage());
             return ['success' => false, 'message' => 'Booking failed. Please try again.'];
         }
     }
@@ -210,7 +217,8 @@ class Appointment {
     // ===== PATIENT FUNCTIONS =====
 
     // Patient: view upcoming appointments
-    public function getPatientUpcomingAppointments($patient_id) {
+    public function getPatientUpcomingAppointments($patient_id)
+    {
         try {
             // Keep cancelled bookings out of the patient's upcoming list.
             $stmt = $this->conn->prepare("
@@ -224,7 +232,6 @@ class Appointment {
             ");
             $stmt->execute([':patient_id' => $patient_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getPatientUpcomingAppointments error: " . $e->getMessage());
             return [];
@@ -232,7 +239,8 @@ class Appointment {
     }
 
     // Patient: view past appointments
-    public function getPatientPastAppointments($patient_id) {
+    public function getPatientPastAppointments($patient_id)
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.*,
@@ -249,7 +257,7 @@ class Appointment {
                     ON payment.appointment_id = a.appointment_id
                 WHERE a.patient_id = :patient_id
                 AND (
-                    a.date < CURDATE()
+                    a.date <= CURDATE()
                     OR a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
                 )
 
@@ -257,7 +265,6 @@ class Appointment {
             ");
             $stmt->execute([':patient_id' => $patient_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getPatientPastAppointments error: " . $e->getMessage());
             return [];
@@ -265,7 +272,8 @@ class Appointment {
     }
 
     // Patient: view upcoming appointments with status
-    public function getUpcomingWithStatus($email) {
+    public function getUpcomingWithStatus($email)
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT
@@ -283,7 +291,6 @@ class Appointment {
             ");
             $stmt->execute([':email' => $email]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getUpcomingWithStatus error: " . $e->getMessage());
             return [];
@@ -293,7 +300,8 @@ class Appointment {
     // ===== ADMIN FUNCTIONS =====
 
     // Admin: view all past appointments
-    public function getAdminPastAppointments() {
+    public function getAdminPastAppointments()
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
@@ -314,13 +322,12 @@ class Appointment {
                     ON payment.appointment_id = a.appointment_id
                 LEFT JOIN vw_appointment_latest_status_change status_change
                     ON status_change.appointment_id = a.appointment_id
-                WHERE a.date < CURDATE()
+                WHERE a.date <= CURDATE()
                     AND a.status NOT IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review')
                 ORDER BY a.date DESC
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getAdminPastAppointments error: " . $e->getMessage());
             return [];
@@ -328,12 +335,13 @@ class Appointment {
     }
 
     // Admin: view past appointments per clinic
-    public function getAdminPastAppointmentsByClinic($clinic) {
+    public function getAdminPastAppointmentsByClinic($clinic)
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.*
                 FROM vw_appointment_overview a
-                WHERE a.date < CURDATE()
+                WHERE a.date <= CURDATE()
                 AND a.clinic_name = :clinic
                 AND (
                     a.deposit_required = 0
@@ -347,7 +355,6 @@ class Appointment {
             ");
             $stmt->execute([':clinic' => $clinic]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getAdminPastAppointmentsByClinic error: " . $e->getMessage());
             return [];
@@ -355,7 +362,8 @@ class Appointment {
     }
 
     // Admin: view all upcoming appointments with status
-    public function getAllUpcomingWithStatus() {
+    public function getAllUpcomingWithStatus()
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
@@ -382,7 +390,6 @@ class Appointment {
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
         } catch (PDOException $e) {
             error_log("getAllUpcomingWithStatus error: " . $e->getMessage());
             return [];
@@ -390,7 +397,8 @@ class Appointment {
     }
 
     // Admin: update appointment status
-    public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '') {
+    public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '')
+    {
         $allowedTransitions = $this->getAllowedStatusTransitions();
 
         // Quick validation: ensure the requested target status is one of the
@@ -502,7 +510,6 @@ class Appointment {
                 ],
                 'notification' => $notification,
             ];
-
         } catch (Throwable $e) {
             // On any error, roll back the transaction and log the exception.
             if ($this->conn->inTransaction()) {
@@ -515,7 +522,8 @@ class Appointment {
 
     // ===== SHARED APPOINTMENT QUERIES =====
 
-    public function getServiceDetailsForAppointments(array $appointmentIds): array {
+    public function getServiceDetailsForAppointments(array $appointmentIds): array
+    {
         $appointmentIds = array_values(array_unique(array_filter(array_map('intval', $appointmentIds))));
         if (!$appointmentIds) return [];
 
@@ -563,7 +571,8 @@ class Appointment {
 
     // ===== DASHBOARD FEED HELPERS =====
 
-    public function getLatestAppointmentId(): int {
+    public function getLatestAppointmentId(): int
+    {
         try {
             return (int) $this->conn->query('SELECT COALESCE(MAX(appointment_id), 0) FROM appointments')->fetchColumn();
         } catch (PDOException $e) {
@@ -572,7 +581,8 @@ class Appointment {
         }
     }
 
-    public function getDepositFeedVersion(): string {
+    public function getDepositFeedVersion(): string
+    {
         try {
             $sql = "
                 SELECT CONCAT(
@@ -589,7 +599,8 @@ class Appointment {
         }
     }
 
-    public function getStaffOperationsFeedVersion(): string {
+    public function getStaffOperationsFeedVersion(): string
+    {
         try {
             $sql = "
                 SELECT CONCAT(
@@ -625,7 +636,8 @@ class Appointment {
 
     // ===== ADDITIONAL APPOINTMENT QUERIES =====
 
-    public function getAppointmentsByStatus($status) {
+    public function getAppointmentsByStatus($status)
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.lastname, a.firstname, a.middlename, a.age, a.gender,
@@ -644,7 +656,8 @@ class Appointment {
         }
     }
 
-    public function getPatientTransactionHistory($patient_id) {
+    public function getPatientTransactionHistory($patient_id)
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT
@@ -673,7 +686,8 @@ class Appointment {
      * release. Access is scoped by the signed-in user's id, not a browser-
      * supplied patient id.
      */
-    public function getPatientNotificationSnapshot(int $userId): array {
+    public function getPatientNotificationSnapshot(int $userId): array
+    {
         try {
             $stmt = $this->conn->prepare("
                 SELECT
@@ -716,13 +730,15 @@ class Appointment {
 
     // ===== PERSISTENCE HELPERS =====
 
-    public function getLastInsertedId() {
+    public function getLastInsertedId()
+    {
         return $this->conn->lastInsertId();
     }
 
     // ===== STATUS WORKFLOW HELPERS =====
 
-    private function getAllowedStatusTransitions(): array {
+    private function getAllowedStatusTransitions(): array
+    {
         return [
             'Pending Review' => ['Awaiting Deposit', 'Rejected'],
             'Awaiting Deposit' => ['Cancelled'],
@@ -737,7 +753,8 @@ class Appointment {
         ];
     }
 
-    private function validateTreatmentStart($appointment_id): ?string {
+    private function validateTreatmentStart($appointment_id): ?string
+    {
         $readiness = $this->conn->prepare("
             SELECT a.date, p.profile_status, ci.checkin_status,
                 ci.queue_status, ci.serve_next_at
@@ -801,7 +818,8 @@ class Appointment {
         return null;
     }
 
-    private function applyPaymentStatusChange($appointment_id, $oldStatus, $status, $reason): array {
+    private function applyPaymentStatusChange($appointment_id, $oldStatus, $status, $reason): array
+    {
         $amount = 0.0;
         $minutes = 480;
 
@@ -842,7 +860,8 @@ class Appointment {
         return ['amount' => $amount, 'minutes' => $minutes];
     }
 
-    private function saveAppointmentStatus($appointment_id, $status, $performedByUserId, $reason, $minutes): void {
+    private function saveAppointmentStatus($appointment_id, $status, $performedByUserId, $reason, $minutes): void
+    {
         $stmt = $this->conn->prepare("
             UPDATE appointments SET
                 status = :status,
@@ -867,7 +886,8 @@ class Appointment {
         ]);
     }
 
-    private function recordStatusChangeAndNotify($appointment_id, $oldStatus, $status, $reason, array $actor): array {
+    private function recordStatusChangeAndNotify($appointment_id, $oldStatus, $status, $reason, array $actor): array
+    {
         $audit = $this->auditLog->record(
             'appointment',
             (int) $appointment_id,
@@ -895,5 +915,4 @@ class Appointment {
 
         return ['audit' => $audit, 'notification' => $notification];
     }
-
 }

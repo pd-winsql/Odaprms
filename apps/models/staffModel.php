@@ -126,7 +126,7 @@ class Staff {
                 WHERE staff_id = :staff_id
             ");
             $stmt->execute([':staff_id' => $staff_id]);
-            return true;
+            return $stmt->rowCount() === 1;
         } catch (PDOException $e) {
             error_log("toggleStatus error: " . $e->getMessage());
             return false;

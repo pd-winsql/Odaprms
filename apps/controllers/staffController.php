@@ -6,7 +6,7 @@ require_once '../../config/mailer.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 class StaffController {
     private $staffModel;
@@ -110,6 +110,7 @@ class StaffController {
         $staff_id = $_POST['staff_id'] ?? '';
 
         if (!$staff_id) {
+            http_response_code(422);
             echo json_encode(['success' => false, 'message' => 'Missing staff ID.']);
             exit;
         }
@@ -119,9 +120,13 @@ class StaffController {
         $updated = $result ? $this->staffModel->getStaffById((int) $staff_id) : null;
         if ($result && $old && $updated) $this->auditLog->recordForUser('staff', (int) $staff_id, 'staff_status_updated', 'Changed a dental assistant account status.', ['employment_status' => $old['employment_status']], ['employment_status' => $updated['employment_status']], (int) $_SESSION['user_id']);
 
+        if (!$result) {
+            http_response_code($old ? 500 : 404);
+        }
+
         echo json_encode([
             'success' => $result,
-            'message' => $result ? 'Status updated.' : 'Failed to update status.',
+            'message' => $result ? 'Status updated.' : ($old ? 'Failed to update status.' : 'Dental assistant not found.'),
         ]);
         exit;
     }

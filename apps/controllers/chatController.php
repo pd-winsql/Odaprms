@@ -23,10 +23,13 @@ try {
     if ($method === 'GET' && $action === 'unread') $result = ['unread' => $chat->unread()];
     elseif ($method === 'GET' && $action === 'inbox') $result = $chat->inbox((string) ($input['search'] ?? ''), (int) ($input['offset'] ?? 0));
     elseif ($method === 'GET' && $action === 'messages') $result = $chat->messages($id, max(0, (int) ($input['after'] ?? 0)), max(0, (int) ($input['before'] ?? 0)));
-    elseif ($method === 'POST' && $action === 'send') $result = ['conversationId' => $chat->send($id, (string) ($input['body'] ?? ''), (string) ($input['request_key'] ?? ''))];
+    elseif ($method === 'POST' && $action === 'send') $result = ['conversationId' => $chat->send($id, (string) ($input['body'] ?? ''), (string) ($input['request_key'] ?? ''), max(0, (int) ($input['last_seen_message_id'] ?? 0)))];
     elseif ($method === 'POST' && $action === 'read') $chat->markRead($id, (int) ($input['through'] ?? 0));
     else throw new InvalidArgumentException('Unknown message action.');
     echo json_encode(['success' => true] + $result, JSON_UNESCAPED_UNICODE);
+} catch (ChatReplyConflict $e) {
+    http_response_code(409);
+    echo json_encode(['success' => false, 'conflict' => true, 'message' => $e->getMessage()]);
 } catch (DomainException $e) {
     if (http_response_code() < 400) http_response_code(403);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

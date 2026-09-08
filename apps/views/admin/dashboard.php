@@ -216,7 +216,6 @@ $today = date('l, F j Y');
         const dashTitle = document.getElementById('dashTitle');
 
         function getPageTitle(page) {
-            if (page === 'messages-content.php') return 'Messages';
             const nav = document.querySelector(`.vd-nav-item[data-page="${page}"]`);
             return nav ? nav.textContent.trim() : 'Dashboard';
         }

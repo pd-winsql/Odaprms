@@ -1,5 +1,7 @@
 <?php
 
+class ChatReplyConflict extends RuntimeException {}
+
 class ChatModel {
     private PDO $db;
     private int $userId;
@@ -63,10 +65,18 @@ class ChatModel {
         if (!$id) return ['conversationId' => 0, 'messages' => [], 'hasMore' => false];
         $params = [$id];
         $where = '';
-        if ($before > 0) { $where = ' AND message_id < ?'; $params[] = $before; }
-        elseif ($after > 0) { $where = ' AND message_id > ?'; $params[] = $after; }
+        if ($before > 0) { $where = ' AND m.message_id < ?'; $params[] = $before; }
+        elseif ($after > 0) { $where = ' AND m.message_id > ?'; $params[] = $after; }
         $ascending = $after > 0 && !$before;
-        $stmt = $this->db->prepare('SELECT message_id, sender_id, sender_role, body, created_at FROM clinic_messages WHERE conversation_id = ?' . $where . ' ORDER BY message_id ' . ($ascending ? 'ASC' : 'DESC') . ' LIMIT 101');
+        $stmt = $this->db->prepare("SELECT m.message_id, m.sender_id, m.sender_role, m.body, m.created_at,
+            CASE
+                WHEN m.sender_role = 'Patient' THEN 'Patient'
+                WHEN m.sender_role = 'Dental Assistant' THEN COALESCE(NULLIF(TRIM(CONCAT_WS(' ', s.firstname, s.middlename, s.lastname)), ''), 'Dental Assistant')
+                ELSE 'Clinic staff'
+            END AS sender_name
+            FROM clinic_messages m
+            LEFT JOIN staffs s ON s.user_id = m.sender_id
+            WHERE m.conversation_id = ?" . $where . ' ORDER BY m.message_id ' . ($ascending ? 'ASC' : 'DESC') . ' LIMIT 101');
         $stmt->execute($params);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $hasMore = count($rows) > 100;
@@ -82,7 +92,7 @@ class ChatModel {
         $stmt->execute([$id, max(0, $through)]);
     }
 
-    public function send(int $id, string $body, string $key): int {
+    public function send(int $id, string $body, string $key, int $lastSeenMessageId = 0): int {
         $body = trim($body);
         if ($body === '' || !mb_check_encoding($body, 'UTF-8') || mb_strlen($body) > 2000) {
             throw new InvalidArgumentException('Enter a message of 1–2,000 characters.');
@@ -105,6 +115,14 @@ class ChatModel {
             if ($existing) {
                 if ((int) $existing['conversation_id'] !== $id || $existing['body'] !== $body) throw new InvalidArgumentException('This request was already used for another message.');
             } else {
+                if (!$this->isPatient()) {
+                    $stmt = $this->db->prepare("SELECT MAX(message_id) FROM clinic_messages
+                        WHERE conversation_id = ? AND message_id > ? AND sender_role = 'Dental Assistant' AND sender_id <> ?");
+                    $stmt->execute([$id, max(0, $lastSeenMessageId), $this->userId]);
+                    if ((int) $stmt->fetchColumn() > 0) {
+                        throw new ChatReplyConflict('Another dental assistant replied while you were composing. Review the latest message before sending.');
+                    }
+                }
                 $stmt = $this->db->prepare('INSERT INTO clinic_messages (conversation_id, sender_id, sender_role, body, request_key) VALUES (?, ?, ?, ?, ?)');
                 $stmt->execute([$id, $this->userId, $this->role, $body, $key]);
                 $stmt = $this->db->prepare('UPDATE clinic_conversations SET updated_at = NOW() WHERE conversation_id = ?');

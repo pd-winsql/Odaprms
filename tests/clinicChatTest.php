@@ -10,6 +10,10 @@ function chatReject(callable $action, string $message): void {
     try { $action(); } catch (DomainException | InvalidArgumentException $e) { chatExpect(true, $message); return; }
     throw new RuntimeException($message);
 }
+function chatConflict(callable $action, string $message): void {
+    try { $action(); } catch (ChatReplyConflict $e) { chatExpect(true, $message); return; }
+    throw new RuntimeException($message);
+}
 $db = (new Database())->connect();
 if (!$db) exit(1);
 $db->exec('SET NAMES utf8mb4');
@@ -25,6 +29,9 @@ try {
         }
     }
     [$patientOneId, $patientTwoId, $adminId, $assistantOneId, $assistantTwoId] = $users;
+    $staffProfile = $db->prepare("INSERT INTO staffs (user_id, firstname, lastname, gender, phone_number, email) VALUES (?, ?, ?, 'Female', '09000000000', ?)");
+    $staffProfile->execute([$assistantOneId, 'Alex', 'Santos', 'alex-chat-test@example.invalid']);
+    $staffProfile->execute([$assistantTwoId, 'Blair', 'Reyes', 'blair-chat-test@example.invalid']);
     $p1 = new ChatModel($db, $patientOneId);
     $p2 = new ChatModel($db, $patientTwoId);
     chatReject(fn() => new ChatModel($db, $adminId), 'Admin oversight cannot access daily clinic messages.');
@@ -50,11 +57,23 @@ try {
     $assistant->send($id, 'Please bring your appointment details.', bin2hex(random_bytes(16)));
     chatExpect($p1->unread() === 1 && $p2->unread() === 0, 'Only the intended patient receives an unread reply.');
     $reply = $p1->messages($id, (int) $incoming['message_id'])['messages'][0];
-    chatExpect($reply['sender_role'] === 'Dental Assistant' && !$reply['mine'], 'Replies identify the staff role.');
+    chatExpect($reply['sender_role'] === 'Dental Assistant' && $reply['sender_name'] === 'Alex Santos' && !$reply['mine'], 'Replies identify the dental assistant who sent them.');
     $p1->markRead($id, (int) $incoming['message_id']);
     chatExpect($p1->unread() === 1, 'A read cursor does not mark newer messages read.');
     $p1->markRead($id, (int) $reply['message_id']);
     chatExpect($p1->unread() === 0, 'Opening the reply clears its unread state.');
+    $secondConversationId = $p2->send(0, 'Can someone confirm my schedule?', bin2hex(random_bytes(16)));
+    $secondPatientMessage = $assistant->messages($secondConversationId)['messages'][0];
+    $assistant->send($secondConversationId, 'I am checking your schedule now.', bin2hex(random_bytes(16)), (int) $secondPatientMessage['message_id']);
+    chatConflict(
+        fn() => $secondAssistant->send($secondConversationId, 'Your schedule is confirmed.', bin2hex(random_bytes(16)), (int) $secondPatientMessage['message_id']),
+        'A stale reply is paused when another dental assistant replied first.'
+    );
+    $reviewedMessages = $secondAssistant->messages($secondConversationId)['messages'];
+    $reviewedThrough = (int) end($reviewedMessages)['message_id'];
+    $secondAssistant->send($secondConversationId, 'Your schedule is confirmed.', bin2hex(random_bytes(16)), $reviewedThrough);
+    $staffReplies = array_values(array_filter($p2->messages($secondConversationId)['messages'], fn($message) => $message['sender_role'] === 'Dental Assistant'));
+    chatExpect(array_column($staffReplies, 'sender_name') === ['Alex Santos', 'Blair Reyes'], 'A reviewed conversation can receive clearly attributed replies from two assistants.');
     for ($i = 0; $i < 103; $i++) $p1->send($id, 'History ' . $i, bin2hex(random_bytes(16)));
     $recent = $p1->messages($id);
     chatExpect(count($recent['messages']) === 100 && $recent['hasMore'], 'Long histories use bounded pages.');
@@ -67,6 +86,7 @@ try {
         $marks = implode(',', array_fill(0, count($users), '?'));
         $db->prepare("DELETE FROM clinic_messages WHERE sender_id IN ({$marks})")->execute($users);
         $db->prepare("DELETE FROM clinic_conversations WHERE patient_user_id IN ({$marks})")->execute($users);
+        $db->prepare("DELETE FROM staffs WHERE user_id IN ({$marks})")->execute($users);
         $db->prepare("DELETE FROM patients WHERE user_id IN ({$marks})")->execute($users);
         $db->prepare("DELETE FROM users WHERE id IN ({$marks})")->execute($users);
     }

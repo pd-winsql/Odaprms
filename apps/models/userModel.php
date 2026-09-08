@@ -13,6 +13,7 @@ class User {
             // profile; accounts without a profile fall back to their email.
             $stmt = $this->conn->prepare("
                 SELECT u.*,
+                    s.employment_status AS staff_employment_status,
                     COALESCE(
                         NULLIF(TRIM(CONCAT_WS(' ', s.firstname, s.middlename, s.lastname)), ''),
                         NULLIF(TRIM(CONCAT_WS(' ', p.firstname, p.middlename, p.lastname)), ''),
