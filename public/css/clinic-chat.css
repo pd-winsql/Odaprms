@@ -1,17 +1,17 @@
-/* Clinic messaging uses a calm clinical palette within the existing dashboard shell. */
+/* Clinic messaging follows the Ventura cream-and-gold dashboard palette. */
 .vd-chat-page,
 .vd-chat-modal,
 .vd-chat-launch,
 [data-chat-unread] {
-    --chat-accent: #176b67;
-    --chat-accent-strong: #0f514e;
-    --chat-ink: #1e2c2b;
-    --chat-muted: #647370;
-    --chat-line: #d9e2df;
-    --chat-paper: #ffffff;
-    --chat-soft: #edf5f3;
-    --chat-patient: #f3f5f4;
-    --chat-staff: #dff0ec;
+    --chat-accent: var(--gold);
+    --chat-accent-strong: var(--gold-hover);
+    --chat-ink: var(--dark);
+    --chat-muted: var(--mid);
+    --chat-line: var(--border);
+    --chat-paper: var(--white-bg);
+    --chat-soft: var(--gold-pale);
+    --chat-patient: #f8f4ec;
+    --chat-staff: #f0e4cb;
 }
 [data-chat-unread][hidden],
 .vd-chat-thread [hidden] {
@@ -108,14 +108,14 @@
     border-radius: 12px;
     overflow: hidden;
     background: var(--chat-paper);
-    box-shadow: 0 14px 40px rgba(26, 58, 55, 0.08);
+    box-shadow: 0 14px 40px rgba(74, 63, 48, 0.08);
 }
 .vd-chat-conversations {
     display: flex;
     flex-direction: column;
     min-height: 0;
     border-right: 1px solid var(--chat-line);
-    background: #f7faf9;
+    background: #faf6ed;
 }
 .vd-chat-conversations-heading {
     padding: 22px 20px 12px;
@@ -164,7 +164,7 @@
     background: var(--chat-soft);
 }
 .vd-chat-conversation[aria-pressed="true"] {
-    background: #dfeeea;
+    background: #f0e4cb;
     box-shadow: inset 3px 0 var(--chat-accent);
 }
 .vd-chat-conversation-name {
@@ -273,7 +273,7 @@
     color: var(--chat-muted);
     margin: 0;
     padding: 10px 24px;
-    background: #f7faf9;
+    background: #faf6ed;
     border-bottom: 1px solid var(--chat-line);
 }
 .vd-chat-log {
@@ -282,7 +282,7 @@
     padding: 22px 28px 28px;
     overscroll-behavior: contain;
     min-height: 80px;
-    background: linear-gradient(180deg, #fbfdfc 0%, #fff 18%);
+    background: linear-gradient(180deg, #faf6ed 0%, var(--chat-paper) 18%);
 }
 .vd-chat-empty {
     margin: 24px auto;
@@ -330,7 +330,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: #e1e6e4;
+    background: #eee5d6;
     color: var(--chat-muted);
     font-size: 9px;
     font-weight: 600;
@@ -349,7 +349,7 @@
     color: var(--chat-ink);
 }
 .vd-chat-message.is-mine .vd-chat-bubble {
-    border-color: #bddbd4;
+    border-color: var(--chat-line);
     border-radius: 14px 14px 4px 14px;
     background: var(--chat-staff);
 }
@@ -388,22 +388,25 @@
     display: block;
     margin-top: 5px;
     width: 100%;
-    resize: vertical;
-    min-height: 96px;
-    max-height: 180px;
-    padding: 12px 14px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 86px;
+    overflow-y: hidden;
+    resize: none;
+    padding: 10px 14px;
     border: 1px solid var(--chat-line);
     border-radius: 12px;
     font:
         400 14px Jost,
         sans-serif;
+    line-height: 1.5;
     color: var(--chat-ink);
     background: var(--chat-paper);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 .vd-chat-compose textarea:focus {
     border-color: var(--chat-accent);
-    box-shadow: 0 0 0 3px rgba(23, 107, 103, 0.14);
+    box-shadow: 0 0 0 3px rgba(128, 97, 31, 0.18);
     outline: 0;
 }
 .vd-chat-compose-footer {

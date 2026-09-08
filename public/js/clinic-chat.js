@@ -75,7 +75,7 @@
         const retry = node('button', 'vd-chat-retry', 'Retry'); retry.type = 'button'; retry.hidden = true;
         const form = node('form', 'vd-chat-compose');
         const label = node('label', '', 'Your message');
-        const input = node('textarea'); input.rows = 2; input.maxLength = 2000; input.required = true;
+        const input = node('textarea'); input.rows = 1; input.maxLength = 2000; input.required = true;
         input.placeholder = patient ? 'Ask about your appointment…' : 'Write a reply…';
         label.append(input);
         const foot = node('div', 'vd-chat-compose-footer');
@@ -121,8 +121,17 @@
         }
         function count() { counter.textContent = `${input.value.length.toLocaleString()} / 2,000`; }
         function resizeComposer() {
+            const styles = window.getComputedStyle(input);
+            const lineHeight = Number.parseFloat(styles.lineHeight) || 21;
+            const verticalChrome = (Number.parseFloat(styles.paddingTop) || 0)
+                + (Number.parseFloat(styles.paddingBottom) || 0)
+                + (Number.parseFloat(styles.borderTopWidth) || 0)
+                + (Number.parseFloat(styles.borderBottomWidth) || 0);
+            const minHeight = lineHeight + verticalChrome;
+            const maxHeight = (lineHeight * 3) + verticalChrome;
             input.style.height = 'auto';
-            input.style.height = `${Math.min(input.scrollHeight, 180)}px`;
+            input.style.height = `${Math.max(minHeight, Math.min(input.scrollHeight, maxHeight))}px`;
+            input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
         }
         input.addEventListener('input', () => {
             if (input.value.trim() && composeBaseMessageId === null) composeBaseMessageId = last;
