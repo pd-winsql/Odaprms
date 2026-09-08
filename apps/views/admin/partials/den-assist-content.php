@@ -17,22 +17,18 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
 <div class="d-flex flex-column gap-4">
-
-    <div>
-        <div class="vd-welcome-greet">DENTAL ASSISTANT MANAGEMENT</div>
-        <div class="vd-welcome-name">Staff Accounts</div>
-        <p class="text-muted small mb-0 mt-2">Create dental assistant accounts, review staff details, and manage employment access.</p>
-    </div>
-
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
-        <span class="vd-dash-card-title">Dental Assistants</span>
-        <button class="btn vd-btn-gold btn-sm"
-            data-bs-toggle="modal"
-            data-bs-target="#createStaffModal">
-            <i class="ti ti-plus me-1"></i> New Account
-        </button>
-    </div>
+            <div>
+                <span class="vd-dash-card-title">Staff accounts</span>
+                <p class="text-muted small mb-0 mt-1">Create accounts, review staff details, and manage employment access.</p>
+            </div>
+            <button class="btn vd-btn-gold btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#createStaffModal">
+                <i class="ti ti-plus me-1"></i> New Account
+            </button>
+        </div>
 
     <div class="vd-dash-card-body">
         <?php if (empty($staffList)): ?>

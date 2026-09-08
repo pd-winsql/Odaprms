@@ -49,11 +49,7 @@ function depositStatusClass($status) {
 ?>
 
 <div class="d-flex flex-column gap-4">
-    <div>
-        <div class="vd-welcome-greet">BILLING</div>
-        <div class="vd-welcome-name">Appointment deposits</div>
-        <p class="text-muted small mb-0 mt-2">A ₱<?= number_format((float) ($settings['deposit_amount'] ?? 400), 2) ?> GCash deposit is currently required to confirm each new booking.</p>
-    </div>
+    <p class="text-muted small mb-0">A ₱<?= number_format((float) ($settings['deposit_amount'] ?? 400), 2) ?> GCash deposit is required to confirm each new booking.</p>
 
     <?php if (empty($deposits)): ?>
         <div class="vd-dash-card"><div class="vd-empty-state">You have no appointment deposits.</div></div>

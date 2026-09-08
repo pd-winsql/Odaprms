@@ -63,20 +63,14 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
 ?>
 
 <div class="vd-patient-history-page d-flex flex-column gap-4">
-
-    <div class="vd-pat-welcome">
-        <div class="vd-welcome-greet">APPOINTMENT HISTORY</div>
-        <div class="vd-welcome-name">Your previous visits</div>
-        <p class="text-muted small mb-0 mt-2">
-            Review your past appointment dates, clinic locations, services, and final appointment statuses.
-        </p>
-    </div>
-
     <!-- Past -->
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
-        <span class="vd-dash-card-title">Past Appointments</span>
-        <span class="vd-topbar-date"><?= count($past) ?> total</span>
+            <div>
+                <span class="vd-dash-card-title">Past appointments</span>
+                <p class="text-muted small mb-0 mt-1">Review previous dates, clinic locations, services, and final statuses.</p>
+            </div>
+            <span class="vd-topbar-date"><?= count($past) ?> total</span>
         </div>
         <div class="vd-dash-card-body vd-history-list">
         <?php if (empty($past)): ?>

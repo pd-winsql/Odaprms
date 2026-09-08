@@ -75,17 +75,12 @@ function renderServiceRow($service, $assignedCategoryIds) {
 ?>
 
 <div class="d-flex flex-column gap-4">
-
-    <div>
-        <div class="vd-welcome-greet">SERVICE MANAGEMENT</div>
-        <div class="vd-welcome-name">Dental Services</div>
-        <p class="text-muted small mb-0 mt-2">Organize dental services and categories, update treatment details, and control what is available to patients.</p>
-    </div>
-
-    <!-- VIEW TOGGLE -->
-    <div class="vd-view-toggle">
-        <button type="button" class="vd-toggle-btn active" data-view="services">Services</button>
-        <button type="button" class="vd-toggle-btn" data-view="categories">Categories</button>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <p class="text-muted small mb-0">Organize treatment details and control what patients can select when booking.</p>
+        <div class="vd-view-toggle" role="group" aria-label="Service management views">
+            <button type="button" class="vd-toggle-btn active" data-view="services">Services</button>
+            <button type="button" class="vd-toggle-btn" data-view="categories">Categories</button>
+        </div>
     </div>
 
     <!-- CATEGORIES VIEW -->

@@ -17,20 +17,18 @@ if (!isset($insightTabs[$activeInsightTab])) $activeInsightTab = 'analytics';
 ?>
 
 <section id="insightsPage" class="d-flex flex-column gap-4">
-    <div>
-        <div class="vd-welcome-greet">CLINIC OVERSIGHT</div>
-        <div class="vd-welcome-name">Clinic Insights</div>
-        <p class="text-muted small mb-0 mt-2">Review clinic performance, reports, patient feedback, and completed billing records.</p>
-    </div>
-    <div class="vd-toggle-bar" role="tablist" aria-label="Clinic insight sections">
-        <?php foreach ($insightTabs as $key => $tab): ?>
-            <button type="button" class="vd-toggle-btn <?= $key === $activeInsightTab ? 'active' : '' ?>"
-                data-insight-tab="<?= htmlspecialchars($key) ?>" role="tab"
-                aria-selected="<?= $key === $activeInsightTab ? 'true' : 'false' ?>">
-                <i class="ti <?= htmlspecialchars($tab['icon']) ?>" aria-hidden="true"></i>
-                <?= htmlspecialchars($tab['label']) ?>
-            </button>
-        <?php endforeach; ?>
+    <div class="d-flex flex-column gap-3">
+        <p class="text-muted small mb-0">Review clinic performance, reports, patient feedback, and completed billing records.</p>
+        <div class="vd-toggle-bar" role="tablist" aria-label="Clinic insight sections">
+            <?php foreach ($insightTabs as $key => $tab): ?>
+                <button type="button" class="vd-toggle-btn <?= $key === $activeInsightTab ? 'active' : '' ?>"
+                    data-insight-tab="<?= htmlspecialchars($key) ?>" role="tab"
+                    aria-selected="<?= $key === $activeInsightTab ? 'true' : 'false' ?>">
+                    <i class="ti <?= htmlspecialchars($tab['icon']) ?>" aria-hidden="true"></i>
+                    <?= htmlspecialchars($tab['label']) ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
     </div>
     <div id="insightPanel">
         <?php require __DIR__ . '/' . $insightTabs[$activeInsightTab]['partial']; ?>

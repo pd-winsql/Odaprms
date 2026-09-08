@@ -60,11 +60,7 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
 ?>
 
 <div class="d-flex flex-column gap-4 vd-booking-content">
-    <div>
-        <div class="vd-welcome-greet">BOOK AN APPOINTMENT</div>
-        <div class="vd-welcome-name">Choose an available schedule</div>
-        <p class="text-muted small mb-0 mt-2">Select a clinic, choose an open date, then pick one or more services.</p>
-    </div>
+    <p class="text-muted small mb-0">Select a clinic, choose an open date, then pick one or more services.</p>
 
     <div class="vd-clinic-switch" role="tablist" aria-label="Clinic">
         <?php foreach ($clinics as $index => $clinic): ?>

@@ -78,13 +78,9 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 <div class="d-flex flex-column gap-4 <?= $scheduleReadOnly ? 'vd-upcoming-overview' : '' ?>">
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div>
-                <div class="vd-welcome-greet"><?= $scheduleReadOnly ? 'APPOINTMENT OVERSIGHT' : 'SCHEDULE MANAGEMENT' ?></div>
-                <div class="vd-welcome-name"><?= $scheduleReadOnly ? 'Upcoming Appointments' : 'Clinic Availability' ?></div>
-                <p class="text-muted small mb-0 mt-2"><?= $scheduleReadOnly
-                    ? 'Review upcoming clinic schedules and open each roster to see booked patients and their services.'
-                    : 'Create appointment dates, review remaining availability, and adjust each schedule’s capacity.' ?></p>
-            </div>
+            <p class="text-muted small mb-0"><?= $scheduleReadOnly
+                ? 'Review upcoming clinic schedules and open each roster to see booked patients and their services.'
+                : 'Create appointment dates, review remaining availability, and adjust each schedule’s capacity.' ?></p>
             <?php if (!$scheduleReadOnly): ?>
             <button type="button" class="btn vd-btn-gold align-self-start" id="addScheduleForActiveClinic"
                 data-bs-toggle="modal" data-bs-target="#addScheduleModal"

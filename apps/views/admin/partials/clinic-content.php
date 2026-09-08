@@ -18,18 +18,12 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
 <div class="d-flex flex-column gap-4">
-
-    <div>
-        <div class="vd-welcome-greet">CLINIC MANAGEMENT</div>
-        <div class="vd-welcome-name">Clinic Locations</div>
-        <p class="text-muted small mb-0 mt-2">Manage branch details and keep patient-facing map information current.</p>
-    </div>
-
     <div class="vd-dash-card vd-clinic-management-card">
         <div class="vd-dash-card-header">
             <div>
                 <span class="vd-dash-card-title">Manage Clinics</span>
                 <span class="vd-clinic-count ms-2"><?= count($clinics) ?> location<?= count($clinics) === 1 ? '' : 's' ?></span>
+                <p class="text-muted small mb-0 mt-1">Keep branch details and patient-facing map information current.</p>
             </div>
             <button type="button" class="btn vd-btn-gold" id="addClinicBtn">
                 <i class="ti ti-plus" aria-hidden="true"></i> Add Clinic

@@ -31,12 +31,14 @@ function activityValueSummary(?string $json): string
 ?>
 
 <div class="d-flex flex-column gap-4" id="activityLogsPage">
-    <div>
-        <div class="vd-welcome-greet">ACCOUNTABILITY</div>
-        <div class="vd-welcome-name">Activity Logs</div>
-        <p class="text-muted small mb-0 mt-2">Read-only history of recorded changes and clinic actions.</p>
-    </div>
     <div class="vd-dash-card">
+        <div class="vd-dash-card-header">
+            <div>
+                <span class="vd-dash-card-title">Recorded actions</span>
+                <p class="text-muted small mb-0 mt-1">Read-only history of recorded changes and clinic actions.</p>
+            </div>
+            <span class="vd-topbar-date" id="activityCount"><?= count($activityRows) ?> records</span>
+        </div>
         <div class="vd-filter-bar">
             <div class="vd-filter-group flex-grow-1">
                 <label class="vd-label form-label" for="activitySearch">Search</label>
@@ -54,11 +56,10 @@ function activityValueSummary(?string $json): string
             <div class="vd-filter-group vd-filter-clear"><button type="button" class="btn vd-btn-outline" id="clearActivityFilters">Clear</button></div>
         </div>
         <div class="vd-dash-card-body">
-            <div class="vd-dash-card-header px-0 pt-0"><span class="vd-dash-card-title">Recorded actions</span><span class="vd-topbar-date" id="activityCount"><?= count($activityRows) ?> records</span></div>
             <?php if (!$activityRows): ?>
                 <div class="vd-empty-state">No activity has been recorded yet.</div>
             <?php else: ?>
-                <div class="vd-appt-table-wrap"><table class="vd-appt-table w-100" id="activityTable">
+                <div class="vd-appt-table-wrap"><table class="vd-appt-table w-100" id="activityTable" data-page-size="20">
                     <thead><tr><th>Date and time</th><th>Performed by</th><th>Record</th><th>Action</th><th>Description</th><th>Changes</th></tr></thead>
                     <tbody><?php foreach ($activityRows as $row):
                         $searchText = strtolower(implode(' ', [$row['performed_by_name'], $row['performed_by_role'], $row['entity_type'], $row['entity_id'], $row['action'], $row['description']]));

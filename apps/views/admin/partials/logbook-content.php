@@ -23,13 +23,13 @@ if ($hasSelectedRecordDate) {
 ?>
 
 <div class="d-flex flex-column gap-4">
-    <div>
-        <div class="vd-welcome-greet">HISTORICAL LOGBOOK</div>
-        <div class="vd-welcome-name">Daily patient arrivals</div>
-        <p class="text-muted small mb-0 mt-2">Only dates with logbook records can be selected.</p>
-    </div>
-
     <div class="vd-dash-card">
+        <div class="vd-dash-card-header">
+            <div>
+                <span class="vd-dash-card-title">Daily patient arrivals</span>
+                <p class="text-muted small mb-0 mt-1">Select a date that contains recorded arrivals.</p>
+            </div>
+        </div>
         <div class="vd-filter-bar">
             <div class="vd-filter-group">
                 <label for="historicalLogbookDate" class="vd-label form-label">Logbook date</label>

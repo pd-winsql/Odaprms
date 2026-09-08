@@ -4470,6 +4470,67 @@ button.vd-stat-card {
     color: var(--gold-dark);
     font-size: 18px;
 }
+
+.vd-billing-overview {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(105deg, rgba(181, 146, 76, 0.1), rgba(255, 253, 249, 0.35));
+    color: var(--mid);
+    font-size: 13px;
+}
+
+.vd-billing-overview p {
+    margin: 0;
+}
+
+.vd-billing-overview strong {
+    display: inline-block;
+    margin-right: 5px;
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.vd-billing-overview-detail {
+    text-align: right;
+}
+
+.vd-billing-overview-detail span:not([aria-hidden]) {
+    color: var(--dark);
+    font-weight: 500;
+}
+
+#billingRecordsTable th:nth-child(1) {
+    width: 24%;
+}
+
+#billingRecordsTable th:nth-child(2) {
+    width: 18%;
+}
+
+#billingRecordsTable th:nth-child(3) {
+    width: 30%;
+}
+
+#billingRecordsTable th:nth-child(4) {
+    width: 20%;
+}
+
+#billingRecordsTable th:nth-child(5) {
+    width: 8%;
+}
+
+#billingRecordsTable td:nth-child(4) .vd-appt-name,
+#billingRecordsTable td:nth-child(4) .vd-appt-meta {
+    overflow-wrap: anywhere;
+}
+
 /* Focused account-security form shared by every dashboard role. */
 .vd-password-page {
     display: grid;
@@ -6214,6 +6275,17 @@ button.vd-stat-card {
     .vd-profile-savebar .btn {
         width: 100%;
     }
+
+    .vd-billing-overview {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
+        padding: 16px;
+    }
+
+    .vd-billing-overview-detail {
+        text-align: left;
+    }
 }
 
 /* ============================================================
@@ -6253,7 +6325,8 @@ button.vd-stat-card {
 }
 
 #billingRecordsTable {
-    min-width: 1180px;
+    min-width: 900px;
+    table-layout: fixed;
 }
 
 #depositRecordsTable th:nth-child(1) {

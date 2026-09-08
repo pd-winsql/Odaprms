@@ -100,27 +100,9 @@
     padding: 7px 36px 7px 12px;
 }
 
-.vd-table-icon-btn,
-.vd-billing-details-btn {
+.vd-table-icon-btn {
     min-height: var(--vd-control-height);
     min-width: var(--vd-control-height);
-}
-
-.vd-billing-details-btn {
-    height: auto;
-    padding-inline: 14px;
-    white-space: nowrap;
-    width: auto;
-}
-
-.vd-billing-details-btn i {
-    display: none;
-    font-size: 1.125rem;
-}
-
-.vd-action-label {
-    font-size: var(--vd-text-sm);
-    font-weight: 500;
 }
 
 /* Shared non-appointment modal readability. */
@@ -510,16 +492,4 @@
         min-width: min(100%, 160px);
     }
 
-    .vd-billing-details-btn {
-        padding-inline: 0;
-        width: var(--vd-control-height);
-    }
-
-    .vd-billing-details-btn i {
-        display: inline-block;
-    }
-
-    .vd-billing-details-btn .vd-action-label {
-        display: none;
-    }
 }

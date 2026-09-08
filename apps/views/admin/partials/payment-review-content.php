@@ -17,15 +17,12 @@ sort($depositStatuses);
 ?>
 
 <div class="d-flex flex-column gap-4">
-    <div>
-        <div class="vd-welcome-greet">BILLING</div>
-        <div class="vd-welcome-name">Deposit Records</div>
-        <p class="text-muted small mb-0 mt-2">Read-only record of appointment deposits. Review and approval actions are handled in Appointments.</p>
-    </div>
-
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
-            <span class="vd-dash-card-title">Payment history</span>
+            <div>
+                <span class="vd-dash-card-title">Payment history</span>
+                <p class="text-muted small mb-0 mt-1">Read-only appointment deposits; review and approval actions remain in Appointments.</p>
+            </div>
             <span class="vd-topbar-date" id="depositRecordCount"><?= count($records) ?> record<?= count($records) === 1 ? '' : 's' ?></span>
         </div>
         <div class="vd-filter-bar">

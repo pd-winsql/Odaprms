@@ -8,6 +8,17 @@ require_once __DIR__ . '/../../../models/billingModel.php';
 $rows = (new BillingModel((new Database())->connect()))->getStaffBillings();
 $clinics = array_values(array_unique(array_filter(array_column($rows, 'clinic_name')))); sort($clinics);
 $statuses = array_values(array_unique(array_filter(array_column($rows, 'payment_status')))); sort($statuses);
+$billingOverview = ['collected' => 0.0, 'deposits' => 0.0, 'balances' => 0.0];
+foreach ($rows as $row) {
+    $deposit = max(0, (float) ($row['deposit_applied'] ?? 0));
+    $balanceReceived = min(
+        max(0, (float) ($row['cash_received'] ?? 0)),
+        max(0, (float) ($row['remaining_balance'] ?? 0))
+    );
+    $billingOverview['deposits'] += $deposit;
+    $billingOverview['balances'] += $balanceReceived;
+    $billingOverview['collected'] += $deposit + $balanceReceived;
+}
 
 function billingRecordPayload(array $row): string {
     $amountDue = max(0, (float) ($row['remaining_balance'] ?? 0));
@@ -31,28 +42,34 @@ function billingRecordPayload(array $row): string {
 }
 ?>
 <div class="d-flex flex-column gap-4">
-  <div><div class="vd-welcome-greet">BILLING</div><div class="vd-welcome-name">Billing Records</div><p class="text-muted small mb-0 mt-2">Read-only history of final visit settlements. Active transactions are completed from Today’s Logbook.</p></div>
   <div class="vd-dash-card">
-    <div class="vd-dash-card-header"><span class="vd-dash-card-title">Transaction history</span><span class="vd-topbar-date" id="billingRecordCount"><?= count($rows) ?> record<?= count($rows) === 1 ? '' : 's' ?></span></div>
+    <div class="vd-dash-card-header">
+      <div><span class="vd-dash-card-title">Settled visits</span><p class="text-muted small mb-0 mt-1">Read-only final visit settlements; active transactions are completed from Today’s Logbook.</p></div>
+      <span class="vd-topbar-date" id="billingRecordCount"><?= count($rows) ?> record<?= count($rows) === 1 ? '' : 's' ?></span>
+    </div>
+    <div class="vd-billing-overview">
+      <p><strong id="billingCollectedTotal">₱<?= number_format($billingOverview['collected'], 2) ?></strong> collected across <span id="billingSummaryCount"><?= count($rows) ?></span> billing <span id="billingSummaryRecordLabel"><?= count($rows) === 1 ? 'record' : 'records' ?></span></p>
+      <p class="vd-billing-overview-detail"><span id="billingDepositTotal">₱<?= number_format($billingOverview['deposits'], 2) ?></span> deposits applied <span aria-hidden="true">·</span> <span id="billingBalanceTotal">₱<?= number_format($billingOverview['balances'], 2) ?></span> balances collected</p>
+    </div>
     <div class="vd-filter-bar">
       <div class="vd-filter-group"><label class="vd-label form-label" for="billingClinicFilter">Clinic</label><select id="billingClinicFilter" class="form-select vd-input vd-filter-select"><option value="">All clinics</option><?php foreach ($clinics as $clinic): ?><option value="<?= htmlspecialchars($clinic) ?>"><?= htmlspecialchars($clinic) ?></option><?php endforeach; ?></select></div>
       <div class="vd-filter-group"><label class="vd-label form-label" for="billingStatusFilter">Payment status</label><select id="billingStatusFilter" class="form-select vd-input vd-filter-select"><option value="">All statuses</option><?php foreach ($statuses as $status): ?><option value="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></option><?php endforeach; ?></select></div>
-      <div class="vd-filter-group"><label class="vd-label form-label" for="billingDateFrom">Date from</label><input type="date" id="billingDateFrom" class="form-control vd-input vd-filter-select"></div>
-      <div class="vd-filter-group"><label class="vd-label form-label" for="billingDateTo">Date to</label><input type="date" id="billingDateTo" class="form-control vd-input vd-filter-select"></div>
+      <div class="vd-filter-group"><label class="vd-label form-label" for="billingPeriodFilter">Period</label><select id="billingPeriodFilter" class="form-select vd-input vd-filter-select"><option value="all">All time</option><option value="month">This month</option><option value="30days">Last 30 days</option><option value="custom">Custom range</option></select></div>
+      <div class="vd-filter-group" id="billingDateFromGroup" hidden><label class="vd-label form-label" for="billingDateFrom">Date from</label><input type="date" id="billingDateFrom" class="form-control vd-input vd-filter-select"></div>
+      <div class="vd-filter-group" id="billingDateToGroup" hidden><label class="vd-label form-label" for="billingDateTo">Date to</label><input type="date" id="billingDateTo" class="form-control vd-input vd-filter-select"></div>
       <div class="vd-filter-group vd-filter-clear"><button type="button" class="btn vd-btn-outline" id="clearBillingFilters">Clear</button></div>
     </div>
     <div class="vd-dash-card-body">
     <?php if (!$rows): ?><div class="vd-empty-state">No completed billing records yet.</div><?php else: ?>
       <div class="vd-appt-table-wrap"><table class="vd-appt-table w-100" id="billingRecordsTable">
-        <thead><tr><th>Patient</th><th>Visit</th><th>Settlement</th><th>Status</th><th>Recorded</th><th>Action</th></tr></thead>
+        <thead><tr><th>Patient</th><th>Visit</th><th>Payment</th><th>Recorded</th><th>Action</th></tr></thead>
         <tbody><?php foreach ($rows as $row): ?>
-          <tr data-clinic="<?= htmlspecialchars($row['clinic_name']) ?>" data-status="<?= htmlspecialchars($row['payment_status']) ?>" data-date="<?= htmlspecialchars($row['date']) ?>">
+          <tr data-clinic="<?= htmlspecialchars($row['clinic_name']) ?>" data-status="<?= htmlspecialchars($row['payment_status']) ?>" data-date="<?= htmlspecialchars($row['date']) ?>" data-deposit="<?= (float) $row['deposit_applied'] ?>" data-balance="<?= (float) $row['remaining_balance'] ?>" data-cash="<?= (float) $row['cash_received'] ?>">
             <td><div class="vd-appt-name"><?= htmlspecialchars($row['lastname'] . ', ' . $row['firstname']) ?></div><div class="vd-appt-meta">Appointment #<?= (int)$row['appointment_id'] ?></div></td>
             <td><div class="vd-appt-name"><?= date('M d, Y', strtotime($row['date'])) ?></div><div class="vd-appt-meta"><?= htmlspecialchars($row['clinic_name']) ?></div></td>
-            <td><div class="vd-appt-name">₱<?= number_format((float)$row['actual_service_amount'], 2) ?></div><div class="vd-appt-meta">Deposit: ₱<?= number_format((float)$row['deposit_applied'], 2) ?></div></td>
-            <td><span class="<?= htmlspecialchars('vd-status vd-status-' . strtolower(str_replace(' ', '-', $row['payment_status']))) ?>"><?= htmlspecialchars($row['payment_status']) ?></span></td>
+            <td><div class="vd-appt-name">₱<?= number_format((float)$row['actual_service_amount'], 2) ?></div><div class="vd-appt-meta">Deposit ₱<?= number_format((float)$row['deposit_applied'], 2) ?> · Balance ₱<?= number_format((float)$row['remaining_balance'], 2) ?></div><span class="<?= htmlspecialchars('vd-status vd-status-' . strtolower(str_replace(' ', '-', $row['payment_status']))) ?> mt-2"><?= htmlspecialchars($row['payment_status']) ?></span></td>
             <td><div class="vd-appt-name"><?= htmlspecialchars($row['recorded_by']) ?></div><div class="vd-appt-meta"><?= $row['recorded_at'] ? date('M d, Y g:i A', strtotime($row['recorded_at'])) : 'Not recorded' ?></div></td>
-            <td><button type="button" class="btn vd-btn-outline btn-md vd-billing-details-btn" aria-label="View billing details for <?= htmlspecialchars(trim($row['firstname'] . ' ' . $row['lastname'])) ?>" title="View billing details" data-billing-record="<?= billingRecordPayload($row) ?>"><i class="ti ti-eye" aria-hidden="true"></i><span class="vd-action-label">View details</span></button></td>
+            <td><button type="button" class="btn vd-btn-outline vd-table-icon-btn" aria-label="View billing details for <?= htmlspecialchars(trim($row['firstname'] . ' ' . $row['lastname'])) ?>" title="View billing details" data-billing-record="<?= billingRecordPayload($row) ?>"><i class="ti ti-eye" aria-hidden="true"></i></button></td>
           </tr>
         <?php endforeach; ?></tbody>
       </table></div>
@@ -78,10 +95,17 @@ function billingRecordPayload(array $row): string {
   const money = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
   const formatDateTime = value => { if (!value) return 'Not recorded'; const date = new Date(String(value).replace(' ', 'T')); return Number.isNaN(date.getTime()) ? value : date.toLocaleString([], {year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); };
   const addDetail = (container, label, value) => { const item=document.createElement('div');item.className='vd-appointment-detail-item';const term=document.createElement('span');term.textContent=label;const detail=document.createElement('strong');detail.textContent=value||'Not provided';item.append(term,detail);container.appendChild(item); };
-  const table=document.getElementById('billingRecordsTable'),clinic=document.getElementById('billingClinicFilter'),status=document.getElementById('billingStatusFilter'),from=document.getElementById('billingDateFrom'),to=document.getElementById('billingDateTo'),count=document.getElementById('billingRecordCount');
-  const applyFilters=()=>{if(!table)return;let visible=0;table.querySelectorAll('tbody tr').forEach(row=>{const show=(!clinic.value||row.dataset.clinic===clinic.value)&&(!status.value||row.dataset.status===status.value)&&(!from.value||row.dataset.date>=from.value)&&(!to.value||row.dataset.date<=to.value);row.style.display=show?'':'none';if(show)visible++;});count.textContent=`${visible} record${visible===1?'':'s'}`;table.dispatchEvent(new CustomEvent('ventura:table-filtered'));};
+  const table=document.getElementById('billingRecordsTable'),clinic=document.getElementById('billingClinicFilter'),status=document.getElementById('billingStatusFilter'),period=document.getElementById('billingPeriodFilter'),from=document.getElementById('billingDateFrom'),to=document.getElementById('billingDateTo'),fromGroup=document.getElementById('billingDateFromGroup'),toGroup=document.getElementById('billingDateToGroup'),count=document.getElementById('billingRecordCount');
+  const collectedTotal=document.getElementById('billingCollectedTotal'),depositTotal=document.getElementById('billingDepositTotal'),balanceTotal=document.getElementById('billingBalanceTotal'),summaryCount=document.getElementById('billingSummaryCount'),summaryLabel=document.getElementById('billingSummaryRecordLabel');
+  const dateValue=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const activeRange=()=>{const today=new Date();if(period.value==='month')return[dateValue(new Date(today.getFullYear(),today.getMonth(),1)),dateValue(new Date(today.getFullYear(),today.getMonth()+1,0))];if(period.value==='30days'){const start=new Date(today);start.setDate(today.getDate()-29);return[dateValue(start),dateValue(today)];}return period.value==='custom'?[from.value,to.value]:['',''];};
+  const updateSummary=rows=>{let deposits=0,balances=0;rows.forEach(row=>{const deposit=Math.max(0,Number(row.dataset.deposit)||0),balance=Math.max(0,Number(row.dataset.balance)||0),cash=Math.max(0,Number(row.dataset.cash)||0);deposits+=deposit;balances+=Math.min(balance,cash);});collectedTotal.textContent=money(deposits+balances);depositTotal.textContent=money(deposits);balanceTotal.textContent=money(balances);summaryCount.textContent=String(rows.length);summaryLabel.textContent=rows.length===1?'record':'records';};
+  const applyFilters=()=>{if(!table)return;const[startDate,endDate]=activeRange(),visibleRows=[];table.querySelectorAll('tbody tr').forEach(row=>{const show=(!clinic.value||row.dataset.clinic===clinic.value)&&(!status.value||row.dataset.status===status.value)&&(!startDate||row.dataset.date>=startDate)&&(!endDate||row.dataset.date<=endDate);row.style.display=show?'':'none';if(show)visibleRows.push(row);});count.textContent=`${visibleRows.length} record${visibleRows.length===1?'':'s'}`;updateSummary(visibleRows);table.dispatchEvent(new CustomEvent('ventura:table-filtered'));};
+  const updatePeriod=()=>{const custom=period.value==='custom';fromGroup.hidden=!custom;toGroup.hidden=!custom;applyFilters();};
   [clinic,status,from,to].forEach(control=>control?.addEventListener('change',applyFilters));
-  document.getElementById('clearBillingFilters')?.addEventListener('click',()=>{clinic.value='';status.value='';from.value='';to.value='';applyFilters();});
+  period?.addEventListener('change',updatePeriod);
+  document.getElementById('clearBillingFilters')?.addEventListener('click',()=>{clinic.value='';status.value='';period.value='all';from.value='';to.value='';updatePeriod();});
+  updatePeriod();
   document.querySelectorAll('[data-billing-record]').forEach(button=>button.addEventListener('click',()=>{
     const record=JSON.parse(button.dataset.billingRecord);document.getElementById('billingRecordTitle').textContent=`Billing · ${record.patient}`;document.getElementById('billingRecordSubtitle').textContent=`Appointment #${record.appointmentId}`;
     const visit=document.getElementById('billingVisitGrid');visit.replaceChildren();addDetail(visit,'Patient',record.patient);addDetail(visit,'Appointment date',record.date);addDetail(visit,'Clinic',record.clinic);addDetail(visit,'Services',record.services);
