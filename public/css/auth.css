@@ -141,6 +141,74 @@
 }
 .vd-register-span-2 { grid-column: 1 / -1; }
 
+.vd-terms-consent {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  margin: 2px 0 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--gold-pale);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.vd-terms-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--gold);
+}
+
+.vd-terms-checkbox:disabled {
+  opacity: 1;
+}
+
+.vd-terms-consent-label {
+  color: var(--dark);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.vd-terms-trigger {
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--gold);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.vd-terms-trigger:hover {
+  color: var(--gold-hover);
+}
+
+.vd-terms-trigger:focus-visible {
+  color: var(--gold-hover);
+  outline: 3px solid rgba(128, 97, 31, 0.3);
+  outline-offset: 2px;
+}
+
+.vd-terms-consent-hint {
+  margin: 0;
+  color: var(--mid);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.vd-terms-consent-invalid {
+  border-color: #a32d2d;
+  background: #fcebeb;
+}
+
+.vd-terms-consent-complete {
+  border-color: var(--gold);
+  background: #faf6ed;
+}
+
 /* Heading */
 .vd-auth-title {
   font-family: 'Cormorant Garamond', serif;
@@ -341,20 +409,181 @@
 }
 .vd-pw-toggle:hover { color: var(--gold); }
 
-/* ── OTP input ── */
-.vd-otp-input {
-  font-size: 22px;
-  font-family: 'Cormorant Garamond', serif;
-  letter-spacing: 0.4em;
-  text-align: center;
-  padding: 10px 0;
+/* ── OTP verification ── */
+.vd-auth-otp .vd-auth-title {
+  font-size: 34px;
 }
 
-/* ── Resend timer ── */
-.vd-resend-timer {
-  font-size: 11px;
+.vd-auth-otp .vd-auth-sub {
+  font-size: 15px;
+  line-height: 1.55;
+  margin-bottom: 26px;
+}
+
+.vd-auth-otp .vd-auth-sub strong {
+  overflow-wrap: anywhere;
+}
+
+.vd-auth-otp .vd-label {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.vd-otp-help {
   color: var(--mid);
-  opacity: 0.7;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 5px 0 12px;
+}
+
+.vd-otp-control {
+  position: relative;
+}
+
+.vd-otp-input {
+  border: 0;
+  caret-color: transparent;
+  cursor: text;
+  height: 60px;
+  inset: 0;
+  opacity: 0.01;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 2;
+}
+
+.vd-otp-slots {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.vd-otp-slot {
+  align-items: center;
+  background: var(--white-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--dark);
+  display: flex;
+  font-family: 'Jost', sans-serif;
+  font-size: 29px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  height: 60px;
+  justify-content: center;
+  line-height: 1;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.vd-otp-control:focus-within .vd-otp-slot.is-active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(128, 97, 31, 0.2);
+}
+
+.vd-otp-slot.is-filled {
+  background: #faf6ed;
+  border-color: #ccb681;
+}
+
+.vd-otp-control.is-invalid .vd-otp-slot {
+  border-color: #c94b4b;
+}
+
+.vd-auth-otp .vd-auth-error,
+.vd-auth-otp .vd-auth-success {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 12px 0 0;
+}
+
+.vd-auth-otp .vd-auth-btn {
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.vd-auth-resend {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 18px;
+  text-align: center;
+}
+
+.vd-auth-resend-copy,
+.vd-resend-button,
+.vd-resend-timer,
+.vd-auth-otp .vd-auth-footer {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.vd-resend-button {
+  background: transparent;
+  border: 0;
+  color: var(--gold);
+  cursor: pointer;
+  font-family: 'Jost', sans-serif;
+  font-weight: 500;
+  min-height: 40px;
+  padding: 7px 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.vd-resend-button:hover:not(:disabled),
+.vd-resend-button:focus-visible {
+  color: var(--mid);
+}
+
+.vd-resend-button:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid rgba(128, 97, 31, 0.24);
+  outline-offset: 1px;
+}
+
+.vd-resend-button:disabled {
+  color: #81796d;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.vd-resend-timer {
+  color: var(--mid);
+  min-height: 22px;
+}
+
+.vd-auth-otp .vd-auth-footer {
+  margin-top: 10px;
+}
+
+@media (max-width: 767px) {
+  .vd-auth-otp-page .vd-auth-left {
+    min-height: 150px;
+    padding: 24px;
+  }
+
+  .vd-auth-otp-page .vd-auth-brand {
+    max-width: 240px;
+  }
+
+  .vd-auth-otp .vd-auth-title {
+    font-size: 30px;
+  }
+
+  .vd-otp-slots {
+    gap: 6px;
+  }
+
+  .vd-otp-input,
+  .vd-otp-slot {
+    height: 54px;
+  }
+
+  .vd-otp-slot {
+    font-size: 26px;
+  }
 }
 
 /* ── Forgot password link ── */

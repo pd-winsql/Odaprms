@@ -339,60 +339,6 @@
     outline-offset: 4px;
 }
 
-.vd-terms-modal .modal-content {
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--white-bg);
-    box-shadow: 0 20px 60px rgba(26, 22, 18, 0.2);
-}
-
-.vd-terms-modal .modal-header,
-.vd-terms-modal .modal-footer {
-    border-color: var(--border);
-}
-
-.vd-terms-title {
-    font-family: "Cormorant Garamond", serif;
-    font-size: clamp(1.55rem, 3vw, 2rem);
-    font-weight: 600;
-    color: var(--dark);
-}
-
-.vd-terms-body {
-    color: var(--mid);
-    font-size: 0.9rem;
-    line-height: 1.7;
-}
-
-.vd-terms-body section + section {
-    margin-top: 1.4rem;
-}
-
-.vd-terms-body h3 {
-    margin-bottom: 0.35rem;
-    font-family: "Cormorant Garamond", serif;
-    font-size: 1.18rem;
-    font-weight: 600;
-    color: var(--dark);
-}
-
-.vd-terms-body p {
-    margin-bottom: 0;
-}
-
-.vd-terms-body > p + section {
-    margin-top: 1.4rem;
-}
-
-.vd-terms-updated {
-    margin-bottom: 1rem !important;
-    color: var(--gold);
-    font-size: 0.76rem;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
 /* ── Mobile tweaks ── */
 @media (max-width: 991px) {
     .vd-hero {

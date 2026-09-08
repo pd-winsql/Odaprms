@@ -10,6 +10,11 @@ function scheduleWindowExpect(bool $condition, string $message): void
     echo "PASS: {$message}\n";
 }
 
+function scheduleWindowTime(int $minutes): string
+{
+    return sprintf('%02d:%02d:00', intdiv($minutes, 60), $minutes % 60);
+}
+
 $conn = (new Database())->connect();
 $scheduleModel = new Schedule($conn);
 $clinicModel = new Clinic($conn);
@@ -32,6 +37,27 @@ try {
     scheduleWindowExpect(Schedule::normalizeTime('25:00') === null, 'Invalid times are rejected.');
     scheduleWindowExpect(Schedule::usesFiveMinuteIncrement('10:05'), 'Five-minute schedule increments are accepted.');
     scheduleWindowExpect(!Schedule::usesFiveMinuteIncrement('10:02'), 'Off-step schedule minutes are rejected.');
+    $storedTransitionMinutes = (int) $conn->query(
+        'SELECT clinic_transition_minutes FROM site_settings WHERE id = 1'
+    )->fetchColumn();
+    $transitionMinutes = $scheduleModel->getTransitionMinutes();
+    scheduleWindowExpect(
+        $transitionMinutes === $storedTransitionMinutes,
+        'The schedule model uses the saved clinic separation policy.'
+    );
+    $probeTransitionMinutes = $storedTransitionMinutes === 35 ? 40 : 35;
+    $conn->beginTransaction();
+    try {
+        $conn->prepare('UPDATE site_settings SET clinic_transition_minutes = :minutes WHERE id = 1')
+            ->execute([':minutes' => $probeTransitionMinutes]);
+        $dynamicScheduleModel = new Schedule($conn);
+        scheduleWindowExpect(
+            $dynamicScheduleModel->getTransitionMinutes() === $probeTransitionMinutes,
+            'A changed clinic separation is loaded dynamically on the next request.'
+        );
+    } finally {
+        $conn->rollBack();
+    }
 
     $date = null;
     $dateCheck = $conn->prepare('SELECT COUNT(*) FROM schedules WHERE sched_date = :date');
@@ -56,13 +82,16 @@ try {
         'SELECT schedule_id FROM schedules WHERE clinic_id=' . $firstClinicId . ' AND sched_date=' . $conn->quote($date)
     )->fetchColumn();
 
+    $exactTransitionStart = 12 * 60 + $transitionMinutes;
+    $shortTransitionStart = max(0, $exactTransitionStart - 1);
+    $secondWindowEnd = $exactTransitionStart + 60;
     scheduleWindowExpect(
-        $scheduleModel->findWindowConflict($secondClinicId, $date, '13:29:00', '17:00:00') !== null,
-        'An 89-minute cross-clinic transition is rejected.'
+        $scheduleModel->findWindowConflict($secondClinicId, $date, scheduleWindowTime($shortTransitionStart), scheduleWindowTime($secondWindowEnd)) !== null,
+        'A cross-clinic transition shorter than the saved policy is rejected.'
     );
     scheduleWindowExpect(
-        $scheduleModel->findWindowConflict($secondClinicId, $date, '13:30:00', '17:00:00') === null,
-        'An exact 90-minute cross-clinic transition is accepted.'
+        $scheduleModel->findWindowConflict($secondClinicId, $date, scheduleWindowTime($exactTransitionStart), scheduleWindowTime($secondWindowEnd)) === null,
+        'A cross-clinic transition matching the saved policy is accepted.'
     );
     scheduleWindowExpect(
         $scheduleModel->findWindowConflict($secondClinicId, $date, '11:00:00', '14:00:00') !== null,
@@ -75,8 +104,8 @@ try {
 
     $second = $scheduleModel->addSchedules($secondClinicId, [[
         'sched_date' => $date,
-        'start_time' => '13:30:00',
-        'end_time' => '17:00:00',
+        'start_time' => scheduleWindowTime($exactTransitionStart),
+        'end_time' => scheduleWindowTime($secondWindowEnd),
         'max_appointments' => 8,
     ]]);
     scheduleWindowExpect(($second['success'] ?? false) === true, 'The second clinic can use the same date with a valid window.');

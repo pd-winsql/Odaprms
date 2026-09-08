@@ -12,6 +12,7 @@ require_once '../helpers/authorization.php';
 class SiteSettingsController {
     private $settings;
     private $clinics;
+    private $schedules;
     private $auditLog;
 
     public function __construct() {
@@ -19,6 +20,7 @@ class SiteSettingsController {
         $conn = $db->connect();
         $this->settings = new SiteSettingsModel($conn);
         $this->clinics = new Clinic($conn);
+        $this->schedules = new Schedule($conn);
         $this->auditLog = new AuditLog($conn);
     }
 
@@ -48,6 +50,10 @@ class SiteSettingsController {
             echo json_encode(['success' => false, 'message' => 'Default clinic hours must use five-minute increments.']);
             exit;
         }
+        if (!Schedule::isWithinOperatingHours($startTime, $endTime)) {
+            echo json_encode(['success' => false, 'message' => 'Default clinic hours must stay between 8:00 AM and 5:30 PM.']);
+            exit;
+        }
         $oldClinic = $this->clinics->getClinicById($clinicId);
         $saved = $this->clinics->updateDefaultHours($clinicId, $startTime, $endTime);
         if ($saved) $this->auditLog->recordForUser('clinic', $clinicId, 'schedule_defaults_updated', 'Updated default clinic schedule hours.', [
@@ -57,6 +63,57 @@ class SiteSettingsController {
         echo json_encode($saved
             ? ['success' => true, 'message' => 'Default clinic hours saved.']
             : ['success' => false, 'message' => 'Unable to save the default clinic hours.']);
+        exit;
+    }
+
+    public function updateClinicTransitionMinutes(): void
+    {
+        $this->requireScheduleSettingsAccess();
+        $rawMinutes = trim((string) ($_POST['clinic_transition_minutes'] ?? ''));
+        if (!ctype_digit($rawMinutes)) {
+            echo json_encode(['success' => false, 'message' => 'Clinic separation must be a whole number of minutes.']);
+            exit;
+        }
+
+        $minutes = (int) $rawMinutes;
+        if ($minutes < Schedule::MIN_TRANSITION_MINUTES || $minutes > Schedule::MAX_TRANSITION_MINUTES || $minutes % 5 !== 0) {
+            echo json_encode(['success' => false, 'message' => 'Clinic separation must be between 0 and 240 minutes in five-minute increments.']);
+            exit;
+        }
+
+        $oldSettings = $this->settings->getSettings();
+        $oldMinutes = (int) ($oldSettings['clinic_transition_minutes'] ?? $this->schedules->getTransitionMinutes());
+        $conflict = $minutes === $oldMinutes ? null : $this->schedules->findTransitionPolicyConflict($minutes);
+        if ($conflict !== null) {
+            if (!empty($conflict['error'])) {
+                echo json_encode(['success' => false, 'message' => 'Unable to validate the current clinic schedule. Try again.']);
+                exit;
+            }
+            $first = $conflict['first'];
+            $second = $conflict['second'];
+            $dateLabel = date('M j, Y', strtotime($first['sched_date']));
+            echo json_encode([
+                'success' => false,
+                'message' => "The {$minutes}-minute separation conflicts with {$first['clinic_name']} and {$second['clinic_name']} on {$dateLabel}. Adjust those schedule windows first.",
+            ]);
+            exit;
+        }
+
+        $saved = $this->settings->updateClinicTransitionMinutes($minutes);
+        if ($saved) {
+            $this->auditLog->recordForUser(
+                'site_settings',
+                1,
+                'clinic_transition_updated',
+                'Updated the required separation between clinic schedule windows.',
+                ['clinic_transition_minutes' => $oldMinutes],
+                ['clinic_transition_minutes' => $minutes],
+                (int) $_SESSION['user_id']
+            );
+        }
+        echo json_encode($saved
+            ? ['success' => true, 'message' => 'Clinic separation saved. New and edited schedules now use this interval.']
+            : ['success' => false, 'message' => 'Unable to save the clinic separation.']);
         exit;
     }
 
@@ -248,6 +305,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->updateGcashQr();
     } elseif ($action === 'updateClinicHours') {
         $controller->updateClinicHours();
+    } elseif ($action === 'updateClinicTransitionMinutes') {
+        $controller->updateClinicTransitionMinutes();
     } else {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Unknown action.']);

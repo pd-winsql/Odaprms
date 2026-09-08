@@ -42,7 +42,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
     $catCsv   = implode(',', $assignedCategoryIds);
     $isActive = (int)$service['is_active'] === 1;
     ?>
-    <div class="vd-category-list-row vd-service-list-row vd-service-card"
+    <div class="vd-category-list-row vd-service-list-row"
          data-service-id="<?= $id ?>"
          data-name="<?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>"
          data-description="<?= htmlspecialchars($service['service_description'], ENT_QUOTES) ?>"
@@ -484,7 +484,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
 
     document.querySelectorAll('.vd-edit-service-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            const card = this.closest('.vd-service-card');
+            const card = this.closest('.vd-service-list-row');
             openServiceModal({
                 serviceId: card.dataset.serviceId,
                 name: card.dataset.name,
@@ -515,7 +515,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
 
     document.querySelectorAll('.vd-delete-service-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            const card = this.closest('.vd-service-card');
+            const card = this.closest('.vd-service-list-row');
             openDeleteConfirmation('service', this.dataset.id, card?.dataset.name || 'this service');
         });
     });
@@ -743,7 +743,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
     const categoryFilter = document.getElementById('categoryFilter');
     const statusFilter   = document.getElementById('statusFilter');
     const countEl        = document.getElementById('serviceCount');
-    const allCards       = () => Array.from(document.querySelectorAll('.vd-service-card'));
+    const allCards       = () => Array.from(document.querySelectorAll('.vd-service-list-row'));
 
     function applyFilters() {
         const q      = searchInput.value.trim().toLowerCase();
@@ -764,7 +764,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
         });
 
         document.querySelectorAll('.vd-service-category-group').forEach(group => {
-            const categoryVisible = group.querySelectorAll('.vd-service-card:not(.d-none)').length;
+            const categoryVisible = group.querySelectorAll('.vd-service-list-row:not(.d-none)').length;
             const categoryCount = group.querySelector('.vd-service-category-count');
 
             group.classList.toggle('d-none', categoryVisible === 0);

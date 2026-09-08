@@ -132,4 +132,24 @@ class SiteSettingsModel {
             return false;
         }
     }
+
+    public function updateClinicTransitionMinutes(int $minutes, $updatedBy = 'Dental Assistant'): bool
+    {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE site_settings
+                SET clinic_transition_minutes = :minutes,
+                    last_updated_by = :updated_by,
+                    last_updated_at = NOW()
+                WHERE id = 1
+            ");
+            return $stmt->execute([
+                ':minutes' => $minutes,
+                ':updated_by' => $updatedBy,
+            ]);
+        } catch (PDOException $e) {
+            error_log('updateClinicTransitionMinutes error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

@@ -26,7 +26,7 @@ if (!$email) {
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
-<body class="vd-auth-body">
+<body class="vd-auth-body vd-auth-otp-page">
 
   <div class="vd-auth-split">
 
@@ -47,7 +47,7 @@ if (!$email) {
 
     <!-- RIGHT -->
     <div class="vd-auth-right">
-      <div class="vd-auth-form-wrap">
+      <div class="vd-auth-form-wrap vd-auth-otp">
 
         <div class="vd-auth-heading">
           <h1 class="vd-auth-title">Enter OTP</h1>
@@ -57,28 +57,34 @@ if (!$email) {
           </div>
         </div>
 
-        <div id="otpError"   class="vd-auth-error   d-none"></div>
-        <div id="otpSuccess" class="vd-auth-success d-none"></div>
-
         <form id="otpForm" class="vd-auth-form" novalidate>
           <input type="hidden" name="email" value="<?= htmlspecialchars($email) ?>">
 
           <div class="vd-auth-group">
-            <label class="vd-label" for="otpInput">6-Digit OTP Code</label>
-            <input type="text" name="otp" id="otpInput" class="vd-auth-input vd-otp-input"
-              placeholder="_ _ _ _ _ _"
-              maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+            <label class="vd-label" for="otpInput">Verification code</label>
+            <p class="vd-otp-help" id="otpHelp">Enter the six-digit code. It expires after 10 minutes.</p>
+            <div class="vd-otp-control" id="otpControl">
+              <input type="text" name="otp" id="otpInput" class="vd-otp-input"
+                maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+                autocomplete="one-time-code" enterkeyhint="done"
+                aria-describedby="otpHelp otpError" aria-invalid="false" autofocus required>
+              <div class="vd-otp-slots" aria-hidden="true">
+                <?php for ($slot = 0; $slot < 6; $slot++): ?><span class="vd-otp-slot"></span><?php endfor; ?>
+              </div>
+            </div>
+            <div id="otpError" class="vd-auth-error d-none" role="alert" aria-live="assertive"></div>
+            <div id="otpSuccess" class="vd-auth-success d-none" role="status" aria-live="polite"></div>
           </div>
 
-          <button type="submit" class="vd-auth-btn" id="otpBtn">
+          <button type="submit" class="vd-auth-btn" id="otpBtn" disabled>
             Verify Code
           </button>
         </form>
 
         <!-- Resend -->
-        <div class="vd-auth-footer mt-3">
-          Didn't receive it?
-          <a href="#" id="resendBtn">Resend OTP</a>
+        <div class="vd-auth-resend">
+          <span class="vd-auth-resend-copy">Didn't receive the email?</span>
+          <button type="button" class="vd-resend-button" id="resendBtn" disabled>Resend verification code</button>
           <span id="resendTimer" class="vd-resend-timer"></span>
         </div>
 
@@ -93,32 +99,74 @@ if (!$email) {
 
   <script>
     // Resend timer
-    let countdown = 60;
     const timerEl  = document.getElementById('resendTimer');
     const resendBtn = document.getElementById('resendBtn');
+    const otpInput = document.getElementById('otpInput');
+    const otpControl = document.getElementById('otpControl');
+    const otpSlots = Array.from(otpControl.querySelectorAll('.vd-otp-slot'));
+    const otpBtn = document.getElementById('otpBtn');
+    let resendInterval = null;
+    let verificationInFlight = false;
+
+    function syncOtpDisplay() {
+      const value = otpInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+      if (otpInput.value !== value) otpInput.value = value;
+
+      otpSlots.forEach((slot, index) => {
+        slot.textContent = value[index] || '';
+        slot.classList.toggle('is-filled', index < value.length);
+        slot.classList.toggle('is-active', document.activeElement === otpInput && index === Math.min(value.length, 5));
+      });
+      otpBtn.disabled = verificationInFlight || value.length !== 6;
+    }
+
+    function clearOtpFeedback() {
+      const errEl = document.getElementById('otpError');
+      otpControl.classList.remove('is-invalid');
+      otpInput.setAttribute('aria-invalid', 'false');
+      errEl.classList.add('d-none');
+      errEl.textContent = '';
+    }
+
+    function showOtpError(message) {
+      const errEl = document.getElementById('otpError');
+      errEl.textContent = message;
+      errEl.classList.remove('d-none');
+      otpControl.classList.add('is-invalid');
+      otpInput.setAttribute('aria-invalid', 'true');
+      otpInput.focus();
+      syncOtpDisplay();
+    }
 
     function startTimer() {
-      resendBtn.style.pointerEvents = 'none';
-      resendBtn.style.opacity       = '0.4';
-      timerEl.textContent = ` (${countdown}s)`;
+      if (resendInterval !== null) clearInterval(resendInterval);
+      const availableAt = Date.now() + 60000;
+      resendBtn.disabled = true;
 
-      const interval = setInterval(() => {
-        countdown--;
-        timerEl.textContent = ` (${countdown}s)`;
-        if (countdown <= 0) {
-          clearInterval(interval);
-          timerEl.textContent          = '';
-          resendBtn.style.pointerEvents = 'auto';
-          resendBtn.style.opacity       = '1';
-          countdown = 60;
+      const updateTimer = () => {
+        const remaining = Math.max(0, Math.ceil((availableAt - Date.now()) / 1000));
+        if (remaining <= 0) {
+          clearInterval(resendInterval);
+          resendInterval = null;
+          timerEl.textContent = '';
+          resendBtn.disabled = false;
+          return;
         }
-      }, 1000);
+        const minutes = Math.floor(remaining / 60);
+        const seconds = String(remaining % 60).padStart(2, '0');
+        timerEl.textContent = `Resend available in ${minutes}:${seconds}`;
+      };
+
+      updateTimer();
+      resendInterval = setInterval(updateTimer, 250);
     }
 
     startTimer();
 
     resendBtn.addEventListener('click', async (e) => {
       e.preventDefault();
+      if (resendBtn.disabled) return;
+      resendBtn.disabled = true;
       const formData = new FormData();
       // Only this explicit action replaces the currently valid code.
       formData.append('action', 'resendOTP');
@@ -130,36 +178,45 @@ if (!$email) {
           method: 'POST', body: formData
         });
         const result = await res.json();
-        if (result.success) {
+        if (res.ok && result.success) {
           LoadingUI.setButton(resendBtn, false);
           document.getElementById('otpSuccess').textContent = 'New OTP sent!';
           document.getElementById('otpSuccess').classList.remove('d-none');
           startTimer();
+        } else {
+          LoadingUI.setButton(resendBtn, false);
+          resendBtn.disabled = false;
+          const errEl = document.getElementById('otpError');
+          errEl.textContent = result.message || 'Unable to resend the code. Please try again.';
+          errEl.classList.remove('d-none');
         }
       } catch (err) {
         LoadingUI.setButton(resendBtn, false);
-        console.error(err);
+        resendBtn.disabled = false;
+        const errEl = document.getElementById('otpError');
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.classList.remove('d-none');
       }
     });
 
     // Verify OTP
     document.getElementById('otpForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      const btn   = document.getElementById('otpBtn');
+      const btn   = otpBtn;
       const errEl = document.getElementById('otpError');
       const sucEl = document.getElementById('otpSuccess');
       errEl.classList.add('d-none');
       sucEl.classList.add('d-none');
+      clearOtpFeedback();
 
-      const otp = document.getElementById('otpInput').value.trim();
+      const otp = otpInput.value.trim();
       if (otp.length !== 6 || isNaN(otp)) {
-        errEl.textContent = 'Please enter a valid 6-digit code.';
-        errEl.classList.remove('d-none');
+        showOtpError('Enter the complete six-digit verification code.');
         return;
       }
 
-      btn.textContent = 'Verifying…';
-      btn.disabled    = true;
+      verificationInFlight = true;
+      syncOtpDisplay();
       LoadingUI.setButton(btn, true, 'Verifying…');
 
       const formData = new FormData(this);
@@ -178,25 +235,26 @@ if (!$email) {
             window.location.href = 'reset-pass.php?token=' + result.token;
           }, 1000);
         } else {
-          errEl.textContent = result.message;
-          errEl.classList.remove('d-none');
-          btn.textContent = 'Verify Code';
+          showOtpError(result.message);
+          verificationInFlight = false;
           LoadingUI.setButton(btn, false);
-          btn.disabled    = false;
+          syncOtpDisplay();
         }
       } catch (err) {
-        errEl.textContent = 'Network error. Please try again.';
-        errEl.classList.remove('d-none');
-        btn.textContent = 'Verify Code';
+        showOtpError('Network error. Please try again.');
+        verificationInFlight = false;
         LoadingUI.setButton(btn, false);
-        btn.disabled    = false;
+        syncOtpDisplay();
       }
     });
 
-    // Only allow numbers in OTP input
-    document.getElementById('otpInput').addEventListener('input', function () {
-      this.value = this.value.replace(/[^0-9]/g, '');
+    otpInput.addEventListener('input', () => {
+      clearOtpFeedback();
+      syncOtpDisplay();
     });
+    otpInput.addEventListener('focus', syncOtpDisplay);
+    otpInput.addEventListener('blur', syncOtpDisplay);
+    syncOtpDisplay();
   </script>
 
 </body>

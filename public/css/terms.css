@@ -1,0 +1,206 @@
+/* Shared presentation for the public terms page and registration modal. */
+.vd-terms-title {
+  margin: 0;
+  color: var(--dark);
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.vd-terms-eyebrow {
+  margin-bottom: 0.35rem;
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.vd-terms-body {
+  color: var(--mid);
+  font-size: 0.9rem;
+  line-height: 1.75;
+}
+
+.vd-terms-body section {
+  margin-top: 1.5rem;
+}
+
+.vd-terms-body h3 {
+  margin-bottom: 0.4rem;
+  color: var(--dark);
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.vd-terms-body p {
+  margin-bottom: 0;
+}
+
+.vd-terms-body .vd-terms-updated {
+  margin-bottom: 1rem;
+  color: var(--gold);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vd-terms-modal .modal-content {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--white-bg);
+  box-shadow: 0 20px 60px rgba(26, 22, 18, 0.2);
+}
+
+.vd-terms-modal .modal-header {
+  align-items: flex-start;
+  border-color: var(--border);
+}
+
+.vd-terms-modal-description {
+  max-width: 38rem;
+  margin: 0.55rem 0 0;
+  color: var(--mid);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.vd-terms-modal .modal-body:focus-visible {
+  outline: 3px solid rgba(128, 97, 31, 0.3);
+  outline-offset: -3px;
+}
+
+.vd-terms-modal .modal-footer {
+  gap: 0.75rem;
+  border-color: var(--border);
+}
+
+.vd-terms-scroll-status {
+  margin-right: auto;
+  color: var(--mid);
+  font-size: 0.78rem;
+}
+
+.vd-terms-page-link,
+.vd-terms-back-link {
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.vd-terms-page-link:hover,
+.vd-terms-page-link:focus-visible,
+.vd-terms-back-link:hover,
+.vd-terms-back-link:focus-visible {
+  color: var(--gold-hover);
+}
+
+.vd-terms-agree-btn {
+  min-height: 44px;
+  padding: 0.75rem 1.5rem;
+  border: 0;
+  border-radius: 8px;
+}
+
+.vd-terms-agree-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.vd-terms-page-body {
+  min-height: 100vh;
+  background-color: var(--bg);
+}
+
+.vd-terms-page-header {
+  padding: 1.5rem clamp(1.25rem, 5vw, 4rem);
+  border-bottom: 1px solid rgba(128, 97, 31, 0.18);
+  background: var(--gold);
+}
+
+.vd-terms-wordmark {
+  display: inline-block;
+  color: #fff;
+  text-decoration: none;
+}
+
+.vd-terms-wordmark .vd-logo-name,
+.vd-terms-wordmark .vd-logo-sub {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.vd-terms-wordmark .vd-logo-ventura {
+  color: #fff;
+}
+
+.vd-terms-wordmark .vd-cross {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.vd-terms-wordmark .vd-site-logo-img {
+  display: block;
+  width: min(240px, 60vw);
+  max-height: 72px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.vd-terms-page-main {
+  width: min(860px, calc(100% - 2.5rem));
+  margin: 3rem auto;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--white-bg);
+  box-shadow: 0 20px 60px rgba(26, 22, 18, 0.1);
+}
+
+.vd-terms-page-heading {
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.vd-terms-page-heading > p {
+  max-width: 42rem;
+  margin: 0.75rem 0 0;
+  color: var(--mid);
+  line-height: 1.6;
+}
+
+.vd-terms-page-main .vd-terms-body {
+  margin-top: 1.75rem;
+}
+
+.vd-terms-back-link {
+  display: inline-flex;
+  min-height: 44px;
+  margin-top: 2rem;
+  align-items: center;
+}
+
+@media (max-width: 575px) {
+  .vd-terms-modal .modal-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .vd-terms-scroll-status {
+    margin-right: 0;
+  }
+
+  .vd-terms-page-link,
+  .vd-terms-agree-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .vd-terms-page-main {
+    margin: 1.25rem auto;
+  }
+}

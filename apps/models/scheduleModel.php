@@ -1,6 +1,9 @@
 <?php
 
 class Schedule {
+    public const MIN_TRANSITION_MINUTES = 0;
+    public const MAX_TRANSITION_MINUTES = 240;
+
     private $conn;
     private int $transitionMinutes;
 
@@ -8,7 +11,22 @@ class Schedule {
     {
         $this->conn = $conn;
         $rules = require __DIR__ . '/../../config/appointment.php';
-        $this->transitionMinutes = max(0, (int) ($rules['clinic_transition_minutes'] ?? 90));
+        $fallbackMinutes = (int) ($rules['clinic_transition_minutes'] ?? 90);
+        $configuredMinutes = $fallbackMinutes;
+        try {
+            $stmt = $this->conn->query('SELECT clinic_transition_minutes FROM site_settings WHERE id = 1');
+            $storedMinutes = $stmt ? $stmt->fetchColumn() : false;
+            if ($storedMinutes !== false && $storedMinutes !== null) {
+                $configuredMinutes = (int) $storedMinutes;
+            }
+        } catch (PDOException $e) {
+            // The configuration value remains the safe fallback while a pending
+            // database migration is being applied.
+        }
+        $this->transitionMinutes = max(
+            self::MIN_TRANSITION_MINUTES,
+            min(self::MAX_TRANSITION_MINUTES, $configuredMinutes)
+        );
     }
 
     public static function normalizeTime(string $time): ?string {
@@ -41,6 +59,52 @@ class Schedule {
 
     public function getTransitionMinutes(): int {
         return $this->transitionMinutes;
+    }
+
+    /**
+     * Finds an upcoming pair of clinic windows that would violate a proposed
+     * transition interval. Existing windows are checked before the policy is
+     * changed so the saved rule always describes the active schedule.
+     */
+    public function findTransitionPolicyConflict(int $minutes): ?array
+    {
+        $minutes = max(self::MIN_TRANSITION_MINUTES, min(self::MAX_TRANSITION_MINUTES, $minutes));
+        try {
+            $stmt = $this->conn->query("
+                SELECT schedule_row.schedule_id, schedule_row.clinic_id,
+                    schedule_row.sched_date, schedule_row.start_time, schedule_row.end_time,
+                    clinic.clinic_name
+                FROM schedules schedule_row
+                INNER JOIN clinics clinic ON clinic.clinic_id = schedule_row.clinic_id
+                WHERE schedule_row.sched_date >= CURDATE()
+                ORDER BY schedule_row.sched_date, schedule_row.start_time, schedule_row.schedule_id
+            ");
+            $windowsByDate = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $window) {
+                $windowsByDate[$window['sched_date']][] = $window;
+            }
+
+            foreach ($windowsByDate as $windows) {
+                $count = count($windows);
+                for ($i = 0; $i < $count; $i++) {
+                    for ($j = $i + 1; $j < $count; $j++) {
+                        if ((int) $windows[$i]['clinic_id'] === (int) $windows[$j]['clinic_id']) continue;
+                        $firstStart = strtotime('1970-01-01 ' . $windows[$i]['start_time']);
+                        $firstEnd = strtotime('1970-01-01 ' . $windows[$i]['end_time']);
+                        $secondStart = strtotime('1970-01-01 ' . $windows[$j]['start_time']);
+                        $secondEnd = strtotime('1970-01-01 ' . $windows[$j]['end_time']);
+                        $bufferSeconds = $minutes * 60;
+                        if (!($firstStart >= $secondEnd + $bufferSeconds || $secondStart >= $firstEnd + $bufferSeconds)) {
+                            return ['first' => $windows[$i], 'second' => $windows[$j]];
+                        }
+                    }
+                }
+            }
+        } catch (PDOException $e) {
+            error_log('findTransitionPolicyConflict error: ' . $e->getMessage());
+            return ['error' => true];
+        }
+        return null;
     }
 
     public function getSchedulesByClinic($clinic_id) {

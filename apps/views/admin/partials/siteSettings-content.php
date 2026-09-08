@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Ad
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/siteSettingsModel.php';
 require_once __DIR__ . '/../../../models/clinicModel.php';
+require_once __DIR__ . '/../../../models/scheduleModel.php';
 
 $db   = new Database();
 $conn = $db->connect();
@@ -17,6 +18,10 @@ $settingsModel = new SiteSettingsModel($conn);
 $settings = $settingsModel->getSettings();
 $clinics = (new Clinic($conn))->getAllClinics();
 $isAdmin = ($_SESSION['user_role'] ?? '') === 'Admin';
+$transitionMinutes = max(
+    Schedule::MIN_TRANSITION_MINUTES,
+    min(Schedule::MAX_TRANSITION_MINUTES, (int) ($settings['clinic_transition_minutes'] ?? 90))
+);
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 function sv($settings, $key)
@@ -27,20 +32,28 @@ function sv($settings, $key)
 
 <div class="d-flex flex-column gap-4">
 
+    <?php if ($isAdmin): ?>
     <div class="vd-empty-state" style="background: var(--gold-pale); border: 1px solid var(--border); color: var(--mid); text-align: left; padding: 14px 18px;">
         <i class="ti ti-info-circle me-1"></i>
-        <?= $isAdmin
-            ? 'Changes here update clinic operations and public-facing content. Each section saves independently.'
-            : 'Default clinic hours prefill new schedules. Existing schedules keep their saved time windows.' ?>
+        Changes here update clinic operations and public-facing content. Each section saves independently.
     </div>
+    <?php endif; ?>
 
     <?php if (!$isAdmin): ?>
     <div class="vd-dash-card vd-schedule-defaults-card">
-        <div class="vd-dash-card-header">
-            <span class="vd-dash-card-title">Clinic Schedule Defaults</span>
-        </div>
-        <div class="vd-dash-card-body">
-            <p class="vd-appt-meta mb-3">These hours prefill the schedule form and can be adjusted for an individual date in five-minute increments. Patients never select a separate appointment time.</p>
+        <button class="vd-schedule-defaults-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#clinicScheduleDefaultsBody" aria-expanded="false" aria-controls="clinicScheduleDefaultsBody">
+            <span class="vd-schedule-defaults-heading">
+                <span class="vd-dash-card-title">Clinic Schedule Defaults</span>
+                <span class="vd-schedule-defaults-summary" id="clinicDefaultsSummary">
+                    <?php foreach ($clinics as $index => $clinic): ?><?= $index ? ' · ' : '' ?><?= htmlspecialchars($clinic['clinic_name']) ?>: <?= htmlspecialchars(Schedule::formatTimeRange($clinic['default_start_time'] ?? '08:00:00', $clinic['default_end_time'] ?? '17:00:00')) ?><?php endforeach; ?>
+                    · <span id="clinicTransitionSummary"><?= $transitionMinutes > 0 ? $transitionMinutes . '-minute separation' : 'No buffer (overlap blocked)' ?></span>
+                </span>
+            </span>
+            <span class="vd-schedule-defaults-action"><span>Edit defaults</span><i class="ti ti-chevron-down" aria-hidden="true"></i></span>
+        </button>
+        <div class="collapse" id="clinicScheduleDefaultsBody">
+        <div class="vd-dash-card-body vd-schedule-defaults-body">
+            <p class="vd-schedule-defaults-intro mb-3">These values prefill new schedules. Individual dates can still be adjusted in five-minute increments, while existing schedules keep their saved windows.</p>
             <div class="vd-clinic-hours-list">
                 <?php foreach ($clinics as $clinic): ?>
                 <div class="vd-clinic-hours-row" data-clinic-hours-row data-clinic-id="<?= (int) $clinic['clinic_id'] ?>">
@@ -50,13 +63,13 @@ function sv($settings, $key)
                     </div>
                     <div>
                         <label class="vd-label form-label" for="clinicStart<?= (int) $clinic['clinic_id'] ?>">Opens</label>
-                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:00" maximum="23:50" required vibrate="false" data-default-start-picker>
+                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="08:00" maximum="17:25" required vibrate="false" data-default-start-picker>
                             <input type="text" id="clinicStart<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-start value="<?= htmlspecialchars(substr($clinic['default_start_time'] ?? '08:00:00', 0, 5)) ?>" autocomplete="off" inputmode="numeric" required>
                         </clock-timepicker>
                     </div>
                     <div>
                         <label class="vd-label form-label" for="clinicEnd<?= (int) $clinic['clinic_id'] ?>">Closes</label>
-                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="00:05" maximum="23:55" required vibrate="false" data-default-end-picker>
+                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="08:05" maximum="17:30" required vibrate="false" data-default-end-picker>
                             <input type="text" id="clinicEnd<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-end value="<?= htmlspecialchars(substr($clinic['default_end_time'] ?? '17:00:00', 0, 5)) ?>" autocomplete="off" inputmode="numeric" required>
                         </clock-timepicker>
                     </div>
@@ -64,7 +77,22 @@ function sv($settings, $key)
                 </div>
                 <?php endforeach; ?>
             </div>
-            <div class="vd-schedule-policy-note mt-3"><i class="ti ti-route" aria-hidden="true"></i><span>Different clinics may operate on the same date when their windows are separated by at least 90 minutes.</span></div>
+            <div class="vd-schedule-policy-editor">
+                <div class="vd-schedule-policy-copy">
+                    <i class="ti ti-route" aria-hidden="true"></i>
+                    <span><strong>Clinic time separation</strong><small>Minimum buffer between different clinics operating on the same date. Set 0 to allow adjacent, non-overlapping windows.</small></span>
+                </div>
+                <div class="vd-schedule-policy-control">
+                    <label class="vd-label form-label" for="clinicTransitionMinutes">Minutes</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control vd-input" id="clinicTransitionMinutes" min="0" max="240" step="5" value="<?= $transitionMinutes ?>" inputmode="numeric" required>
+                        <span class="input-group-text">min</span>
+                    </div>
+                </div>
+                <button type="button" class="btn vd-btn-gold" id="saveClinicTransition"><i class="ti ti-check" aria-hidden="true"></i><span>Save policy</span></button>
+            </div>
+            <div class="vd-schedule-policy-note mt-3"><i class="ti ti-info-circle" aria-hidden="true"></i><span>Clinic hours are limited to 8:00 AM–5:30 PM. A larger separation can only be saved when all upcoming clinic windows already meet it.</span></div>
+        </div>
         </div>
     </div>
     <?php endif; ?>
@@ -283,6 +311,29 @@ function sv($settings, $key)
             return String(picker?.value || fallbackInput.value || '').trim();
         }
 
+        const scheduleDefaultsBody = document.getElementById('clinicScheduleDefaultsBody');
+
+        function expandScheduleDefaults() {
+            if (!scheduleDefaultsBody) return;
+            bootstrap.Collapse.getOrCreateInstance(scheduleDefaultsBody, { toggle: false }).show();
+        }
+
+        try {
+            if (scheduleDefaultsBody && sessionStorage.getItem('vdScheduleDefaultsOpen') === '1') {
+                sessionStorage.removeItem('vdScheduleDefaultsOpen');
+                expandScheduleDefaults();
+            }
+        } catch (error) {
+            // Storage can be unavailable in hardened browser modes; the panel
+            // still works normally through Bootstrap's collapse control.
+        }
+
+        function keepScheduleDefaultsOpenAfterRefresh() {
+            try {
+                sessionStorage.setItem('vdScheduleDefaultsOpen', '1');
+            } catch (error) {}
+        }
+
         document.querySelectorAll('[data-clinic-hours-row]').forEach(row => {
             const pickers = {
                 start: row.querySelector('[data-default-start-picker]'),
@@ -346,7 +397,13 @@ function sv($settings, $key)
                     return;
                 }
                 if (!usesFiveMinuteSteps) {
+                    expandScheduleDefaults();
                     showToast('Default clinic hours must use five-minute increments.', false);
+                    return;
+                }
+                if (startTime < '08:00' || endTime > '17:30') {
+                    expandScheduleDefaults();
+                    showToast('Default clinic hours must stay between 8:00 AM and 5:30 PM.', false);
                     return;
                 }
                 const clinicName = row.querySelector('.vd-clinic-hours-name strong').textContent.trim();
@@ -363,14 +420,70 @@ function sv($settings, $key)
                         const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
                         const result = await response.json();
                         showToast(result.message || 'Unable to save clinic hours.', result.success);
+                        if (!result.success) {
+                            expandScheduleDefaults();
+                            return false;
+                        }
+                        keepScheduleDefaultsOpenAfterRefresh();
+                        return true;
                     } catch (error) {
+                        expandScheduleDefaults();
                         showToast('Network error. Please try again.', false);
+                        return false;
                     } finally {
                         LoadingUI.setButton(saveButton, false);
                     }
                 });
             });
         });
+
+        const transitionInput = document.getElementById('clinicTransitionMinutes');
+        const saveTransitionButton = document.getElementById('saveClinicTransition');
+        if (transitionInput && saveTransitionButton) {
+            saveTransitionButton.addEventListener('click', function() {
+                expandScheduleDefaults();
+                const rawMinutes = transitionInput.value.trim();
+                const minutes = Number(rawMinutes);
+                if (!/^\d+$/.test(rawMinutes) || minutes < 0 || minutes > 240 || minutes % 5 !== 0) {
+                    transitionInput.setCustomValidity('Use a value from 0 to 240 in five-minute increments.');
+                    transitionInput.reportValidity();
+                    transitionInput.setCustomValidity('');
+                    return;
+                }
+
+                const saveButton = this;
+                const confirmationMessage = minutes > 0
+                    ? `Use a ${minutes}-minute separation between clinic schedule windows?`
+                    : 'Allow adjacent clinic schedule windows while continuing to block overlaps?';
+                askForSaveConfirmation(
+                    confirmationMessage,
+                    async function() {
+                        const formData = new FormData();
+                        formData.append('action', 'updateClinicTransitionMinutes');
+                        formData.append('csrf_token', settingsCsrfToken);
+                        formData.append('clinic_transition_minutes', String(minutes));
+                        LoadingUI.setButton(saveButton, true, 'Saving…');
+                        try {
+                            const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+                            const result = await response.json();
+                            showToast(result.message || 'Unable to save the clinic separation.', result.success);
+                            if (!result.success) {
+                                expandScheduleDefaults();
+                                return false;
+                            }
+                            keepScheduleDefaultsOpenAfterRefresh();
+                            return true;
+                        } catch (error) {
+                            expandScheduleDefaults();
+                            showToast('Network error. Please try again.', false);
+                            return false;
+                        } finally {
+                            LoadingUI.setButton(saveButton, false);
+                        }
+                    }
+                );
+            });
+        }
 
         // ── Save a text/textarea group ──
         document.querySelectorAll('.vd-save-group-btn').forEach(btn => {

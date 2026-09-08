@@ -41,6 +41,7 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
   <link rel="stylesheet" href="../../public/css/bootstrap.min.css">
   <link rel="stylesheet" href="../../public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../public/css/styles.css') ?>">
   <link rel="stylesheet" href="../../public/css/auth.css?v=<?= filemtime(__DIR__ . '/../../public/css/auth.css') ?>">
+  <link rel="stylesheet" href="../../public/css/terms.css?v=<?= filemtime(__DIR__ . '/../../public/css/terms.css') ?>">
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
@@ -118,6 +119,18 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
             </div>
           </div>
 
+          <div class="vd-terms-consent vd-register-span-2" id="termsConsentGroup">
+            <input type="checkbox" class="vd-terms-checkbox" id="termsAccepted" disabled aria-describedby="termsConsentHint termsConsentStatus">
+            <div>
+              <div class="vd-terms-consent-label">
+                I agree to the
+                <button type="button" class="vd-terms-trigger" id="openSystemTerms" data-bs-toggle="modal" data-bs-target="#systemTermsModal">Terms and Conditions</button>.
+              </div>
+              <p class="vd-terms-consent-hint" id="termsConsentHint">Open the terms and scroll to the end to enable agreement.</p>
+              <span class="visually-hidden" id="termsConsentStatus" role="status" aria-live="polite"></span>
+            </div>
+          </div>
+
           <button type="submit" class="vd-auth-btn vd-register-span-2" id="registerBtn">
             Create Account
           </button>
@@ -136,6 +149,9 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
 
   </div>
 
+  <?php require __DIR__ . '/system-terms.php'; ?>
+
+  <script src="../../public/js/bootstrap.bundle.min.js"></script>
   <script>
     function togglePassword(inputId, iconId) {
       const input = document.getElementById(inputId);
@@ -153,8 +169,49 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
     });
 
     const registerForm = document.getElementById('registerForm');
+    const termsAccepted = document.getElementById('termsAccepted');
+    const termsConsentGroup = document.getElementById('termsConsentGroup');
+    const termsConsentHint = document.getElementById('termsConsentHint');
+    const termsConsentStatus = document.getElementById('termsConsentStatus');
+    const termsModal = document.getElementById('systemTermsModal');
+    const termsScrollRegion = document.getElementById('systemTermsScrollRegion');
+    const termsScrollStatus = document.getElementById('systemTermsScrollStatus');
+    const termsAgreeButton = document.getElementById('systemTermsAgreeButton');
     const registrationPasswordKey = 'pendingRegistrationPasswords';
     const isEditingRegistration = <?= $isEditingRegistration ? 'true' : 'false' ?>;
+
+    function hasReachedTermsEnd() {
+      return termsScrollRegion.scrollHeight - termsScrollRegion.scrollTop - termsScrollRegion.clientHeight <= 8;
+    }
+
+    function updateTermsAgreementAvailability() {
+      const canAgree = hasReachedTermsEnd();
+      termsAgreeButton.disabled = !canAgree;
+      termsScrollStatus.textContent = canAgree ? 'You have reached the end of the terms.' : 'Scroll to the end to continue.';
+    }
+
+    termsModal.addEventListener('shown.bs.modal', function () {
+      if (!termsAccepted.checked) {
+        termsScrollRegion.scrollTop = 0;
+      }
+      updateTermsAgreementAvailability();
+      termsScrollRegion.focus();
+    });
+
+    termsScrollRegion.addEventListener('scroll', updateTermsAgreementAvailability, { passive: true });
+
+    termsAgreeButton.addEventListener('click', function () {
+      if (!hasReachedTermsEnd()) {
+        return;
+      }
+
+      termsAccepted.checked = true;
+      termsConsentGroup.classList.remove('vd-terms-consent-invalid');
+      termsConsentGroup.classList.add('vd-terms-consent-complete');
+      termsConsentHint.textContent = 'Review completed. Your agreement is confirmed for this registration.';
+      termsConsentStatus.textContent = 'Terms and Conditions accepted.';
+      bootstrap.Modal.getOrCreateInstance(termsModal).hide();
+    });
 
     // Passwords cannot be reconstructed from the secure server-side hash. Keep
     // them only in this tab while email verification is in progress.
@@ -244,6 +301,14 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
       if (!strongPassword.test(pw)) {
         errEl.textContent = 'Password must be at least 8 characters and include both letters and numbers.';
         errEl.classList.remove('d-none');
+        return;
+      }
+
+      if (!termsAccepted.checked) {
+        termsConsentGroup.classList.add('vd-terms-consent-invalid');
+        errEl.textContent = 'Please review and agree to the Terms and Conditions.';
+        errEl.classList.remove('d-none');
+        document.getElementById('openSystemTerms').focus();
         return;
       }
 

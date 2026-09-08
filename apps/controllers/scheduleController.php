@@ -27,7 +27,10 @@ class ScheduleController {
         }
         $window = Schedule::formatTimeRange($conflict['start_time'], $conflict['end_time']);
         $gap = $this->schedules->getTransitionMinutes();
-        return "This window conflicts with {$conflict['clinic_name']} ({$window}). Allow at least {$gap} minutes between clinics.";
+        $rule = $gap > 0
+            ? "Allow at least {$gap} minutes between clinics."
+            : 'Clinic windows cannot overlap.';
+        return "This window conflicts with {$conflict['clinic_name']} ({$window}). {$rule}";
     }
 
     private function validateScheduleWindow(string $startTime, string $endTime): array {

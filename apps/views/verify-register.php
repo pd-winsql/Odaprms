@@ -33,7 +33,7 @@ if (!$email) {
     <link rel="stylesheet" href="../../public/css/loading.css">
     <script src="../../public/js/loading.js" defer></script>
 </head>
-<body class="vd-auth-body">
+<body class="vd-auth-body vd-auth-otp-page">
 
     <div class="vd-auth-split">
 
@@ -54,7 +54,7 @@ if (!$email) {
 
         <!-- RIGHT -->
         <div class="vd-auth-right">
-        <div class="vd-auth-form-wrap">
+        <div class="vd-auth-form-wrap vd-auth-otp">
 
             <div class="vd-auth-heading">
             <h1 class="vd-auth-title">Verify your email</h1>
@@ -64,28 +64,34 @@ if (!$email) {
             </div>
             </div>
 
-            <div id="otpError"   class="vd-auth-error   d-none"></div>
-            <div id="otpSuccess" class="vd-auth-success d-none"></div>
-
             <form id="otpForm" class="vd-auth-form" novalidate>
             <input type="hidden" name="email" value="<?= htmlspecialchars($email) ?>">
 
             <div class="vd-auth-group">
-                <label class="vd-label" for="otpInput">6-Digit Verification Code</label>
-                <input type="text" name="otp" id="otpInput" class="vd-auth-input vd-otp-input"
-                placeholder="_ _ _ _ _ _"
-                maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+                <label class="vd-label" for="otpInput">Verification code</label>
+                <p class="vd-otp-help" id="otpHelp">Enter the six-digit code. It expires after 10 minutes.</p>
+                <div class="vd-otp-control" id="otpControl">
+                    <input type="text" name="otp" id="otpInput" class="vd-otp-input"
+                        maxlength="6" inputmode="numeric" pattern="[0-9]{6}"
+                        autocomplete="one-time-code" enterkeyhint="done"
+                        aria-describedby="otpHelp otpError" aria-invalid="false" autofocus required>
+                    <div class="vd-otp-slots" aria-hidden="true">
+                        <?php for ($slot = 0; $slot < 6; $slot++): ?><span class="vd-otp-slot"></span><?php endfor; ?>
+                    </div>
+                </div>
+                <div id="otpError" class="vd-auth-error d-none" role="alert" aria-live="assertive"></div>
+                <div id="otpSuccess" class="vd-auth-success d-none" role="status" aria-live="polite"></div>
             </div>
 
-            <button type="submit" class="vd-auth-btn" id="otpBtn">
+            <button type="submit" class="vd-auth-btn" id="otpBtn" disabled>
                 Verify &amp; Create Account
             </button>
             </form>
 
-            <div class="vd-auth-footer mt-3">
-            Didn't receive it?
-            <a href="#" id="resendBtn">Resend code</a>
-            <span id="resendTimer" class="vd-resend-timer"></span>
+            <div class="vd-auth-resend">
+                <span class="vd-auth-resend-copy">Didn't receive the email?</span>
+                <button type="button" class="vd-resend-button" id="resendBtn" disabled>Resend verification code</button>
+                <span id="resendTimer" class="vd-resend-timer"></span>
             </div>
 
             <div class="vd-auth-footer mt-2">
@@ -103,14 +109,47 @@ if (!$email) {
         // ── Resend timer ──
         const timerEl   = document.getElementById('resendTimer');
         const resendBtn = document.getElementById('resendBtn');
+        const otpInput = document.getElementById('otpInput');
+        const otpControl = document.getElementById('otpControl');
+        const otpSlots = Array.from(otpControl.querySelectorAll('.vd-otp-slot'));
+        const otpBtn = document.getElementById('otpBtn');
         const resendCooldownKey = 'registerOtpResendAvailableAt';
         let resendInterval = null;
         let resendInFlight = false;
+        let verificationInFlight = false;
 
         function setResendEnabled(enabled) {
-            resendBtn.style.pointerEvents = enabled ? 'auto' : 'none';
-            resendBtn.style.opacity = enabled ? '1' : '0.4';
-            resendBtn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+            resendBtn.disabled = !enabled;
+        }
+
+        function syncOtpDisplay() {
+            const value = otpInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+            if (otpInput.value !== value) otpInput.value = value;
+
+            otpSlots.forEach((slot, index) => {
+                slot.textContent = value[index] || '';
+                slot.classList.toggle('is-filled', index < value.length);
+                slot.classList.toggle('is-active', document.activeElement === otpInput && index === Math.min(value.length, 5));
+            });
+            otpBtn.disabled = verificationInFlight || value.length !== 6;
+        }
+
+        function clearOtpFeedback() {
+            const errEl = document.getElementById('otpError');
+            otpControl.classList.remove('is-invalid');
+            otpInput.setAttribute('aria-invalid', 'false');
+            errEl.classList.add('d-none');
+            errEl.textContent = '';
+        }
+
+        function showOtpError(message) {
+            const errEl = document.getElementById('otpError');
+            errEl.textContent = message;
+            errEl.classList.remove('d-none');
+            otpControl.classList.add('is-invalid');
+            otpInput.setAttribute('aria-invalid', 'true');
+            otpInput.focus();
+            syncOtpDisplay();
         }
 
         function saveCooldown(availableAt) {
@@ -137,7 +176,9 @@ if (!$email) {
             }
 
             setResendEnabled(false);
-            timerEl.textContent = ` (${secondsRemaining}s)`;
+            const minutes = Math.floor(secondsRemaining / 60);
+            const seconds = String(secondsRemaining % 60).padStart(2, '0');
+            timerEl.textContent = `Resend available in ${minutes}:${seconds}`;
         }
 
         function startTimer(availableAt = Date.now() + 60000, persist = true) {
@@ -165,15 +206,13 @@ if (!$email) {
             startTimer(savedCooldown, false);
         } else {
             timerEl.textContent = '';
-            resendBtn.style.pointerEvents = 'auto';
-            resendBtn.style.opacity       = '1';
-            resendBtn.setAttribute('aria-disabled', 'false');
+            setResendEnabled(true);
         }
 
         // ── Resend — uses dedicated action, no password needed ──
         resendBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        if (resendInFlight || resendBtn.getAttribute('aria-disabled') === 'true') return;
+        if (resendInFlight || resendBtn.disabled) return;
 
         resendInFlight = true;
         setResendEnabled(false);
@@ -216,21 +255,21 @@ if (!$email) {
         document.getElementById('otpForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
-        const btn   = document.getElementById('otpBtn');
+        const btn   = otpBtn;
         const errEl = document.getElementById('otpError');
         const sucEl = document.getElementById('otpSuccess');
         errEl.classList.add('d-none');
         sucEl.classList.add('d-none');
+        clearOtpFeedback();
 
-        const otp = document.getElementById('otpInput').value.trim();
+        const otp = otpInput.value.trim();
         if (otp.length !== 6 || isNaN(otp)) {
-            errEl.textContent = 'Please enter a valid 6-digit code.';
-            errEl.classList.remove('d-none');
+            showOtpError('Enter the complete six-digit verification code.');
             return;
         }
 
-        btn.textContent = 'Verifying…';
-        btn.disabled    = true;
+        verificationInFlight = true;
+        syncOtpDisplay();
         LoadingUI.setButton(btn, true, 'Verifying…');
 
         const formData = new FormData(this);
@@ -253,25 +292,26 @@ if (!$email) {
                 window.location.href = result.redirect || '/Capstone System/apps/views/patient/dashboard.php#booking-content.php';
             }, 1500);
             } else {
-            errEl.textContent = result.message;
-            errEl.classList.remove('d-none');
-            btn.textContent = 'Verify & Create Account';
+            showOtpError(result.message);
+            verificationInFlight = false;
             LoadingUI.setButton(btn, false);
-            btn.disabled    = false;
+            syncOtpDisplay();
             }
         } catch (err) {
-            errEl.textContent = 'Network error. Please try again.';
-            errEl.classList.remove('d-none');
-            btn.textContent = 'Verify & Create Account';
+            showOtpError('Network error. Please try again.');
+            verificationInFlight = false;
             LoadingUI.setButton(btn, false);
-            btn.disabled    = false;
+            syncOtpDisplay();
         }
         });
 
-        // Only allow numbers
-        document.getElementById('otpInput').addEventListener('input', function () {
-        this.value = this.value.replace(/[^0-9]/g, '');
+        otpInput.addEventListener('input', () => {
+            clearOtpFeedback();
+            syncOtpDisplay();
         });
+        otpInput.addEventListener('focus', syncOtpDisplay);
+        otpInput.addEventListener('blur', syncOtpDisplay);
+        syncOtpDisplay();
     </script>
 
 </body>

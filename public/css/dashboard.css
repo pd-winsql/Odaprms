@@ -3511,6 +3511,118 @@ button.vd-stat-card {
     color: var(--gold);
     font-size: 16px;
 }
+.vd-schedule-defaults-card {
+    overflow: hidden;
+}
+.vd-schedule-defaults-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 18px 28px;
+    border: 0;
+    background: var(--white);
+    color: var(--dark);
+    text-align: left;
+}
+.vd-schedule-defaults-toggle:hover {
+    background: #fffdf9;
+}
+.vd-schedule-defaults-toggle:focus-visible {
+    outline: 2px solid rgba(181, 139, 61, 0.45);
+    outline-offset: -3px;
+}
+.vd-schedule-defaults-heading {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+}
+.vd-schedule-defaults-summary {
+    overflow: hidden;
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.vd-schedule-defaults-action {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    color: var(--gold-dark);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.vd-schedule-defaults-action i {
+    font-size: 17px;
+    transition: transform 180ms ease;
+}
+.vd-schedule-defaults-toggle[aria-expanded="true"] .vd-schedule-defaults-action i {
+    transform: rotate(180deg);
+}
+.vd-schedule-defaults-body {
+    border-top: 1px solid var(--border);
+}
+.vd-schedule-defaults-intro {
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: normal;
+}
+.vd-schedule-policy-editor {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) 160px auto;
+    gap: 16px;
+    align-items: end;
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--gold-pale);
+}
+.vd-schedule-policy-copy {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    align-self: center;
+}
+.vd-schedule-policy-copy > i {
+    margin-top: 1px;
+    color: var(--gold);
+    font-size: 22px;
+}
+.vd-schedule-policy-copy span {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.vd-schedule-policy-copy strong {
+    color: var(--dark);
+    font-size: 14px;
+}
+.vd-schedule-policy-copy small {
+    max-width: 620px;
+    color: var(--mid);
+    font-size: 11px;
+    line-height: 1.45;
+}
+.vd-schedule-policy-control .input-group-text {
+    border-color: var(--border);
+    background: var(--white);
+    color: var(--mid);
+    font-size: 12px;
+}
+.vd-schedule-policy-editor .vd-btn-gold {
+    min-width: 126px;
+    min-height: 44px;
+    gap: 7px;
+    font-size: 11px;
+}
 .vd-schedule-lock-note {
     display: flex;
     align-items: flex-start;
@@ -3690,6 +3802,16 @@ button.vd-stat-card {
 }
 
 @media (max-width: 767px) {
+    .vd-schedule-defaults-toggle {
+        align-items: flex-start;
+        padding: 16px 18px;
+    }
+    .vd-schedule-defaults-summary {
+        white-space: normal;
+    }
+    .vd-schedule-defaults-action span {
+        display: none;
+    }
     .vd-clinic-hours-row {
         grid-template-columns: 1fr 1fr;
     }
@@ -3700,9 +3822,24 @@ button.vd-stat-card {
         grid-column: 1 / -1;
         width: 100%;
     }
+    .vd-schedule-policy-editor {
+        grid-template-columns: 1fr 1fr;
+    }
+    .vd-schedule-policy-copy {
+        grid-column: 1 / -1;
+    }
+    .vd-schedule-policy-editor .vd-btn-gold {
+        width: 100%;
+    }
 }
 
 @media (max-width: 575px) {
+    .vd-schedule-policy-editor {
+        grid-template-columns: 1fr;
+    }
+    .vd-schedule-policy-copy {
+        grid-column: auto;
+    }
     #addScheduleModal .modal-dialog {
         margin: 10px;
     }
@@ -3967,11 +4104,6 @@ button.vd-stat-card {
     grid-template-columns: minmax(0, 1fr) auto;
     margin: 0 !important;
     min-height: 84px;
-    transition: background-color 0.15s ease;
-}
-
-.vd-service-list-row:hover {
-    background: rgba(181, 146, 76, 0.045);
 }
 
 .vd-service-list-main {

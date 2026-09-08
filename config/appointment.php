@@ -6,5 +6,6 @@ return [
 
     // Travel/preparation time required when the clinic changes branches on
     // the same date. Schedule windows themselves must also never overlap.
+    // Fallback used until the editable site setting is available.
     'clinic_transition_minutes' => 90,
 ];

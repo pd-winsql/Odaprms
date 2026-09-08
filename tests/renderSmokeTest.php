@@ -58,9 +58,14 @@ if ($case === 'dental-schedules') {
         exit(1);
     }
 }
-if ($case === 'dental-settings' && substr_count($html, '<clock-timepicker') < 2) {
-    fwrite(STDERR, "Clinic schedule default clock pickers did not render.\n");
-    exit(1);
+if ($case === 'dental-settings') {
+    if (substr_count($html, '<clock-timepicker') < 2
+        || !str_contains($html, 'clinicScheduleDefaultsBody')
+        || !str_contains($html, 'clinicTransitionMinutes')
+        || !str_contains($html, 'updateClinicTransitionMinutes')) {
+        fwrite(STDERR, "Collapsible clinic defaults or the dynamic separation control did not render.\n");
+        exit(1);
+    }
 }
 if ($case === 'settings'
     && (!str_contains($html, 'Brand & Logo') || str_contains($html, 'Clinic Schedule Defaults'))) {

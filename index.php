@@ -302,9 +302,8 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
   <footer class="vd-footer py-3">
     <div class="container text-center">
       <a
-        href="#systemTermsModal"
+        href="apps/views/terms.php"
         class="vd-footer-link"
-        data-bs-toggle="modal"
         aria-label="Read the system terms and conditions">
         <span>System Terms and Conditions</span>
       </a>
@@ -315,9 +314,6 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
       </p>
     </div>
   </footer>
-
-  <!-- System terms are public. Clinic-specific terms remain unpublished until supplied. -->
-  <?php require __DIR__ . '/apps/views/system-terms.php'; ?>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

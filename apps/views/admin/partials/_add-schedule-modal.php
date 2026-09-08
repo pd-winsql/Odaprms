@@ -11,7 +11,8 @@
             </div>
             <form id="add-schedule-form">
                 <div class="modal-body d-flex flex-column gap-3">
-                    <p class="vd-schedule-modal-intro mb-0" id="scheduleModalIntro">Select dates and set the clinic’s availability window. Another clinic may use the same date when at least 90 minutes separates their windows.</p>
+                    <?php $modalTransitionMinutes = (int) ($scheduleModel->getTransitionMinutes() ?? 90); ?>
+                    <p class="vd-schedule-modal-intro mb-0" id="scheduleModalIntro">Select dates and set the clinic’s availability window. <?= $modalTransitionMinutes > 0 ? "Another clinic may use the same date when there are at least {$modalTransitionMinutes} minutes between their windows." : 'Another clinic may use the same date when the windows do not overlap.' ?></p>
 
                     <div id="scheduleBatchDateGroup">
                         <label class="vd-label form-label" for="scheduleDates">Schedule dates</label>
@@ -227,7 +228,9 @@
             const message = document.createElement('span');
             icon.className = 'ti ti-circle-check';
             icon.setAttribute('aria-hidden', 'true');
-            message.textContent = `The selected hours keep the required ${transitionMinutes}-minute separation from the other clinic.`;
+            message.textContent = transitionMinutes > 0
+                ? `The selected hours keep the required ${transitionMinutes}-minute separation from the other clinic.`
+                : 'The selected hours do not overlap with the other clinic.';
             availabilityElement.append(icon, message);
         }
         return conflict;
@@ -277,7 +280,9 @@
         document.getElementById('modalClinicName').textContent = button.dataset.clinicName;
         document.getElementById('modalClinicId').value = button.dataset.clinicId;
         scheduleIdInput.value = '';
-        modalIntro.textContent = 'Select dates and set the clinic’s availability window. Another clinic may use the same date when at least 90 minutes separates their windows.';
+        modalIntro.textContent = transitionMinutes > 0
+            ? `Select dates and set the clinic’s availability window. Another clinic may use the same date when there are at least ${transitionMinutes} minutes between their windows.`
+            : 'Select dates and set the clinic’s availability window. Another clinic may use the same date when the windows do not overlap.';
         batchDateGroup.classList.remove('d-none');
         singleDateGroup.classList.add('d-none');
         dateInput.required = true;
