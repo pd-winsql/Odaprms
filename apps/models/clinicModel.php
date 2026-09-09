@@ -9,7 +9,13 @@ class Clinic {
 
     public function getAllClinics() {
         try {
-            $stmt = $this->conn->prepare("SELECT * FROM clinics");
+            $stmt = $this->conn->prepare("
+                SELECT c.*,
+                    (SELECT COUNT(*) FROM schedules s WHERE s.clinic_id = c.clinic_id) AS schedule_count,
+                    (SELECT COUNT(*) FROM appointments a WHERE a.clinic_id = c.clinic_id) AS appointment_count
+                FROM clinics c
+                ORDER BY c.clinic_id
+            ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -83,6 +89,44 @@ class Clinic {
         } catch (PDOException $e) {
             error_log('createClinic error: ' . $e->getMessage());
             return 0;
+        }
+    }
+
+    public function getClinicUsageCounts(int $id): array {
+        try {
+            $scheduleStmt = $this->conn->prepare('SELECT COUNT(*) FROM schedules WHERE clinic_id = :id');
+            $scheduleStmt->execute([':id' => $id]);
+
+            $appointmentStmt = $this->conn->prepare('SELECT COUNT(*) FROM appointments WHERE clinic_id = :id');
+            $appointmentStmt->execute([':id' => $id]);
+
+            return [
+                'schedules' => (int) $scheduleStmt->fetchColumn(),
+                'appointments' => (int) $appointmentStmt->fetchColumn(),
+            ];
+        } catch (PDOException $e) {
+            error_log('getClinicUsageCounts error: ' . $e->getMessage());
+            return ['schedules' => 0, 'appointments' => 0, 'error' => true];
+        }
+    }
+
+    public function countClinics(): int {
+        try {
+            return (int) $this->conn->query('SELECT COUNT(*) FROM clinics')->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('countClinics error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function deleteClinic(int $id): bool {
+        try {
+            $stmt = $this->conn->prepare('DELETE FROM clinics WHERE clinic_id = :id');
+            $stmt->execute([':id' => $id]);
+            return $stmt->rowCount() === 1;
+        } catch (PDOException $e) {
+            error_log('deleteClinic error: ' . $e->getMessage());
+            return false;
         }
     }
 

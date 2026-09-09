@@ -939,6 +939,254 @@ button.vd-stat-card {
     flex-shrink: 0;
 }
 
+/* ── Clinic location management ── */
+.vd-clinic-management-card {
+    overflow: hidden;
+}
+
+.vd-dash-body .vd-clinic-management-card .vd-dash-card-title {
+    font-size: 14px;
+}
+
+.vd-dash-body .vd-clinic-management-card .vd-btn-gold {
+    font-size: 13px;
+}
+
+.vd-clinic-count {
+    color: var(--mid);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.vd-clinic-list {
+    background: var(--white-bg);
+}
+
+.vd-clinic-list-row {
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 94px;
+    padding: 18px 22px;
+    transition: background-color 0.15s ease;
+}
+
+.vd-clinic-list-row:last-child {
+    border-bottom: 0;
+}
+
+.vd-clinic-list-row:hover {
+    background: rgba(181, 146, 76, 0.045);
+}
+
+.vd-clinic-list-main {
+    align-items: center;
+    display: flex;
+    gap: 15px;
+    min-width: 0;
+}
+
+.vd-clinic-list-icon {
+    align-items: center;
+    background: var(--gold-pale);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--gold);
+    display: flex;
+    flex: 0 0 48px;
+    font-size: 22px;
+    height: 48px;
+    justify-content: center;
+    width: 48px;
+}
+
+.vd-clinic-list-copy {
+    min-width: 0;
+}
+
+.vd-clinic-list-name {
+    color: var(--dark);
+    font-size: 15.5px;
+    font-weight: 500;
+}
+
+.vd-clinic-list-address {
+    align-items: flex-start;
+    color: var(--mid);
+    display: flex;
+    font-size: 13.5px;
+    gap: 6px;
+    line-height: 1.45;
+    margin-top: 4px;
+}
+
+.vd-clinic-list-address i {
+    color: var(--gold);
+    flex: 0 0 auto;
+    font-size: 16px;
+    margin-top: 2px;
+}
+
+.vd-clinic-list-meta {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+}
+
+.vd-clinic-map-status {
+    align-items: center;
+    border: 1px solid;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 12.5px;
+    gap: 5px;
+    padding: 4px 10px;
+    white-space: nowrap;
+}
+
+.vd-clinic-map-status.is-ready {
+    background: #eaf3de;
+    border-color: #c3e0a0;
+    color: #3b6d11;
+}
+
+.vd-clinic-map-status.is-missing {
+    background: #f1efe8;
+    border-color: #d3d1c7;
+    color: #5f5e5a;
+}
+
+.vd-clinic-actions {
+    align-items: center;
+    background: var(--white-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: inline-flex;
+    overflow: hidden;
+}
+
+.vd-clinic-action-btn {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    color: var(--mid);
+    display: inline-flex;
+    flex: 0 0 48px;
+    height: 48px;
+    justify-content: center;
+    padding: 0;
+    width: 48px;
+}
+
+.vd-clinic-action-btn + .vd-clinic-action-btn {
+    border-left: 1px solid var(--border);
+}
+
+.vd-clinic-action-btn i,
+.vd-clinic-action-btn i::before {
+    font-size: 21px !important;
+    line-height: 1;
+}
+
+.vd-clinic-action-btn:hover,
+.vd-clinic-action-btn:focus-visible {
+    background: var(--gold-pale);
+    color: var(--gold);
+}
+
+.vd-delete-clinic-btn:hover,
+.vd-delete-clinic-btn:focus-visible {
+    background: #fff1ee;
+    color: #a34131;
+}
+
+.vd-clinic-action-btn:disabled {
+    background: #f5f2eb;
+    color: #aaa196;
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.vd-clinic-modal-intro {
+    color: var(--mid);
+    font-size: 13.5px;
+    margin-bottom: 18px;
+}
+
+.vd-field-help {
+    color: var(--mid);
+    font-size: 12.5px;
+    line-height: 1.45;
+    margin-top: 7px;
+}
+
+.vd-clinic-map-frame {
+    aspect-ratio: 16 / 9;
+    background: var(--gold-pale);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-height: 320px;
+    overflow: hidden;
+}
+
+.vd-clinic-map-frame iframe {
+    border: 0;
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.vd-clinic-delete-confirm {
+    background: #9f4138;
+    color: #fff;
+}
+
+.vd-clinic-delete-confirm:hover,
+.vd-clinic-delete-confirm:focus-visible {
+    background: #84342d;
+    color: #fff;
+}
+
+@media (max-width: 767px) {
+    .vd-clinic-list-row {
+        align-items: flex-start;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .vd-clinic-list-main,
+    .vd-clinic-list-meta {
+        width: 100%;
+    }
+
+    .vd-clinic-list-meta {
+        padding-left: 63px;
+    }
+
+    .vd-clinic-actions {
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 575px) {
+    .vd-clinic-list-row {
+        padding: 16px;
+    }
+
+    .vd-clinic-list-meta {
+        flex-wrap: wrap;
+        padding-left: 0;
+    }
+
+    .vd-clinic-map-frame {
+        min-height: 240px;
+    }
+}
+
 /* ── Quick action buttons inside cards ── */
 .vd-quick-actions {
     padding: 14px 20px;

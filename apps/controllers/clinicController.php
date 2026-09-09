@@ -89,7 +89,7 @@ class clinicController {
         $this->json(['success' => true, 'message' => 'Clinic added successfully.', 'clinic_id' => $clinicId]);
     }
 
-    // Inline update from either staff dashboard (AJAX, returns JSON)
+    // Modal-based dashboard update (AJAX, returns JSON)
     public function updateClinicInline() {
         $this->requireStaffPost();
 
@@ -124,6 +124,48 @@ class clinicController {
         }
     }
 
+    public function deleteClinic(): void {
+        $this->requireStaffPost();
+
+        $id = filter_var($_POST['clinic_id'] ?? null, FILTER_VALIDATE_INT);
+        if (!$id) {
+            $this->json(['success' => false, 'message' => 'Invalid clinic.']);
+        }
+
+        $clinic = $this->clinics->getClinicById($id);
+        if (!$clinic) {
+            $this->json(['success' => false, 'message' => 'Clinic not found.']);
+        }
+
+        if ($this->clinics->countClinics() <= 1) {
+            $this->json(['success' => false, 'message' => 'At least one clinic must remain available.']);
+        }
+
+        $usage = $this->clinics->getClinicUsageCounts($id);
+        if (!empty($usage['error'])) {
+            $this->json(['success' => false, 'message' => 'Unable to verify whether this clinic is in use.']);
+        }
+        if ($usage['schedules'] > 0 || $usage['appointments'] > 0) {
+            $this->json([
+                'success' => false,
+                'message' => 'This clinic has schedules or appointments and cannot be deleted.',
+            ]);
+        }
+
+        if (!$this->clinics->deleteClinic($id)) {
+            $this->json(['success' => false, 'message' => 'Failed to delete clinic.']);
+        }
+
+        $name = $clinic['clinic_name'] ?? 'Clinic';
+        $this->auditLog->recordForUser('clinic', (int) $id, 'clinic_deleted', "Deleted clinic {$name}.", [
+            'name' => $name,
+            'address' => $clinic['clinic_address'] ?? '',
+            'embed_url' => $clinic['embed_url'] ?? null,
+        ], null, (int) $_SESSION['user_id']);
+
+        $this->json(['success' => true, 'message' => 'Clinic deleted successfully.']);
+    }
+
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updateInline') {
@@ -132,4 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
     $controller = new clinicController();
     $controller->addClinic();
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
+    $controller = new clinicController();
+    $controller->deleteClinic();
 }
