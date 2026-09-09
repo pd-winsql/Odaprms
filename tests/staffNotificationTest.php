@@ -6,26 +6,27 @@ function notificationExpect(bool $condition, string $message): void {
 }
 
 $root = dirname(__DIR__);
-$dashboards = [
-    'Admin' => $root . '/apps/views/admin/dashboard.php',
-    'Dental Assistant' => $root . '/apps/views/dental_asst/dashboard.php',
-];
+$adminDashboard = file_get_contents($root . '/apps/views/admin/dashboard.php');
+notificationExpect(
+    !str_contains($adminDashboard, "shared/staff-notification-center.php")
+        && !str_contains($adminDashboard, 'staff-appointment-notifications.js')
+        && !str_contains($adminDashboard, 'email-notification-delivery.js'),
+    'Admin oversight does not run daily appointment notification or delivery work.'
+);
 
-foreach ($dashboards as $role => $path) {
-    $dashboard = file_get_contents($path);
-    notificationExpect(
-        str_contains($dashboard, "shared/staff-notification-center.php")
-            && str_contains($dashboard, 'staff-appointment-notifications.js')
-            && str_contains($dashboard, 'StaffAppointmentNotifications?.create')
-            && str_contains($dashboard, 'appointmentNotificationCenter?.observe'),
-        "{$role} dashboard loads and observes the shared appointment notification center."
-    );
-    notificationExpect(
-        !str_contains($dashboard, 'A new appointment was added. The list has been updated.')
-            && !str_contains($dashboard, 'A deposit record changed. The list has been updated.'),
-        "{$role} dashboard no longer uses background-update toasts."
-    );
-}
+$assistantDashboard = file_get_contents($root . '/apps/views/dental_asst/dashboard.php');
+notificationExpect(
+    str_contains($assistantDashboard, "shared/staff-notification-center.php")
+        && str_contains($assistantDashboard, 'staff-appointment-notifications.js')
+        && str_contains($assistantDashboard, 'StaffAppointmentNotifications?.create')
+        && str_contains($assistantDashboard, 'appointmentNotificationCenter?.observe'),
+    'Dental Assistant dashboard loads and observes the appointment notification center.'
+);
+notificationExpect(
+    !str_contains($assistantDashboard, 'A new appointment was added. The list has been updated.')
+        && !str_contains($assistantDashboard, 'A deposit record changed. The list has been updated.'),
+    'Dental Assistant dashboard no longer uses background-update toasts.'
+);
 
 $markup = file_get_contents($root . '/apps/views/shared/staff-notification-center.php');
 notificationExpect(

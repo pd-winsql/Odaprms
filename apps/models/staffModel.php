@@ -24,6 +24,18 @@ class Staff {
         }
     }
 
+    public function getStaffById(int $staffId) {
+        $stmt = $this->conn->prepare("
+            SELECT s.*, u.email AS user_email
+            FROM staffs s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.staff_id = :staff_id AND u.user_role = 'Dental Assistant'
+            LIMIT 1
+        ");
+        $stmt->execute([':staff_id' => $staffId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
     public function createStaff($firstname, $lastname, $middlename, $gender, $phone, $email, $password) {
         try {
             $this->conn->beginTransaction();
@@ -55,9 +67,10 @@ class Staff {
                 ':phone'      => $phone,
                 ':email'      => $email,
             ]);
+            $staffId = (int) $this->conn->lastInsertId();
 
             $this->conn->commit();
-            return ['success' => true, 'email' => $email];
+            return ['success' => true, 'email' => $email, 'staff_id' => $staffId];
 
         } catch (PDOException $e) {
             $this->conn->rollBack();

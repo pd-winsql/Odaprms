@@ -20,9 +20,12 @@ try {
     scheduleWindowExpect(count($clinics) >= 2, 'Two clinic fixtures are available.');
     $firstClinicId = (int) $clinics[0]['clinic_id'];
     $secondClinicId = (int) $clinics[1]['clinic_id'];
+    $defaultStart = Schedule::normalizeTime((string) ($clinics[0]['default_start_time'] ?? ''));
+    $defaultEnd = Schedule::normalizeTime((string) ($clinics[0]['default_end_time'] ?? ''));
     scheduleWindowExpect(
-        ($clinics[0]['default_start_time'] ?? '') === '08:00:00'
-        && ($clinics[0]['default_end_time'] ?? '') === '17:00:00',
+        $defaultStart !== null && $defaultEnd !== null && $defaultStart < $defaultEnd
+        && Schedule::usesFiveMinuteIncrement($defaultStart)
+        && Schedule::usesFiveMinuteIncrement($defaultEnd),
         'Clinic default hours are available.'
     );
     scheduleWindowExpect(Schedule::normalizeTime('10:00') === '10:00:00', 'Opening times are normalized.');

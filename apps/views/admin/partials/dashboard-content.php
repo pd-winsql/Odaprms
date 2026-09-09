@@ -57,6 +57,7 @@ $onHoldCount = count(array_filter($todayLogbook, static fn($row) => $row['queue_
 $reviewCount = $depositModel->getPendingReviewCount();
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 $csrfToken = $_SESSION['csrf_token'];
+$isAdminQueueView = ($_SESSION['user_role'] ?? '') === 'Admin';
 $dashboardDisplayName = $_SESSION['display_name'] ?? $_SESSION['email'] ?? 'Staff member';
 // The session name may include middle names. Keep only its first and last
 // parts in the dashboard greeting while preserving the full sidebar name.
@@ -135,18 +136,20 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
 <div class="d-flex flex-column gap-4">
     <section class="vd-dashboard-welcome" aria-labelledby="vdDashboardGreeting">
         <div>
-            <span class="vd-dashboard-welcome-kicker">Clinic operations</span>
+            <span class="vd-dashboard-welcome-kicker"><?= $isAdminQueueView ? 'Treatment oversight' : 'Clinic operations' ?></span>
             <h1 class="vd-dashboard-greeting" id="vdDashboardGreeting"
                 data-user-name="<?= htmlspecialchars($dashboardGreetingName, ENT_QUOTES, 'UTF-8') ?>">
                 Today’s overview
             </h1>
-            <p class="vd-dashboard-welcome-copy">Welcome, <?= htmlspecialchars($dashboardGreetingName) ?>. Prioritize the live queue, then review upcoming visits.</p>
+            <p class="vd-dashboard-welcome-copy">Welcome, <?= htmlspecialchars($dashboardGreetingName) ?>. <?= $isAdminQueueView ? 'Monitor today’s treatments and complete billing when needed.' : 'Prioritize the live queue, then review upcoming visits.' ?></p>
         </div>
+        <?php if (!$isAdminQueueView): ?>
         <button type="button" class="btn vd-btn-outline vd-dashboard-review-btn" id="openPaymentsAwaitingReview">
             <i class="ti ti-receipt" aria-hidden="true"></i>
             Payments to review
             <span class="vd-dashboard-review-count"><?= $reviewCount ?></span>
         </button>
+        <?php endif; ?>
     </section>
 
     <div class="vd-stat-grid">
@@ -170,6 +173,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
     <div class="vd-dash-card">
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">Today’s Queue</span><span class="vd-topbar-date"><?= date('F j, Y') ?></span></div>
         <div class="vd-dash-card-body">
+            <?php if (!$isAdminQueueView): ?>
             <div class="d-flex flex-wrap gap-2 mb-4">
                 <div class="vd-queue-search-field flex-grow-1 w-100">
                     <i class="ti ti-search" aria-hidden="true"></i>
@@ -179,6 +183,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                 </div>
                 <button type="button" class="btn vd-btn-gold" id="findCheckinAppointment">Find Appointment</button>
             </div>
+            <?php endif; ?>
             <div class="vd-queue-overview mb-4">
                 <div class="vd-queue-focus vd-queue-focus-current">
                     <span class="vd-queue-kicker">Now treating</span>
@@ -240,7 +245,24 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                                         </div>
                                     </td>
                                     <td class="vd-queue-action-cell">
-                                        <?php if (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
+                                        <?php if ($isAdminQueueView): ?>
+                                            <div class="vd-queue-action-group">
+                                                <button type="button" class="btn vd-btn-outline btn-sm" data-view-patient-details="<?= (int) $entry['patient_id'] ?>">
+                                                    <i class="ti ti-user-search" aria-hidden="true"></i>View details
+                                                </button>
+                                                <?php if ($entry['appointment_status'] === 'In Progress'): ?>
+                                                    <button type="button" class="btn vd-btn-gold btn-sm" data-complete-with-billing
+                                                        data-appointment-id="<?= (int) $entry['appointment_id'] ?>"
+                                                        data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>"
+                                                        data-services="<?= htmlspecialchars($entry['service_name'] ?: 'Service not listed') ?>"
+                                                        data-service-ids="<?= dashboardServiceIdsPayload((int) $entry['appointment_id'], $todayServiceDetails) ?>"
+                                                        data-clinic="<?= htmlspecialchars($entry['clinic_name']) ?>"
+                                                        data-deposit="<?= htmlspecialchars((string) ((float) $entry['verified_deposit'])) ?>">
+                                                        <i class="ti ti-cash-check" aria-hidden="true"></i>Final billing
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php elseif (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
                                             <span class="vd-queue-action-note">Waiting for patient code</span>
                                         <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?>
                                             <button type="button" class="btn vd-btn-outline btn-sm vd-queue-primary-action" data-complete-profile="<?= (int) $entry['patient_id'] ?>" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">Review profile</button>
@@ -249,12 +271,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                                                 <button type="button" class="btn vd-btn-gold btn-sm vd-queue-primary-action" data-visit-status="In Progress" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">
                                                     <i class="ti ti-player-play" aria-hidden="true"></i>Start treatment
                                                 </button>
-                                                <details class="vd-queue-more-actions">
-                                                    <summary title="More queue actions" aria-label="More queue actions"><i class="ti ti-dots" aria-hidden="true"></i></summary>
-                                                    <div class="vd-queue-more-menu">
-                                                        <button type="button" class="btn vd-btn-outline btn-sm" data-queue-action="placeOnHold" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Place on hold</button>
-                                                    </div>
-                                                </details>
+                                                <button type="button" class="btn vd-btn-outline btn-sm vd-queue-secondary-action" data-queue-action="placeOnHold" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Place on hold</button>
                                             </div>
                                         <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['queue_status'] === 'On Hold'): ?>
                                             <button type="button" class="btn vd-btn-outline btn-sm vd-queue-primary-action" data-queue-action="returnToQueue" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Return to queue</button>
@@ -313,6 +330,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
         </div>
     </div>
 
+    <?php if (!$isAdminQueueView): ?>
     <div class="vd-dash-card">
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">Upcoming Appointments</span><span class="vd-topbar-date"><?= count($upcoming) ?> total</span></div>
         <div class="vd-dash-card-body">
@@ -333,6 +351,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
             endif; ?>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
 <div class="modal fade vd-final-billing-modal" id="finalBillingModal" tabindex="-1" aria-labelledby="finalBillingTitle" aria-hidden="true">
@@ -804,6 +823,29 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                     const response = await fetch(`partials/_patient-checkin-form.php?id=${button.dataset.completeProfile}&appointment_id=${button.dataset.appointmentId}`);
                     if (!response.ok) throw new Error('Unable to load patient form.');
                     content.innerHTML = await response.text();
+                    content.querySelectorAll('script').forEach(oldScript => {
+                        const script = document.createElement('script');
+                        script.textContent = oldScript.textContent;
+                        document.body.appendChild(script);
+                        oldScript.remove();
+                    });
+                } catch (error) {
+                    content.innerHTML = `<div class="vd-empty-state">${error.message}</div>`;
+                } finally {
+                    LoadingUI.finishContent(content);
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-view-patient-details]').forEach(button => {
+            button.addEventListener('click', async () => {
+                const content = document.querySelector('.vd-dash-content');
+                LoadingUI.showContent(content, { label: 'Loading patient details…' });
+                try {
+                    const response = await fetch(`partials/_patient-profie.php?id=${encodeURIComponent(button.dataset.viewPatientDetails)}`);
+                    if (!response.ok) throw new Error('Unable to load patient details.');
+                    content.innerHTML = await response.text();
+                    document.getElementById('dashTitle').textContent = 'Patient Details';
                     content.querySelectorAll('script').forEach(oldScript => {
                         const script = document.createElement('script');
                         script.textContent = oldScript.textContent;

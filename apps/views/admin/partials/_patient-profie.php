@@ -15,6 +15,7 @@ $patientModel = new Patient($conn);
 
 $patient_id = $_GET['id'] ?? null;
 $patient    = $patientModel->getPatientFull($patient_id);
+$isAdminViewer = ($_SESSION['user_role'] ?? '') === 'Admin';
 
 if (!$patient) {
     echo '<div class="vd-empty-state">Patient not found.</div>';
@@ -36,7 +37,7 @@ function val($v, $fallback = '—') {
 <!-- Back Button -->
 <div class="mb-3">
     <button class="btn vd-btn-outline vd-back-btn" id="backToPatients">
-        <i class="ti ti-arrow-left me-1"></i> Back to Patients
+        <i class="ti ti-arrow-left me-1"></i> <?= $isAdminViewer ? 'Back to Today’s Queue' : 'Back to Patients' ?>
     </button>
 </div>
 
@@ -346,7 +347,11 @@ function val($v, $fallback = '—') {
     document.getElementById('backToPatients').addEventListener('click', function () {
         // Simulate clicking the Patients nav item to load patient-content.php
         const patientNav = document.querySelector('[data-page="patient-content.php"]');
-        if (patientNav) patientNav.click();
+        if (patientNav) {
+            patientNav.click();
+            return;
+        }
+        document.querySelector('[data-page="dashboard-content.php"]')?.click();
     });
     })();
 </script>

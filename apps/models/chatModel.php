@@ -11,7 +11,7 @@ class ChatModel {
         $stmt = $db->prepare('SELECT user_role FROM users WHERE id = ?');
         $stmt->execute([$userId]);
         $this->role = (string) $stmt->fetchColumn();
-        if (!in_array($this->role, ['Patient', 'Admin', 'Dental Assistant'], true)) {
+        if (!in_array($this->role, ['Patient', 'Dental Assistant'], true)) {
             throw new DomainException('Your account cannot access clinic messages.');
         }
     }

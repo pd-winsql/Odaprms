@@ -3,20 +3,26 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../models/serviceModel.php';
+require_once '../models/auditLogModel.php';
+require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 
 class serviceController {
     private $services;
+    private $auditLog;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->services = new ServiceModel($conn);
+        $this->auditLog = new AuditLog($conn);
     }
 
     private function requireStaff() {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
+        vdRequireDentalAssistantJson();
+        if (!validate_csrf()) {
+            echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
             exit;
         }
     }
@@ -40,6 +46,7 @@ class serviceController {
         $newId = $this->services->addCategory($name, $description, $order);
 
         if ($newId) {
+            $this->auditLog->recordForUser('service_category', (int) $newId, 'service_category_created', "Created service category {$name}.", null, ['name' => $name, 'description' => $description, 'order' => $order], (int) $_SESSION['user_id']);
             echo json_encode(['success' => true, 'message' => 'Category added.', 'category_id' => $newId]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to add category.']);
@@ -60,7 +67,9 @@ class serviceController {
             exit;
         }
 
+        $old = $this->services->getCategoryById($id);
         $result = $this->services->updateCategory($id, $name, $description, $order);
+        if ($result) $this->auditLog->recordForUser('service_category', (int) $id, 'service_category_updated', "Updated service category {$name}.", $old ?: null, ['name' => $name, 'description' => $description, 'order' => $order], (int) $_SESSION['user_id']);
 
         echo json_encode($result
             ? ['success' => true, 'message' => 'Category updated.']
@@ -70,7 +79,9 @@ class serviceController {
 
     public function deleteCategory($id) {
         $this->requireStaff();
+        $old = $this->services->getCategoryById($id);
         $result = $this->services->deleteCategory($id);
+        if ($result && $old) $this->auditLog->recordForUser('service_category', (int) $id, 'service_category_deleted', 'Deleted service category ' . $old['category_name'] . '.', $old, null, (int) $_SESSION['user_id']);
         echo json_encode($result
             ? ['success' => true, 'message' => 'Category deleted.']
             : ['success' => false, 'message' => 'Failed to delete category.']);
@@ -110,6 +121,8 @@ class serviceController {
             exit;
         }
 
+        $this->auditLog->recordForUser('service', (int) $newId, 'service_created', "Created service {$name}.", null, ['name' => $name, 'description' => $description, 'icon' => $icon, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
+
         echo json_encode(['success' => true, 'message' => 'Service added.', 'service_id' => $newId]);
         exit;
     }
@@ -130,6 +143,7 @@ class serviceController {
             exit;
         }
 
+        $old = $this->services->getServiceById($id);
         $result = $this->services->updateService(
             $id,
             $name,
@@ -139,6 +153,7 @@ class serviceController {
             $isActive,
             $order
         );
+        if ($result) $this->auditLog->recordForUser('service', (int) $id, 'service_updated', "Updated service {$name}.", $old ?: null, ['name' => $name, 'description' => $description, 'icon' => $icon, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
 
         echo json_encode($result
             ? ['success' => true, 'message' => 'Service updated.']
@@ -148,7 +163,9 @@ class serviceController {
 
     public function deleteService($id) {
         $this->requireStaff();
+        $old = $this->services->getServiceById($id);
         $result = $this->services->deleteService($id);
+        if ($result && $old) $this->auditLog->recordForUser('service', (int) $id, 'service_deleted', 'Deleted service ' . $old['service_name'] . '.', $old, null, (int) $_SESSION['user_id']);
         echo json_encode($result
             ? ['success' => true, 'message' => 'Service deleted.']
             : ['success' => false, 'message' => 'Failed to delete service.']);
@@ -213,6 +230,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->addService();
     } elseif ($action === 'updateService') {
         $controller->updateService();
+    } elseif ($action === 'deleteCategory') {
+        $controller->deleteCategory($_POST['id'] ?? null);
+    } elseif ($action === 'deleteService') {
+        $controller->deleteService($_POST['id'] ?? null);
     } else {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Unknown action.']);
@@ -221,13 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action     = $_GET['action'] ?? '';
     $controller = new serviceController();
 
-    if ($action === 'deleteCategory') {
-        $id = $_GET['id'] ?? null;
-        if ($id) $controller->deleteCategory($id);
-    } elseif ($action === 'deleteService') {
-        $id = $_GET['id'] ?? null;
-        if ($id) $controller->deleteService($id);
-    } elseif ($action === 'bookingServices') {
+    if ($action === 'bookingServices') {
         $controller->bookingServices();
     } else {
         header('Content-Type: application/json');

@@ -17,6 +17,7 @@ $billings = new BillingModel($conn);
 $appointmentIds = [];
 $patientIds = [];
 $createdScheduleId = null;
+$initialOperationsFeedVersion = $appointments->getStaffOperationsFeedVersion();
 
 try {
     $serviceId = (int) $conn->query('SELECT service_id FROM services WHERE is_active = 1 ORDER BY service_id LIMIT 1')->fetchColumn();
@@ -80,6 +81,10 @@ try {
         ]);
     }
 
+    queueExpect(
+        $appointments->getStaffOperationsFeedVersion() !== $initialOperationsFeedVersion,
+        'The staff operations feed detects new entries in today\'s queue.'
+    );
     queueExpect((int) $logbook->getNextPatient()['appointment_id'] === $appointmentIds[0], 'Earliest eligible arrival is selected as next patient.');
     $preexistingActive = (int) $conn->query("SELECT COUNT(*) FROM appointments WHERE status = 'In Progress'")->fetchColumn() > 0;
     $outOfOrder = $appointments->updateAppointmentStatus($appointmentIds[1], 'In Progress', $staffId);
@@ -91,7 +96,12 @@ try {
         'A later patient cannot bypass the queue. Result: ' . json_encode($outOfOrder)
     );
 
+    $queueFeedVersion = $appointments->getStaffOperationsFeedVersion();
     queueExpect($logbook->placeOnHold($appointmentIds[0], $staffId, 'Patient is currently outside.')['success'], 'The next patient can be placed on hold with a reason.');
+    queueExpect(
+        $appointments->getStaffOperationsFeedVersion() !== $queueFeedVersion,
+        'The staff operations feed detects queue-order changes.'
+    );
     queueExpect((int) $logbook->getNextPatient()['appointment_id'] === $appointmentIds[1], 'Placing a patient on hold advances the next ready patient.');
     queueExpect($logbook->returnToQueue($appointmentIds[0], $staffId)['success'], 'An on-hold patient can return to the queue.');
     queueExpect((int) $logbook->getNextPatient()['appointment_id'] === $appointmentIds[1], 'Returning places the patient at the end of the normal queue.');
@@ -109,8 +119,13 @@ try {
         queueExpect(!$parallelStart['success'] && str_contains($parallelStart['message'], 'current patient'), 'A second treatment cannot start while one patient is in progress.');
         $directCompletion = $appointments->updateAppointmentStatus($appointmentIds[2], 'Completed', $staffId);
         queueExpect(!$directCompletion['success'], 'Treatment cannot be completed without final billing.');
+        $billingFeedVersion = $appointments->getStaffOperationsFeedVersion();
         $settled = $billings->settleAndCompleteVisit($appointmentIds[2], 0, 0, $staffId, '', [$serviceId]);
         queueExpect($settled['success'], 'Final billing completes treatment and releases the queue for the next patient.');
+        queueExpect(
+            $appointments->getStaffOperationsFeedVersion() !== $billingFeedVersion,
+            'The staff operations feed detects completed billing.'
+        );
     }
 } finally {
     foreach (array_reverse($appointmentIds) as $appointmentId) {

@@ -2,18 +2,22 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../models/scheduleModel.php';
 require_once '../models/clinicModel.php';
+require_once '../models/auditLogModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 require_once '../../config/conn.php';
 
 class ScheduleController {
     private $schedules;
     private $clinics;
+    private $auditLog;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->schedules = new Schedule($conn);
         $this->clinics = new Clinic($conn);
+        $this->auditLog = new AuditLog($conn);
     }
 
     private function conflictMessage(array $conflict, int $clinicId): string {
@@ -45,10 +49,7 @@ class ScheduleController {
     }
 
     private function requireStaffMutation(): void {
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-            http_response_code(403);
-            exit('Forbidden.');
-        }
+        vdRequireDentalAssistantJson();
         if (!validate_csrf()) {
             http_response_code(419);
             exit('Your session expired. Refresh and try again.');
@@ -149,6 +150,9 @@ class ScheduleController {
 
         $result = $this->schedules->addSchedules($clinicId, $schedules);
         if ($result['success'] ?? false) {
+            foreach ($result['schedule_ids'] ?? [] as $index => $scheduleId) {
+                $this->auditLog->recordForUser('schedule', (int) $scheduleId, 'schedule_created', 'Created a clinic schedule.', null, ['clinic_id' => $clinicId] + ($schedules[$index] ?? []), (int) $_SESSION['user_id']);
+            }
             echo 'success';
         } elseif (!empty($result['conflict'])) {
             echo $this->conflictMessage($result['conflict'], $clinicId);
@@ -178,9 +182,11 @@ class ScheduleController {
             exit;
         }
 
+        $old = $this->schedules->getScheduleById($schedule_id);
         $result = $this->schedules->deleteSchedule($schedule_id);
 
         if ($result) {
+            if ($old) $this->auditLog->recordForUser('schedule', (int) $schedule_id, 'schedule_deleted', 'Deleted a clinic schedule.', $old, null, (int) $_SESSION['user_id']);
             echo 'success';
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to delete schedule.']);
@@ -223,6 +229,7 @@ class ScheduleController {
             exit;
         }
 
+        $old = $this->schedules->getScheduleById($scheduleId);
         $result = $this->schedules->updateScheduleWindow(
             $scheduleId,
             $clinicId,
@@ -233,6 +240,13 @@ class ScheduleController {
         );
         if (!empty($result['conflict'])) {
             $result['message'] = $this->conflictMessage($result['conflict'], $clinicId);
+        }
+        if (($result['success'] ?? false) && $old) {
+            $this->auditLog->recordForUser('schedule', $scheduleId, 'schedule_updated', 'Updated a clinic schedule.', $old, [
+                'clinic_id' => $clinicId, 'sched_date' => $schedDate,
+                'start_time' => $window['start_time'], 'end_time' => $window['end_time'],
+                'max_appointments' => $maxAppointments,
+            ], (int) $_SESSION['user_id']);
         }
         echo json_encode($result);
         exit;
@@ -262,11 +276,13 @@ class ScheduleController {
             exit;
         }
 
+        $old = $this->schedules->getScheduleById($schedule_id);
         $result = $this->schedules->updateMaxAppointments(
             $schedule_id,
             $max_appointments
         );
 
+        if ($result && $old) $this->auditLog->recordForUser('schedule', (int) $schedule_id, 'schedule_capacity_updated', 'Updated schedule capacity.', ['max_appointments' => (int) $old['max_appointments']], ['max_appointments' => $max_appointments], (int) $_SESSION['user_id']);
         echo $result ? 'success' : 'error';
         exit;
     }

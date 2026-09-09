@@ -3,9 +3,10 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../../config/conn.php';
 require_once '../models/billingModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
+if (!vdCanPerformBilling()) {
     echo json_encode(['success' => false, 'message' => 'Forbidden.']); exit;
 }
 if (!validate_csrf()) {

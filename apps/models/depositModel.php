@@ -514,34 +514,153 @@ class DepositModel {
     }
 
     public function transferDeposit(int $sourceAppointmentId, int $targetAppointmentId, int $userId, string $reason): array {
-        if($sourceAppointmentId===$targetAppointmentId)return ['success'=>false,'message'=>'Choose a different original appointment.'];
-        try{$this->conn->beginTransaction();
-            $stmt=$this->conn->prepare("SELECT d.deposit_id,d.amount,d.status FROM appointment_deposits d WHERE d.appointment_id=:id FOR UPDATE");$stmt->execute([':id'=>$sourceAppointmentId]);$source=$stmt->fetch(PDO::FETCH_ASSOC);
-            $stmt->execute([':id'=>$targetAppointmentId]);$target=$stmt->fetch(PDO::FETCH_ASSOC);
-            $targetStatus=$this->conn->prepare('SELECT status FROM appointments WHERE appointment_id=:id FOR UPDATE');$targetStatus->execute([':id'=>$targetAppointmentId]);$appointmentStatus=$targetStatus->fetchColumn();
-            if(!$source||!in_array($source['status'],['Verified','For Refund'],true)||!$target||$appointmentStatus!=='Awaiting Deposit'){ $this->conn->rollBack();return ['success'=>false,'message'=>'The original deposit or new appointment is not eligible for transfer.']; }
-            $code=$this->generateAppointmentCode();
-            $this->conn->prepare("UPDATE appointment_deposits SET status='Transferred',transferred_by_user_id=:user,transferred_at=NOW(),transfer_reason=:reason WHERE deposit_id=:id")->execute([':user'=>$userId,':reason'=>trim($reason)?:'Transferred to a newly accepted appointment.',':id'=>$source['deposit_id']]);
-            $this->conn->prepare("UPDATE appointment_deposits SET status='Verified',amount=:amount,verified_by_user_id=:user,verified_at=NOW(),transferred_from_appointment_id=:source,transferred_by_user_id=:user2,transferred_at=NOW(),transfer_reason=:reason WHERE deposit_id=:id")->execute([':amount'=>$source['amount'],':user'=>$userId,':source'=>$sourceAppointmentId,':user2'=>$userId,':reason'=>trim($reason)?:'Transferred from prior appointment.',':id'=>$target['deposit_id']]);
-            $this->conn->prepare("UPDATE appointments SET status='Confirmed',confirmed_at=NOW(),appointment_code=:code,code_generated_at=NOW() WHERE appointment_id=:id")->execute([':code'=>$code,':id'=>$targetAppointmentId]);
-            $actor=$this->auditLog->getUserActor($userId);$audit=$this->auditLog->record('appointment',$targetAppointmentId,'deposit_transferred',"Transferred a verified deposit from appointment #{$sourceAppointmentId}.",null,['source_appointment_id'=>$sourceAppointmentId,'appointment_code'=>$code],$actor);
+        $reason = trim($reason);
+        if ($sourceAppointmentId === $targetAppointmentId) {
+            return ['success' => false, 'message' => 'Choose a different original appointment.'];
+        }
+        if (strlen($reason) < 3 || strlen($reason) > 255) {
+            return ['success' => false, 'message' => 'Enter a short transfer reason.'];
+        }
 
-            // A transferred deposit confirms the target appointment, so its
-            // check-in code is queued just like a normally verified payment.
-            $notification=$this->emailNotifications->enqueueAppointmentTemplate(
+        try {
+            $this->conn->beginTransaction();
+            $stmt = $this->conn->prepare("
+                SELECT a.appointment_id, a.patient_id, a.status AS appointment_status,
+                       d.deposit_id, d.amount, d.status AS deposit_status
+                FROM appointments a
+                JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
+                WHERE a.appointment_id IN (?, ?)
+                ORDER BY a.appointment_id
+                FOR UPDATE
+            ");
+            $stmt->execute([$sourceAppointmentId, $targetAppointmentId]);
+            $appointments = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $appointments[(int) $row['appointment_id']] = $row;
+            }
+            $source = $appointments[$sourceAppointmentId] ?? null;
+            $target = $appointments[$targetAppointmentId] ?? null;
+
+            if (!$source || !$target) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'The original deposit or new appointment was not found.'];
+            }
+            if ((int) $source['patient_id'] !== (int) $target['patient_id']) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'Deposits can only be transferred between appointments for the same patient.'];
+            }
+            if ($source['appointment_status'] !== 'Cancelled' || $source['deposit_status'] !== 'For Refund') {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'Cancel the original confirmed appointment before transferring its deposit.'];
+            }
+            if ($target['appointment_status'] !== 'Awaiting Deposit' || !in_array($target['deposit_status'], ['Awaiting Submission', 'Rejected'], true)) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'The replacement appointment must be accepted and awaiting its deposit.'];
+            }
+
+            $actor = $this->auditLog->getUserActor($userId);
+            if (!$actor) throw new RuntimeException('Staff account not found.');
+            $code = $this->generateAppointmentCode();
+
+            $this->conn->prepare("
+                UPDATE appointment_deposits
+                SET status = 'Transferred', transferred_by_user_id = :user,
+                    transferred_at = NOW(), transfer_reason = :reason
+                WHERE deposit_id = :id
+            ")->execute([':user' => $userId, ':reason' => $reason, ':id' => $source['deposit_id']]);
+            $this->conn->prepare("
+                UPDATE appointment_deposits
+                SET status = 'Verified', amount = :amount,
+                    verified_by_user_id = :user, verified_at = NOW(),
+                    transferred_from_appointment_id = :source,
+                    transferred_by_user_id = :user2, transferred_at = NOW(),
+                    transfer_reason = :reason,
+                    rejection_reason = NULL, resubmission_deadline_at = NULL
+                WHERE deposit_id = :id
+            ")->execute([
+                ':amount' => $source['amount'], ':user' => $userId,
+                ':source' => $sourceAppointmentId, ':user2' => $userId,
+                ':reason' => $reason, ':id' => $target['deposit_id'],
+            ]);
+            $this->conn->prepare("
+                UPDATE appointments
+                SET status = 'Confirmed', confirmed_at = NOW(),
+                    appointment_code = :code, code_generated_at = NOW()
+                WHERE appointment_id = :id
+            ")->execute([':code' => $code, ':id' => $targetAppointmentId]);
+
+            $this->auditLog->record(
+                'appointment', $sourceAppointmentId, 'deposit_transferred_out',
+                "Transferred the deposit to replacement appointment #{$targetAppointmentId}.",
+                ['deposit_status' => 'For Refund'],
+                ['deposit_status' => 'Transferred', 'target_appointment_id' => $targetAppointmentId, 'reason' => $reason],
+                $actor
+            );
+            $audit = $this->auditLog->record(
+                'appointment', $targetAppointmentId, 'deposit_transferred',
+                "Transferred the deposit from cancelled appointment #{$sourceAppointmentId}.",
+                ['status' => 'Awaiting Deposit', 'deposit_status' => $target['deposit_status']],
+                ['status' => 'Confirmed', 'deposit_status' => 'Verified', 'source_appointment_id' => $sourceAppointmentId, 'appointment_code' => $code, 'reason' => $reason],
+                $actor
+            );
+
+            $notification = $this->emailNotifications->enqueueAppointmentTemplate(
                 $targetAppointmentId,
                 'appointment_confirmed_code',
                 $code,
-                'audit:'.$audit['audit_log_id'].':appointment_confirmed_code'
+                'audit:' . $audit['audit_log_id'] . ':appointment_confirmed_code'
             );
 
-            $this->conn->commit();return ['success'=>true,'message'=>'Deposit transferred and the new appointment confirmed.','appointment_code'=>$code,'deposit_id'=>(int)$target['deposit_id'],'deposit_status'=>'Verified','appointment'=>['id'=>$targetAppointmentId,'status'=>'Confirmed'],'notification'=>$notification,'audit'=>['performed_by_name'=>$actor['name'],'performed_by_role'=>$actor['role'],'performed_at'=>$audit['performed_at']]];
-        }catch(Throwable $e){if($this->conn->inTransaction())$this->conn->rollBack();error_log('transferDeposit error: '.$e->getMessage());return ['success'=>false,'message'=>'Unable to transfer the deposit.'];}
+            $this->conn->commit();
+            return [
+                'success' => true,
+                'message' => 'Deposit transferred and the replacement appointment confirmed.',
+                'appointment_code' => $code,
+                'deposit_id' => (int) $target['deposit_id'],
+                'deposit_status' => 'Verified',
+                'appointment' => ['id' => $targetAppointmentId, 'status' => 'Confirmed'],
+                'notification' => $notification,
+                'audit' => [
+                    'performed_by_name' => $actor['name'],
+                    'performed_by_role' => $actor['role'],
+                    'performed_at' => $audit['performed_at'],
+                ],
+            ];
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('transferDeposit error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to transfer the deposit.'];
+        }
     }
 
     public function markRefunded(int $appointmentId, int $userId, string $notes=''): array {
-        $stmt=$this->conn->prepare("UPDATE appointment_deposits SET status='Refunded',refunded_by_user_id=:user,refunded_at=NOW(),refund_notes=:notes WHERE appointment_id=:appointment AND status='For Refund'");
-        $stmt->execute([':user'=>$userId,':notes'=>trim($notes)?:null,':appointment'=>$appointmentId]);
-        return $stmt->rowCount()?['success'=>true,'message'=>'Manual refund recorded.']:['success'=>false,'message'=>'No deposit is currently marked For Refund.'];
+        try {
+            $this->conn->beginTransaction();
+            $stmt = $this->conn->prepare("SELECT deposit_id,amount,status FROM appointment_deposits WHERE appointment_id=:appointment AND status='For Refund' FOR UPDATE");
+            $stmt->execute([':appointment' => $appointmentId]);
+            $deposit = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$deposit) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'No deposit is currently marked For Refund.'];
+            }
+            $actor = $this->auditLog->getUserActor($userId);
+            if (!$actor) throw new RuntimeException('Staff account not found.');
+            $notes = trim($notes);
+            $this->conn->prepare("UPDATE appointment_deposits SET status='Refunded',refunded_by_user_id=:user,refunded_at=NOW(),refund_notes=:notes WHERE deposit_id=:id")
+                ->execute([':user' => $userId, ':notes' => $notes ?: null, ':id' => $deposit['deposit_id']]);
+            $this->auditLog->record(
+                'appointment', $appointmentId, 'deposit_refunded',
+                "Recorded the manual deposit refund for appointment #{$appointmentId}.",
+                ['deposit_status' => 'For Refund', 'amount' => (float) $deposit['amount']],
+                ['deposit_status' => 'Refunded', 'amount' => (float) $deposit['amount'], 'notes' => $notes],
+                $actor
+            );
+            $this->conn->commit();
+            return ['success' => true, 'message' => 'Manual refund recorded.'];
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('markRefunded error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to record the refund.'];
+        }
     }
 }

@@ -163,10 +163,10 @@ function depositStatusClass($status) {
                                             </div>
                                         </div>
                                         <p class="vd-receipt-review-note">Review these details before submitting. You may correct anything that was read incorrectly.</p>
+                                        <div class="alert alert-danger d-none depositError" role="alert" aria-live="assertive"></div>
                                         <button type="submit" class="btn vd-btn-gold w-100">Submit for Verification</button>
                                     </div>
                                 </div>
-                                <div class="alert alert-danger d-none depositError"></div>
                             </form>
                         </div>
                     </div>
@@ -255,6 +255,11 @@ function depositStatusClass($status) {
             event.preventDefault();
             const button = form.querySelector('button[type="submit"]');
             const errorBox = form.querySelector('.depositError');
+            form.querySelectorAll('.is-invalid').forEach(field => {
+                field.classList.remove('is-invalid');
+                field.setAttribute('aria-invalid', 'false');
+            });
+            errorBox.textContent = '';
             errorBox.classList.add('d-none');
             LoadingUI.setButton(button, true, 'Uploading…');
             try {
@@ -263,12 +268,29 @@ function depositStatusClass($status) {
                     body: new FormData(form)
                 });
                 const result = await response.json();
-                if (!result.success) throw new Error(result.message || 'Submission failed.');
+                if (!response.ok || !result.success) throw new Error(result.message || 'Submission failed.');
                 window.showToast(result.message, true);
                 document.querySelector('[data-page="billing-content.php"]')?.click();
             } catch (error) {
-                errorBox.textContent = error.message || 'Unable to submit the receipt.';
+                const message = error.message || 'Unable to submit the receipt.';
+                const fieldRules = [
+                    { pattern: /reference number/i, name: 'gcash_reference' },
+                    { pattern: /amount/i, name: 'receipt_amount' },
+                    { pattern: /transaction date|future/i, name: 'gcash_transaction_at' }
+                ];
+                const matchedRule = fieldRules.find(rule => rule.pattern.test(message));
+                const invalidField = matchedRule ? form.elements.namedItem(matchedRule.name) : null;
+
+                errorBox.textContent = message;
                 errorBox.classList.remove('d-none');
+                window.showToast?.(message, false, 7000);
+
+                if (invalidField instanceof HTMLElement) {
+                    invalidField.classList.add('is-invalid');
+                    invalidField.setAttribute('aria-invalid', 'true');
+                    invalidField.focus({ preventScroll: true });
+                    invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 LoadingUI.setButton(button, false);
             }
         });

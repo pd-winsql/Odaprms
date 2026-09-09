@@ -1,26 +1,29 @@
 <?php
 require_once '../models/staffModel.php';
+require_once '../models/auditLogModel.php';
 require_once '../../config/conn.php';
 require_once '../../config/mailer.php';
+require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 
 session_start();
 
 class StaffController {
     private $staffModel;
+    private $auditLog;
 
     public function __construct() {
         $db   = new Database();
         $conn = $db->connect();
         $this->staffModel = new Staff($conn);
+        $this->auditLog = new AuditLog($conn);
     }
 
     public function create() {
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
-            exit;
-        }
+        vdRequireAdminJson();
+        if (!validate_csrf()) { echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']); exit; }
 
         $firstname  = trim($_POST['firstname']  ?? '');
         $lastname   = trim($_POST['lastname']   ?? '');
@@ -43,6 +46,7 @@ class StaffController {
         $result = $this->staffModel->createStaff($firstname, $lastname, $middlename, $gender, $phone, $email, $password);
 
         if ($result['success']) {
+            $this->auditLog->recordForUser('staff', (int) $result['staff_id'], 'staff_account_created', "Created dental assistant account for {$firstname} {$lastname}.", null, ['email' => $email, 'phone' => $phone, 'employment_status' => 'Active'], (int) $_SESSION['user_id']);
             $message = 'Account created successfully.';
 
             $emailResult = sendStaffAccountEmail($email, "$firstname $lastname", $password);
@@ -69,10 +73,8 @@ class StaffController {
     public function update() {
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
-            exit;
-        }
+        vdRequireAdminJson();
+        if (!validate_csrf()) { echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']); exit; }
 
         $staff_id = $_POST['staff_id'] ?? '';
         $phone    = trim($_POST['phone'] ?? '');
@@ -88,7 +90,9 @@ class StaffController {
             exit;
         }
 
+        $old = $this->staffModel->getStaffById((int) $staff_id);
         $result = $this->staffModel->updateStaff($staff_id, $phone, $email);
+        if ($result && $old) $this->auditLog->recordForUser('staff', (int) $staff_id, 'staff_account_updated', 'Updated a dental assistant account.', ['phone' => $old['phone_number'], 'email' => $old['email']], ['phone' => $phone, 'email' => $email], (int) $_SESSION['user_id']);
 
         echo json_encode([
             'success' => $result,
@@ -100,10 +104,8 @@ class StaffController {
     public function toggleStatus() {
         header('Content-Type: application/json');
 
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized.']);
-            exit;
-        }
+        vdRequireAdminJson();
+        if (!validate_csrf()) { echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']); exit; }
 
         $staff_id = $_POST['staff_id'] ?? '';
 
@@ -112,7 +114,10 @@ class StaffController {
             exit;
         }
 
+        $old = $this->staffModel->getStaffById((int) $staff_id);
         $result = $this->staffModel->toggleStatus($staff_id);
+        $updated = $result ? $this->staffModel->getStaffById((int) $staff_id) : null;
+        if ($result && $old && $updated) $this->auditLog->recordForUser('staff', (int) $staff_id, 'staff_status_updated', 'Changed a dental assistant account status.', ['employment_status' => $old['employment_status']], ['employment_status' => $updated['employment_status']], (int) $_SESSION['user_id']);
 
         echo json_encode([
             'success' => $result,

@@ -5,14 +5,12 @@ require_once '../../config/conn.php';
 require_once '../models/logbookModel.php';
 require_once '../models/appointmentModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 
 header('Content-Type: application/json');
 
 // Allows only authorized staff to use logbook actions.
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-    echo json_encode(['success' => false, 'message' => 'Forbidden.']);
-    exit;
-}
+vdRequireDentalAssistantJson();
 
 // Rejects requests with an invalid or expired CSRF token.
 if (!validate_csrf()) {

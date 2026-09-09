@@ -3,6 +3,7 @@ require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../models/userModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 require_once '../support/MedicalQuestionnaire.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -27,7 +28,7 @@ class PatientController {
             exit;
         }
 
-        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+        if (($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
             header('Location: ../admin/dashboard.php');
             exit;
         }
@@ -38,6 +39,12 @@ class PatientController {
 
     public function saveDentalForm() {
         header('Content-Type: application/json');
+
+        vdRequireDentalAssistantJson();
+        if (!validate_csrf()) {
+            echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
+            exit;
+        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
@@ -289,10 +296,7 @@ class PatientController {
 
     public function completeProfileByStaff() {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
-            exit;
-        }
+        vdRequireDentalAssistantJson();
         if (!validate_csrf()) {
             echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
             exit;
@@ -391,7 +395,7 @@ class PatientController {
 
     public function authorizeAccountLink() {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin','Dental Assistant'], true)) { echo json_encode(['success'=>false,'message'=>'Forbidden.']); exit; }
+        vdRequireDentalAssistantJson();
         if (!validate_csrf()) { echo json_encode(['success'=>false,'message'=>'Your session expired. Refresh and try again.']); exit; }
         echo json_encode($this->patients->authorizeAccountLink((int)($_POST['patient_id'] ?? 0), trim($_POST['email'] ?? ''), (int)$_SESSION['user_id'])); exit;
     }

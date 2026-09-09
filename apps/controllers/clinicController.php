@@ -3,15 +3,19 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../models/clinicModel.php';
+require_once '../models/auditLogModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 
 class clinicController {
     private $clinics;
+    private $auditLog;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->clinics = new Clinic($conn);
+        $this->auditLog = new AuditLog($conn);
     }
 
     private function json(array $payload): void {
@@ -21,9 +25,7 @@ class clinicController {
     }
 
     private function requireStaffPost(): void {
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-            $this->json(['success' => false, 'message' => 'Forbidden.']);
-        }
+        vdRequireDentalAssistantJson();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['success' => false, 'message' => 'Invalid request method.']);
         }
@@ -81,6 +83,9 @@ class clinicController {
         if (!$clinicId) {
             $this->json(['success' => false, 'message' => 'Failed to add clinic.']);
         }
+        $this->auditLog->recordForUser('clinic', $clinicId, 'clinic_created', "Created clinic {$name}.", null, [
+            'name' => $name, 'address' => $address, 'embed_url' => $embedUrl,
+        ], (int) $_SESSION['user_id']);
         $this->json(['success' => true, 'message' => 'Clinic added successfully.', 'clinic_id' => $clinicId]);
     }
 
@@ -105,6 +110,11 @@ class clinicController {
         $result = $this->clinics->updateClinic($id, $name, $address, $embedUrl);
 
         if ($result) {
+            $this->auditLog->recordForUser('clinic', (int) $id, 'clinic_updated', "Updated clinic {$name}.", [
+                'name' => $existingClinic['clinic_name'],
+                'address' => $existingClinic['clinic_address'],
+                'embed_url' => $existingClinic['embed_url'] ?? null,
+            ], ['name' => $name, 'address' => $address, 'embed_url' => $embedUrl], (int) $_SESSION['user_id']);
             $this->json([
                 'success' => true,
                 'message' => 'Clinic updated successfully.',

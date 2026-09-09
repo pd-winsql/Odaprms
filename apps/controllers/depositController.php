@@ -6,6 +6,7 @@ require_once '../../config/conn.php';
 require_once '../models/depositModel.php';
 require_once '../models/patientModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 require_once '../support/GcashReceiptOcr.php';
 
 class DepositController {
@@ -27,9 +28,7 @@ class DepositController {
     }
 
     private function requireStaff(): int {
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-            $this->json(['success' => false, 'message' => 'Forbidden.']);
-        }
+        vdRequireDentalAssistantJson();
         return (int) $_SESSION['user_id'];
     }
 

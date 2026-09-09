@@ -4,6 +4,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 require_once '../helpers/paymentSettings.php';
 require_once '../../config/mailer.php';
 
@@ -19,10 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['action'] ?? '') !== 'deliv
     notificationJson(['success' => false, 'message' => 'Invalid request.']);
 }
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-    http_response_code(403);
-    notificationJson(['success' => false, 'message' => 'Forbidden.']);
-}
+vdRequireDentalAssistantJson();
 
 if (!validate_csrf()) {
     http_response_code(419);

@@ -1747,16 +1747,22 @@ button.vd-stat-card {
 .vd-queue-search-field > i {
     position: absolute;
     top: 50%;
-    left: 15px;
+    left: 14px;
     z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     color: #948772;
     font-size: 18px;
+    line-height: 1;
     pointer-events: none;
     transform: translateY(-50%);
     transition: color 0.16s ease;
 }
-.vd-queue-search-field .vd-input {
-    padding-left: 44px;
+.vd-queue-search-field .form-control.vd-input {
+    padding-left: 46px !important;
 }
 .vd-queue-search-field:focus-within > i {
     color: var(--gold);
@@ -3482,35 +3488,96 @@ button.vd-stat-card {
     padding: 12px 14px;
     align-items: center;
 }
+.vd-service-filter-bar > label {
+    flex: 1;
+    min-width: 180px;
+}
 .vd-service-filter-bar input,
 .vd-service-filter-bar select {
-    flex: 1;
-    min-width: 140px;
+    width: 100%;
 }
 .vd-service-count {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--mid);
     white-space: nowrap;
 }
 
-.vd-service-category-group-title {
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--mid);
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
-    margin-bottom: 12px;
+.vd-service-management-card {
+    overflow: hidden;
 }
 
-.vd-service-card-header {
-    cursor: pointer;
+.vd-service-management-card .vd-dash-card-title {
+    font-size: 14px;
 }
+
+.vd-service-management-card .vd-btn-gold {
+    font-size: 13px;
+}
+
+.vd-service-list-filters {
+    background: var(--gold-pale);
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 14px 22px;
+}
+
+.vd-service-search-field {
+    position: relative;
+}
+
+.vd-service-search-field > i {
+    color: #948772;
+    font-size: 19px;
+    left: 14px;
+    line-height: 1;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.vd-service-search-field .vd-input {
+    padding-left: 42px !important;
+}
+
+.vd-service-search-field:focus-within > i {
+    color: var(--gold);
+}
+
+.vd-service-list {
+    background: var(--white-bg);
+}
+
+.vd-service-category-group + .vd-service-category-group {
+    border-top: 1px solid var(--border);
+}
+
+.vd-service-category-heading {
+    align-items: center;
+    background: rgba(181, 146, 76, 0.08);
+    color: var(--dark);
+    display: flex;
+    font-size: 12.5px;
+    font-weight: 600;
+    justify-content: space-between;
+    letter-spacing: 0.14em;
+    padding: 9px 22px;
+    text-transform: uppercase;
+}
+
+.vd-service-category-count {
+    color: var(--mid);
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: none;
+}
+
 .vd-service-status-badge {
-    font-size: 10px;
+    font-size: 12.5px;
     border-radius: 10px;
-    padding: 2px 10px;
+    padding: 3px 10px;
 }
 .vd-status-active {
     background: #eaf3de;
@@ -3521,27 +3588,6 @@ button.vd-stat-card {
     background: #f1efe8;
     color: #5f5e5a;
     border: 1px solid #d3d1c7;
-}
-
-.vd-service-collapsed .vd-dash-card-body {
-    display: none;
-}
-
-.vd-service-icon-col {
-    width: 90px;
-    flex-shrink: 0;
-}
-.vd-service-icon-preview {
-    width: 52px;
-    height: 52px;
-    border-radius: 8px;
-    border: 1px dashed var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gold);
-    font-size: 20px;
-    margin: 0 auto;
 }
 
 .vd-chip-group {
@@ -3604,7 +3650,7 @@ button.vd-stat-card {
     border: none;
     background: transparent;
     color: var(--mid);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 500;
     letter-spacing: 0.06em;
     padding: 7px 20px;
@@ -3632,17 +3678,18 @@ button.vd-stat-card {
     border-bottom: none;
 }
 .vd-category-list-name {
-    font-size: 13px;
+    font-size: 15.5px;
     font-weight: 500;
     color: var(--dark);
 }
 .vd-category-list-desc {
-    font-size: 11.5px;
+    font-size: 13.5px;
     color: var(--mid);
+    line-height: 1.45;
     margin-top: 2px;
 }
 .vd-order-badge {
-    font-size: 10px;
+    font-size: 12.5px;
     color: var(--mid);
     background: var(--gold-pale);
     border: 1px solid var(--border);
@@ -3651,10 +3698,10 @@ button.vd-stat-card {
     white-space: nowrap;
 }
 
-/* Read-only service summary cards */
+/* Compact service rows */
 .vd-service-summary-icon {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 10px;
     background: var(--gold-pale);
     color: var(--gold);
@@ -3664,10 +3711,95 @@ button.vd-stat-card {
     font-size: 19px;
     flex-shrink: 0;
 }
-.vd-service-summary-desc {
-    font-size: 11.5px;
-    color: var(--mid);
-    margin-top: 3px;
+.vd-service-list-row {
+    background: transparent;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin: 0 !important;
+    min-height: 84px;
+    transition: background-color 0.15s ease;
+}
+
+.vd-service-list-row:hover {
+    background: rgba(181, 146, 76, 0.045);
+}
+
+.vd-service-list-main {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    min-width: 0;
+}
+
+.vd-service-list-copy {
+    min-width: 0;
+}
+
+.vd-service-list-copy .vd-category-list-desc {
+    max-width: 760px;
+}
+
+.vd-service-list-meta {
+    align-items: center;
+    display: grid;
+    flex: 0 0 auto;
+    gap: 10px;
+    grid-template-columns: 70px 76px 97px;
+}
+
+.vd-service-list-meta > .vd-service-status-badge,
+.vd-service-list-meta > .vd-order-badge {
+    justify-self: center;
+}
+
+@media (max-width: 767px) {
+    .vd-service-list-row {
+        align-items: flex-start;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vd-service-list-main,
+    .vd-service-list-meta {
+        width: 100%;
+    }
+
+    .vd-service-list-meta {
+        display: flex;
+        padding-left: 62px;
+    }
+
+    .vd-service-actions {
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 575px) {
+    .vd-service-list-filters > label {
+        flex-basis: 100%;
+    }
+
+    .vd-service-category-heading,
+    .vd-service-list-row {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .vd-service-list-meta {
+        flex-wrap: wrap;
+        padding-left: 0;
+    }
+
+    #categoriesView .vd-category-list-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #categoriesView .vd-category-list-row > .d-flex {
+        width: 100%;
+    }
 }
 
 /* Icon picker grid (inside the Add/Edit Service modal) */
@@ -3761,21 +3893,56 @@ button.vd-stat-card {
 
 .vd-service-action-btn {
     align-items: center;
-    border-radius: 8px;
+    border: 0;
+    border-radius: 0;
+    color: var(--mid);
     display: inline-flex;
-    flex: 0 0 42px;
-    font-size: 23px !important;
-    height: 42px;
+    flex: 0 0 48px;
+    font-size: 25px !important;
+    height: 48px;
     justify-content: center;
     line-height: 1;
     padding: 0;
-    width: 42px;
+    width: 48px;
+}
+
+.vd-service-actions {
+    align-items: center;
+    background: var(--white-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: inline-flex;
+    flex: 0 0 auto;
+    overflow: hidden;
+}
+
+.vd-service-actions .vd-service-action-btn + .vd-service-action-btn {
+    border-left: 1px solid var(--border);
+}
+
+.vd-service-actions .vd-service-action-btn:hover,
+.vd-service-actions .vd-service-action-btn:focus-visible {
+    background: var(--gold-pale);
+    color: var(--gold);
+}
+
+.vd-service-actions .vd-delete-service-btn:hover,
+.vd-service-actions .vd-delete-service-btn:focus-visible,
+.vd-service-actions .vd-delete-category-btn:hover,
+.vd-service-actions .vd-delete-category-btn:focus-visible {
+    background: #fff1ee;
+    color: #a34131;
 }
 
 .vd-service-action-btn i,
 .vd-service-action-btn i::before {
-    font-size: 17px !important;
+    font-size: 21px !important;
     line-height: 1;
+}
+
+.vd-dash-body .vd-view-toggle .vd-toggle-btn,
+.vd-dash-body .vd-service-management-card .vd-btn-gold {
+    font-size: 13px;
 }
 
 .vd-appointment-payment-note {
@@ -4179,7 +4346,7 @@ button.vd-stat-card {
     border-radius: 50%;
     background: #fff;
     color: var(--gold);
-    font-size: 19px;
+    font-size: 22px;
     box-shadow: inset 0 0 0 1px #ead7ae;
 }
 .vd-schedule-visit-date {
@@ -6617,7 +6784,7 @@ button.vd-topbar-bell {
     border-left: 3px solid var(--gold);
     color: #41372c;
     font-family: "Cormorant Garamond", serif;
-    font-size: 19px;
+    font-size: 22px;
     font-style: italic;
     line-height: 1.45;
     margin: 12px 0 0;

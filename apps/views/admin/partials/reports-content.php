@@ -321,11 +321,14 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         const params = new URLSearchParams(new FormData(form));
-        loadpage('reports-content.php?' + params.toString());
+        const target = document.getElementById('insightsPage')
+            ? 'insights-content.php?tab=reports&' + params.toString()
+            : 'reports-content.php?' + params.toString();
+        loadpage(target);
     });
 
     document.getElementById('clearReportFilters').addEventListener('click', function () {
-        loadpage('reports-content.php');
+        loadpage(document.getElementById('insightsPage') ? 'insights-content.php?tab=reports' : 'reports-content.php');
     });
 
     document.getElementById('printReportBtn').addEventListener('click', function () {

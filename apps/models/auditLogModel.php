@@ -103,4 +103,32 @@ class AuditLog {
         ];
     }
 
+    public function recordForUser(
+        string $entityType,
+        ?int $entityId,
+        string $action,
+        string $description,
+        ?array $oldValues,
+        ?array $newValues,
+        int $userId
+    ): array {
+        $actor = $this->getUserActor($userId);
+        if (!$actor) throw new RuntimeException('Audit actor account not found.');
+        return $this->record($entityType, $entityId, $action, $description, $oldValues, $newValues, $actor);
+    }
+
+    public function getRecent(int $limit = 500): array
+    {
+        $limit = max(1, min(1000, $limit));
+        $stmt = $this->conn->query("
+            SELECT audit_log_id, entity_type, entity_id, action, description,
+                   old_values, new_values, performed_by_user_id,
+                   performed_by_name, performed_by_role, source, performed_at
+            FROM audit_logs
+            ORDER BY performed_at DESC, audit_log_id DESC
+            LIMIT {$limit}
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 }

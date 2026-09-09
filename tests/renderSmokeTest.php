@@ -11,13 +11,13 @@ $_SESSION['display_name'] = $patientCase ? 'Patient' : ($dentalCase ? 'Dental As
 
 $files = [
     'dashboard' => __DIR__ . '/../apps/views/admin/partials/dashboard-content.php',
+    'dental-dashboard' => __DIR__ . '/../apps/views/dental_asst/partials/dashboard-content.php',
     'payment-review' => __DIR__ . '/../apps/views/admin/partials/payment-review-content.php',
     'appointments' => __DIR__ . '/../apps/views/admin/partials/appointment-content.php',
     'dental-appointments' => __DIR__ . '/../apps/views/dental_asst/partials/appointment-content.php',
     'clinics' => __DIR__ . '/../apps/views/admin/partials/clinic-content.php',
     'dental-clinics' => __DIR__ . '/../apps/views/dental_asst/partials/clinic-content.php',
     'dental-services' => __DIR__ . '/../apps/views/dental_asst/partials/services-content.php',
-    'schedules' => __DIR__ . '/../apps/views/admin/partials/schedule-content.php',
     'dental-schedules' => __DIR__ . '/../apps/views/dental_asst/partials/schedule-content.php',
     'historical-logbook' => __DIR__ . '/../apps/views/admin/partials/logbook-content.php',
     'analytics' => __DIR__ . '/../apps/views/admin/partials/analytics-content.php',
@@ -35,6 +35,8 @@ $files = [
     'patient-change-password' => __DIR__ . '/../apps/views/patient/partials/change-password-content.php',
     'settings' => __DIR__ . '/../apps/views/admin/partials/siteSettings-content.php',
     'dental-settings' => __DIR__ . '/../apps/views/dental_asst/partials/siteSettings-content.php',
+    'insights' => __DIR__ . '/../apps/views/admin/partials/insights-content.php',
+    'activity-logs' => __DIR__ . '/../apps/views/admin/partials/activity-logs-content.php',
 ];
 
 if (!isset($files[$case])) {
@@ -47,7 +49,7 @@ if (in_array($case, ['staff-patient-form', 'staff-checkin-form'], true)) $_GET['
 ob_start();
 include $files[$case];
 $html = ob_get_clean();
-if (in_array($case, ['schedules', 'dental-schedules'], true)) {
+if ($case === 'dental-schedules') {
     if (!str_contains($html, '<clock-timepicker')
         || !str_contains($html, 'precision="00:05"')
         || !str_contains($html, 'scheduleTimeAvailability')) {
@@ -55,9 +57,33 @@ if (in_array($case, ['schedules', 'dental-schedules'], true)) {
         exit(1);
     }
 }
-if (in_array($case, ['settings', 'dental-settings'], true)
-    && substr_count($html, '<clock-timepicker') < 2) {
+if ($case === 'dental-settings' && substr_count($html, '<clock-timepicker') < 2) {
     fwrite(STDERR, "Clinic schedule default clock pickers did not render.\n");
+    exit(1);
+}
+if ($case === 'settings'
+    && (!str_contains($html, 'Brand & Logo') || str_contains($html, 'Clinic Schedule Defaults'))) {
+    fwrite(STDERR, "Admin settings did not render the intended system-only controls.\n");
+    exit(1);
+}
+if ($case === 'dashboard'
+    && (!str_contains($html, 'Treatment oversight') || str_contains($html, 'id="checkinLookup"'))) {
+    fwrite(STDERR, "Admin queue did not render in oversight mode.\n");
+    exit(1);
+}
+if ($case === 'dental-dashboard'
+    && (!str_contains($html, 'Clinic operations') || !str_contains($html, 'id="checkinLookup"'))) {
+    fwrite(STDERR, "Dental Assistant queue did not render its operational controls.\n");
+    exit(1);
+}
+if ($case === 'insights'
+    && (!str_contains($html, 'Clinic Insights') || !str_contains($html, 'Patient Feedback') || !str_contains($html, 'Billing Summary'))) {
+    fwrite(STDERR, "Clinic Insights did not render its combined modules.\n");
+    exit(1);
+}
+if ($case === 'activity-logs'
+    && (!str_contains($html, 'Activity Logs') || !str_contains($html, 'Read-only history'))) {
+    fwrite(STDERR, "The read-only activity log did not render.\n");
     exit(1);
 }
 if ($case === 'historical-logbook'

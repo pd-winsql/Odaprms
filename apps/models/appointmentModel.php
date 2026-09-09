@@ -589,6 +589,40 @@ class Appointment {
         }
     }
 
+    public function getStaffOperationsFeedVersion(): string {
+        try {
+            $sql = "
+                SELECT CONCAT(
+                    COALESCE((
+                        SELECT MAX(audit_log_id)
+                        FROM audit_logs
+                        WHERE entity_type = 'appointment'
+                    ), 0), ':',
+                    COALESCE((
+                        SELECT CONCAT(COUNT(*), '-', COALESCE(MAX(ci.checkin_id), 0), '-',
+                            COALESCE(DATE_FORMAT(MAX(ci.updated_at), '%Y%m%d%H%i%s'), '0'), '-',
+                            COALESCE(SUM(CRC32(CONCAT_WS('|', ci.checkin_id, ci.checkin_status,
+                                ci.queue_status, ci.queue_entered_at, ci.serve_next_at))), 0))
+                        FROM appointment_checkins ci
+                        JOIN appointments a ON a.appointment_id = ci.appointment_id
+                        WHERE a.date = CURDATE()
+                    ), '0-0-0'), ':',
+                    COALESCE((
+                        SELECT CONCAT(COUNT(*), '-', COALESCE(MAX(billing_id), 0), '-',
+                            COALESCE(DATE_FORMAT(MAX(updated_at), '%Y%m%d%H%i%s'), '0'), '-',
+                            COALESCE(SUM(CRC32(CONCAT_WS('|', billing_id, payment_status,
+                                actual_service_amount, deposit_applied, remaining_balance, cash_received))), 0))
+                        FROM appointment_billings
+                    ), '0-0-0')
+                )
+            ";
+            return (string) $this->conn->query($sql)->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('getStaffOperationsFeedVersion error: ' . $e->getMessage());
+            return '0:0-0-0-0:0-0-0-0';
+        }
+    }
+
     // ===== ADDITIONAL APPOINTMENT QUERIES =====
 
     public function getAppointmentsByStatus($status) {

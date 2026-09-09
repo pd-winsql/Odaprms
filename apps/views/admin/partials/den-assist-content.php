@@ -13,6 +13,7 @@ $db   = new Database();
 $conn = $db->connect();
 $staffModel = new Staff($conn);
 $staffList  = $staffModel->getAllStaff();
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
 <div class="d-flex flex-column gap-4">
@@ -249,6 +250,7 @@ $staffList  = $staffModel->getAllStaff();
         e.preventDefault();
         const formData = new FormData(this);
         formData.append('action', 'create');
+        formData.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
         const errorEl = document.getElementById('createError');
         errorEl.classList.add('d-none');
         const phone = this.querySelector('.vd-staff-phone').value.trim();
@@ -337,6 +339,7 @@ $staffList  = $staffModel->getAllStaff();
 
         const fd = new FormData();
         fd.append('action', 'update');
+        fd.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
         fd.append('staff_id', id);
         fd.append('phone', phone);
         fd.append('email', email);
@@ -376,6 +379,7 @@ $staffList  = $staffModel->getAllStaff();
         const id = btn.dataset.id;
         const fd = new FormData();
         fd.append('action', 'toggleStatus');
+        fd.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
         fd.append('staff_id', id);
 
         try {

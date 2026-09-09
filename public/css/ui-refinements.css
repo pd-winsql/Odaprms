@@ -55,6 +55,39 @@
     justify-content: center;
 }
 
+/* Patient feedback stays above floating page actions and within immediate view. */
+.vd-patient-toast {
+    bottom: auto;
+    left: auto;
+    right: 24px;
+    top: 84px;
+    transform: translateY(-12px);
+}
+
+.vd-patient-toast.show {
+    transform: translateY(0);
+}
+
+.vd-patient-toast .vd-toast-close {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 auto;
+    justify-content: center;
+    min-height: 32px;
+    min-width: 32px;
+}
+
+.vd-patient-toast.vd-toast-error .vd-toast-icon {
+    background: #f7e6e6;
+    color: #8a3d3d;
+}
+
+.depositError {
+    font-size: var(--vd-text-sm);
+    line-height: 1.45;
+    margin: 0;
+}
+
 /* Statuses outside the primary appointment filters use a compact select. */
 .vd-status-more-select {
     background-color: var(--vd-surface);
@@ -175,48 +208,18 @@
 }
 
 .vd-queue-action-cell {
-    min-width: 205px;
+    min-width: 340px;
 }
 
-.vd-queue-primary-action {
+.vd-queue-primary-action,
+.vd-queue-secondary-action {
     white-space: nowrap;
 }
 
 .vd-queue-action-group {
-    align-items: flex-start;
+    align-items: center;
     display: flex;
     gap: 8px;
-}
-
-.vd-queue-more-actions summary {
-    align-items: center;
-    background: var(--vd-surface);
-    border: 1px solid var(--vd-border);
-    border-radius: var(--vd-radius-sm);
-    color: var(--vd-gold-dark);
-    cursor: pointer;
-    display: inline-flex;
-    height: var(--vd-control-height);
-    justify-content: center;
-    list-style: none;
-    width: var(--vd-control-height);
-}
-
-.vd-queue-more-actions summary::-webkit-details-marker {
-    display: none;
-}
-
-.vd-queue-more-actions summary:focus-visible {
-    outline: 3px solid rgba(128, 97, 31, 0.28);
-    outline-offset: 2px;
-}
-
-.vd-queue-more-menu {
-    padding-top: 8px;
-}
-
-.vd-queue-more-menu .btn {
-    white-space: nowrap;
 }
 
 .vd-finished-today {
@@ -454,8 +457,28 @@
 }
 
 @media (max-width: 767px) {
+    .vd-patient-toast,
+    .vd-patient-toast.show {
+        left: 16px;
+        max-width: none;
+        min-width: 0;
+        right: 16px;
+        top: 72px;
+        transform: translateY(0);
+        width: auto;
+    }
+
     .vd-dashboard-welcome {
         align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .vd-queue-action-cell {
+        min-width: 190px;
+    }
+
+    .vd-queue-action-group {
+        align-items: stretch;
         flex-direction: column;
     }
 

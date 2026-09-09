@@ -34,6 +34,7 @@ function sv($settings, $key)
             : 'Default clinic hours prefill new schedules. Existing schedules keep their saved time windows.' ?>
     </div>
 
+    <?php if (!$isAdmin): ?>
     <div class="vd-dash-card vd-schedule-defaults-card">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">Clinic Schedule Defaults</span>
@@ -66,6 +67,7 @@ function sv($settings, $key)
             <div class="vd-schedule-policy-note mt-3"><i class="ti ti-route" aria-hidden="true"></i><span>Different clinics may operate on the same date when their windows are separated by at least 90 minutes.</span></div>
         </div>
     </div>
+    <?php endif; ?>
 
     <?php if ($isAdmin): ?>
 

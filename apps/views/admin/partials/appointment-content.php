@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
     echo '<div class="vd-empty-state">Unauthorized.</div>';
     exit;
 }
@@ -1228,15 +1228,15 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 
     async function runTransferDeposit(button) {
         const response = await window.showActionModal({
-            title: 'Transfer Verified Deposit',
+            title: 'Transfer Refundable Deposit',
             kicker: 'Deposit adjustment',
-            message: 'Move an existing verified deposit to this appointment. Both appointments will retain an audit record of the transfer.',
+            message: 'Move the refundable deposit from the patient’s cancelled appointment to this replacement booking. Both appointments will retain an audit record of the transfer.',
             confirmText: 'Transfer Deposit',
             icon: 'ti-transfer',
             tone: 'warning',
             details: [{ label: 'New booking', value: `Appointment #${button.dataset.transferDeposit}` }],
             fields: [
-                { name: 'source', label: 'Original appointment number', placeholder: 'Enter the appointment number with the verified deposit.', type: 'number', required: true },
+                { name: 'source', label: 'Cancelled appointment number', placeholder: 'Enter the appointment number with the refundable deposit.', type: 'number', required: true },
                 { name: 'reason', label: 'Transfer reason', value: 'Patient requested a new appointment.', multiline: true, rows: 2, required: true, minlength: 3, maxlength: 255 }
             ]
         });

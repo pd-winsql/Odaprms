@@ -63,6 +63,10 @@ try {
 
     $upcomingIds = array_map('intval', array_column($appointments->getPatientUpcomingAppointments($patientId), 'appointment_id'));
     cancellationExpect(!in_array($appointmentId, $upcomingIds, true), 'Cancelled appointment is hidden from the patient upcoming list.');
+
+    cancellationExpect($deposits->markRefunded($appointmentId, $staffId, 'Returned to the patient.')['success'], 'Clinic staff can record the manual refund.');
+    cancellationExpect($conn->query('SELECT status FROM appointment_deposits WHERE appointment_id=' . $appointmentId)->fetchColumn() === 'Refunded', 'The refundable deposit is marked refunded.');
+    cancellationExpect((int) $conn->query("SELECT COUNT(*) FROM audit_logs WHERE entity_type='appointment' AND entity_id={$appointmentId} AND action='deposit_refunded'")->fetchColumn() === 1, 'The manual refund is recorded in the audit trail.');
 } finally {
     if ($appointmentId) {
         $conn->prepare("DELETE FROM audit_logs WHERE entity_type='appointment' AND entity_id=:id")->execute([':id' => $appointmentId]);

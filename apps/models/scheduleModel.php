@@ -254,6 +254,7 @@ class Schedule {
                  VALUES (:clinic_id, :sched_date, :start_time, :end_time, :max_appointments)'
             );
 
+            $createdIds = [];
             foreach ($schedules as $schedule) {
                 $conflict = $this->findWindowConflict(
                     (int) $clinic_id,
@@ -274,10 +275,11 @@ class Schedule {
                     ':end_time' => $schedule['end_time'],
                     ':max_appointments' => $schedule['max_appointments'],
                 ]);
+                $createdIds[] = (int) $this->conn->lastInsertId();
             }
 
             $this->conn->commit();
-            return ['success' => true];
+            return ['success' => true, 'schedule_ids' => $createdIds];
         } catch (PDOException $e) {
             if ($this->conn->inTransaction()) {
                 $this->conn->rollBack();

@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
     echo '<div class="vd-empty-state">Unauthorized.</div>';
     exit;
 }
@@ -43,14 +43,6 @@ krsort($months); // latest first
 			<input type="text" id="searchInput" class="form-control vd-input vd-search-input"
 				placeholder="Name or email…">
 			</div>
-		</div>
-		<div class="vd-filter-group">
-			<label class="vd-label form-label">Clinic</label>
-			<select id="filterClinic" class="form-select vd-input vd-filter-select">
-			<option value="">All Clinics</option>
-			<option value="1">Alcala Branch</option>
-			<option value="2">Tuguegarao Branch</option>
-			</select>
 		</div>
 		<div class="vd-filter-group">
 			<label class="vd-label form-label">Form Status</label>
@@ -102,7 +94,6 @@ krsort($months); // latest first
 				<tr
 					data-name="<?= strtolower($p['lastname'] . ' ' . $p['firstname']) ?>"
 					data-email="<?= strtolower($p['email'] ?? '') ?>"
-					data-clinic="<?= $p['clinic_id'] ?? '' ?>"
 					data-form="<?= $formComplete ? 'complete' : 'incomplete' ?>"
 					data-month="<?= $monthKey ?>">
 					<td>
@@ -157,7 +148,6 @@ krsort($months); // latest first
 <script>
 (function () {
 	const searchInput  = document.getElementById('searchInput');
-	const filterClinic = document.getElementById('filterClinic');
 	const filterForm   = document.getElementById('filterForm');
 	const filterMonth  = document.getElementById('filterMonth');
 	const clearBtn     = document.getElementById('clearFilters');
@@ -173,18 +163,16 @@ krsort($months); // latest first
 
 	function filterTable() {
 		const search = searchInput.value.toLowerCase().trim();
-		const clinic = filterClinic.value;
 		const form   = filterForm.value;
 		const month  = filterMonth.value;
 		let visible  = 0;
 
 		rows.forEach(row => {
 		const matchSearch = !search || row.dataset.name.includes(search) || row.dataset.email.includes(search);
-		const matchClinic = !clinic || row.dataset.clinic === clinic;
 		const matchForm   = !form   || row.dataset.form   === form;
 		const matchMonth  = !month  || row.dataset.month  === month;
 
-		if (matchSearch && matchClinic && matchForm && matchMonth) {
+		if (matchSearch && matchForm && matchMonth) {
 			row.style.display = '';
 			visible++;
 		} else {
@@ -199,7 +187,6 @@ krsort($months); // latest first
 	}
 
 	searchInput.addEventListener('input', filterTable);
-	filterClinic.addEventListener('change', filterTable);
 	filterForm.addEventListener('change', filterTable);
 	filterMonth.addEventListener('change', filterTable);
 
@@ -213,7 +200,6 @@ krsort($months); // latest first
 
 	clearBtn.addEventListener('click', () => {
 		searchInput.value  = '';
-		filterClinic.value = '';
 		filterForm.value   = '';
 		filterMonth.value  = '';
 		filterTable();

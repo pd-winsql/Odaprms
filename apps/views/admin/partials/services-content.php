@@ -1,7 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
     echo '<div class="vd-empty-state">Unauthorized.</div>';
     exit;
 }
@@ -15,6 +15,7 @@ $serviceModel = new ServiceModel($conn);
 
 $categories = $serviceModel->getAllCategories();
 $services   = $serviceModel->getAllServices();
+$_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 // Build lookup from services.category_id:
 // category_id => [service_id, ...] and service_id => [category_id]
@@ -34,15 +35,14 @@ foreach ($services as $service) {
 
 $servicesById = array_column($services, null, 'service_id');
 
-// Renders one read-only service summary card. Editing happens in the modal —
-// this just displays what's already saved, plus Edit/Delete actions.
-function renderServiceCard($service, $categories, $assignedCategoryIds) {
+// Renders one compact service row inside the category-grouped management list.
+// Editing remains in the modal; the row is optimized for quick scanning.
+function renderServiceRow($service, $assignedCategoryIds) {
     $id       = $service['service_id'];
     $catCsv   = implode(',', $assignedCategoryIds);
-    $catNames = array_map(fn($c) => $c['category_name'], array_filter($categories, fn($c) => in_array($c['category_id'], $assignedCategoryIds)));
     $isActive = (int)$service['is_active'] === 1;
     ?>
-    <div class="vd-dash-card vd-service-card"
+    <div class="vd-category-list-row vd-service-list-row vd-service-card"
          data-service-id="<?= $id ?>"
          data-name="<?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>"
          data-description="<?= htmlspecialchars($service['service_description'], ENT_QUOTES) ?>"
@@ -50,31 +50,23 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
          data-order="<?= (int)$service['display_order'] ?>"
          data-category-ids="<?= htmlspecialchars($catCsv) ?>"
          data-active="<?= $isActive ? '1' : '0' ?>">
-        <div class="vd-dash-card-header vd-service-card-header">
-            <span class="vd-dash-card-title vd-service-card-title"><?= htmlspecialchars($service['service_name']) ?></span>
+        <div class="vd-service-list-main">
+            <div class="vd-service-summary-icon" aria-hidden="true">
+                <i class="<?= htmlspecialchars($service['service_icon']) ?>"></i>
+            </div>
+            <div class="vd-service-list-copy">
+                <div class="vd-category-list-name"><?= htmlspecialchars($service['service_name']) ?></div>
+                <div class="vd-category-list-desc"><?= htmlspecialchars($service['service_description'] ?: 'No description provided.') ?></div>
+            </div>
+        </div>
+        <div class="vd-service-list-meta">
             <span class="vd-service-status-badge <?= $isActive ? 'vd-status-active' : 'vd-status-inactive' ?>">
                 <?= $isActive ? 'Active' : 'Inactive' ?>
             </span>
-        </div>
-        <div class="vd-dash-card-body">
-            <div class="d-flex gap-3 align-items-start">
-                <div class="vd-service-summary-icon">
-                    <i class="<?= htmlspecialchars($service['service_icon']) ?>"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="vd-service-summary-desc"><?= htmlspecialchars($service['service_description']) ?></div>
-                    <div class="vd-chip-group mt-2">
-                        <?php if (empty($catNames)): ?>
-                            <span class="vd-order-badge">No category assigned</span>
-                        <?php else: foreach ($catNames as $name): ?>
-                            <span class="vd-chip vd-chip-selected" style="cursor:default;"><?= htmlspecialchars($name) ?></span>
-                        <?php endforeach; endif; ?>
-                    </div>
-                </div>
-                <div class="d-flex flex-column gap-2">
-                    <button class="btn vd-btn-outline vd-service-action-btn vd-edit-service-btn" data-bs-toggle="tooltip" data-bs-placement="left" title="Edit service" aria-label="Edit service"><i class="ti ti-pencil" aria-hidden="true"></i></button>
-                    <button class="btn vd-btn-outline vd-service-action-btn vd-delete-service-btn" data-id="<?= $id ?>" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete service" aria-label="Delete service"><i class="ti ti-trash" aria-hidden="true"></i></button>
-                </div>
+            <span class="vd-order-badge">Order <?= (int)$service['display_order'] ?></span>
+            <div class="vd-service-actions" role="group" aria-label="Actions for <?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>">
+                <button class="btn vd-service-action-btn vd-edit-service-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit service" aria-label="Edit service"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+                <button class="btn vd-service-action-btn vd-delete-service-btn" data-id="<?= $id ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete service" aria-label="Delete service"><i class="ti ti-trash" aria-hidden="true"></i></button>
             </div>
         </div>
     </div>
@@ -119,8 +111,10 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <span class="vd-order-badge">Order <?= (int)$cat['display_order'] ?></span>
-                        <button class="btn vd-btn-outline vd-service-action-btn vd-edit-category-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit category" aria-label="Edit category"><i class="ti ti-pencil" aria-hidden="true"></i></button>
-                        <button class="btn vd-btn-outline vd-service-action-btn vd-delete-category-btn" data-id="<?= $cat['category_id'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete category" aria-label="Delete category"><i class="ti ti-trash" aria-hidden="true"></i></button>
+                        <div class="vd-service-actions" role="group" aria-label="Category actions">
+                            <button class="btn vd-service-action-btn vd-edit-category-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit category" aria-label="Edit category"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+                            <button class="btn vd-service-action-btn vd-delete-category-btn" data-id="<?= $cat['category_id'] ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete category" aria-label="Delete category"><i class="ti ti-trash" aria-hidden="true"></i></button>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -130,57 +124,77 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
 
     <!-- SERVICES VIEW -->
     <div id="servicesView">
+        <div class="vd-dash-card vd-service-management-card">
+            <div class="vd-dash-card-header">
+                <div>
+                    <span class="vd-dash-card-title">Manage Services</span>
+                    <span class="vd-service-count ms-2" id="serviceCount"></span>
+                </div>
+                <button class="btn vd-btn-gold btn-sm" id="addServiceBtn">+ Add New Service</button>
+            </div>
 
-        <div class="vd-service-filter-bar mb-3">
-            <input type="text" id="serviceSearch" class="form-control vd-input" placeholder="Search services...">
-            <select id="categoryFilter" class="form-select vd-input">
-                <option value="">All categories</option>
-                <?php foreach ($categories as $cat): ?>
-                <option value="<?= $cat['category_id'] ?>"><?= htmlspecialchars($cat['category_name']) ?></option>
+            <div class="vd-service-filter-bar vd-service-list-filters">
+                <label class="vd-service-search-field">
+                    <span class="visually-hidden">Search services</span>
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input type="search" id="serviceSearch" class="form-control vd-input" placeholder="Search services...">
+                </label>
+                <label>
+                    <span class="visually-hidden">Filter by category</span>
+                    <select id="categoryFilter" class="form-select vd-input">
+                        <option value="">All categories</option>
+                        <?php foreach ($categories as $cat): ?>
+                        <option value="<?= $cat['category_id'] ?>"><?= htmlspecialchars($cat['category_name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label>
+                    <span class="visually-hidden">Filter by status</span>
+                    <select id="statusFilter" class="form-select vd-input">
+                        <option value="">All statuses</option>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="vd-service-list">
+                <?php if (empty($services)): ?>
+                    <div class="vd-empty-state">No services found.</div>
+                <?php endif; ?>
+
+                <?php foreach ($categories as $cat):
+                    $serviceIdsInCat = $categoryServiceIds[$cat['category_id']] ?? [];
+                    if (empty($serviceIdsInCat)) continue;
+                ?>
+                <section class="vd-service-category-group" aria-labelledby="service-category-<?= (int)$cat['category_id'] ?>">
+                    <div class="vd-service-category-heading">
+                        <span id="service-category-<?= (int)$cat['category_id'] ?>"><?= htmlspecialchars($cat['category_name']) ?></span>
+                        <span class="vd-service-category-count"><?= count($serviceIdsInCat) ?> service<?= count($serviceIdsInCat) === 1 ? '' : 's' ?></span>
+                    </div>
+                    <?php foreach ($serviceIdsInCat as $sid):
+                        if (!isset($servicesById[$sid])) continue;
+                        renderServiceRow($servicesById[$sid], $serviceCategoryIds[$sid] ?? []);
+                    endforeach; ?>
+                </section>
                 <?php endforeach; ?>
-            </select>
-            <select id="statusFilter" class="form-select vd-input">
-                <option value="">All statuses</option>
-                <option value="1">Active</option>
-                <option value="0">Inactive</option>
-            </select>
-            <span class="vd-service-count" id="serviceCount"></span>
-        </div>
 
-        <div class="d-flex justify-content-end mb-3">
-            <button class="btn vd-btn-gold btn-sm" id="addServiceBtn">+ Add New Service</button>
-        </div>
+                <?php
+                $uncategorized = array_filter($services, fn($s) => empty($serviceCategoryIds[$s['service_id']]));
+                if (!empty($uncategorized)):
+                ?>
+                <section class="vd-service-category-group" aria-labelledby="service-category-uncategorized">
+                    <div class="vd-service-category-heading">
+                        <span id="service-category-uncategorized">Uncategorized</span>
+                        <span class="vd-service-category-count"><?= count($uncategorized) ?> service<?= count($uncategorized) === 1 ? '' : 's' ?></span>
+                    </div>
+                    <?php foreach ($uncategorized as $service): renderServiceRow($service, []); endforeach; ?>
+                </section>
+                <?php endif; ?>
 
-        <?php if (empty($services)): ?>
-            <div class="vd-empty-state">No services found.</div>
-        <?php endif; ?>
-
-        <?php foreach ($categories as $cat):
-            $serviceIdsInCat = $categoryServiceIds[$cat['category_id']] ?? [];
-            if (empty($serviceIdsInCat)) continue;
-        ?>
-        <div class="vd-service-category-group mb-4">
-            <div class="vd-service-category-group-title"><?= htmlspecialchars($cat['category_name']) ?></div>
-            <div class="d-flex flex-column gap-3">
-                <?php foreach ($serviceIdsInCat as $sid):
-                    if (!isset($servicesById[$sid])) continue;
-                    renderServiceCard($servicesById[$sid], $categories, $serviceCategoryIds[$sid] ?? []);
-                endforeach; ?>
+                <div class="vd-empty-state d-none" id="serviceFilterEmpty">No services match your filters.</div>
             </div>
         </div>
-        <?php endforeach; ?>
-
-        <?php
-        $uncategorized = array_filter($services, fn($s) => empty($serviceCategoryIds[$s['service_id']]));
-        if (!empty($uncategorized)):
-        ?>
-        <div class="vd-service-category-group mb-4">
-            <div class="vd-service-category-group-title">Uncategorized</div>
-            <div class="d-flex flex-column gap-3">
-                <?php foreach ($uncategorized as $service): renderServiceCard($service, $categories, []); endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
 
     </div>
 
@@ -202,6 +216,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         </div>
         <div class="modal-body d-flex flex-column gap-3">
           <input type="hidden" id="serviceModalId" value="">
+          <input type="hidden" id="serviceModalActive" value="1">
 
           <div>
             <label class="vd-label form-label">Choose an Icon</label>
@@ -218,17 +233,9 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
             <textarea class="form-control vd-input" id="serviceModalDescription" rows="2"></textarea>
           </div>
 
-          <div class="row g-3 align-items-center">
-            <div class="col-6">
-              <label class="vd-label form-label">Display Order</label>
-              <input type="number" class="form-control vd-input" id="serviceModalOrder" value="0" min="0">
-            </div>
-            <div class="col-6">
-              <label class="d-flex align-items-center gap-2 vd-label mb-0 mt-3">
-                <input type="checkbox" id="serviceModalActive" checked>
-                Active
-              </label>
-            </div>
+          <div>
+            <label class="vd-label form-label">Display Order</label>
+            <input type="number" class="form-control vd-input" id="serviceModalOrder" value="0" min="0">
           </div>
 
           <div>
@@ -341,6 +348,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
 <script>
 (function () {
     const CONTROLLER = '../../../apps/controllers/serviceController.php';
+    const CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token']) ?>;
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
         const tooltip = bootstrap.Tooltip.getOrCreateInstance(element, { container: 'body' });
@@ -438,7 +446,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         nameInput.value = '';
         descInput.value = '';
         orderInput.value = '0';
-        activeInput.checked = true;
+        activeInput.value = '1';
         selectedIcon = '';
         errorBox.classList.add('d-none');
         iconPicker.querySelectorAll('.vd-icon-swatch').forEach(s => s.classList.remove('vd-icon-swatch-selected'));
@@ -456,7 +464,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
             nameInput.value = data.name;
             descInput.value = data.description;
             orderInput.value = data.order;
-            activeInput.checked = data.active === '1';
+            activeInput.value = data.active === '1' ? '1' : '0';
             selectedIcon = data.icon;
 
             const swatch = iconPicker.querySelector(`[data-icon="${data.icon}"]`);
@@ -520,7 +528,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         errorBox.classList.add('d-none');
 
         const selectedCats = Array.from(categoriesWrap.querySelectorAll('.vd-chip-selected')).map(c => c.textContent.trim());
-        const isActive = activeInput.checked;
+        const isActive = activeInput.value === '1';
 
         document.getElementById('serviceReceiptBody').innerHTML = `
             <div class="vd-receipt-row"><span class="vd-receipt-row-label">Icon</span><span class="vd-receipt-icon"><i class="${selectedIcon}"></i></span></div>
@@ -546,12 +554,13 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
 
         const formData = new FormData();
         formData.append('action', id ? 'updateService' : 'addService');
+        formData.append('csrf_token', CSRF_TOKEN);
         if (id) formData.append('service_id', id);
         formData.append('name', nameInput.value.trim());
         formData.append('description', descInput.value.trim());
         formData.append('icon', selectedIcon);
         formData.append('order', orderInput.value);
-        if (activeInput.checked) formData.append('is_active', '1');
+        if (activeInput.value === '1') formData.append('is_active', '1');
         formData.append('category_id', selectedCategoryId);
 
         this.disabled = true;
@@ -644,7 +653,11 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         LoadingUI.setButton(this, true, 'Deleting…');
 
         try {
-            const response = await fetch(`${CONTROLLER}?action=${action}&id=${id}`);
+            const body = new FormData();
+            body.append('action', action);
+            body.append('id', id);
+            body.append('csrf_token', CSRF_TOKEN);
+            const response = await fetch(CONTROLLER, { method: 'POST', body });
             const result = await response.json();
 
             if (!result.success) {
@@ -691,6 +704,7 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         const id = catIdInput.value;
         const formData = new FormData();
         formData.append('action', id ? 'updateCategory' : 'addCategory');
+        formData.append('csrf_token', CSRF_TOKEN);
         if (id) formData.append('category_id', id);
         formData.append('name', catNameInput.value.trim());
         formData.append('description', catDescInput.value.trim());
@@ -750,11 +764,17 @@ function renderServiceCard($service, $categories, $assignedCategoryIds) {
         });
 
         document.querySelectorAll('.vd-service-category-group').forEach(group => {
-            const hasVisible = group.querySelectorAll('.vd-service-card:not(.d-none)').length > 0;
-            group.classList.toggle('d-none', !hasVisible);
+            const categoryVisible = group.querySelectorAll('.vd-service-card:not(.d-none)').length;
+            const categoryCount = group.querySelector('.vd-service-category-count');
+
+            group.classList.toggle('d-none', categoryVisible === 0);
+            if (categoryCount) {
+                categoryCount.textContent = `${categoryVisible} service${categoryVisible === 1 ? '' : 's'}`;
+            }
         });
 
         countEl.textContent = `${visible} of ${total} services shown`;
+        document.getElementById('serviceFilterEmpty').classList.toggle('d-none', visible !== 0 || total === 0);
     }
 
     [searchInput, categoryFilter, statusFilter].forEach(el => el.addEventListener('input', applyFilters));

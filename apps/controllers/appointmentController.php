@@ -3,6 +3,7 @@ require_once '../models/appointmentModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 
 // The CSRF helper may have already opened the session. Starting it only when
 // needed keeps PHP notices out of JSON responses consumed by fetch().
@@ -73,7 +74,7 @@ class AppointmentController {
             exit;
         }
 
-        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+        if (($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
             header('Location: ../patient/dashboard.php');
             exit;
         }
@@ -89,7 +90,7 @@ class AppointmentController {
             exit;
         }
 
-        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
+        if (($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
             header('Location: ../patient/dashboard.php');
             exit;
         }
@@ -106,10 +107,7 @@ class AppointmentController {
             exit;
         }
 
-        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
-            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
-            exit;
-        }
+        vdRequireDentalAssistantJson();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!validate_csrf()) {
@@ -298,10 +296,7 @@ class AppointmentController {
             exit;
         }
 
-        if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
-            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
-            exit;
-        }
+        vdRequireDentalAssistantJson();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
@@ -344,6 +339,7 @@ class AppointmentController {
             'success' => true,
             'latest_appointment_id' => $this->appointmentModel->getLatestAppointmentId(),
             'deposit_feed_version' => $this->appointmentModel->getDepositFeedVersion(),
+            'staff_operations_feed_version' => $this->appointmentModel->getStaffOperationsFeedVersion(),
         ]);
         exit;
     }

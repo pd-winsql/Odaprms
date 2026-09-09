@@ -15,8 +15,11 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: ../../../index.php?openModal=true');
     exit;
 }
-if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
-    header('Location: ../patient/dashboard.php');
+if (($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
+    $destination = ($_SESSION['user_role'] ?? '') === 'Admin'
+        ? '../admin/dashboard.php'
+        : '../patient/dashboard.php';
+    header('Location: ' . $destination);
     exit;
 }
 
@@ -31,6 +34,7 @@ $clinicModel      = new Clinic($conn);
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
 $latestAppointmentId = $appointmentModel->getLatestAppointmentId();
 $depositFeedVersion = $appointmentModel->getDepositFeedVersion();
+$staffOperationsFeedVersion = $appointmentModel->getStaffOperationsFeedVersion();
 $clinics  = $clinicModel->getAllClinics();
 $branding = vdLoadSiteBranding($conn);
 
@@ -80,19 +84,6 @@ $today = date('l, F j Y');
             <a href="#" class="vd-nav-item" data-page="appointment-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
             </a>
-            <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
-            </a>
-            <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
-            </a>
-            <a href="#" class="vd-nav-item" data-page="logbook-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
-            </a>
-            <a href="#" class="vd-nav-item" data-page="patient-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
-            </a>
-
             <a href="#" class="vd-nav-item" data-page="messages-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-message-circle" aria-hidden="true"></i></span>
                 <span>Messages</span><span data-chat-unread hidden></span>
@@ -108,12 +99,23 @@ $today = date('l, F j Y');
                 <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
             </a>
 
+            <div class="vd-nav-section">Records</div>
+            <a href="#" class="vd-nav-item" data-page="patient-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
+            </a>
+            <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
+            </a>
+            <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
+            </a>
+            <a href="#" class="vd-nav-item" data-page="logbook-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
+            </a>
+
             <div class="vd-nav-section">Account</div>
             <a href="#" class="vd-nav-item" data-page="change-password-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
-            </a>
-            <a href="#" class="vd-nav-item" data-page="siteSettings-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-settings"></i></span> Schedule Settings
             </a>
             <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
                 <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
@@ -174,7 +176,6 @@ $today = date('l, F j Y');
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/dashboard-tables.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-tables.js') ?>"></script>
     <script src="../../../public/js/dashboard-topbar.js?v=20260824-2"></script>
-    <script src="../../../public/js/dashboard-sidebar.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-sidebar.js') ?>"></script>
     <script src="../../../public/js/staff-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/staff-appointment-notifications.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script type="module" src="../../../public/js/vendor/clock-timepicker/clock-timepicker.js?v=<?= filemtime(__DIR__ . '/../../../public/js/vendor/clock-timepicker/clock-timepicker.js') ?>"></script>
@@ -270,6 +271,7 @@ $today = date('l, F j Y');
         // relevant staff view while preserving filters and avoiding open modals.
         let lastKnownAppointmentId = <?= (int) $latestAppointmentId ?>;
         let lastKnownDepositVersion = <?= json_encode($depositFeedVersion) ?>;
+        let lastKnownStaffOperationsVersion = <?= json_encode($staffOperationsFeedVersion) ?>;
         let appointmentRefreshInFlight = false;
         const appointmentNotificationCenter = window.StaffAppointmentNotifications?.create({
             userId: <?= json_encode((string) $_SESSION['user_id']) ?>,
@@ -338,6 +340,45 @@ $today = date('l, F j Y');
             }
         }
 
+        function dashboardViewState() {
+            const lookup = dashContent.querySelector('#checkinLookup');
+            return {
+                lookup: lookup?.value || '',
+                lookupFocused: document.activeElement === lookup,
+                scrollY: window.scrollY
+            };
+        }
+
+        function restoreDashboardViewState(state) {
+            const lookup = dashContent.querySelector('#checkinLookup');
+            if (lookup) lookup.value = state.lookup;
+            if (state.lookupFocused) lookup?.focus();
+            window.scrollTo({ top: state.scrollY || 0 });
+        }
+
+        function billingViewState() {
+            return {
+                clinic: dashContent.querySelector('#billingClinicFilter')?.value || '',
+                status: dashContent.querySelector('#billingStatusFilter')?.value || '',
+                from: dashContent.querySelector('#billingDateFrom')?.value || '',
+                to: dashContent.querySelector('#billingDateTo')?.value || ''
+            };
+        }
+
+        function restoreBillingViewState(state) {
+            const clinic = dashContent.querySelector('#billingClinicFilter');
+            const status = dashContent.querySelector('#billingStatusFilter');
+            const from = dashContent.querySelector('#billingDateFrom');
+            const to = dashContent.querySelector('#billingDateTo');
+            if (clinic) clinic.value = state.clinic;
+            if (status) status.value = state.status;
+            if (from) from.value = state.from;
+            if (to) {
+                to.value = state.to;
+                to.dispatchEvent(new Event('change'));
+            }
+        }
+
         async function checkForNewAppointments() {
             if (document.hidden || appointmentRefreshInFlight) return;
             const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
@@ -353,33 +394,49 @@ $today = date('l, F j Y');
                 if (!result.success) return;
                 const latestId = Number(result.latest_appointment_id || 0);
                 const depositVersion = String(result.deposit_feed_version || '0:0:0');
+                const staffOperationsVersion = String(result.staff_operations_feed_version || '');
                 appointmentNotificationCenter?.observe({
                     appointmentId: latestId,
                     depositVersion
                 });
                 const hasNewAppointment = latestId > lastKnownAppointmentId;
                 const hasDepositChange = depositVersion !== lastKnownDepositVersion;
-                if (!hasNewAppointment && !hasDepositChange) return;
+                const hasStaffOperationsChange = staffOperationsVersion !== lastKnownStaffOperationsVersion;
+                if (!hasNewAppointment && !hasDepositChange && !hasStaffOperationsChange) return;
 
-                if (!['appointment-content.php', 'payment-review-content.php'].includes(currentPage)) {
+                const refreshablePages = [
+                    'dashboard-content.php',
+                    'appointment-content.php',
+                    'payment-review-content.php',
+                    'cash-billing-content.php'
+                ];
+                if (!refreshablePages.includes(currentPage)) {
                     lastKnownAppointmentId = latestId;
                     lastKnownDepositVersion = depositVersion;
+                    lastKnownStaffOperationsVersion = staffOperationsVersion;
                     return;
                 }
-                if (dashContent.querySelector('.modal.show')) return;
+                if (document.querySelector('.modal.show')) return;
 
                 appointmentRefreshInFlight = true;
-                const state = currentPage === 'appointment-content.php' ?
-                    appointmentViewState() :
-                    depositViewState();
+                const state = currentPage === 'appointment-content.php'
+                    ? appointmentViewState()
+                    : currentPage === 'payment-review-content.php'
+                        ? depositViewState()
+                        : currentPage === 'cash-billing-content.php'
+                            ? billingViewState()
+                            : dashboardViewState();
                 const refreshed = await loadpage(currentPage, {
                     silent: true
                 });
                 if (!refreshed) return;
                 if (currentPage === 'appointment-content.php') restoreAppointmentViewState(state);
-                else restoreDepositViewState(state);
+                else if (currentPage === 'payment-review-content.php') restoreDepositViewState(state);
+                else if (currentPage === 'cash-billing-content.php') restoreBillingViewState(state);
+                else restoreDashboardViewState(state);
                 lastKnownAppointmentId = latestId;
                 lastKnownDepositVersion = depositVersion;
+                lastKnownStaffOperationsVersion = staffOperationsVersion;
             } catch (error) {
                 console.debug('Automatic appointment refresh skipped:', error);
             } finally {
@@ -459,7 +516,7 @@ $today = date('l, F j Y');
             </div>
         </div>
     </div>
-<?php require __DIR__ . '/../shared/clinic-chat-shell.php'; ?>
+    <?php require __DIR__ . '/../shared/clinic-chat-shell.php'; ?>
 </body>
 
 </html>

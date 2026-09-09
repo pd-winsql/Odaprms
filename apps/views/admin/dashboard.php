@@ -15,8 +15,11 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: ../../../index.php?openModal=true');
     exit;
 }
-if (!in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'])) {
-    header('Location: ../patient/dashboard.php');
+if (($_SESSION['user_role'] ?? '') !== 'Admin') {
+    $destination = ($_SESSION['user_role'] ?? '') === 'Dental Assistant'
+        ? '../dental_asst/dashboard.php'
+        : '../patient/dashboard.php';
+    header('Location: ' . $destination);
     exit;
 }
 
@@ -29,8 +32,7 @@ $appointmentModel = new Appointment($conn);
 $clinicModel      = new Clinic($conn);
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
-$latestAppointmentId = $appointmentModel->getLatestAppointmentId();
-$depositFeedVersion = $appointmentModel->getDepositFeedVersion();
+$staffOperationsFeedVersion = $appointmentModel->getStaffOperationsFeedVersion();
 $clinics  = $clinicModel->getAllClinics();
 $branding = vdLoadSiteBranding($conn);
 
@@ -76,67 +78,29 @@ $today = date('l, F j Y');
         <nav class="vd-sidebar-nav">
             <div class="vd-nav-section">Main</div>
             <a href="#" class="vd-nav-item active" data-page="dashboard-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-layout-dashboard"></i></span> Dashboard
-            </a>
-            <a href="#" class="vd-nav-item" data-page="appointment-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> Appointments
-            </a>
-            <a href="#" class="vd-nav-item" data-page="messages-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-message-circle" aria-hidden="true"></i></span>
-                <span>Messages</span><span data-chat-unread hidden></span>
+                <span class="vd-nav-icon"><i class="ti ti-list-check"></i></span> Today’s Queue
             </a>
 
             <div class="vd-nav-section">Manage</div>
             <a href="#" class="vd-nav-item" data-page="den-assist-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-nurse"></i></span> Dental Assistants
             </a>
-            <a href="#" class="vd-nav-item" data-page="services-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Services
-            </a>
-            <a href="#" class="vd-nav-item" data-page="clinic-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-building"></i></span> Clinics
-            </a>
 
-            <a href="#" class="vd-nav-item" data-page="schedule-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-clock"></i></span> Schedules
+            <div class="vd-nav-section">Oversight</div>
+            <a href="#" class="vd-nav-item" data-page="insights-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-chart-bar"></i></span> Clinic Insights
             </a>
-
-            <div class="vd-nav-section">Records</div>
-            <a href="#" class="vd-nav-item" data-page="patient-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-users"></i></span> Patients
+            <a href="#" class="vd-nav-item" data-page="activity-logs-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-history"></i></span> Activity Logs
             </a>
-            <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
-            </a>
-            <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
-            </a>
-            <a href="#" class="vd-nav-item" data-page="logbook-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
-            </a>
-
-            <?php if (($_SESSION['user_role'] ?? '') === 'Admin'): ?>
-                <div class="vd-nav-section">Insights</div>
-                <a href="#" class="vd-nav-item" data-page="analytics-content.php">
-                    <span class="vd-nav-icon"><i class="ti ti-chart-bar"></i></span> Analytics
-                </a>
-                <a href="#" class="vd-nav-item" data-page="reviews-content.php">
-                    <span class="vd-nav-icon"><i class="ti ti-message-star"></i></span> Patient Feedback
-                </a>
-                <a href="#" class="vd-nav-item" data-page="reports-content.php">
-                    <span class="vd-nav-icon"><i class="ti ti-report-analytics"></i></span> Reports &amp; Export
-                </a>
-            <?php endif; ?>
 
             <div class="vd-nav-section">Account</div>
             <a href="#" class="vd-nav-item" data-page="change-password-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
             </a>
-            <?php if (($_SESSION['user_role'] ?? '') === 'Admin'): ?>
-                <a href="#" class="vd-nav-item" data-page="siteSettings-content.php">
-                    <span class="vd-nav-icon"><i class="ti ti-settings"></i></span> Settings
-                </a>
-            <?php endif; ?>
+            <a href="#" class="vd-nav-item" data-page="siteSettings-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-settings"></i></span> System Settings
+            </a>
             <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
                 <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
             </a>
@@ -147,7 +111,7 @@ $today = date('l, F j Y');
                 <div class="vd-user-avatar"><?= htmlspecialchars($initials) ?></div>
                 <div>
                     <div class="vd-user-name"><?= htmlspecialchars($displayName) ?></div>
-                    <div class="vd-user-role"><?= htmlspecialchars($_SESSION['user_role']) ?></div>
+                    <div class="vd-user-role">Admin / Dentist</div>
                 </div>
             </div>
         </div>
@@ -164,7 +128,7 @@ $today = date('l, F j Y');
                     aria-controls="sidebar" aria-expanded="false">
                     <i class="ti ti-menu-2"></i>
                 </button>
-                <span class="vd-dash-title" id="dashTitle">Dashboard</span>
+                <span class="vd-dash-title" id="dashTitle">Today’s Queue</span>
                 <!--<div class="vd-topbar-search">
                 <i class="ti ti-search"></i>
                 <input type="text" placeholder="Search...">
@@ -176,8 +140,7 @@ $today = date('l, F j Y');
                     <time class="vd-topbar-date" id="vdTopbarDate"><?= $today ?></time>
                     <time class="vd-topbar-clock" id="vdTopbarClock" aria-label="Current time in Manila">--:--:-- --</time>
                 </div>
-                <?php include __DIR__ . '/../shared/staff-notification-center.php'; ?>
-                <span class="vd-role-badge"><?= htmlspecialchars($_SESSION['user_role']) ?></span>
+                <span class="vd-role-badge">Admin / Dentist</span>
             </div>
         </div>
 
@@ -201,8 +164,6 @@ $today = date('l, F j Y');
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/dashboard-tables.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-tables.js') ?>"></script>
     <script src="../../../public/js/dashboard-topbar.js?v=20260824-2"></script>
-    <script src="../../../public/js/dashboard-sidebar.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-sidebar.js') ?>"></script>
-    <script src="../../../public/js/staff-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/staff-appointment-notifications.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script type="module" src="../../../public/js/vendor/clock-timepicker/clock-timepicker.js?v=<?= filemtime(__DIR__ . '/../../../public/js/vendor/clock-timepicker/clock-timepicker.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -294,130 +255,55 @@ $today = date('l, F j Y');
             return loaded;
         }
 
-        // Poll for new appointments or deposit changes and silently refresh the
-        // relevant staff view while preserving filters and avoiding open modals.
-        let lastKnownAppointmentId = <?= (int) $latestAppointmentId ?>;
-        let lastKnownDepositVersion = <?= json_encode($depositFeedVersion) ?>;
-        let appointmentRefreshInFlight = false;
-        const appointmentNotificationCenter = window.StaffAppointmentNotifications?.create({
-            userId: <?= json_encode((string) $_SESSION['user_id']) ?>,
-            initialAppointmentId: lastKnownAppointmentId,
-            initialDepositVersion: lastKnownDepositVersion,
-            buttonId: 'staffNotificationButton',
-            panelId: 'staffNotificationPanel',
-            listId: 'staffNotificationList',
-            emptyId: 'staffNotificationEmpty',
-            caughtUpId: 'staffNotificationCaughtUp',
-            markAllId: 'staffNotificationMarkAll',
-            dotId: 'staffNotificationDot',
-            onNavigate(notification) {
-                if (notification.type === 'appointment_created') {
-                    sessionStorage.setItem('venturaAppointmentStatusFilter', 'Pending Review');
-                }
-                document.querySelector(`.vd-nav-item[data-page="${notification.destination}"]`)?.click();
-            }
-        });
+        // Keep the dentist's live queue in sync with check-ins, queue actions,
+        // treatment changes, and final billing recorded by clinic staff.
+        let lastKnownStaffOperationsVersion = <?= json_encode($staffOperationsFeedVersion) ?>;
+        let staffOperationsRefreshInFlight = false;
 
-        function appointmentViewState() {
-            return {
-                view: dashContent.querySelector('.vd-toggle-btn.active')?.dataset.view || 'upcoming',
-                upcomingStatus: dashContent.querySelector('#upcomingStatusToggles .active')?.dataset.status || '',
-                pastStatus: dashContent.querySelector('#pastStatusToggles .active')?.dataset.status || '',
-                upcomingFrom: dashContent.querySelector('#filterDateFromUpcoming')?.value || '',
-                upcomingTo: dashContent.querySelector('#filterDateToUpcoming')?.value || '',
-                pastFrom: dashContent.querySelector('#filterDateFromPast')?.value || '',
-                pastTo: dashContent.querySelector('#filterDateToPast')?.value || ''
-            };
+        function dentistQueueViewState() {
+            return { scrollY: window.scrollY };
         }
 
-        function restoreAppointmentViewState(state) {
-            dashContent.querySelector(`.vd-toggle-btn[data-view="${state.view}"]`)?.click();
-            const restoreFilter = (key, suffix, status, from, to) => {
-                dashContent.querySelector(`#${key}StatusToggles [data-status="${CSS.escape(status)}"]`)?.click();
-                const fromInput = dashContent.querySelector(`#filterDateFrom${suffix}`);
-                const toInput = dashContent.querySelector(`#filterDateTo${suffix}`);
-                if (fromInput) fromInput.value = from;
-                if (toInput) {
-                    toInput.value = to;
-                    toInput.dispatchEvent(new Event('change'));
-                }
-            };
-            restoreFilter('upcoming', 'Upcoming', state.upcomingStatus, state.upcomingFrom, state.upcomingTo);
-            restoreFilter('past', 'Past', state.pastStatus, state.pastFrom, state.pastTo);
+        function restoreDentistQueueViewState(state) {
+            window.scrollTo({ top: state.scrollY || 0 });
         }
 
-        function depositViewState() {
-            return {
-                status: dashContent.querySelector('#depositStatusFilter')?.value || '',
-                from: dashContent.querySelector('#depositDateFrom')?.value || '',
-                to: dashContent.querySelector('#depositDateTo')?.value || ''
-            };
-        }
-
-        function restoreDepositViewState(state) {
-            const status = dashContent.querySelector('#depositStatusFilter');
-            const from = dashContent.querySelector('#depositDateFrom');
-            const to = dashContent.querySelector('#depositDateTo');
-            if (status) status.value = state.status;
-            if (from) from.value = state.from;
-            if (to) {
-                to.value = state.to;
-                to.dispatchEvent(new Event('change'));
-            }
-        }
-
-        async function checkForNewAppointments() {
-            if (document.hidden || appointmentRefreshInFlight) return;
+        async function checkForStaffOperationsChanges() {
+            if (document.hidden || staffOperationsRefreshInFlight) return;
             const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
             try {
                 const response = await fetch('../../controllers/appointmentController.php?action=latestAppointment', {
                     cache: 'no-store',
-                    headers: {
-                        Accept: 'application/json'
-                    }
+                    headers: { Accept: 'application/json' }
                 });
                 if (!response.ok) return;
                 const result = await response.json();
                 if (!result.success) return;
-                const latestId = Number(result.latest_appointment_id || 0);
-                const depositVersion = String(result.deposit_feed_version || '0:0:0');
-                appointmentNotificationCenter?.observe({
-                    appointmentId: latestId,
-                    depositVersion
-                });
-                const hasNewAppointment = latestId > lastKnownAppointmentId;
-                const hasDepositChange = depositVersion !== lastKnownDepositVersion;
-                if (!hasNewAppointment && !hasDepositChange) return;
 
-                if (!['appointment-content.php', 'payment-review-content.php'].includes(currentPage)) {
-                    lastKnownAppointmentId = latestId;
-                    lastKnownDepositVersion = depositVersion;
+                const version = String(result.staff_operations_feed_version || '');
+                if (!version || version === lastKnownStaffOperationsVersion) return;
+                if (currentPage !== 'dashboard-content.php') {
+                    lastKnownStaffOperationsVersion = version;
                     return;
                 }
-                if (dashContent.querySelector('.modal.show')) return;
+                if (document.querySelector('.modal.show')) return;
 
-                appointmentRefreshInFlight = true;
-                const state = currentPage === 'appointment-content.php' ?
-                    appointmentViewState() :
-                    depositViewState();
-                const refreshed = await loadpage(currentPage, {
-                    silent: true
-                });
+                staffOperationsRefreshInFlight = true;
+                const state = dentistQueueViewState();
+                const refreshed = await loadpage('dashboard-content.php', { silent: true });
                 if (!refreshed) return;
-                if (currentPage === 'appointment-content.php') restoreAppointmentViewState(state);
-                else restoreDepositViewState(state);
-                lastKnownAppointmentId = latestId;
-                lastKnownDepositVersion = depositVersion;
+                restoreDentistQueueViewState(state);
+                lastKnownStaffOperationsVersion = version;
             } catch (error) {
-                console.debug('Automatic appointment refresh skipped:', error);
+                console.debug('Automatic queue refresh skipped:', error);
             } finally {
-                appointmentRefreshInFlight = false;
+                staffOperationsRefreshInFlight = false;
             }
         }
 
-        window.setInterval(checkForNewAppointments, 10000);
+        window.setInterval(checkForStaffOperationsChanges, 10000);
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) checkForNewAppointments();
+            if (!document.hidden) checkForStaffOperationsChanges();
         });
 
         navItems.forEach(item => {
@@ -462,14 +348,6 @@ $today = date('l, F j Y');
         });
     </script>
 
-    <script>
-        window.emailNotificationDeliveryConfig = {
-            endpoint: '../../controllers/emailNotificationController.php',
-            csrfToken: <?= json_encode($_SESSION['csrf_token']) ?>
-        };
-    </script>
-    <script src="../../../public/js/email-notification-delivery.js?v=1"></script>
-
     <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content vd-modal-content vd-confirm-modal">
@@ -487,7 +365,6 @@ $today = date('l, F j Y');
             </div>
         </div>
     </div>
-    <?php require __DIR__ . '/../shared/clinic-chat-shell.php'; ?>
 </body>
 
 </html>

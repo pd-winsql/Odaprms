@@ -5,25 +5,26 @@ require_once '../../config/conn.php';
 require_once '../models/siteSettingsModel.php';
 require_once '../models/clinicModel.php';
 require_once '../models/scheduleModel.php';
+require_once '../models/auditLogModel.php';
 require_once '../helpers/csrf.php';
+require_once '../helpers/authorization.php';
 
 class SiteSettingsController {
     private $settings;
     private $clinics;
+    private $auditLog;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->settings = new SiteSettingsModel($conn);
         $this->clinics = new Clinic($conn);
+        $this->auditLog = new AuditLog($conn);
     }
 
     private function requireScheduleSettingsAccess(): void {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
-            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
-            exit;
-        }
+        vdRequireDentalAssistantJson();
         if (!validate_csrf()) {
             echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
             exit;
@@ -47,7 +48,12 @@ class SiteSettingsController {
             echo json_encode(['success' => false, 'message' => 'Default clinic hours must use five-minute increments.']);
             exit;
         }
+        $oldClinic = $this->clinics->getClinicById($clinicId);
         $saved = $this->clinics->updateDefaultHours($clinicId, $startTime, $endTime);
+        if ($saved) $this->auditLog->recordForUser('clinic', $clinicId, 'schedule_defaults_updated', 'Updated default clinic schedule hours.', [
+            'default_start_time' => $oldClinic['default_start_time'] ?? null,
+            'default_end_time' => $oldClinic['default_end_time'] ?? null,
+        ], ['default_start_time' => $startTime, 'default_end_time' => $endTime], (int) $_SESSION['user_id']);
         echo json_encode($saved
             ? ['success' => true, 'message' => 'Default clinic hours saved.']
             : ['success' => false, 'message' => 'Unable to save the default clinic hours.']);
@@ -56,10 +62,7 @@ class SiteSettingsController {
 
     private function requireAdmin() {
         header('Content-Type: application/json');
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Admin') {
-            echo json_encode(['success' => false, 'message' => 'Forbidden.']);
-            exit;
-        }
+        vdRequireAdminJson();
         if (!validate_csrf()) {
             echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
             exit;
@@ -93,7 +96,10 @@ class SiteSettingsController {
             $data = $validation['data'];
         }
 
+        $oldSettings = $this->settings->getSettings();
+        $oldData = array_intersect_key($oldSettings, array_flip(SiteSettingsModel::FIELD_GROUPS[$group]));
         $result = $this->settings->updateGroup($group, $data, 'Admin');
+        if ($result) $this->auditLog->recordForUser('site_settings', 1, 'settings_updated', "Updated {$group} settings.", $oldData, $data, (int) $_SESSION['user_id']);
 
         echo json_encode($result
             ? ['success' => true, 'message' => 'Changes saved.']
@@ -103,6 +109,7 @@ class SiteSettingsController {
 
     public function updateLogo() {
         $this->requireAdmin();
+        $oldLogo = $this->settings->getSettings()['site_logo'] ?? '';
 
         if (!isset($_FILES['logo'])) {
             echo json_encode(['success' => false, 'message' => 'No file selected.']);
@@ -153,6 +160,8 @@ class SiteSettingsController {
             exit;
         }
 
+        $this->auditLog->recordForUser('site_settings', 1, 'site_logo_updated', 'Updated the system logo.', ['site_logo' => $oldLogo], ['site_logo' => $newFilename], (int) $_SESSION['user_id']);
+
         echo json_encode($result
             ? ['success' => true, 'message' => 'Logo updated.', 'logo' => $newFilename]
             : ['success' => false, 'message' => 'Failed to save logo.']);
@@ -176,6 +185,7 @@ class SiteSettingsController {
         }
 
         $result = $this->settings->updateLogo('', 'Admin');
+        if ($result) $this->auditLog->recordForUser('site_settings', 1, 'site_logo_removed', 'Removed the system logo.', ['site_logo' => $filename], ['site_logo' => ''], (int) $_SESSION['user_id']);
 
         echo json_encode($result
             ? ['success' => true, 'message' => 'Logo removed.']
@@ -214,6 +224,7 @@ class SiteSettingsController {
             echo json_encode(['success' => false, 'message' => 'Unable to save the QR image.']);
             exit;
         }
+        $this->auditLog->recordForUser('site_settings', 1, 'gcash_qr_updated', 'Updated the GCash QR code.', ['gcash_qr_path' => $oldSettings['gcash_qr_path'] ?? ''], ['gcash_qr_path' => $filename], (int) $_SESSION['user_id']);
         $oldFile = basename($oldSettings['gcash_qr_path'] ?? '');
         if ($oldFile && str_starts_with($oldFile, 'gcash_qr_') && is_file($targetDir . $oldFile)) {
             @unlink($targetDir . $oldFile);

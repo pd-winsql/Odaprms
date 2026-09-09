@@ -133,10 +133,12 @@ $today    = date('l, F j Y');
     </main>
 
     <!-- Global Toast (for patient partials) -->
-    <div id="globalToast" class="vd-toast d-none" role="status" aria-live="polite" aria-atomic="true" style="right:16px; bottom:16px;">
+    <div id="globalToast" class="vd-toast vd-patient-toast d-none" role="status" aria-live="polite" aria-atomic="true">
+        <span class="vd-toast-icon" aria-hidden="true"><i class="ti ti-info-circle"></i></span>
         <div class="vd-toast-body">
             <div class="vd-toast-message" id="globalToastMsg"></div>
         </div>
+        <button type="button" class="vd-toast-close" aria-label="Dismiss notification"><i class="ti ti-x" aria-hidden="true"></i></button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -147,16 +149,29 @@ $today    = date('l, F j Y');
         window.showToast = function(message, success = true, duration = 4000) {
             const toast = document.getElementById('globalToast');
             const msgEl = document.getElementById('globalToastMsg');
+            const iconEl = toast?.querySelector('.vd-toast-icon i');
             if (!toast || !msgEl) return;
             msgEl.textContent = message;
+            if (iconEl) iconEl.className = success ? 'ti ti-circle-check' : 'ti ti-alert-circle';
+            toast.setAttribute('role', success ? 'status' : 'alert');
+            toast.setAttribute('aria-live', success ? 'polite' : 'assertive');
             toast.classList.remove('d-none', 'vd-toast-success', 'vd-toast-error', 'show');
             toast.classList.add(success ? 'vd-toast-success' : 'vd-toast-error', 'show');
             clearTimeout(window._globalToastTimeout);
+            clearTimeout(window._globalToastTransitionTimeout);
             window._globalToastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
-                setTimeout(() => toast.classList.add('d-none'), 250);
+                window._globalToastTransitionTimeout = setTimeout(() => toast.classList.add('d-none'), 250);
             }, duration);
         };
+
+        document.querySelector('#globalToast .vd-toast-close')?.addEventListener('click', () => {
+            const toast = document.getElementById('globalToast');
+            clearTimeout(window._globalToastTimeout);
+            clearTimeout(window._globalToastTransitionTimeout);
+            toast?.classList.remove('show');
+            window._globalToastTransitionTimeout = setTimeout(() => toast?.classList.add('d-none'), 250);
+        });
 
         const sidebar    = document.getElementById('sidebar');
         const overlay    = document.getElementById('sidebarOverlay');
