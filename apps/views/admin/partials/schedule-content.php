@@ -1,7 +1,11 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
+$scheduleReadOnly = !empty($scheduleReadOnly);
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
+if (!isset($_SESSION['user_id']) || (
+    ($_SESSION['user_role'] ?? '') !== 'Dental Assistant'
+    && !($scheduleReadOnly && ($_SESSION['user_role'] ?? '') === 'Admin')
+)) {
     echo '<div class="vd-empty-state">Unauthorized.</div>';
     exit;
 }
@@ -38,7 +42,10 @@ $scheduleIds = [];
 foreach ($schedulesByClinic as $clinicSchedules) {
     $scheduleIds = array_merge($scheduleIds, array_column($clinicSchedules, 'schedule_id'));
 }
-$confirmedAppointmentsBySchedule = $scheduleModel->getConfirmedAppointmentsByScheduleIds($scheduleIds);
+$scheduleAppointmentsBySchedule = $scheduleReadOnly
+    ? $scheduleModel->getActiveAppointmentsByScheduleIds($scheduleIds)
+    : $scheduleModel->getConfirmedAppointmentsByScheduleIds($scheduleIds);
+$scheduleRosterLabel = $scheduleReadOnly ? 'booked' : 'confirmed';
 $firstClinic = $clinics[0] ?? null;
 $activeSummary = $firstClinic
     ? $scheduleSummaryByClinic[(int) $firstClinic['clinic_id']]
@@ -68,14 +75,17 @@ foreach ($schedulesByClinic as $clinicId => $clinicSchedules) {
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
-<div class="d-flex flex-column gap-4">
+<div class="d-flex flex-column gap-4 <?= $scheduleReadOnly ? 'vd-upcoming-overview' : '' ?>">
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-                <div class="vd-welcome-greet">SCHEDULE MANAGEMENT</div>
-                <div class="vd-welcome-name">Clinic Availability</div>
-                <p class="text-muted small mb-0 mt-2">Create appointment dates, review remaining availability, and adjust each schedule’s capacity.</p>
+                <div class="vd-welcome-greet"><?= $scheduleReadOnly ? 'APPOINTMENT OVERSIGHT' : 'SCHEDULE MANAGEMENT' ?></div>
+                <div class="vd-welcome-name"><?= $scheduleReadOnly ? 'Upcoming Appointments' : 'Clinic Availability' ?></div>
+                <p class="text-muted small mb-0 mt-2"><?= $scheduleReadOnly
+                    ? 'Review upcoming clinic schedules and open each roster to see booked patients and their services.'
+                    : 'Create appointment dates, review remaining availability, and adjust each schedule’s capacity.' ?></p>
             </div>
+            <?php if (!$scheduleReadOnly): ?>
             <button type="button" class="btn vd-btn-gold align-self-start" id="addScheduleForActiveClinic"
                 data-bs-toggle="modal" data-bs-target="#addScheduleModal"
                 data-schedule-mode="add"
@@ -86,6 +96,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 <?= $firstClinic ? '' : 'disabled' ?>>
                 <i class="ti ti-calendar-plus me-1"></i> Add Schedule
             </button>
+            <?php endif; ?>
         </div>
 
         <div class="vd-clinic-switch" role="tablist" aria-label="Schedule clinic">
@@ -138,7 +149,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             $available = max(0, (int) $sched['available_slots']);
                             $usagePercent = $capacity > 0 ? min(100, (int) round(($booked / $capacity) * 100)) : 0;
                             $timeRange = Schedule::formatTimeRange($sched['start_time'], $sched['end_time']);
-                            $confirmedAppointments = $confirmedAppointmentsBySchedule[(int) $sched['schedule_id']] ?? [];
+                            $scheduleAppointments = $scheduleAppointmentsBySchedule[(int) $sched['schedule_id']] ?? [];
                         ?>
                         <div class="vd-sched-card <?= $isPast ? 'past' : '' ?>"
                             id="schedCard-<?= $sched['schedule_id'] ?>" data-booked="<?= $booked ?>" data-capacity="<?= $capacity ?>"
@@ -159,7 +170,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                     <span id="usage-<?= $sched['schedule_id'] ?>"><?= $booked ?> booked of <?= $capacity ?></span>
                                     <div class="vd-sched-capacity-track"><span id="progress-<?= $sched['schedule_id'] ?>" style="width:<?= $usagePercent ?>%"></span></div>
                                 </div>
-                                <?php if (!$isPast): ?>
+                                <?php if (!$isPast && !$scheduleReadOnly): ?>
                                 <div class="vd-sched-actions">
                                 <button type="button" class="vd-sched-btn vd-edit-sched-btn"
                                     data-bs-toggle="modal" data-bs-target="#addScheduleModal" data-schedule-mode="edit"
@@ -183,15 +194,15 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                 </button>
                                 </div>
                                 <?php endif; ?>
-                                <button type="button" class="btn <?= $confirmedAppointments ? 'vd-btn-gold' : 'vd-btn-outline' ?> vd-sched-patients-button"
+                                <button type="button" class="btn <?= $scheduleAppointments ? 'vd-btn-gold' : 'vd-btn-outline' ?> vd-sched-patients-button"
                                     data-view-schedule-patients="<?= (int) $sched['schedule_id'] ?>"
                                     data-schedule-label="<?= htmlspecialchars($clinic['clinic_name'] . ' · ' . $d->format('M j, Y'), ENT_QUOTES) ?>"
                                     data-schedule-window="<?= htmlspecialchars($timeRange, ENT_QUOTES) ?>"
-                                    aria-label="View <?= count($confirmedAppointments) ?> confirmed patient<?= count($confirmedAppointments) === 1 ? '' : 's' ?>"
-                                    <?= $confirmedAppointments ? '' : 'disabled' ?>>
+                                    aria-label="View <?= count($scheduleAppointments) ?> <?= $scheduleRosterLabel ?> patient<?= count($scheduleAppointments) === 1 ? '' : 's' ?>"
+                                    <?= $scheduleAppointments ? '' : 'disabled' ?>>
                                     <i class="ti ti-users" aria-hidden="true"></i>
                                     <span>View Patients</span>
-                                    <strong><?= count($confirmedAppointments) ?></strong>
+                                    <strong><?= count($scheduleAppointments) ?></strong>
                                 </button>
                             </div>
                         </div>
@@ -204,7 +215,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         
 </div>
 
-<!-- Confirmed patients for one schedule -->
+<!-- Patients booked for one schedule -->
 <div class="modal fade vd-schedule-patients-modal" id="schedulePatientsModal" tabindex="-1"
     aria-labelledby="schedulePatientsModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -212,7 +223,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             <div class="modal-header">
                 <div>
                     <div class="vd-appointment-details-kicker">Schedule roster</div>
-                    <h5 class="modal-title vd-modal-title" id="schedulePatientsModalTitle">Confirmed patients</h5>
+                    <h5 class="modal-title vd-modal-title" id="schedulePatientsModalTitle"><?= $scheduleReadOnly ? 'Booked patients' : 'Confirmed patients' ?></h5>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -234,7 +245,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
     </div>
 </div>
 
-<!-- Full details for the selected confirmed appointment -->
+<!-- Full details for the selected appointment -->
 <div class="modal fade vd-appointment-details-modal vd-schedule-appointment-modal" id="scheduleAppointmentModal" tabindex="-1"
     aria-labelledby="scheduleAppointmentModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -243,12 +254,12 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 <div class="vd-schedule-appointment-identity">
                     <span class="vd-schedule-appointment-avatar" id="scheduleAppointmentAvatar">?</span>
                     <span>
-                        <span class="vd-appointment-details-kicker">Confirmed appointment</span>
+                        <span class="vd-appointment-details-kicker">Appointment details</span>
                         <h5 class="modal-title vd-modal-title" id="scheduleAppointmentModalTitle">Patient appointment</h5>
                         <p class="vd-appointment-details-subtitle mb-0" id="scheduleAppointmentModalSubtitle"></p>
                     </span>
                 </div>
-                <span class="vd-schedule-confirmed-mark"><i class="ti ti-circle-check-filled" aria-hidden="true"></i> Confirmed</span>
+                <span class="vd-schedule-confirmed-mark" id="scheduleAppointmentStatusMark" data-status="confirmed"><i class="ti ti-circle-check-filled" aria-hidden="true"></i><span>Confirmed</span></span>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -295,6 +306,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
     </div>
 </div>
 
+<?php if (!$scheduleReadOnly): ?>
 <!-- Delete confirmation modal -->
 <div class="modal fade" id="deleteScheduleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -313,16 +325,18 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
 (function () {
     const csrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
-    const confirmedAppointmentsBySchedule = <?= json_encode(
-        $confirmedAppointmentsBySchedule,
+    const scheduleAppointmentsBySchedule = <?= json_encode(
+        $scheduleAppointmentsBySchedule,
         JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ) ?>;
+    const scheduleRosterLabel = <?= json_encode($scheduleRosterLabel) ?>;
     function refreshPage() {
-        if (typeof loadpage === 'function') loadpage('schedule-content.php');
+        if (typeof loadpage === 'function') loadpage(<?= json_encode($scheduleReadOnly ? 'upcoming-appointments-content.php' : 'schedule-content.php') ?>);
     }
     window.refreshSchedulePage = refreshPage;
 
@@ -349,10 +363,12 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             item.setAttribute('aria-selected', isActive ? 'true' : 'false');
         });
         clinicPanels.forEach(panel => panel.classList.toggle('d-none', panel.dataset.clinicPanel !== button.dataset.clinicId));
-        addScheduleButton.dataset.clinicId = button.dataset.clinicId;
-        addScheduleButton.dataset.clinicName = button.dataset.clinicName;
-        addScheduleButton.dataset.defaultStart = button.dataset.defaultStart;
-        addScheduleButton.dataset.defaultEnd = button.dataset.defaultEnd;
+        if (addScheduleButton) {
+            addScheduleButton.dataset.clinicId = button.dataset.clinicId;
+            addScheduleButton.dataset.clinicName = button.dataset.clinicName;
+            addScheduleButton.dataset.defaultStart = button.dataset.defaultStart;
+            addScheduleButton.dataset.defaultEnd = button.dataset.defaultEnd;
+        }
         updateScheduleSummary(button);
     }));
 
@@ -408,6 +424,10 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         document.getElementById('scheduleAppointmentVisitDate').textContent = formatScheduleDate(appointment.date);
         document.getElementById('scheduleAppointmentVisitTime').textContent = `${formatScheduleTime(appointment.start_time)}–${formatScheduleTime(appointment.end_time)}`;
         document.getElementById('scheduleAppointmentVisitClinic').textContent = appointment.clinic_name || 'Clinic unavailable';
+        const statusMark = document.getElementById('scheduleAppointmentStatusMark');
+        const appointmentStatus = appointment.status || 'Status unavailable';
+        statusMark.dataset.status = appointmentStatus.toLowerCase().replaceAll(' ', '-');
+        statusMark.querySelector('span').textContent = appointmentStatus;
 
         const recordList = document.getElementById('scheduleAppointmentRecordList');
         recordList.replaceChildren();
@@ -463,10 +483,10 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
     function showSchedulePatients(button) {
         activeScheduleId = String(button.dataset.viewSchedulePatients);
-        const appointments = confirmedAppointmentsBySchedule[activeScheduleId] || [];
+        const appointments = scheduleAppointmentsBySchedule[activeScheduleId] || [];
         patientsSubtitle.textContent = button.dataset.scheduleLabel || '';
         patientsWindow.textContent = button.dataset.scheduleWindow || '';
-        patientsCount.textContent = `${appointments.length} confirmed`;
+        patientsCount.textContent = `${appointments.length} ${scheduleRosterLabel}`;
         patientsList.replaceChildren();
 
         appointments.forEach(appointment => {
@@ -484,7 +504,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             const service = document.createElement('span');
             service.textContent = appointment.service_name || 'Service not specified';
             const reference = document.createElement('small');
-            reference.textContent = `${appointment.appointment_code || 'Reference pending'} · Confirmed`;
+            reference.textContent = `${appointment.appointment_code || 'Reference pending'} · ${appointment.status || 'Status unavailable'}`;
             copy.append(name, service, reference);
             const arrow = document.createElement('span');
             arrow.className = 'vd-schedule-patient-option-arrow';
@@ -535,7 +555,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         });
     });
 
-    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+    document.getElementById('confirmDeleteBtn')?.addEventListener('click', async function () {
         if (!scheduleToDelete) return;
         const btn = this;
         btn.disabled = true;
@@ -577,4 +597,4 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 })();
 </script>
 
-<?php include __DIR__ . '/_add-schedule-modal.php'; ?>
+<?php if (!$scheduleReadOnly) include __DIR__ . '/_add-schedule-modal.php'; ?>

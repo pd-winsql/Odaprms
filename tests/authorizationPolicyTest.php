@@ -45,7 +45,7 @@ $adminDashboard = file_get_contents($root . '/apps/views/admin/dashboard.php');
 foreach (['appointment-content.php', 'services-content.php', 'clinic-content.php', 'schedule-content.php', 'patient-content.php', 'payment-review-content.php', 'logbook-content.php', 'messages-content.php'] as $operationalPage) {
     policyExpect(!str_contains($adminDashboard, 'data-page="' . $operationalPage . '"'), "Admin navigation excludes {$operationalPage}.");
 }
-foreach (['dashboard-content.php', 'den-assist-content.php', 'insights-content.php', 'activity-logs-content.php', 'siteSettings-content.php'] as $oversightPage) {
+foreach (['dashboard-content.php', 'upcoming-appointments-content.php', 'den-assist-content.php', 'insights-content.php', 'activity-logs-content.php', 'siteSettings-content.php'] as $oversightPage) {
     policyExpect(str_contains($adminDashboard, 'data-page="' . $oversightPage . '"'), "Admin navigation includes {$oversightPage}.");
 }
 

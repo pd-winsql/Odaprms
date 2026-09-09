@@ -80,6 +80,9 @@ $today = date('l, F j Y');
             <a href="#" class="vd-nav-item active" data-page="dashboard-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-list-check"></i></span> Today’s Queue
             </a>
+            <a href="#" class="vd-nav-item" data-page="upcoming-appointments-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-calendar-event"></i></span> Upcoming Appointments
+            </a>
 
             <div class="vd-nav-section">Manage</div>
             <a href="#" class="vd-nav-item" data-page="den-assist-content.php">

@@ -37,6 +37,7 @@ $files = [
     'dental-settings' => __DIR__ . '/../apps/views/dental_asst/partials/siteSettings-content.php',
     'insights' => __DIR__ . '/../apps/views/admin/partials/insights-content.php',
     'activity-logs' => __DIR__ . '/../apps/views/admin/partials/activity-logs-content.php',
+    'upcoming-appointments' => __DIR__ . '/../apps/views/admin/partials/upcoming-appointments-content.php',
 ];
 
 if (!isset($files[$case])) {
@@ -84,6 +85,15 @@ if ($case === 'insights'
 if ($case === 'activity-logs'
     && (!str_contains($html, 'Activity Logs') || !str_contains($html, 'Read-only history'))) {
     fwrite(STDERR, "The read-only activity log did not render.\n");
+    exit(1);
+}
+if ($case === 'upcoming-appointments'
+    && (!str_contains($html, 'Upcoming Appointments')
+        || !str_contains($html, 'Booked patients')
+        || !str_contains($html, 'scheduleAppointmentsBySchedule')
+        || str_contains($html, 'id="addScheduleForActiveClinic"')
+        || str_contains($html, 'id="confirmDeleteBtn"'))) {
+    fwrite(STDERR, "Admin upcoming appointment overview did not render in read-only mode.\n");
     exit(1);
 }
 if ($case === 'historical-logbook'

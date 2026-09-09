@@ -137,11 +137,32 @@ class Schedule {
      * secured only after it reaches the Confirmed status.
      */
     public function getConfirmedAppointmentsByScheduleIds(array $scheduleIds): array {
+        return $this->getAppointmentsByScheduleIds($scheduleIds, ['Confirmed']);
+    }
+
+    /**
+     * Returns every active reservation that currently occupies an upcoming
+     * schedule slot. This supports read-only appointment oversight.
+     */
+    public function getActiveAppointmentsByScheduleIds(array $scheduleIds): array {
+        return $this->getAppointmentsByScheduleIds($scheduleIds, [
+            'Pending Review',
+            'Awaiting Deposit',
+            'Payment Under Review',
+            'Confirmed',
+            'Checked In',
+            'In Progress',
+        ]);
+    }
+
+    private function getAppointmentsByScheduleIds(array $scheduleIds, array $statuses): array {
         $scheduleIds = array_values(array_unique(array_filter(array_map('intval', $scheduleIds))));
-        if (!$scheduleIds) return [];
+        $statuses = array_values(array_unique(array_filter(array_map('strval', $statuses))));
+        if (!$scheduleIds || !$statuses) return [];
 
         try {
-            $placeholders = implode(',', array_fill(0, count($scheduleIds), '?'));
+            $schedulePlaceholders = implode(',', array_fill(0, count($scheduleIds), '?'));
+            $statusPlaceholders = implode(',', array_fill(0, count($statuses), '?'));
             $stmt = $this->conn->prepare("
                 SELECT appointment.appointment_id, appointment.schedule_id,
                     appointment.patient_name, appointment.appointment_code,
@@ -152,11 +173,11 @@ class Schedule {
                 FROM vw_appointment_overview appointment
                 LEFT JOIN vw_appointment_payment_summary payment
                     ON payment.appointment_id = appointment.appointment_id
-                WHERE appointment.schedule_id IN ({$placeholders})
-                  AND appointment.status = 'Confirmed'
+                WHERE appointment.schedule_id IN ({$schedulePlaceholders})
+                  AND appointment.status IN ({$statusPlaceholders})
                 ORDER BY appointment.patient_name, appointment.appointment_id
             ");
-            $stmt->execute($scheduleIds);
+            $stmt->execute(array_merge($scheduleIds, $statuses));
 
             $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $appointmentIds = array_map('intval', array_column($appointments, 'appointment_id'));
@@ -189,7 +210,7 @@ class Schedule {
             }
             return $grouped;
         } catch (PDOException $e) {
-            error_log('getConfirmedAppointmentsByScheduleIds error: ' . $e->getMessage());
+            error_log('getAppointmentsByScheduleIds error: ' . $e->getMessage());
             return [];
         }
     }

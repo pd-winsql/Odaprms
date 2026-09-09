@@ -4576,6 +4576,24 @@ button.vd-stat-card {
     color: #638f31;
     font-size: 16px;
 }
+.vd-schedule-confirmed-mark[data-status="pending-review"],
+.vd-schedule-confirmed-mark[data-status="awaiting-deposit"],
+.vd-schedule-confirmed-mark[data-status="payment-under-review"] {
+    color: #86641d;
+}
+.vd-schedule-confirmed-mark[data-status="pending-review"] i,
+.vd-schedule-confirmed-mark[data-status="awaiting-deposit"] i,
+.vd-schedule-confirmed-mark[data-status="payment-under-review"] i {
+    color: #b48727;
+}
+.vd-schedule-confirmed-mark[data-status="checked-in"],
+.vd-schedule-confirmed-mark[data-status="in-progress"] {
+    color: #285e6b;
+}
+.vd-schedule-confirmed-mark[data-status="checked-in"] i,
+.vd-schedule-confirmed-mark[data-status="in-progress"] i {
+    color: #397f8e;
+}
 .vd-schedule-visit-banner {
     display: flex;
     align-items: center;
