@@ -2967,15 +2967,21 @@ button.vd-stat-card {
 
 .vd-profile-hq-table {
     border-collapse: collapse;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.45;
 }
 
 .vd-profile-hq-table thead th {
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--gold);
     padding: 8px 12px;
     border-bottom: 1px solid var(--border);
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1.35;
     text-align: left;
+    text-transform: uppercase;
 }
 
 .vd-profile-hq-table tbody tr {
@@ -2983,7 +2989,7 @@ button.vd-stat-card {
 }
 
 .vd-profile-hq-table tbody tr:last-child {
-    border-bottom: none;
+    border-bottom: 0;
 }
 
 .vd-profile-hq-table td {
@@ -2993,11 +2999,19 @@ button.vd-stat-card {
 }
 
 .vd-hq-section-row td {
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--gold);
+    padding: 7px 12px;
     background: var(--gold-pale);
-    padding: 7px 12px !important;
+    color: var(--mid);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    line-height: 1.35;
+    text-transform: uppercase;
+}
+
+.vd-profile-hq-table .form-check-input {
+    width: 20px;
+    height: 20px;
 }
 
 .vd-conditions-wrap {
@@ -5892,16 +5906,14 @@ button.vd-stat-card {
     padding: 3px 7px;
 }
 
-.vd-dash-body table th,
-.vd-profile-hq-table thead th {
+.vd-dash-body table th {
     font-size: 12px;
     font-weight: 600;
     line-height: 1.35;
     letter-spacing: 0.08em;
 }
 
-.vd-dash-body table td,
-.vd-profile-hq-table {
+.vd-dash-body table td {
     font-size: 14px;
     font-weight: 400;
     line-height: 1.45;
@@ -5958,7 +5970,6 @@ button.vd-stat-card {
 }
 
 .vd-profile-label,
-.vd-profile-hq-table thead th,
 .vd-table-details-eyebrow,
 .vd-table-details-item dt {
     font-size: 12px;
@@ -5966,24 +5977,29 @@ button.vd-stat-card {
     letter-spacing: 0.09em;
 }
 
-.vd-dash-body .vd-profile-hq-table .vd-hq-section-row td {
-    color: var(--mid);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.09em;
-    line-height: 1.35;
+.vd-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #fff;
+    color: var(--dark);
+    cursor: pointer;
 }
 
-.vd-profile-hq-table .form-check-input {
+.vd-check-item .form-check-input {
+    flex: 0 0 auto;
     width: 20px;
     height: 20px;
+    margin: 0;
 }
 
-.vd-check-item {
-    min-height: 44px;
-    padding: 9px 10px !important;
-    border: 1px solid transparent;
-    border-radius: 8px;
+.vd-check-item span {
+    font-size: 13px;
+    line-height: 1.35;
 }
 
 .vd-check-item:focus-within {
@@ -5991,87 +6007,161 @@ button.vd-stat-card {
     background: var(--gold-pale);
 }
 
-/* Patient profile sections become a compact mobile accordion. */
-.vd-profile-section-toggle {
-    width: 100%;
-    border: 0;
-    background: transparent;
-    color: var(--dark);
+.vd-profile-wizard {
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+.vd-profile-wizard-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0;
-    text-align: left;
+    gap: 24px;
+    margin-bottom: 18px;
+}
+
+.vd-profile-wizard-header h2 {
+    margin: 3px 0 4px;
     font-family: "Cormorant Garamond", serif;
-    font-size: 20px !important;
+    font-size: 30px;
     font-weight: 500;
-}
-
-.vd-profile-section-toggle i {
-    color: var(--gold);
-    transition: transform 0.2s ease;
-}
-
-.vd-profile-section-toggle[aria-expanded="true"] i {
-    transform: rotate(180deg);
-}
-
-.vd-readonly-profile input[readonly],
-.vd-readonly-profile :disabled {
+    line-height: 1.1;
     color: var(--dark);
-    opacity: 1;
-    cursor: default;
-    -webkit-text-fill-color: var(--dark);
 }
 
-.vd-profile-review-note {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
-    padding: 20px 22px;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--gold);
-    border-radius: 12px;
-    background: linear-gradient(105deg, #fffaf0 0%, var(--white-bg) 58%);
-    box-shadow: 0 8px 24px rgba(77, 59, 27, 0.06);
-}
-
-.vd-profile-review-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: var(--gold-pale);
-    color: var(--gold);
-    font-size: 23px;
-}
-
-.vd-profile-review-copy h2 {
-    margin: 2px 0 4px;
-    color: var(--dark);
-    font-family: "Cormorant Garamond", serif;
-    font-size: 25px;
-    font-weight: 500;
-    line-height: 1.15;
-}
-
-.vd-profile-review-copy p {
+.vd-profile-wizard-header p {
+    max-width: 620px;
     margin: 0;
     color: var(--mid);
     font-size: 13px;
     line-height: 1.55;
 }
 
-.vd-profile-review-eyebrow {
+.vd-profile-wizard-eyebrow {
     color: var(--gold);
     font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
+    font-weight: 600;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
+}
+
+.vd-profile-progress {
+    position: sticky;
+    top: 74px;
+    z-index: 12;
+    margin-bottom: 18px;
+    padding: 15px 18px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(255, 253, 248, 0.97);
+    box-shadow: 0 8px 24px rgba(77, 59, 27, 0.07);
+    backdrop-filter: blur(10px);
+}
+
+.vd-profile-progress-summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.vd-profile-progress-summary span {
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.vd-profile-progress-summary strong {
+    color: var(--dark);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.vd-profile-progress-track {
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #eadfca;
+}
+
+.vd-profile-progress-track span {
+    display: block;
+    width: 16.6667%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--gold);
+    transition: width 0.24s ease;
+}
+
+.vd-profile-step-list {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.vd-profile-step-button {
+    width: 100%;
+    min-height: 42px;
+    padding: 6px 5px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--mid);
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+.vd-profile-step-button span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-right: 3px;
+    border: 1px solid #cfbb91;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.vd-profile-step-button:not(:disabled) {
+    cursor: pointer;
+}
+
+.vd-profile-step-button[aria-current="step"] {
+    background: var(--gold-pale);
+    color: var(--dark);
+    font-weight: 600;
+}
+
+.vd-profile-step-button[aria-current="step"] span {
+    border-color: var(--gold);
+    background: var(--gold);
+    color: #fff;
+}
+
+.vd-profile-step-button.is-complete span {
+    border-color: #6d8d43;
+    color: #4b6f22;
+}
+
+.vd-profile-step-button:disabled {
+    opacity: 0.48;
+}
+
+.vd-profile-step-button:focus-visible,
+.vd-profile-back-button:focus-visible,
+.vd-health-choice input:focus-visible + span {
+    outline: 3px solid rgba(128, 97, 31, 0.28);
+    outline-offset: 2px;
 }
 
 .vd-profile-review-badge {
@@ -6088,6 +6178,34 @@ button.vd-stat-card {
     white-space: nowrap;
 }
 
+.vd-profile-sections {
+    min-height: 360px;
+}
+
+.vd-profile-step[hidden] {
+    display: none;
+}
+
+.vd-profile-step-header {
+    align-items: flex-start;
+}
+
+.vd-profile-step-header p {
+    margin: 5px 0 0;
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.vd-profile-step-number {
+    flex: 0 0 auto;
+    color: #d8c7a3;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+}
+
 .vd-patient-profile-form .vd-input:not(:disabled) {
     background-color: #fff;
 }
@@ -6102,15 +6220,221 @@ button.vd-stat-card {
     box-shadow: 0 0 0 3px rgba(128, 97, 31, 0.13);
 }
 
-.vd-profile-savebar {
+.vd-health-question-list {
+    display: grid;
+    gap: 10px;
+}
+
+.vd-health-question {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 164px;
+    align-items: center;
+    gap: 12px 18px;
+    margin: 0;
+    padding: 13px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.vd-health-question legend {
+    float: none;
+    width: auto;
+    margin: 0;
+    color: var(--dark);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.vd-health-choice {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+
+.vd-health-choice label {
+    position: relative;
+    margin: 0;
+    cursor: pointer;
+}
+
+.vd-health-choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.vd-health-choice span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border: 1px solid #d8c9ab;
+    border-radius: 8px;
+    background: #fffdf8;
+    color: var(--mid);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vd-health-choice input:checked + span {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+    color: #674b10;
+    box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.vd-health-detail {
+    grid-column: 1 / -1;
+}
+
+.vd-health-detail label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--mid);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.vd-health-section-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--gold);
+    background: var(--gold-pale);
+}
+
+.vd-health-section-heading strong {
+    color: var(--dark);
+    font-size: 12px;
+}
+
+.vd-health-section-heading span {
+    color: var(--mid);
+    font-size: 11px;
+}
+
+.vd-profile-blood-grid {
+    margin-top: 18px;
+}
+
+.vd-no-condition-option {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 14px;
+    padding: 13px 14px;
+    border: 1px solid #cfbb91;
+    border-radius: 10px;
+    background: var(--gold-pale);
+    cursor: pointer;
+}
+
+.vd-no-condition-option .form-check-input {
+    flex: 0 0 auto;
+    width: 21px;
+    height: 21px;
+    margin: 0;
+}
+
+.vd-no-condition-option span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--dark);
+    font-size: 13px;
+}
+
+.vd-no-condition-option small {
+    color: var(--mid);
+    font-size: 11px;
+}
+
+.vd-condition-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.vd-profile-other-condition {
+    max-width: 360px;
+}
+
+.vd-consent-for-field > legend {
+    float: none;
+    width: auto;
+    margin: 0;
+}
+
+.vd-consent-choice-grid label:last-child {
+    grid-column: 1 / -1;
+}
+
+.vd-consent-declaration {
+    margin-bottom: 20px;
+    padding: 18px 20px;
+    border: 1px solid #d7c18d;
+    border-left: 4px solid var(--gold);
+    border-radius: 10px;
+    background: #fffaf0;
+}
+
+.vd-consent-declaration-label {
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.vd-consent-declaration h3 {
+    margin: 4px 0 10px;
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 23px;
+    font-weight: 600;
+}
+
+.vd-consent-declaration p {
+    margin: 0 0 9px;
+    color: #554b3e;
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.vd-consent-declaration p:last-child {
+    margin-bottom: 0;
+}
+
+.vd-consent-review-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 16px 0 0;
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.vd-consent-review-note i {
+    margin-top: 2px;
+    color: var(--gold);
+    font-size: 16px;
+}
+
+.vd-profile-wizard-actions {
     position: sticky;
-    bottom: 12px;
+    bottom: 10px;
     z-index: 20;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    margin-top: 20px;
+    margin-top: 18px;
     padding: 14px 16px 14px 20px;
     border: 1px solid rgba(186, 157, 92, 0.72);
     border-radius: 12px;
@@ -6119,28 +6443,48 @@ button.vd-stat-card {
     backdrop-filter: blur(10px);
 }
 
-.vd-profile-savebar > div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.vd-profile-savebar strong {
-    color: var(--dark);
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.vd-profile-savebar span {
+.vd-profile-save-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
     color: var(--mid);
-    font-size: 11px;
+    font-size: 12px;
 }
 
-.vd-profile-savebar .btn {
-    flex: 0 0 auto;
+.vd-profile-save-state i {
+    color: var(--gold);
+    font-size: 17px;
+}
+
+.vd-profile-action-buttons {
+    display: flex;
     gap: 8px;
-    min-height: 44px;
-    font-weight: 500;
+}
+
+.vd-profile-action-buttons .btn {
+    min-height: 46px;
+    min-width: 116px;
+    gap: 7px;
+}
+
+.vd-profile-action-buttons .vd-btn-gold:disabled {
+    border-color: #ded2b9;
+    background: #ded2b9;
+    color: #5e513c !important;
+    opacity: 1;
+}
+
+.vd-profile-back-button {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--dark);
+}
+
+.vd-profile-back-button:hover:not(:disabled) {
+    border-color: var(--gold);
+    background: var(--gold-pale);
+    color: var(--dark);
 }
 
 .vd-profile-save-alert {
@@ -6232,48 +6576,112 @@ button.vd-stat-card {
     }
 
     .vd-profile-sections {
-        gap: 12px !important;
+        min-height: 0;
     }
 
     .vd-profile-sections .vd-dash-card-header {
-        padding-block: 14px;
+        padding: 15px 16px;
     }
 
     .vd-profile-body {
         padding: 16px;
     }
 
-    .vd-profile-review-note {
-        grid-template-columns: auto minmax(0, 1fr);
-        gap: 12px;
-        padding: 16px;
+    .vd-profile-wizard-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 14px;
     }
 
-    .vd-profile-review-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-    }
-
-    .vd-profile-review-copy h2 {
-        font-size: 22px;
+    .vd-profile-wizard-header h2 {
+        font-size: 26px;
     }
 
     .vd-profile-review-badge {
-        grid-column: 1 / -1;
-        justify-self: start;
+        padding: 6px 9px;
+        font-size: 10px;
     }
 
-    .vd-profile-savebar {
+    .vd-profile-progress {
+        position: static;
+        margin-inline: -2px;
+        padding: 12px 14px;
+    }
+
+    .vd-profile-step-list {
+        display: none;
+    }
+
+    .vd-profile-step-header p {
+        margin-top: 4px;
+    }
+
+    .vd-profile-step-number {
+        font-size: 24px;
+    }
+
+    .vd-patient-profile-form .vd-input {
+        min-height: 48px;
+        font-size: 16px;
+    }
+
+    .vd-health-question {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 13px;
+    }
+
+    .vd-health-choice span {
+        min-height: 48px;
+    }
+
+    .vd-health-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .vd-condition-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .vd-profile-other-condition {
+        max-width: none;
+    }
+
+    .vd-consent-declaration {
+        padding: 16px;
+    }
+
+    .vd-consent-declaration p {
+        font-size: 14px;
+    }
+
+    .vd-profile-wizard-actions {
         align-items: stretch;
         flex-direction: column;
-        gap: 12px;
-        bottom: 8px;
-        padding: 14px;
+        gap: 9px;
+        bottom: max(8px, env(safe-area-inset-bottom));
+        margin-top: 14px;
+        padding: 11px;
     }
 
-    .vd-profile-savebar .btn {
+    .vd-profile-save-state {
+        min-height: 20px;
+        padding-inline: 2px;
+        font-size: 11px;
+    }
+
+    .vd-profile-action-buttons {
         width: 100%;
+    }
+
+    .vd-profile-action-buttons .btn {
+        flex: 1 1 0;
+        width: 100%;
+        min-height: 48px;
+        min-width: 0;
     }
 
     .vd-billing-overview {

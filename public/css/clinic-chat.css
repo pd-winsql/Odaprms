@@ -53,7 +53,7 @@
         background-color 0.2s ease,
         box-shadow 0.2s ease;
 }
-.vd-dash-body:has(.vd-profile-savebar) .vd-chat-launch {
+.vd-dash-body:has(.vd-profile-wizard-actions) .vd-chat-launch {
     bottom: 100px;
 }
 .vd-chat-launch [data-chat-unread] {
@@ -509,13 +509,15 @@
     .vd-chat-message {
         width: 90%;
     }
-    .vd-dash-body:has(.vd-profile-savebar) .vd-chat-launch {
+    .vd-dash-body:has(.vd-profile-wizard-actions) .vd-chat-launch {
         bottom: 150px;
+        right: 0;
         width: 48px;
         padding-inline: 0;
+        border-radius: 24px 0 0 24px;
         justify-content: center;
     }
-    .vd-dash-body:has(.vd-profile-savebar) .vd-chat-launch-label {
+    .vd-dash-body:has(.vd-profile-wizard-actions) .vd-chat-launch-label {
         position: absolute;
         width: 1px;
         height: 1px;

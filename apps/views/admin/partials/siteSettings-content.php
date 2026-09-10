@@ -18,6 +18,13 @@ $settingsModel = new SiteSettingsModel($conn);
 $settings = $settingsModel->getSettings();
 $clinics = (new Clinic($conn))->getAllClinics();
 $isAdmin = ($_SESSION['user_role'] ?? '') === 'Admin';
+$minimumPatientAge = max(
+    SiteSettingsModel::MINIMUM_PATIENT_AGE_LIMIT,
+    min(
+        SiteSettingsModel::MAXIMUM_PATIENT_AGE_LIMIT,
+        (int) ($settings['minimum_patient_age_years'] ?? SiteSettingsModel::DEFAULT_MINIMUM_PATIENT_AGE)
+    )
+);
 $transitionMinutes = max(
     Schedule::MIN_TRANSITION_MINUTES,
     min(Schedule::MAX_TRANSITION_MINUTES, (int) ($settings['clinic_transition_minutes'] ?? 90))
@@ -257,6 +264,31 @@ function sv($settings, $key)
         </div>
     </div>
 
+    <div class="vd-dash-card">
+        <div class="vd-dash-card-header">
+            <span class="vd-dash-card-title">Patient Eligibility</span>
+        </div>
+        <div class="vd-dash-card-body">
+            <p class="vd-appt-meta mb-3">This minimum applies to new registrations and every appointment request. Changing it also affects existing patient accounts immediately.</p>
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-lg-4">
+                    <label class="vd-label form-label" for="minimumPatientAge">Minimum patient age</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control vd-input vd-field" id="minimumPatientAge"
+                            data-field="minimum_patient_age_years" value="<?= $minimumPatientAge ?>"
+                            min="<?= SiteSettingsModel::MINIMUM_PATIENT_AGE_LIMIT ?>" max="<?= SiteSettingsModel::MAXIMUM_PATIENT_AGE_LIMIT ?>"
+                            step="1" inputmode="numeric" required aria-describedby="minimumPatientAgeHint">
+                        <span class="input-group-text">years</span>
+                    </div>
+                    <div class="form-text" id="minimumPatientAgeHint">Use 0 to allow patients of any age.</div>
+                </div>
+                <div class="col-sm-6 col-lg-8 d-flex justify-content-sm-end">
+                    <button type="button" class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="eligibility">Save Eligibility Policy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php endif; ?>
 
 </div>
@@ -293,6 +325,7 @@ function sv($settings, $key)
             about: 'About Section',
             contact: 'Contact Information',
             payment: 'GCash Deposit Settings',
+            eligibility: 'Patient Eligibility',
         };
 
         function showToast(msg, success) {

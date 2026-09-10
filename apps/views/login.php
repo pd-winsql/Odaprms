@@ -123,13 +123,13 @@ if (isset($_SESSION['user_id'])) {
 			const btn = document.getElementById('loginBtn');
 			const errEl = document.getElementById('loginError');
 			errEl.classList.add('d-none');
-			btn.textContent = 'Signing in…';
-			btn.disabled = true;
 			LoadingUI.setButton(btn, true, 'Signing in…');
 
 			const formData = new FormData(this);
 			formData.append('action', 'login');
 			formData.append('next', new URLSearchParams(window.location.search).get('next') || '');
+
+			let isRedirecting = false;
 
 			try {
 				const res = await fetch('../controllers/userController.php', {
@@ -139,20 +139,19 @@ if (isset($_SESSION['user_id'])) {
 				const result = await res.json();
 
 				if (result.success) {
+					isRedirecting = true;
 					window.location.href = result.redirect;
 				} else {
 					errEl.textContent = result.message;
 					errEl.classList.remove('d-none');
-					btn.textContent = 'Sign In';
-					LoadingUI.setButton(btn, false);
-					btn.disabled = false;
 				}
 			} catch (err) {
 				errEl.textContent = 'Network error. Please try again.';
 				errEl.classList.remove('d-none');
-				btn.textContent = 'Sign In';
-				LoadingUI.setButton(btn, false);
-				btn.disabled = false;
+			} finally {
+				if (!isRedirecting) {
+					LoadingUI.setButton(btn, false);
+				}
 			}
 		});
 	</script>

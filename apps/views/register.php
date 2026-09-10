@@ -1,7 +1,13 @@
 <?php
 session_start();
 require_once '../helpers/siteBranding.php';
-$branding = vdLoadSiteBranding();
+require_once '../helpers/patientEligibility.php';
+$db = new Database();
+$conn = $db->connect();
+$branding = vdLoadSiteBranding($conn);
+$minimumPatientAge = PatientEligibility::minimumAge($conn);
+$latestEligibleBirthdate = PatientEligibility::latestEligibleBirthdate($minimumPatientAge);
+$eligibilityRequirement = PatientEligibility::requirementMessage($minimumPatientAge);
 if (isset($_SESSION['user_id'])) {
     header('Location: /Capstone System/index.php');
     exit;
@@ -81,7 +87,13 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
           <div class="vd-auth-group"><label class="vd-label" for="regMiddleName">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" id="regMiddleName" class="vd-auth-input" value="<?= $escape($registrationValues['middlename']) ?>" autocomplete="additional-name"></div>
           <div class="vd-auth-group"><label class="vd-label" for="regLastName">Last Name</label><input type="text" name="lastname" id="regLastName" class="vd-auth-input" value="<?= $escape($registrationValues['lastname']) ?>" required autocomplete="family-name"></div>
           <div class="vd-auth-group"><label class="vd-label" for="regSuffix">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" id="regSuffix" class="vd-auth-input" value="<?= $escape($registrationValues['suffix']) ?>" placeholder="Jr., Sr., III"></div>
-          <div class="vd-auth-group"><label class="vd-label" for="regBirthdate">Birthdate</label><input type="date" name="birthdate" id="regBirthdate" class="vd-auth-input" value="<?= $escape($registrationValues['birthdate']) ?>" max="<?= date('Y-m-d') ?>" required autocomplete="bday"></div>
+          <div class="vd-auth-group">
+            <label class="vd-label" for="regBirthdate">Birthdate</label>
+            <input type="date" name="birthdate" id="regBirthdate" class="vd-auth-input"
+              value="<?= $escape($registrationValues['birthdate']) ?>" max="<?= $escape($latestEligibleBirthdate) ?>"
+              required autocomplete="bday" aria-describedby="regBirthdateHint">
+            <div class="vd-auth-hint" id="regBirthdateHint"><?= $escape($eligibilityRequirement) ?></div>
+          </div>
           <div class="vd-auth-group">
             <label class="vd-label" for="regGender">Gender</label>
             <select name="gender" id="regGender" class="vd-auth-input" required>
@@ -179,6 +191,9 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
     const termsAgreeButton = document.getElementById('systemTermsAgreeButton');
     const registrationPasswordKey = 'pendingRegistrationPasswords';
     const isEditingRegistration = <?= $isEditingRegistration ? 'true' : 'false' ?>;
+    const minimumPatientAge = <?= $minimumPatientAge ?>;
+    const latestEligibleBirthdate = <?= json_encode($latestEligibleBirthdate) ?>;
+    const birthdateInput = document.getElementById('regBirthdate');
 
     function hasReachedTermsEnd() {
       return termsScrollRegion.scrollHeight - termsScrollRegion.scrollTop - termsScrollRegion.clientHeight <= 8;
@@ -249,6 +264,16 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
       this.value = this.value.replace(/\D/g, '').slice(0, 11);
     });
 
+    birthdateInput.addEventListener('change', function () {
+      const isEligible = this.value === '' || this.value <= latestEligibleBirthdate;
+      this.classList.toggle('vd-auth-input-invalid', !isEligible);
+      if (isEligible) {
+        this.removeAttribute('aria-invalid');
+      } else {
+        this.setAttribute('aria-invalid', 'true');
+      }
+    });
+
     registerForm.addEventListener('submit', async function (e) {
       e.preventDefault();
 
@@ -279,6 +304,18 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
         errEl.textContent = 'Please fill in all required fields.';
         errEl.classList.remove('d-none');
         missingFields[0].focus();
+        return;
+      }
+
+      if (birthdateInput.value > latestEligibleBirthdate) {
+        const ageUnit = minimumPatientAge === 1 ? 'year' : 'years';
+        birthdateInput.classList.add('vd-auth-input-invalid');
+        birthdateInput.setAttribute('aria-invalid', 'true');
+        errEl.textContent = minimumPatientAge === 0
+          ? 'Please enter a valid birthdate.'
+          : `Patients must be at least ${minimumPatientAge} ${ageUnit} old to register.`;
+        errEl.classList.remove('d-none');
+        birthdateInput.focus();
         return;
       }
 

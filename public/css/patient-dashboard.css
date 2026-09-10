@@ -641,6 +641,51 @@
     box-shadow: 0 3px 10px rgba(160, 122, 54, .2);
 }
 
+.vd-booking-eligibility-panel {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    padding: 28px;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold-pale), #fff 68%);
+}
+
+.vd-booking-eligibility-icon {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--gold);
+    font-size: 27px;
+    box-shadow: 0 5px 18px rgba(92, 68, 30, .1);
+}
+
+.vd-booking-eligibility-copy h2 {
+    margin: 0 0 6px;
+    color: var(--dark);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 27px;
+    font-weight: 500;
+    line-height: 1.15;
+}
+
+.vd-booking-eligibility-copy > p:not(.vd-section-label) {
+    max-width: 680px;
+    margin: 0 0 8px;
+    color: var(--mid);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.vd-booking-eligibility-copy .vd-booking-eligibility-detail {
+    margin-bottom: 16px;
+}
+
 .vd-booking-schedule-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -912,6 +957,7 @@
     .vd-dash-content { padding: 16px 14px; }
     .vd-clinic-switch { width: 100%; grid-template-columns: 1fr 1fr; }
     .vd-clinic-switch-btn { padding: 10px 8px; font-size: 10px; }
+    .vd-booking-eligibility-panel { grid-template-columns: 1fr; padding: 22px 18px; }
     .vd-booking-schedule-grid { grid-template-columns: repeat(2, 1fr); padding: 14px; }
     .vd-booking-profile-grid { grid-template-columns: 1fr 1fr; }
     .vd-booking-service-options { grid-template-columns: 1fr; }

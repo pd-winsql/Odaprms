@@ -11,12 +11,18 @@ require_once __DIR__ . '/../../../models/patientModel.php';
 require_once __DIR__ . '/../../../models/clinicModel.php';
 require_once __DIR__ . '/../../../models/scheduleModel.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
+require_once __DIR__ . '/../../../helpers/patientEligibility.php';
 $appointmentRules = require __DIR__ . '/../../../../config/appointment.php';
 $maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 
 $db = new Database();
 $conn = $db->connect();
 $patient = (new Patient($conn))->getPatientByUserId($_SESSION['user_id']);
+$minimumPatientAge = PatientEligibility::minimumAge($conn);
+$bookingEligibility = PatientEligibility::assess($patient['birthdate'] ?? '', $minimumPatientAge);
+$eligibleOnLabel = !empty($bookingEligibility['eligible_on'])
+    ? date('F j, Y', strtotime($bookingEligibility['eligible_on']))
+    : '';
 $clinics = (new Clinic($conn))->getAllClinics();
 $scheduleModel = new Schedule($conn);
 $serviceRows = (new ServiceModel($conn))->getHomepageServices();
@@ -60,8 +66,28 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
 ?>
 
 <div class="d-flex flex-column gap-4 vd-booking-content">
-    <p class="text-muted small mb-0">Select a clinic, choose an open date, then pick one or more services.</p>
+    <p class="text-muted small mb-0">
+        <?= $bookingEligibility['eligible']
+            ? 'Select a clinic, choose an open date, then pick one or more services.'
+            : 'Online appointment requests become available after the patient eligibility requirement is met.' ?>
+    </p>
 
+    <?php if (!$bookingEligibility['eligible']): ?>
+    <section class="vd-booking-eligibility-panel" aria-labelledby="bookingEligibilityTitle">
+        <span class="vd-booking-eligibility-icon" aria-hidden="true"><i class="ti ti-calendar-exclamation"></i></span>
+        <div class="vd-booking-eligibility-copy">
+            <p class="vd-section-label mb-1">Patient eligibility</p>
+            <h2 id="bookingEligibilityTitle"><?= $bookingEligibility['valid'] ? 'Booking is not available yet' : 'Confirm your birthdate' ?></h2>
+            <p><?= htmlspecialchars($bookingEligibility['message']) ?></p>
+            <?php if ($bookingEligibility['valid'] && $eligibleOnLabel !== ''): ?>
+            <p class="vd-booking-eligibility-detail">Based on the birthdate in your profile, online booking becomes available on <strong><?= htmlspecialchars($eligibleOnLabel) ?></strong>.</p>
+            <?php else: ?>
+            <p class="vd-booking-eligibility-detail">Review your patient profile and enter a valid birthdate before requesting an appointment.</p>
+            <?php endif; ?>
+            <a href="#profile-content.php" class="btn vd-btn-outline btn-sm"><i class="ti ti-user-edit" aria-hidden="true"></i> Review Profile</a>
+        </div>
+    </section>
+    <?php else: ?>
     <div class="vd-clinic-switch" role="tablist" aria-label="Clinic">
         <?php foreach ($clinics as $index => $clinic): ?>
         <button type="button" class="vd-clinic-switch-btn <?= $index === 0 ? 'active' : '' ?>"
@@ -147,8 +173,10 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
             </form>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
+<?php if ($bookingEligibility['eligible']): ?>
 <script>
 (function () {
     const schedulesByClinic = <?= json_encode($schedulesByClinic, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
@@ -292,3 +320,4 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
     });
 })();
 </script>
+<?php endif; ?>

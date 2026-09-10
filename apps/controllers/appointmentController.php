@@ -4,6 +4,7 @@ require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
+require_once '../helpers/patientEligibility.php';
 
 // The CSRF helper may have already opened the session. Starting it only when
 // needed keeps PHP notices out of JSON responses consumed by fetch().
@@ -242,6 +243,13 @@ class AppointmentController {
                 $patient = $patientModel->getPatientByUserId($_SESSION['user_id']);
                 if (!$patient) {
                     echo json_encode(['success' => false, 'message' => 'Patient profile not found.']);
+                    exit;
+                }
+
+                $minimumPatientAge = PatientEligibility::minimumAge($conn);
+                $eligibility = PatientEligibility::assess($patient['birthdate'] ?? '', $minimumPatientAge);
+                if (!$eligibility['eligible']) {
+                    echo json_encode(['success' => false, 'message' => $eligibility['message']]);
                     exit;
                 }
                 $patient_id = $patient['patient_id'];

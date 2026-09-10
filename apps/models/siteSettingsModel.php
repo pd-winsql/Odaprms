@@ -1,6 +1,10 @@
 <?php
 
 class SiteSettingsModel {
+    public const DEFAULT_MINIMUM_PATIENT_AGE = 1;
+    public const MINIMUM_PATIENT_AGE_LIMIT = 0;
+    public const MAXIMUM_PATIENT_AGE_LIMIT = 18;
+
     private $conn;
     public function __construct($conn)
     {
@@ -15,6 +19,7 @@ class SiteSettingsModel {
         'about'   => ['about_intro', 'pillar1_title', 'pillar1_desc', 'pillar2_title', 'pillar2_desc', 'pillar3_title', 'pillar3_desc'],
         'contact' => ['contact_address', 'contact_phone', 'contact_email'],
         'payment' => ['deposit_amount', 'payment_deadline_minutes', 'gcash_account_name', 'gcash_account_number'],
+        'eligibility' => ['minimum_patient_age_years'],
     ];
 
     public static function validatePaymentSettings(array $data): array
@@ -51,6 +56,27 @@ class SiteSettingsModel {
                 'gcash_account_name' => $accountName,
                 'gcash_account_number' => $accountNumber,
             ],
+        ];
+    }
+
+    public static function validateEligibilitySettings(array $data): array
+    {
+        $rawMinimumAge = trim((string) ($data['minimum_patient_age_years'] ?? ''));
+        if (!ctype_digit($rawMinimumAge)) {
+            return ['success' => false, 'message' => 'Minimum patient age must be a whole number.'];
+        }
+
+        $minimumAge = (int) $rawMinimumAge;
+        if ($minimumAge < self::MINIMUM_PATIENT_AGE_LIMIT || $minimumAge > self::MAXIMUM_PATIENT_AGE_LIMIT) {
+            return [
+                'success' => false,
+                'message' => 'Minimum patient age must be between ' . self::MINIMUM_PATIENT_AGE_LIMIT . ' and ' . self::MAXIMUM_PATIENT_AGE_LIMIT . ' years.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data' => ['minimum_patient_age_years' => (string) $minimumAge],
         ];
     }
 

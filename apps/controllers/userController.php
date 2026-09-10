@@ -3,6 +3,7 @@ require_once '../models/userModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../../config/mailer.php';
+require_once '../helpers/patientEligibility.php';
 
 session_start();
 
@@ -120,9 +121,10 @@ class UserController {
             exit;
         }
 
-        $birthdate = DateTimeImmutable::createFromFormat('Y-m-d', $identity['birthdate']);
-        if (!$birthdate || $birthdate->format('Y-m-d') !== $identity['birthdate'] || $birthdate > new DateTimeImmutable('today')) {
-            echo json_encode(['success' => false, 'message' => 'Please enter a valid birthdate.']);
+        $minimumPatientAge = PatientEligibility::minimumAge($this->conn);
+        $eligibility = PatientEligibility::assess($identity['birthdate'], $minimumPatientAge);
+        if (!$eligibility['eligible']) {
+            echo json_encode(['success' => false, 'message' => $eligibility['message']]);
             exit;
         }
         if (!preg_match('/^\d{11}$/', $identity['phone_number'])) {
@@ -259,6 +261,13 @@ class UserController {
 
         if (!$pending || $pending['email'] !== $email) {
             echo json_encode(['success' => false, 'message' => 'Registration session expired. Please start again.']);
+            exit;
+        }
+
+        $minimumPatientAge = PatientEligibility::minimumAge($this->conn);
+        $eligibility = PatientEligibility::assess($pending['identity']['birthdate'] ?? '', $minimumPatientAge);
+        if (!$eligibility['eligible']) {
+            echo json_encode(['success' => false, 'message' => $eligibility['message']]);
             exit;
         }
 
