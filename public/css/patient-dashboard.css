@@ -611,9 +611,10 @@
 
 /* Patient dashboard booking */
 .vd-clinic-switch {
-    display: inline-grid;
-    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 6px;
+    width: min(100%, 780px);
     padding: 5px;
     background: var(--white-bg);
     border: 1px solid var(--border);
@@ -622,6 +623,10 @@
 }
 
 .vd-clinic-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
     border: 0;
     border-radius: 7px;
     padding: 11px 18px;
@@ -631,10 +636,25 @@
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
+    text-align: center;
     transition: background .2s, color .2s, box-shadow .2s;
 }
 
-.vd-clinic-switch-btn i { margin-right: 5px; }
+.vd-clinic-switch-btn i {
+    flex: 0 0 auto;
+    font-size: 16px;
+}
+
+.vd-clinic-switch-btn:hover:not(.active) {
+    background: var(--gold-pale);
+    color: var(--dark);
+}
+
+.vd-clinic-switch-btn:focus-visible {
+    outline: 3px solid rgba(128, 97, 31, .4);
+    outline-offset: 2px;
+}
+
 .vd-clinic-switch-btn.active {
     background: var(--gold);
     color: #fff;
@@ -955,8 +975,8 @@
     .vd-welcome-name { font-size: 26px; }
     .vd-next-appt-service { font-size: 20px; }
     .vd-dash-content { padding: 16px 14px; }
-    .vd-clinic-switch { width: 100%; grid-template-columns: 1fr 1fr; }
-    .vd-clinic-switch-btn { padding: 10px 8px; font-size: 10px; }
+    .vd-clinic-switch { width: 100%; grid-template-columns: 1fr; }
+    .vd-clinic-switch-btn { padding: 10px 12px; }
     .vd-booking-eligibility-panel { grid-template-columns: 1fr; padding: 22px 18px; }
     .vd-booking-schedule-grid { grid-template-columns: repeat(2, 1fr); padding: 14px; }
     .vd-booking-profile-grid { grid-template-columns: 1fr 1fr; }

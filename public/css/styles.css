@@ -1229,6 +1229,29 @@ textarea.vd-input {
     opacity: 0.8;
 }
 
+/* Keep masked passwords legible without exposing their characters. */
+.vd-auth-input-wrap > input.vd-auth-input {
+    box-sizing: border-box;
+    height: 44px;
+}
+
+.vd-dash-body .vd-auth-input-wrap > input.vd-auth-input {
+    height: 52px;
+}
+
+input.vd-auth-input[type="password"] {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+input.vd-auth-input[type="password"]::placeholder {
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: normal;
+}
+
 .vd-input:focus,
 .vd-input:focus-visible {
     border-color: var(--gold) !important;

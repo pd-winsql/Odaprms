@@ -5129,9 +5129,24 @@ button.vd-stat-card {
 .vd-auth-input-wrap .vd-auth-input {
     box-sizing: border-box;
     display: block;
+    height: 52px;
     min-height: 52px;
     padding-right: 92px !important;
     width: 100%;
+}
+
+.vd-password-section .vd-auth-input[type="password"] {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+.vd-password-section .vd-auth-input[type="password"]::placeholder {
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: normal;
 }
 
 .vd-auth-input-wrap .vd-pw-toggle {

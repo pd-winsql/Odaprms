@@ -75,7 +75,7 @@ if (isset($_SESSION['user_id'])) {
 						<label class="vd-label" for="logPassword">Password</label>
 						<div class="vd-auth-input-wrap">
 							<input type="password" name="password" id="logPassword" class="vd-auth-input"
-								placeholder="••••••••" required autocomplete="current-password">
+								placeholder="Enter your password" required autocomplete="current-password">
 							<button type="button" class="vd-pw-toggle" id="toggleRegPw" aria-label="Show password">
 								<i class="ti ti-eye" id="regEyeIcon"></i>
 							</button>

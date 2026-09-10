@@ -88,12 +88,13 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
         </div>
     </section>
     <?php else: ?>
-    <div class="vd-clinic-switch" role="tablist" aria-label="Clinic">
+    <div class="vd-clinic-switch" role="group" aria-label="Choose a clinic">
         <?php foreach ($clinics as $index => $clinic): ?>
-        <button type="button" class="vd-clinic-switch-btn <?= $index === 0 ? 'active' : '' ?>"
+        <button type="button" aria-pressed="<?= $index === 0 ? 'true' : 'false' ?>"
+                class="vd-clinic-switch-btn <?= $index === 0 ? 'active' : '' ?>"
                 data-clinic-id="<?= (int) $clinic['clinic_id'] ?>"
                 data-clinic-name="<?= htmlspecialchars($clinic['clinic_name'], ENT_QUOTES) ?>">
-            <i class="ti ti-building-hospital"></i>
+            <i class="ti ti-building-hospital" aria-hidden="true"></i>
             <?= htmlspecialchars($clinic['clinic_name']) ?>
         </button>
         <?php endforeach; ?>
@@ -237,7 +238,11 @@ $missingProfile = array_keys(array_filter($profileFields, static fn($value) => t
     function renderSchedules(button) {
         const clinicId = button.dataset.clinicId;
         const schedules = schedulesByClinic[clinicId] || [];
-        clinicButtons.forEach(item => item.classList.toggle('active', item === button));
+        clinicButtons.forEach(item => {
+            const isSelected = item === button;
+            item.classList.toggle('active', isSelected);
+            item.setAttribute('aria-pressed', String(isSelected));
+        });
         clinicLabel.textContent = button.dataset.clinicName;
         grid.innerHTML = '';
         details.classList.add('d-none');
