@@ -298,7 +298,7 @@
                 if (!current.requestId) return;
                 const previous = state.reschedules[current.requestId] || null;
                 const type = rescheduleNotificationType(previous, current);
-                if (type && previous) addNotification(type, current);
+                if (type) addNotification(type, current);
                 state.reschedules[current.requestId] = current;
             });
             saveState();

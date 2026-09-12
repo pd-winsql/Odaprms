@@ -113,12 +113,12 @@ if ($case === 'insights'
     exit(1);
 }
 if ($case === 'activity-logs'
-    && (!str_contains($html, 'Activity Logs') || !str_contains($html, 'Read-only history'))) {
+    && (!str_contains($html, 'Recorded actions') || !str_contains($html, 'Read-only history'))) {
     fwrite(STDERR, "The read-only activity log did not render.\n");
     exit(1);
 }
 if ($case === 'upcoming-appointments'
-    && (!str_contains($html, 'Upcoming Appointments')
+    && (!str_contains($html, 'Review upcoming clinic schedules')
         || !str_contains($html, 'Booked patients')
         || !str_contains($html, 'scheduleAppointmentsBySchedule')
         || str_contains($html, 'id="addScheduleForActiveClinic"')

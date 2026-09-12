@@ -271,7 +271,7 @@ class Appointment
                     ON payment.appointment_id = a.appointment_id
                 WHERE a.patient_id = :patient_id
                 AND (
-                    a.date <= CURDATE()
+                    a.date < CURDATE()
                     OR a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
                 )
 

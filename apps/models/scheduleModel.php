@@ -19,7 +19,7 @@ class Schedule {
             if ($storedMinutes !== false && $storedMinutes !== null) {
                 $configuredMinutes = (int) $storedMinutes;
             }
-        } catch (PDOException $e) {
+        } catch (Throwable $e) {
             // The configuration value remains the safe fallback while a pending
             // database migration is being applied.
         }
@@ -474,7 +474,14 @@ class Schedule {
                 WHERE schedule_id = :schedule_id
             ");
             $stmt->execute([':schedule_id' => $schedule_id]);
-            return (int) $stmt->fetchColumn();
+            $booked = (int) $stmt->fetchColumn();
+            $holdStmt = $this->conn->prepare("SELECT COUNT(*)
+                FROM appointment_reschedule_requests
+                WHERE target_schedule_id = :schedule_id
+                  AND status = 'Pending'
+                  AND expires_at > NOW()");
+            $holdStmt->execute([':schedule_id' => $schedule_id]);
+            return $booked + (int) $holdStmt->fetchColumn();
         } catch (PDOException $e) {
             error_log('getBookedCountForSchedule error: ' . $e->getMessage());
             return -1;

@@ -224,6 +224,7 @@ $missingProfileFields = array_keys(array_filter(
 (function () {
     const modalElement = document.getElementById('patientRescheduleModal');
     if (!modalElement) return;
+    const modalHost = modalElement.parentElement;
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     const form = document.getElementById('patientRescheduleForm');
     const appointmentInput = document.getElementById('patientRescheduleAppointmentId');
@@ -233,6 +234,11 @@ $missingProfileFields = array_keys(array_filter(
     const emptyState = document.getElementById('patientRescheduleEmpty');
     const token = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
     const controller = '../../controllers/rescheduleController.php';
+
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        if (modalHost?.isConnected) modalHost.appendChild(modalElement);
+        else modalElement.remove();
+    });
 
     function refreshHome() {
         document.querySelector('.vd-nav-item[data-page="home-content.php"]')?.click();
@@ -253,6 +259,7 @@ $missingProfileFields = array_keys(array_filter(
                 if (!isCurrent) visibleCount++;
             });
             emptyState.hidden = visibleCount > 0;
+            document.body.appendChild(modalElement);
             modal.show();
         });
     });
@@ -280,8 +287,8 @@ $missingProfileFields = array_keys(array_filter(
             const result = await response.json();
             window.showToast(result.message || 'Unable to send request.', result.success);
             if (result.success) {
+                modalElement.addEventListener('hidden.bs.modal', refreshHome, { once: true });
                 modal.hide();
-                refreshHome();
             }
         } catch (error) {
             window.showToast('Network error. Please try again.', false);

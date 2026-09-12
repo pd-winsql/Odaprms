@@ -61,6 +61,7 @@ try {
     $afterAvailability = array_column($schedules->getAvailableSchedulesByClinic((int) $clinics[1], $dates[1]), 'available_slots', 'schedule_id');
     $afterSlots = (int) ($afterAvailability[$scheduleIds[1]] ?? -1);
     rescheduleExpect($afterSlots === $beforeSlots - 1, 'A pending request reserves one target slot.');
+    rescheduleExpect($schedules->getBookedCountForSchedule($scheduleIds[1]) === 1, 'Schedule management treats the held slot as occupied.');
     $duplicate = $model->submitRequest($appointmentId, $scheduleIds[2], 'Trying to create a second pending request.', (int) $patient['user_id']);
     rescheduleExpect(!($duplicate['success'] ?? false), 'Only one active reschedule request is allowed per appointment.');
 
