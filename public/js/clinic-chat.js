@@ -48,7 +48,7 @@
         if (!root || mounts.has(root)) return mounts.get(root);
         root.className = patient ? 'vd-chat-single' : 'vd-chat-inbox';
         let id = patient ? 0 : null;
-        let last = 0, first = 0, busy = false, sending = false, listBusy = false, offset = 0;
+        let last = 0, first = 0, fetchingMessages = false, sending = false, listBusy = false, offset = 0;
         let active = !patient, disposed = false, query = '', listVersion = 0, listSignature = '';
         let pendingKey = null, pendingText = null, composeBaseMessageId = null;
         const seen = new Set();
@@ -108,7 +108,11 @@
             next.onclick = () => { offset += 50; listVersion++; inbox(); };
         }
         root.append(pane);
-        function enable() { input.disabled = sending || id === null; send.disabled = busy || id === null; older.disabled = busy; }
+        function enable() {
+            input.disabled = sending || id === null;
+            send.disabled = sending || id === null || !input.value.trim();
+            older.disabled = fetchingMessages;
+        }
         function failure(error) {
             status.textContent = error.name === 'TimeoutError' ? 'The request timed out. Your draft is still here; try again.' : error.message;
             retry.hidden = false;
@@ -136,7 +140,7 @@
         input.addEventListener('input', () => {
             if (input.value.trim() && composeBaseMessageId === null) composeBaseMessageId = last;
             if (!input.value.trim()) composeBaseMessageId = null;
-            remember(); count(); resizeComposer();
+            remember(); count(); resizeComposer(); enable();
         });
         function parsedDate(value) { return new Date(value.replace(' ', 'T')); }
         function messageDay(value) {
@@ -211,11 +215,16 @@
             }
         }
         async function refresh(before = 0) {
-            if (disposed || !root.isConnected || !active || document.hidden || busy || id === null) return;
-            busy = true; enable();
-            try { await fetchMessages(before); status.textContent = ''; retry.hidden = true; }
-            catch (e) { failure(e); }
-            finally { busy = false; enable(); }
+            if (disposed || !root.isConnected || !active || document.hidden || fetchingMessages || id === null) return;
+            fetchingMessages = true; enable();
+            try {
+                await fetchMessages(before);
+                if (!sending) { status.textContent = ''; retry.hidden = true; }
+            } catch (e) {
+                if (!sending) failure(e);
+            } finally {
+                fetchingMessages = false; enable();
+            }
         }
         async function inbox() {
             if (patient || disposed || !root.isConnected || document.hidden) return;
@@ -253,7 +262,7 @@
             finally { listBusy = false; if (version !== listVersion) inbox(); }
         }
         async function select(nextId, name, updatedAt) {
-            if (busy) return;
+            if (fetchingMessages || sending) return;
             active = true;
             remember(); id = nextId; last = first = 0; seen.clear(); pendingKey = pendingText = composeBaseMessageId = null;
             log.replaceChildren(empty); empty.hidden = false; empty.textContent = 'Loading conversation…';
@@ -276,8 +285,8 @@
         retry.onclick = () => { refresh(); inbox(); };
         form.addEventListener('submit', async e => {
             e.preventDefault();
-            if (busy || id === null || !input.value.trim()) return;
-            busy = sending = true; enable(); status.textContent = 'Sending…'; retry.hidden = true;
+            if (sending || id === null || !input.value.trim()) return;
+            sending = true; enable(); status.textContent = 'Sending…'; retry.hidden = true;
             const body = input.value.trim();
             if (pendingText !== body) {
                 pendingText = body;
@@ -306,7 +315,7 @@
                     failure(e);
                 }
             }
-            finally { busy = sending = false; enable(); if (active && root.isConnected) input.focus(); }
+            finally { sending = false; enable(); if (active && root.isConnected) input.focus(); }
         });
         const timer = setInterval(() => {
             if (!root.isConnected) { disposed = true; clearInterval(timer); return; }
