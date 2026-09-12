@@ -5,6 +5,7 @@
     const patient = config.dataset.patient === '1';
     const drafts = new Map();
     const mounts = new WeakMap();
+    let syncCoverageUntil = 0;
     const notice = 'For appointment and clinic inquiries. Replies are available during clinic hours. Not for emergencies.';
     const node = (tag, cls, text) => {
         const el = document.createElement(tag);
@@ -30,17 +31,20 @@
         }
         return data;
     }
+    function showUnread(unread) {
+        document.querySelectorAll('[data-chat-unread]').forEach(el => {
+            el.hidden = !unread;
+            el.textContent = unread > 99 ? '99+' : String(unread);
+            el.setAttribute('aria-label', `${unread} unread messages`);
+        });
+    }
     let badgeBusy = false;
     async function badge() {
-        if (document.hidden || badgeBusy) return;
+        if (document.hidden || badgeBusy || Date.now() < syncCoverageUntil) return;
         badgeBusy = true;
         try {
             const data = await api('unread');
-            document.querySelectorAll('[data-chat-unread]').forEach(el => {
-                el.hidden = !data.unread;
-                el.textContent = data.unread > 99 ? '99+' : String(data.unread);
-                el.setAttribute('aria-label', `${data.unread} unread messages`);
-            });
+            showUnread(Number(data.unread) || 0);
         } catch (_) { /* The conversation panel provides actionable errors. */ }
         finally { badgeBusy = false; }
     }
@@ -50,6 +54,7 @@
         let id = patient ? 0 : null;
         let last = 0, first = 0, fetchingMessages = false, sending = false, listBusy = false, offset = 0;
         let active = !patient, disposed = false, query = '', listVersion = 0, listSignature = '';
+        let inboxSignature = '', idleCycles = 0, syncTimer = null;
         let pendingKey = null, pendingText = null, composeBaseMessageId = null;
         const seen = new Set();
         const pane = node('section', 'vd-chat-thread');
@@ -197,11 +202,12 @@
         async function fetchMessages(before = 0) {
             const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
             const oldHeight = log.scrollHeight, oldTop = log.scrollTop;
-            let more;
+            let more, markReadThrough = 0;
             do {
                 const data = await api('messages', { conversation_id: id, after: before ? 0 : last, before });
                 if (disposed || !root.isConnected) return;
                 id = Number(data.conversationId);
+                markReadThrough = Math.max(markReadThrough, Number(data.markReadThrough) || 0);
                 const wasFirst = last === 0;
                 draw(data.messages, !!before);
                 if (before || wasFirst) older.hidden = !data.hasMore;
@@ -209,14 +215,15 @@
             } while (more);
             if (before) log.scrollTop = oldTop + log.scrollHeight - oldHeight;
             else if (nearBottom) log.scrollTop = log.scrollHeight;
-            if (active && !document.hidden && last) {
-                await api('read', { conversation_id: id, through: last }, true);
-                badge();
+            if (active && !document.hidden && markReadThrough) {
+                const readState = await api('read', { conversation_id: id, through: markReadThrough }, true);
+                showUnread(Number(readState.unread) || 0);
             }
         }
         async function refresh(before = 0) {
             if (disposed || !root.isConnected || !active || document.hidden || fetchingMessages || id === null) return;
             fetchingMessages = true; enable();
+            syncCoverageUntil = Date.now() + 21000;
             try {
                 await fetchMessages(before);
                 if (!sending) { status.textContent = ''; retry.hidden = true; }
@@ -225,6 +232,31 @@
             } finally {
                 fetchingMessages = false; enable();
             }
+        }
+        function renderInbox(result) {
+            const signature = JSON.stringify([result, id, offset, query]);
+            if (signature === listSignature) return;
+            listSignature = signature;
+            const focusedId = list.contains(document.activeElement) ? document.activeElement.dataset.conversation : null;
+            list.replaceChildren();
+            if (!result.conversations.length) list.append(node('p', 'vd-chat-empty', query ? 'No matching patients.' : 'No conversations yet. Patient messages will appear here.'));
+            result.conversations.forEach(c => {
+                const button = node('button', 'vd-chat-conversation'); button.type = 'button';
+                button.dataset.conversation = c.conversation_id;
+                button.setAttribute('aria-pressed', String(Number(c.conversation_id) === id));
+                const row = node('div', 'vd-chat-conversation-name'); row.append(node('strong', '', c.patient_name));
+                const activity = node('span', 'vd-chat-conversation-time', listTime(c.updated_at));
+                row.append(activity);
+                const preview = node('span', 'vd-chat-preview', c.preview || 'No messages');
+                const details = node('div', 'vd-chat-conversation-details');
+                details.append(preview);
+                if (Number(c.unread)) details.append(node('span', 'vd-chat-count', String(c.unread)));
+                button.append(row, details);
+                button.onclick = () => select(Number(c.conversation_id), c.patient_name, c.updated_at);
+                list.append(button);
+            });
+            if (focusedId) list.querySelector(`[data-conversation="${Number(focusedId)}"]`)?.focus();
+            previous.disabled = offset === 0; next.disabled = !result.hasMore;
         }
         async function inbox() {
             if (patient || disposed || !root.isConnected || document.hidden) return;
@@ -235,32 +267,84 @@
                 const result = await api('inbox', { search: query, offset });
                 if (version !== listVersion || !root.isConnected) return;
                 listStatus.textContent = ''; listRetry.hidden = true;
-                const signature = JSON.stringify([result, id, offset, query]);
-                if (signature === listSignature) return;
-                listSignature = signature;
-                const focusedId = list.contains(document.activeElement) ? document.activeElement.dataset.conversation : null;
-                list.replaceChildren();
-                if (!result.conversations.length) list.append(node('p', 'vd-chat-empty', query ? 'No matching patients.' : 'No conversations yet. Patient messages will appear here.'));
-                result.conversations.forEach(c => {
-                    const button = node('button', 'vd-chat-conversation'); button.type = 'button';
-                    button.dataset.conversation = c.conversation_id;
-                    button.setAttribute('aria-pressed', String(Number(c.conversation_id) === id));
-                    const row = node('div', 'vd-chat-conversation-name'); row.append(node('strong', '', c.patient_name));
-                    const activity = node('span', 'vd-chat-conversation-time', listTime(c.updated_at));
-                    row.append(activity);
-                    const preview = node('span', 'vd-chat-preview', c.preview || 'No messages');
-                    const details = node('div', 'vd-chat-conversation-details');
-                    details.append(preview);
-                    if (Number(c.unread)) details.append(node('span', 'vd-chat-count', String(c.unread)));
-                    button.append(row, details);
-                    button.onclick = () => select(Number(c.conversation_id), c.patient_name, c.updated_at);
-                    list.append(button);
-                });
-                if (focusedId) list.querySelector(`[data-conversation="${Number(focusedId)}"]`)?.focus();
-                previous.disabled = offset === 0; next.disabled = !result.hasMore;
+                showUnread(Number(result.unread) || 0);
+                inboxSignature = result.inboxSignature || inboxSignature;
+                renderInbox(result);
             } catch (e) { listStatus.textContent = e.message; listRetry.hidden = false; }
             finally { listBusy = false; if (version !== listVersion) inbox(); }
         }
+
+        function adaptiveDelay(activity) {
+            idleCycles = activity ? 0 : idleCycles + 1;
+            const base = idleCycles <= 2 ? 5000 : (idleCycles <= 6 ? 15000 : 30000);
+            return Math.round(base * (0.85 + Math.random() * 0.3));
+        }
+        function stopSync() {
+            clearTimeout(syncTimer);
+            syncTimer = null;
+            syncCoverageUntil = 0;
+        }
+        function scheduleSync(delay = 0) {
+            clearTimeout(syncTimer);
+            if (disposed || document.hidden || (patient && !active)) return;
+            syncCoverageUntil = Date.now() + delay + 1000;
+            syncTimer = setTimeout(sync, delay);
+        }
+        async function sync() {
+            if (disposed || !root.isConnected) {
+                disposed = true;
+                stopSync();
+                document.removeEventListener('visibilitychange', handleVisibility);
+                return;
+            }
+            if (document.hidden || (patient && !active)) { stopSync(); return; }
+            if (fetchingMessages || sending || listBusy) { scheduleSync(1000); return; }
+
+            fetchingMessages = true; enable();
+            const version = listVersion;
+            const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+            const syncConversation = patient || (active && id !== null);
+            const requestedAfter = syncConversation ? last : 0;
+            let activity = false, catchUp = false;
+            try {
+                const data = await api('sync', {
+                    conversation_id: syncConversation ? (id ?? 0) : 0,
+                    after: requestedAfter,
+                    search: query,
+                    offset,
+                    inbox_signature: inboxSignature
+                }, true);
+                if (disposed || !root.isConnected) return;
+                if (syncConversation) {
+                    id = Number(data.conversationId);
+                    const wasFirst = last === 0;
+                    draw(data.messages || []);
+                    if (wasFirst) older.hidden = !data.hasMore;
+                    if (nearBottom) log.scrollTop = log.scrollHeight;
+                    activity = (data.messages || []).length > 0;
+                    catchUp = requestedAfter > 0 && data.hasMore === true;
+                }
+                showUnread(Number(data.unread) || 0);
+                if (!patient) {
+                    inboxSignature = data.inboxSignature || inboxSignature;
+                    if (data.inbox && version === listVersion) {
+                        renderInbox(data.inbox);
+                        activity = activity || data.inboxChanged === true;
+                    }
+                }
+                status.textContent = ''; retry.hidden = true;
+            } catch (e) {
+                failure(e);
+            } finally {
+                fetchingMessages = false; enable();
+                if (!disposed && root.isConnected) scheduleSync(catchUp ? 0 : adaptiveDelay(activity));
+            }
+        }
+        function handleVisibility() {
+            if (document.hidden) stopSync();
+            else scheduleSync(0);
+        }
+        document.addEventListener('visibilitychange', handleVisibility);
         async function select(nextId, name, updatedAt) {
             if (fetchingMessages || sending) return;
             active = true;
@@ -279,8 +363,9 @@
             empty.textContent = 'No messages yet.';
             title.tabIndex = -1; title.focus();
             inbox();
+            scheduleSync(adaptiveDelay(true));
         }
-        back.onclick = () => { active = false; root.classList.remove('has-conversation'); search.focus(); inbox(); };
+        back.onclick = () => { active = false; root.classList.remove('has-conversation'); search.focus(); inbox(); scheduleSync(0); };
         older.onclick = () => refresh(first);
         retry.onclick = () => { refresh(); inbox(); };
         form.addEventListener('submit', async e => {
@@ -317,17 +402,16 @@
             }
             finally { sending = false; enable(); if (active && root.isConnected) input.focus(); }
         });
-        const timer = setInterval(() => {
-            if (!root.isConnected) { disposed = true; clearInterval(timer); return; }
-            if (!document.hidden) { if (active) refresh(); inbox(); }
-        }, 5000);
-        const instance = { open() { active = true; refresh(); }, close() { active = false; remember(); } };
+        const instance = {
+            open() { active = true; scheduleSync(0); },
+            close() { active = false; remember(); stopSync(); }
+        };
         mounts.set(root, instance);
         const initialDraft = drafts.get(patient ? 'patient' : String(id));
         input.value = initialDraft?.body || '';
         composeBaseMessageId = initialDraft?.baseMessageId ?? null;
         count(); resizeComposer(); enable();
-        if (!patient) inbox();
+        if (!patient) scheduleSync(0);
         return instance;
     }
     window.ClinicChat = { mount };

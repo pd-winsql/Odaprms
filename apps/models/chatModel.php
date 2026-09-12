@@ -60,6 +60,19 @@ class ChatModel {
         return ['conversations' => array_slice($rows, 0, 50), 'hasMore' => count($rows) > 50];
     }
 
+    public function inboxSignature(?int $unread = null): string {
+        if ($this->isPatient()) return '';
+        $stmt = $this->db->query("SELECT
+            (SELECT COUNT(*) FROM clinic_conversations) AS conversation_count,
+            (SELECT COALESCE(MAX(message_id), 0) FROM clinic_messages) AS latest_message_id");
+        $state = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        return implode(':', [
+            (int) ($state['conversation_count'] ?? 0),
+            (int) ($state['latest_message_id'] ?? 0),
+            $unread ?? $this->unread(),
+        ]);
+    }
+
     public function messages(int $id, int $after = 0, int $before = 0): array {
         $id = $this->conversation($id);
         if (!$id) return ['conversationId' => 0, 'messages' => [], 'hasMore' => false];
@@ -68,7 +81,7 @@ class ChatModel {
         if ($before > 0) { $where = ' AND m.message_id < ?'; $params[] = $before; }
         elseif ($after > 0) { $where = ' AND m.message_id > ?'; $params[] = $after; }
         $ascending = $after > 0 && !$before;
-        $stmt = $this->db->prepare("SELECT m.message_id, m.sender_id, m.sender_role, m.body, m.created_at,
+        $stmt = $this->db->prepare("SELECT m.message_id, m.sender_id, m.sender_role, m.body, m.created_at, m.read_at,
             CASE
                 WHEN m.sender_role = 'Patient' THEN 'Patient'
                 WHEN m.sender_role = 'Dental Assistant' THEN COALESCE(NULLIF(TRIM(CONCAT_WS(' ', s.firstname, s.middlename, s.lastname)), ''), 'Dental Assistant')
@@ -82,14 +95,41 @@ class ChatModel {
         $hasMore = count($rows) > 100;
         $rows = array_slice($rows, 0, 100);
         if (!$ascending) $rows = array_reverse($rows);
-        foreach ($rows as &$row) $row['mine'] = (int) $row['sender_id'] === $this->userId;
-        return ['conversationId' => $id, 'messages' => $rows, 'hasMore' => $hasMore];
+        $markReadThrough = 0;
+        foreach ($rows as &$row) {
+            $row['mine'] = (int) $row['sender_id'] === $this->userId;
+            $incoming = $this->isPatient() ? $row['sender_role'] !== 'Patient' : $row['sender_role'] === 'Patient';
+            if ($incoming && $row['read_at'] === null) $markReadThrough = max($markReadThrough, (int) $row['message_id']);
+            unset($row['read_at']);
+        }
+        return ['conversationId' => $id, 'messages' => $rows, 'hasMore' => $hasMore, 'markReadThrough' => $markReadThrough];
     }
 
-    public function markRead(int $id, int $through): void {
+    public function markRead(int $id, int $through): bool {
         $id = $this->conversation($id);
         $stmt = $this->db->prepare('UPDATE clinic_messages SET read_at = NOW() WHERE conversation_id = ? AND message_id <= ? AND read_at IS NULL AND ' . $this->incoming());
         $stmt->execute([$id, max(0, $through)]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function sync(int $id, int $after, string $search, int $offset, string $knownInboxSignature): array {
+        $messages = (!$this->isPatient() && $id === 0)
+            ? ['conversationId' => 0, 'messages' => [], 'hasMore' => false, 'markReadThrough' => 0]
+            : $this->messages($id, max(0, $after));
+
+        if ((int) $messages['markReadThrough'] > 0) {
+            $this->markRead((int) $messages['conversationId'], (int) $messages['markReadThrough']);
+        }
+
+        $unread = $this->unread();
+        $result = $messages + ['unread' => $unread];
+        if ($this->isPatient()) return $result;
+
+        $signature = $this->inboxSignature($unread);
+        $result['inboxSignature'] = $signature;
+        $result['inboxChanged'] = !hash_equals($signature, $knownInboxSignature);
+        if ($result['inboxChanged']) $result['inbox'] = $this->inbox($search, $offset);
+        return $result;
     }
 
     public function send(int $id, string $body, string $key, int $lastSeenMessageId = 0): int {

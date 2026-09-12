@@ -21,10 +21,25 @@ try {
     $id = max(0, (int) ($input['conversation_id'] ?? 0));
     $result = [];
     if ($method === 'GET' && $action === 'unread') $result = ['unread' => $chat->unread()];
-    elseif ($method === 'GET' && $action === 'inbox') $result = $chat->inbox((string) ($input['search'] ?? ''), (int) ($input['offset'] ?? 0));
+    elseif ($method === 'GET' && $action === 'inbox') {
+        $unread = $chat->unread();
+        $inboxSignature = $chat->isPatient() ? '' : $chat->inboxSignature($unread);
+        $result = $chat->inbox((string) ($input['search'] ?? ''), (int) ($input['offset'] ?? 0));
+        if (!$chat->isPatient()) $result += ['unread' => $unread, 'inboxSignature' => $inboxSignature];
+    }
     elseif ($method === 'GET' && $action === 'messages') $result = $chat->messages($id, max(0, (int) ($input['after'] ?? 0)), max(0, (int) ($input['before'] ?? 0)));
+    elseif ($method === 'POST' && $action === 'sync') $result = $chat->sync(
+        $id,
+        max(0, (int) ($input['after'] ?? 0)),
+        (string) ($input['search'] ?? ''),
+        max(0, (int) ($input['offset'] ?? 0)),
+        substr((string) ($input['inbox_signature'] ?? ''), 0, 100)
+    );
     elseif ($method === 'POST' && $action === 'send') $result = ['conversationId' => $chat->send($id, (string) ($input['body'] ?? ''), (string) ($input['request_key'] ?? ''), max(0, (int) ($input['last_seen_message_id'] ?? 0)))];
-    elseif ($method === 'POST' && $action === 'read') $chat->markRead($id, (int) ($input['through'] ?? 0));
+    elseif ($method === 'POST' && $action === 'read') {
+        $chat->markRead($id, (int) ($input['through'] ?? 0));
+        $result = ['unread' => $chat->unread()];
+    }
     else throw new InvalidArgumentException('Unknown message action.');
     echo json_encode(['success' => true] + $result, JSON_UNESCAPED_UNICODE);
 } catch (ChatReplyConflict $e) {

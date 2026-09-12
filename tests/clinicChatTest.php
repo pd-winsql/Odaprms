@@ -51,9 +51,14 @@ try {
     $rows = $assistant->inbox('ChatTest', 0)['conversations'];
     chatExpect(count(array_filter($rows, fn($r) => (int) $r['conversation_id'] === $id && (int) $r['unread'] === 1)) === 1, 'The staff inbox can find a patient and count unread messages.');
     $incoming = $assistant->messages($id)['messages'][0];
-    $assistant->markRead($id, (int) $incoming['message_id']);
+    chatExpect($assistant->markRead($id, (int) $incoming['message_id']), 'The first read action updates an unread message.');
+    chatExpect(!$assistant->markRead($id, (int) $incoming['message_id']), 'Repeated sync does not perform another read-state write.');
     $rows = $secondAssistant->inbox('ChatTest', 0)['conversations'];
     chatExpect(count(array_filter($rows, fn($r) => (int) $r['conversation_id'] === $id && (int) $r['unread'] === 0)) === 1, 'Read state is shared across clinic staff.');
+    $initialSync = $assistant->sync($id, (int) $incoming['message_id'], 'ChatTest', 0, '');
+    chatExpect(isset($initialSync['inbox'], $initialSync['inboxSignature']), 'The first staff sync includes the inbox and its version.');
+    $steadySync = $assistant->sync($id, (int) $incoming['message_id'], 'ChatTest', 0, $initialSync['inboxSignature']);
+    chatExpect(!isset($steadySync['inbox']) && $steadySync['messages'] === [], 'An unchanged sync omits inbox rows and message history.');
     $assistant->send($id, 'Please bring your appointment details.', bin2hex(random_bytes(16)));
     chatExpect($p1->unread() === 1 && $p2->unread() === 0, 'Only the intended patient receives an unread reply.');
     $reply = $p1->messages($id, (int) $incoming['message_id'])['messages'][0];
