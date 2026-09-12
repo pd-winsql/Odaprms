@@ -258,7 +258,7 @@ $today = date('l, F j Y');
         }
 
         // Keep the dentist's live queue in sync with check-ins, queue actions,
-        // treatment changes, and final billing recorded by clinic staff.
+        // treatment changes, and final billing recorded by the Admin / Dentist.
         let lastKnownStaffOperationsVersion = <?= json_encode($staffOperationsFeedVersion) ?>;
         let staffOperationsRefreshInFlight = false;
 

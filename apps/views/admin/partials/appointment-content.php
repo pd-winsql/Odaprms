@@ -8,11 +8,14 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental A
 
 require_once  __DIR__ . '/../../../../config/conn.php';
 require_once  __DIR__ . '/../../../models/appointmentModel.php';
+require_once  __DIR__ . '/../../../models/rescheduleModel.php';
 require_once  __DIR__ . '/../../../helpers/paymentSettings.php';
 
 $db   = new Database();
 $conn = $db->connect();
 $appointmentModel = new Appointment($conn);
+$rescheduleModel = new RescheduleModel($conn);
+$pendingReschedules = $rescheduleModel->getPendingRequestsForStaff();
 $paymentSettings = $conn->query("SELECT deposit_amount, payment_deadline_minutes FROM site_settings WHERE id = 1")->fetch(PDO::FETCH_ASSOC) ?: [];
 $configuredDepositLabel = vdFormatPesoAmount((float) ($paymentSettings['deposit_amount'] ?? 400));
 $configuredDeadlineLabel = vdFormatDurationMinutes((int) ($paymentSettings['payment_deadline_minutes'] ?? 480));
@@ -136,6 +139,47 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 ?>
 
 <div class="d-flex flex-column gap-4">
+
+    <?php if (!empty($pendingReschedules)): ?>
+    <section class="vd-reschedule-review" aria-labelledby="rescheduleReviewTitle">
+        <div class="vd-reschedule-review-header">
+            <div>
+                <span class="vd-reschedule-review-kicker">Needs clinic decision</span>
+                <h2 id="rescheduleReviewTitle">Reschedule Requests</h2>
+                <p>Review the patient’s selected replacement schedule before its temporary hold expires.</p>
+            </div>
+            <span class="vd-reschedule-review-count"><?= count($pendingReschedules) ?></span>
+        </div>
+        <div class="vd-reschedule-review-list">
+            <?php foreach ($pendingReschedules as $request): ?>
+            <?php
+                $patientName = trim(($request['patient_firstname'] ?? '') . ' ' . ($request['patient_lastname'] ?? ''));
+                $secondsRemaining = max(0, strtotime($request['expires_at']) - time());
+                $hoursRemaining = (int) ceil($secondsRemaining / 3600);
+                $urgency = $hoursRemaining <= 8 ? ' is-urgent' : ($hoursRemaining <= 16 ? ' is-due' : '');
+            ?>
+            <article class="vd-reschedule-review-item<?= $urgency ?>" data-reschedule-request-row="<?= (int) $request['request_id'] ?>">
+                <div class="vd-reschedule-review-patient">
+                    <span>Patient</span>
+                    <strong><?= htmlspecialchars($patientName ?: 'Patient') ?></strong>
+                    <small>Appointment #<?= (int) $request['appointment_id'] ?></small>
+                </div>
+                <div class="vd-reschedule-review-change">
+                    <div><span>Current</span><strong><?= htmlspecialchars($request['original_clinic_name']) ?></strong><small><?= date('M j, Y · g:i A', strtotime($request['original_date'] . ' ' . $request['original_start_time'])) ?></small></div>
+                    <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                    <div><span>Requested</span><strong><?= htmlspecialchars($request['target_clinic_name']) ?></strong><small><?= date('M j, Y · g:i A', strtotime($request['target_date'] . ' ' . $request['target_start_time'])) ?></small></div>
+                </div>
+                <div class="vd-reschedule-review-reason"><span>Reason</span><p><?= htmlspecialchars($request['reason']) ?></p></div>
+                <div class="vd-reschedule-review-deadline"><i class="ti ti-hourglass"></i><span><?= $hoursRemaining ?>h left<small>Expires <?= date('M j, g:i A', strtotime($request['expires_at'])) ?></small></span></div>
+                <div class="vd-reschedule-review-actions">
+                    <button type="button" class="btn vd-btn-outline" data-reject-reschedule="<?= (int) $request['request_id'] ?>" data-patient-name="<?= htmlspecialchars($patientName, ENT_QUOTES) ?>">Reject</button>
+                    <button type="button" class="btn vd-btn-gold" data-approve-reschedule="<?= (int) $request['request_id'] ?>" data-patient-name="<?= htmlspecialchars($patientName, ENT_QUOTES) ?>">Approve</button>
+                </div>
+            </article>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- VIEW TOGGLE (Upcoming / Past) -->
     <div class="vd-view-toggle mb-2">
@@ -288,7 +332,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <?php elseif ($appt['status'] === 'Checked In'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-open-today-queue><i class="ti ti-list-check" aria-hidden="true"></i><span>Manage queue</span></button>
                         <?php elseif ($appt['status'] === 'In Progress'): ?>
-                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-primary" data-open-today-queue><i class="ti ti-cash-check" aria-hidden="true"></i><span>Open final billing</span></button>
+                        <span class="vd-appt-meta">Awaiting admin settlement</span>
                         <?php elseif ($appt['status'] === 'Cancelled' && ($appt['deposit_status'] ?? '') === 'For Refund'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-record-refund="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-cash-banknote-off" aria-hidden="true"></i><span>Record refund</span></button>
                         <?php endif; ?>
@@ -505,6 +549,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 (function () {
     const CONTROLLER = '../../../apps/controllers/appointmentController.php';
     const DEPOSIT_CONTROLLER = '../../../apps/controllers/depositController.php';
+    const RESCHEDULE_CONTROLLER = '../../../apps/controllers/rescheduleController.php';
     const CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token']) ?>;
     let activeAppointmentPayload = null;
 
@@ -522,6 +567,56 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             window.EmailNotificationDelivery?.deliver(notification.id);
         }
     }
+
+    async function runRescheduleAction(button, action) {
+        const patient = button.dataset.patientName || 'this patient';
+        const rejecting = action === 'reject';
+        const decision = await window.showActionModal({
+            title: rejecting ? 'Reject Reschedule Request' : 'Approve Reschedule Request',
+            kicker: 'Schedule change',
+            message: rejecting
+                ? 'The original appointment will remain confirmed. Give the patient a clear reason.'
+                : 'The appointment will move to the requested clinic schedule. Services, deposit, and appointment code remain unchanged.',
+            confirmText: rejecting ? 'Reject Request' : 'Approve Reschedule',
+            icon: rejecting ? 'ti-calendar-x' : 'ti-calendar-check',
+            tone: rejecting ? 'danger' : 'success',
+            details: [{ label: 'Patient', value: patient }],
+            fields: rejecting ? [{
+                name: 'reason', label: 'Reason for rejection',
+                placeholder: 'Example: The selected clinic window is no longer available.',
+                multiline: true, rows: 3, required: true, minlength: 3, maxlength: 500
+            }] : []
+        });
+        if (!decision.confirmed) return;
+
+        LoadingUI.setButton(button, true, rejecting ? 'Rejecting…' : 'Approving…');
+        const body = new FormData();
+        body.append('action', action);
+        body.append('csrf_token', CSRF_TOKEN);
+        body.append('request_id', button.dataset[rejecting ? 'rejectReschedule' : 'approveReschedule']);
+        if (rejecting) body.append('reason', decision.values.reason);
+        try {
+            const response = await fetch(RESCHEDULE_CONTROLLER, { method: 'POST', body });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Unable to process the reschedule request.');
+            deliverQueuedNotification(result.notification);
+            button.closest('[data-reschedule-request-row]')?.remove();
+            showToast(result.message, true);
+            if (!document.querySelector('[data-reschedule-request-row]')) {
+                document.querySelector('.vd-reschedule-review')?.remove();
+            }
+        } catch (error) {
+            showToast(error.message || 'Unable to process the reschedule request.', false);
+            LoadingUI.setButton(button, false);
+        }
+    }
+
+    document.querySelectorAll('[data-approve-reschedule]').forEach(button => {
+        button.addEventListener('click', () => runRescheduleAction(button, 'approve'));
+    });
+    document.querySelectorAll('[data-reject-reschedule]').forEach(button => {
+        button.addEventListener('click', () => runRescheduleAction(button, 'reject'));
+    });
 
     function updateStatusPill(id, newStatus) {
         const pill = document.getElementById('pill-' + id);
@@ -632,9 +727,10 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 document.querySelector('[data-page="dashboard-content.php"]')?.click();
             }, 'ti-list-check'));
         } else if (details.status === 'In Progress') {
-            actionGroup.append(makeActionButton('Open final billing', `${menuClass} vd-appt-menu-primary`, () => {
-                document.querySelector('[data-page="dashboard-content.php"]')?.click();
-            }, 'ti-cash-check'));
+            const note = document.createElement('span');
+            note.className = 'vd-appt-meta';
+            note.textContent = 'Awaiting admin settlement';
+            actionGroup.append(note);
         } else if (details.status === 'Cancelled' && details.deposit?.status === 'For Refund') {
             addDepositAction('Record refund', 'recordRefund', button => runRecordRefund(button), 'ti-cash-banknote-off');
         }

@@ -7,6 +7,7 @@ require_once '../helpers/authorization.php';
 header('Content-Type: application/json');
 
 if (!vdCanPerformBilling()) {
+    http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden.']); exit;
 }
 if (!validate_csrf()) {

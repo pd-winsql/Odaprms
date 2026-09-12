@@ -43,6 +43,11 @@ $script = file_get_contents($root . '/public/js/staff-appointment-notifications.
 notificationExpect(
     str_contains($script, "appointment_created")
         && str_contains($script, "deposit_updated")
+        && str_contains($script, 'reschedule_requested')
+        && str_contains($script, 'reschedule_reminder')
+        && str_contains($script, 'reschedule_urgent')
+        && str_contains($script, 'reschedule_expired')
+        && str_contains($assistantDashboard, 'rescheduleEvents: result.reschedule_events')
         && str_contains($script, 'window.localStorage')
         && str_contains($script, 'vd-notification-unread-indicator')
         && str_contains($script, "list.querySelector('.vd-notification-item')")

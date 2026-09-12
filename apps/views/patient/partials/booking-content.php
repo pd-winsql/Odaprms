@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../../models/clinicModel.php';
 require_once __DIR__ . '/../../../models/scheduleModel.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
 require_once __DIR__ . '/../../../helpers/patientEligibility.php';
+require_once __DIR__ . '/../../../helpers/bookingPolicy.php';
 $appointmentRules = require __DIR__ . '/../../../../config/appointment.php';
 $maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 
@@ -20,6 +21,13 @@ $conn = $db->connect();
 $patient = (new Patient($conn))->getPatientByUserId($_SESSION['user_id']);
 $minimumPatientAge = PatientEligibility::minimumAge($conn);
 $bookingEligibility = PatientEligibility::assess($patient['birthdate'] ?? '', $minimumPatientAge);
+$minimumBookingLeadDays = BookingPolicy::minimumLeadDays($conn);
+$earliestBookableDate = BookingPolicy::earliestBookableDate($minimumBookingLeadDays);
+$earliestBookableLabel = date('F j, Y', strtotime($earliestBookableDate));
+$bookingNoticeSummary = $minimumBookingLeadDays === 0
+    ? 'Same-day requests are allowed while a future clinic window is available.'
+    : 'Appointments require at least ' . $minimumBookingLeadDays . ' calendar '
+        . ($minimumBookingLeadDays === 1 ? 'day' : 'days') . ' of advance notice.';
 $eligibleOnLabel = !empty($bookingEligibility['eligible_on'])
     ? date('F j, Y', strtotime($bookingEligibility['eligible_on']))
     : '';
@@ -29,7 +37,10 @@ $serviceRows = (new ServiceModel($conn))->getHomepageServices();
 
 $schedulesByClinic = [];
 foreach ($clinics as $clinic) {
-    $schedulesByClinic[(int) $clinic['clinic_id']] = $scheduleModel->getAvailableSchedulesByClinic($clinic['clinic_id']);
+    $schedulesByClinic[(int) $clinic['clinic_id']] = $scheduleModel->getAvailableSchedulesByClinic(
+        $clinic['clinic_id'],
+        $earliestBookableDate
+    );
 }
 
 $serviceCategories = [];
@@ -69,7 +80,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
 <div class="vd-booking-content">
     <p class="text-muted small mb-0">
         <?= $bookingEligibility['eligible']
-            ? 'Select a clinic, choose an open date, then pick one or more services.'
+            ? 'Select a clinic, choose an open date, then pick one or more services. ' . $bookingNoticeSummary
             : 'Online appointment requests become available after the patient eligibility requirement is met.' ?>
     </p>
 
@@ -143,13 +154,13 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
             <div>
                 <span class="vd-section-label">Step 2</span>
                 <h2 id="bookingScheduleTitle">Choose a schedule</h2>
-                <p>Pick an available clinic window. Patients are served first come, first served.</p>
+                <p>Available appointment dates begin <?= htmlspecialchars($earliestBookableLabel) ?> under the clinic’s current notice policy.</p>
             </div>
             <span class="vd-topbar-date" id="bookingClinicLabel"></span>
         </header>
         <div class="vd-booking-arrival-policy"><i class="ti ti-user-clock" aria-hidden="true"></i><span><strong>Arrive by the opening time or earlier.</strong> Patients are served first come, first served during the clinic window.</span></div>
         <div class="vd-booking-schedule-grid" id="bookingScheduleGrid"></div>
-        <div class="vd-empty-state d-none" id="bookingScheduleEmpty">No available schedules for this clinic right now.</div>
+        <div class="vd-empty-state d-none" id="bookingScheduleEmpty">No schedules are available for this clinic on or after <?= htmlspecialchars($earliestBookableLabel) ?>.</div>
     </section>
 
     <section class="vd-booking-step" id="bookingStepPanel2" data-booking-step="2" data-step-title="Services and review" hidden>
@@ -255,6 +266,64 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
 </div>
 
 <?php if ($bookingEligibility['eligible']): ?>
+<div class="modal fade vd-booking-confirmation-modal" id="bookingConfirmationModal" tabindex="-1"
+    aria-labelledby="bookingConfirmationTitle" aria-describedby="bookingConfirmationDescription" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <span class="vd-booking-confirmation-kicker">Final review</span>
+                    <h2 class="modal-title" id="bookingConfirmationTitle">Review appointment request</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close confirmation"></button>
+            </div>
+            <div class="modal-body">
+                <p class="vd-booking-confirmation-intro" id="bookingConfirmationDescription">
+                    <i class="ti ti-info-circle" aria-hidden="true"></i>
+                    <span>This sends a request to the clinic. Your appointment is not confirmed yet. Please wait for the clinic’s confirmation email before treating this schedule as confirmed.</span>
+                </p>
+
+                <dl class="vd-booking-confirmation-details">
+                    <div>
+                        <dt>Patient</dt>
+                        <dd><?= htmlspecialchars($profileFields['Name'] ?: 'Patient profile') ?></dd>
+                    </div>
+                    <div>
+                        <dt>Clinic</dt>
+                        <dd id="bookingConfirmationClinic">—</dd>
+                    </div>
+                    <div class="vd-booking-confirmation-wide">
+                        <dt>Schedule</dt>
+                        <dd id="bookingConfirmationSchedule">—</dd>
+                    </div>
+                    <div class="vd-booking-confirmation-wide">
+                        <dt>Arrival</dt>
+                        <dd id="bookingConfirmationArrival">—</dd>
+                    </div>
+                </dl>
+
+                <section class="vd-booking-confirmation-services" aria-labelledby="bookingConfirmationServicesTitle">
+                    <header>
+                        <h3 id="bookingConfirmationServicesTitle">Selected services</h3>
+                        <span id="bookingConfirmationServiceCount"></span>
+                    </header>
+                    <ul id="bookingConfirmationServiceList"></ul>
+                </section>
+
+                <div class="alert alert-danger d-none vd-booking-confirmation-error" id="bookingConfirmationError"
+                    role="alert" aria-live="polite"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Back to edit</button>
+                <button type="button" class="btn vd-btn-gold" id="bookingConfirmRequest">
+                    <i class="ti ti-calendar-check" aria-hidden="true"></i>
+                    Confirm request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     const schedulesByClinic = <?= json_encode($schedulesByClinic, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
@@ -277,9 +346,26 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     const backButton = document.getElementById('bookingBack');
     const nextButton = document.getElementById('bookingNext');
     const submitButton = document.getElementById('dashboardBookingSubmit');
+    const bookingForm = document.getElementById('dashboardBookingForm');
+    const confirmationModalElement = document.getElementById('bookingConfirmationModal');
+    const confirmationModal = bootstrap.Modal.getOrCreateInstance(confirmationModalElement);
+    const confirmationClinic = document.getElementById('bookingConfirmationClinic');
+    const confirmationSchedule = document.getElementById('bookingConfirmationSchedule');
+    const confirmationArrival = document.getElementById('bookingConfirmationArrival');
+    const confirmationServiceCount = document.getElementById('bookingConfirmationServiceCount');
+    const confirmationServiceList = document.getElementById('bookingConfirmationServiceList');
+    const confirmationError = document.getElementById('bookingConfirmationError');
+    const confirmRequestButton = document.getElementById('bookingConfirmRequest');
+    const confirmationDismissButtons = Array.from(confirmationModalElement.querySelectorAll('[data-bs-dismiss="modal"]'));
     const maxServicesPerVisit = <?= $maxServicesPerVisit ?>;
     let currentStep = 0;
     let furthestStep = 0;
+    let selectedSchedule = null;
+    let isSubmitting = false;
+
+    confirmationModalElement.addEventListener('hide.bs.modal', event => {
+        if (isSubmitting) event.preventDefault();
+    });
 
     function setSelectionSummary(title, detail) {
         const strong = document.createElement('strong');
@@ -384,6 +470,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         });
         clinicInput.value = clinicId;
         scheduleInput.value = schedule.schedule_id;
+        selectedSchedule = schedule;
         selectedDate.textContent = parseLocalDate(schedule.sched_date).toLocaleDateString('en-PH', {
             weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
         }) + ` · ${formatWindow(schedule)} · Arrive by ${formatTime(schedule.start_time)}`;
@@ -403,6 +490,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         clinicLabel.textContent = button.dataset.clinicName;
         grid.innerHTML = '';
         scheduleInput.value = '';
+        selectedSchedule = null;
         selectedDate.textContent = '';
         furthestStep = Math.min(furthestStep, 1);
         empty.classList.toggle('d-none', schedules.length > 0);
@@ -462,26 +550,65 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         document.querySelector('[data-page="profile-content.php"]')?.click();
     });
 
-    document.getElementById('dashboardBookingForm').addEventListener('submit', async function (event) {
+    function selectedServiceNames() {
+        return serviceCheckboxes
+            .filter(input => input.checked)
+            .map(input => input.closest('.vd-booking-service-option')?.querySelector('.vd-booking-service-copy strong')?.textContent.trim())
+            .filter(Boolean);
+    }
+
+    function populateConfirmationPreview() {
+        const selectedClinic = clinicButtons.find(button => button.classList.contains('active'));
+        const serviceNames = selectedServiceNames();
+        confirmationClinic.textContent = selectedClinic?.dataset.clinicName || '—';
+        confirmationSchedule.textContent = selectedSchedule
+            ? parseLocalDate(selectedSchedule.sched_date).toLocaleDateString('en-PH', {
+                weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+            }) + ' · ' + formatWindow(selectedSchedule)
+            : '—';
+        confirmationArrival.textContent = selectedSchedule
+            ? 'By ' + formatTime(selectedSchedule.start_time) + ' or earlier'
+            : '—';
+        confirmationServiceCount.textContent = serviceNames.length + (serviceNames.length === 1 ? ' service' : ' services');
+        confirmationServiceList.replaceChildren(...serviceNames.map(name => {
+            const item = document.createElement('li');
+            item.textContent = name;
+            return item;
+        }));
+        confirmationError.classList.add('d-none');
+        confirmationError.textContent = '';
+    }
+
+    bookingForm.addEventListener('submit', function (event) {
         event.preventDefault();
         errorBox.classList.add('d-none');
-        if (!scheduleInput.value || !this.querySelector('input[name="service_ids[]"]:checked')) {
+        if (!scheduleInput.value || !bookingForm.querySelector('input[name="service_ids[]"]:checked')) {
             errorBox.textContent = 'Please select a schedule and at least one service.';
             errorBox.classList.remove('d-none');
             return;
         }
-        const selectedServiceCount = this.querySelectorAll('input[name="service_ids[]"]:checked').length;
+        const selectedServiceCount = bookingForm.querySelectorAll('input[name="service_ids[]"]:checked').length;
         if (selectedServiceCount > maxServicesPerVisit) {
             errorBox.textContent = `You can select up to ${maxServicesPerVisit} services per visit.`;
             errorBox.classList.remove('d-none');
             return;
         }
 
-        LoadingUI.setButton(submitButton, true, 'Submitting…');
+        populateConfirmationPreview();
+        confirmationModal.show();
+    });
+
+    confirmRequestButton.addEventListener('click', async function () {
+        if (isSubmitting) return;
+        isSubmitting = true;
+        confirmationError.classList.add('d-none');
+        confirmationDismissButtons.forEach(button => button.disabled = true);
+        LoadingUI.setButton(confirmRequestButton, true, 'Sending request…');
+
         try {
             const response = await fetch('../../controllers/appointmentController.php', {
                 method: 'POST',
-                body: new FormData(this)
+                body: new FormData(bookingForm)
             });
             const responseBody = await response.text();
             let result;
@@ -494,17 +621,19 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
                 throw new Error('The server response could not be read. Check Home or History before submitting again.');
             }
             if (!result.success) throw new Error(result.message || 'Booking failed.');
-            window.showToast('Appointment request submitted for clinic review.', true);
-            document.querySelector('[data-page="home-content.php"]')?.click();
+            confirmationModalElement.addEventListener('hidden.bs.modal', () => {
+                window.showToast('Appointment request submitted for clinic review.', true);
+                document.querySelector('[data-page="home-content.php"]')?.click();
+            }, { once: true });
+            isSubmitting = false;
+            confirmationModal.hide();
         } catch (error) {
-            errorBox.textContent = error.message || 'Unable to submit your appointment. Please try again.';
-            errorBox.classList.remove('d-none');
-            LoadingUI.setButton(submitButton, false);
-            submitButton.disabled = serviceCheckboxes.every(input => !input.checked);
-            errorBox.scrollIntoView({
-                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-                block: 'center'
-            });
+            confirmationError.textContent = error.message || 'Unable to submit your appointment. Please try again.';
+            confirmationError.classList.remove('d-none');
+            isSubmitting = false;
+            confirmationDismissButtons.forEach(button => button.disabled = false);
+            LoadingUI.setButton(confirmRequestButton, false);
+            confirmRequestButton.focus();
         }
     });
 })();

@@ -133,7 +133,7 @@ class SiteSettingsController {
 
         $group = $_POST['group'] ?? '';
 
-        if (!in_array($group, ['brand', 'hero', 'about', 'contact', 'payment', 'eligibility'], true)) {
+        if (!in_array($group, ['brand', 'hero', 'about', 'contact', 'payment', 'eligibility', 'booking'], true)) {
             echo json_encode(['success' => false, 'message' => 'Unknown section.']);
             exit;
         }
@@ -153,6 +153,13 @@ class SiteSettingsController {
             $data = $validation['data'];
         } elseif ($group === 'eligibility') {
             $validation = SiteSettingsModel::validateEligibilitySettings($data);
+            if (!$validation['success']) {
+                echo json_encode($validation);
+                exit;
+            }
+            $data = $validation['data'];
+        } elseif ($group === 'booking') {
+            $validation = SiteSettingsModel::validateBookingSettings($data);
             if (!$validation['success']) {
                 echo json_encode($validation);
                 exit;

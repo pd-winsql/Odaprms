@@ -253,6 +253,34 @@ CREATE TABLE IF NOT EXISTS `appointment_services` (
   `unit_price_snapshot` decimal(10,2) DEFAULT NULL COMMENT 'Price captured for this appointment; NULL for legacy/unpriced records.'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `appointment_reschedule_requests`
+--
+
+CREATE TABLE IF NOT EXISTS `appointment_reschedule_requests` (
+  `request_id` bigint(20) UNSIGNED NOT NULL,
+  `appointment_id` int(11) NOT NULL,
+  `requested_by_user_id` int(11) DEFAULT NULL,
+  `original_schedule_id` int(11) NOT NULL,
+  `original_clinic_id` int(11) NOT NULL,
+  `original_date` date NOT NULL,
+  `target_schedule_id` int(11) NOT NULL,
+  `target_clinic_id` int(11) NOT NULL,
+  `target_date` date NOT NULL,
+  `reason` varchar(500) NOT NULL,
+  `status` enum('Pending','Approved','Rejected','Withdrawn','Expired') NOT NULL DEFAULT 'Pending',
+  `lead_days_snapshot` tinyint(3) UNSIGNED NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `reviewed_by_user_id` int(11) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `rejection_reason` varchar(500) DEFAULT NULL,
+  `resolved_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Dumping data for table `appointment_services`
 --
@@ -716,6 +744,9 @@ CREATE TABLE IF NOT EXISTS `site_settings` (
   `deposit_amount` decimal(10,2) NOT NULL DEFAULT 400.00,
   `payment_deadline_minutes` smallint(5) UNSIGNED NOT NULL DEFAULT 30,
   `clinic_transition_minutes` smallint(5) UNSIGNED NOT NULL DEFAULT 90 COMMENT 'Minimum separation between different clinic windows on the same date.',
+  `minimum_patient_age_years` tinyint(3) UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Minimum age required for patient registration and appointment booking.',
+  `minimum_booking_lead_days` tinyint(3) UNSIGNED NOT NULL DEFAULT 7 COMMENT 'Minimum calendar days required between a patient booking request and its appointment date.',
+  `minimum_reschedule_lead_days` tinyint(3) UNSIGNED NOT NULL DEFAULT 3 COMMENT 'Minimum calendar days required before the requested replacement schedule.',
   `gcash_account_name` varchar(100) DEFAULT NULL,
   `gcash_account_number` varchar(30) DEFAULT NULL,
   `gcash_qr_path` varchar(255) DEFAULT NULL,
@@ -727,8 +758,8 @@ CREATE TABLE IF NOT EXISTS `site_settings` (
 -- Dumping data for table `site_settings`
 --
 
-INSERT INTO `site_settings` (`id`, `brand_name_top`, `brand_name_sub`, `site_logo`, `hero_system_tag`, `hero_eyebrow`, `hero_title`, `hero_subtext`, `about_intro`, `pillar1_title`, `pillar1_desc`, `pillar2_title`, `pillar2_desc`, `pillar3_title`, `pillar3_desc`, `contact_address`, `contact_phone`, `contact_email`, `deposit_amount`, `payment_deadline_minutes`, `clinic_transition_minutes`, `gcash_account_name`, `gcash_account_number`, `gcash_qr_path`, `last_updated_by`, `last_updated_at`) VALUES
-(1, 'Dr. Aprille', 'Clinica Dental', 'site_logo_1785381335.png', 'Online Dental Appointment & Patient Records Management System', 'Two Clinics in Cagayan · Alcala & Tuguegarao', 'Dental care for Alcala and Tuguegarao families.', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.', 'Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.', 'Patient-Centered Care', 'Every visit is explained clearly, so you always know what to expect.', 'Experienced Team', 'Dental professionals handling everything from routine care to advanced treatment.', 'Two Convenient Branches', 'Serving patients in both Alcala and Tuguegarao, Cagayan.', 'Alcala & Tuguegarao, Cagayan', '0912-345-6789', 'info@draprilleventura.com', 400.00, 480, 90, NULL, NULL, NULL, 'Admin', '2026-07-30 13:01:09');
+INSERT INTO `site_settings` (`id`, `brand_name_top`, `brand_name_sub`, `site_logo`, `hero_system_tag`, `hero_eyebrow`, `hero_title`, `hero_subtext`, `about_intro`, `pillar1_title`, `pillar1_desc`, `pillar2_title`, `pillar2_desc`, `pillar3_title`, `pillar3_desc`, `contact_address`, `contact_phone`, `contact_email`, `deposit_amount`, `payment_deadline_minutes`, `clinic_transition_minutes`, `minimum_patient_age_years`, `minimum_booking_lead_days`, `minimum_reschedule_lead_days`, `gcash_account_name`, `gcash_account_number`, `gcash_qr_path`, `last_updated_by`, `last_updated_at`) VALUES
+(1, 'Dr. Aprille', 'Clinica Dental', 'site_logo_1785381335.png', 'Online Dental Appointment & Patient Records Management System', 'Two Clinics in Cagayan · Alcala & Tuguegarao', 'Dental care for Alcala and Tuguegarao families.', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.', 'Dr. Aprille Ventura Clinica Dental provides patient-centered dental care across our Alcala and Tuguegarao branches — from routine checkups to more involved restorative and cosmetic treatment. Our team takes the time to walk you through every step, so you always know what to expect before, during, and after your visit.', 'Patient-Centered Care', 'Every visit is explained clearly, so you always know what to expect.', 'Experienced Team', 'Dental professionals handling everything from routine care to advanced treatment.', 'Two Convenient Branches', 'Serving patients in both Alcala and Tuguegarao, Cagayan.', 'Alcala & Tuguegarao, Cagayan', '0912-345-6789', 'info@draprilleventura.com', 400.00, 480, 90, 1, 7, 3, NULL, NULL, NULL, 'Admin', '2026-07-30 13:01:09');
 
 -- --------------------------------------------------------
 
@@ -950,6 +981,20 @@ ALTER TABLE `appointment_services`
   ADD KEY `fk_appointment_services_service` (`service_id`);
 
 --
+-- Indexes for table `appointment_reschedule_requests`
+--
+ALTER TABLE `appointment_reschedule_requests`
+  ADD PRIMARY KEY (`request_id`),
+  ADD KEY `idx_reschedule_appointment_status` (`appointment_id`,`status`),
+  ADD KEY `idx_reschedule_target_hold` (`target_schedule_id`,`status`,`expires_at`),
+  ADD KEY `idx_reschedule_expiry` (`status`,`expires_at`),
+  ADD KEY `fk_reschedule_requester` (`requested_by_user_id`),
+  ADD KEY `fk_reschedule_original_schedule` (`original_schedule_id`),
+  ADD KEY `fk_reschedule_original_clinic` (`original_clinic_id`),
+  ADD KEY `fk_reschedule_target_clinic` (`target_clinic_id`),
+  ADD KEY `fk_reschedule_reviewer` (`reviewed_by_user_id`);
+
+--
 -- Indexes for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
@@ -1098,6 +1143,12 @@ ALTER TABLE `appointments`
 --
 ALTER TABLE `appointment_billings`
   MODIFY `billing_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `appointment_reschedule_requests`
+--
+ALTER TABLE `appointment_reschedule_requests`
+  MODIFY `request_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `appointment_billing_items`
@@ -1292,6 +1343,18 @@ ALTER TABLE `appointment_reviews`
 ALTER TABLE `appointment_services`
   ADD CONSTRAINT `fk_appointment_services_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_appointment_services_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`service_id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `appointment_reschedule_requests`
+--
+ALTER TABLE `appointment_reschedule_requests`
+  ADD CONSTRAINT `fk_reschedule_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`appointment_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_reschedule_requester` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_reschedule_original_schedule` FOREIGN KEY (`original_schedule_id`) REFERENCES `schedules` (`schedule_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_reschedule_original_clinic` FOREIGN KEY (`original_clinic_id`) REFERENCES `clinics` (`clinic_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_reschedule_target_schedule` FOREIGN KEY (`target_schedule_id`) REFERENCES `schedules` (`schedule_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_reschedule_target_clinic` FOREIGN KEY (`target_clinic_id`) REFERENCES `clinics` (`clinic_id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_reschedule_reviewer` FOREIGN KEY (`reviewed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `audit_logs`

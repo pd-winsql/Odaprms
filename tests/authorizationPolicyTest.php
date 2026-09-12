@@ -11,7 +11,7 @@ $_SESSION = ['user_id' => 1, 'user_role' => 'Admin'];
 policyExpect(vdIsAdmin() && !vdIsDentalAssistant() && vdCanPerformBilling(), 'Admin / Dentist has oversight and final billing permission.');
 
 $_SESSION = ['user_id' => 2, 'user_role' => 'Dental Assistant'];
-policyExpect(!vdIsAdmin() && vdIsDentalAssistant() && vdCanPerformBilling(), 'Dental Assistant has daily operations and final billing permission.');
+policyExpect(!vdIsAdmin() && vdIsDentalAssistant() && !vdCanPerformBilling(), 'Dental Assistant has daily operations without final billing permission.');
 
 $_SESSION = ['user_id' => 3, 'user_role' => 'Patient'];
 policyExpect(!vdIsAdmin() && !vdIsDentalAssistant() && !vdCanPerformBilling(), 'Patient has neither staff operations nor final billing permission.');
@@ -19,6 +19,7 @@ policyExpect(!vdIsAdmin() && !vdIsDentalAssistant() && !vdCanPerformBilling(), '
 $root = dirname(__DIR__);
 $dailyControllers = [
     'appointmentController.php' => 'vdRequireDentalAssistantJson',
+    'rescheduleController.php' => 'vdRequireDentalAssistantJson',
     'clinicController.php' => 'vdRequireDentalAssistantJson',
     'depositController.php' => 'vdRequireDentalAssistantJson',
     'emailNotificationController.php' => 'vdRequireDentalAssistantJson',
@@ -36,7 +37,15 @@ foreach ($dailyControllers as $file => $permissionCheck) {
     policyExpect(str_contains($controllerSource, 'validate_csrf'), "{$file} protects state-changing requests with CSRF validation.");
 }
 
-policyExpect(str_contains(file_get_contents($root . '/apps/controllers/billingController.php'), 'vdCanPerformBilling'), 'Final billing remains available to both staff roles.');
+$billingController = file_get_contents($root . '/apps/controllers/billingController.php');
+policyExpect(str_contains($billingController, 'vdCanPerformBilling'), 'Final billing uses the central Admin-only permission check.');
+policyExpect(str_contains($billingController, 'http_response_code(403)'), 'Unauthorized final billing requests return HTTP 403.');
+$sharedQueue = file_get_contents($root . '/apps/views/admin/partials/dashboard-content.php');
+policyExpect(str_contains($sharedQueue, 'Awaiting admin settlement'), 'The Dental Assistant queue exposes the Admin settlement handoff state.');
+$assistantAppointments = file_get_contents($root . '/apps/views/admin/partials/appointment-content.php');
+policyExpect(!str_contains($assistantAppointments, 'Open final billing') && str_contains($assistantAppointments, 'Awaiting admin settlement'), 'Dental Assistant appointment actions exclude final billing.');
+$assistantLogbook = file_get_contents($root . '/apps/views/admin/partials/logbook-content.php');
+policyExpect(!str_contains($assistantLogbook, 'Open Final Billing') && str_contains($assistantLogbook, 'Awaiting admin settlement'), 'Dental Assistant logbook actions exclude final billing.');
 $staffController = file_get_contents($root . '/apps/controllers/staffController.php');
 policyExpect(str_contains($staffController, 'vdRequireAdminJson'), 'Dental Assistant account management remains Admin-only.');
 policyExpect(str_contains($staffController, 'validate_csrf'), 'Dental Assistant account changes require CSRF validation.');

@@ -4,6 +4,10 @@ class SiteSettingsModel {
     public const DEFAULT_MINIMUM_PATIENT_AGE = 1;
     public const MINIMUM_PATIENT_AGE_LIMIT = 0;
     public const MAXIMUM_PATIENT_AGE_LIMIT = 18;
+    public const DEFAULT_MINIMUM_BOOKING_LEAD_DAYS = 7;
+    public const MINIMUM_BOOKING_LEAD_DAYS_LIMIT = 0;
+    public const MAXIMUM_BOOKING_LEAD_DAYS_LIMIT = 14;
+    public const DEFAULT_MINIMUM_RESCHEDULE_LEAD_DAYS = 3;
 
     private $conn;
     public function __construct($conn)
@@ -20,6 +24,7 @@ class SiteSettingsModel {
         'contact' => ['contact_address', 'contact_phone', 'contact_email'],
         'payment' => ['deposit_amount', 'payment_deadline_minutes', 'gcash_account_name', 'gcash_account_number'],
         'eligibility' => ['minimum_patient_age_years'],
+        'booking' => ['minimum_booking_lead_days', 'minimum_reschedule_lead_days'],
     ];
 
     public static function validatePaymentSettings(array $data): array
@@ -77,6 +82,44 @@ class SiteSettingsModel {
         return [
             'success' => true,
             'data' => ['minimum_patient_age_years' => (string) $minimumAge],
+        ];
+    }
+
+    public static function validateBookingSettings(array $data): array
+    {
+        $rawLeadDays = trim((string) ($data['minimum_booking_lead_days'] ?? ''));
+        $rawRescheduleLeadDays = trim((string) ($data['minimum_reschedule_lead_days'] ?? ''));
+        if (!ctype_digit($rawLeadDays)) {
+            return ['success' => false, 'message' => 'Minimum booking notice must be a whole number of days.'];
+        }
+        if (!ctype_digit($rawRescheduleLeadDays)) {
+            return ['success' => false, 'message' => 'Minimum reschedule notice must be a whole number of days.'];
+        }
+
+        $leadDays = (int) $rawLeadDays;
+        if ($leadDays < self::MINIMUM_BOOKING_LEAD_DAYS_LIMIT || $leadDays > self::MAXIMUM_BOOKING_LEAD_DAYS_LIMIT) {
+            return [
+                'success' => false,
+                'message' => 'Minimum booking notice must be between '
+                    . self::MINIMUM_BOOKING_LEAD_DAYS_LIMIT . ' and '
+                    . self::MAXIMUM_BOOKING_LEAD_DAYS_LIMIT . ' days.',
+            ];
+        }
+
+        $rescheduleLeadDays = (int) $rawRescheduleLeadDays;
+        if ($rescheduleLeadDays < self::MINIMUM_BOOKING_LEAD_DAYS_LIMIT || $rescheduleLeadDays > $leadDays) {
+            return [
+                'success' => false,
+                'message' => "Minimum reschedule notice must be between 0 and {$leadDays} days.",
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data' => [
+                'minimum_booking_lead_days' => (string) $leadDays,
+                'minimum_reschedule_lead_days' => (string) $rescheduleLeadDays,
+            ],
         ];
     }
 

@@ -5,9 +5,11 @@ require_once '../models/clinicModel.php';
 require_once '../models/auditLogModel.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
+require_once '../helpers/bookingPolicy.php';
 require_once '../../config/conn.php';
 
 class ScheduleController {
+    private $conn;
     private $schedules;
     private $clinics;
     private $auditLog;
@@ -15,6 +17,7 @@ class ScheduleController {
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
+        $this->conn = $conn;
         $this->schedules = new Schedule($conn);
         $this->clinics = new Clinic($conn);
         $this->auditLog = new AuditLog($conn);
@@ -62,7 +65,9 @@ class ScheduleController {
 
     public function available($clinic_id) {
         header('Content-Type: application/json');
-        $data = $this->schedules->getAvailableSchedulesByClinic($clinic_id);
+        $leadDays = BookingPolicy::minimumLeadDays($this->conn);
+        $minimumDate = BookingPolicy::earliestBookableDate($leadDays);
+        $data = $this->schedules->getAvailableSchedulesByClinic($clinic_id, $minimumDate);
         echo json_encode($data);
     }
 

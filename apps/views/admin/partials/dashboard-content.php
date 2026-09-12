@@ -13,6 +13,7 @@ require_once __DIR__ . '/../../../models/logbookModel.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
 $appointmentRules = require __DIR__ . '/../../../../config/appointment.php';
 $maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
+$isAdminQueueView = ($_SESSION['user_role'] ?? '') === 'Admin';
 
 $db = new Database();
 $conn = $db->connect();
@@ -20,7 +21,6 @@ $appointmentModel = new Appointment($conn);
 $depositModel = new DepositModel($conn);
 $depositModel->expireUnpaidAppointments();
 $logbookModel = new LogbookModel($conn);
-$serviceModel = new ServiceModel($conn);
 $upcoming = array_values(array_filter(
     $appointmentModel->getAllUpcomingWithStatus(),
     static fn(array $appointment): bool => ($appointment['date'] ?? '') > date('Y-m-d')
@@ -28,12 +28,15 @@ $upcoming = array_values(array_filter(
 $clinics = (new Clinic($conn))->getAllClinics();
 $todayLogbook = $logbookModel->getToday();
 $todayServiceDetails = $appointmentModel->getServiceDetailsForAppointments(array_column($todayLogbook, 'appointment_id'));
-$serviceCategoryNames = array_column($serviceModel->getAllCategories(), 'category_name', 'category_id');
 $billingServicesByCategory = [];
-foreach ($serviceModel->getAllServices() as $service) {
-    $categoryId = (int) ($service['category_id'] ?? 0);
-    $categoryName = $serviceCategoryNames[$categoryId] ?? 'Other services';
-    $billingServicesByCategory[$categoryName][] = $service;
+if ($isAdminQueueView) {
+    $serviceModel = new ServiceModel($conn);
+    $serviceCategoryNames = array_column($serviceModel->getAllCategories(), 'category_name', 'category_id');
+    foreach ($serviceModel->getAllServices() as $service) {
+        $categoryId = (int) ($service['category_id'] ?? 0);
+        $categoryName = $serviceCategoryNames[$categoryId] ?? 'Other services';
+        $billingServicesByCategory[$categoryName][] = $service;
+    }
 }
 $finishedQueueStatuses = ['Completed', 'Cancelled', 'No-show'];
 $activeQueueEntries = array_values(array_filter(
@@ -57,7 +60,6 @@ $onHoldCount = count(array_filter($todayLogbook, static fn($row) => $row['queue_
 $reviewCount = $depositModel->getPendingReviewCount();
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 $csrfToken = $_SESSION['csrf_token'];
-$isAdminQueueView = ($_SESSION['user_role'] ?? '') === 'Admin';
 $dashboardDisplayName = $_SESSION['display_name'] ?? $_SESSION['email'] ?? 'Staff member';
 // The session name may include middle names. Keep only its first and last
 // parts in the dashboard greeting while preserving the full sidebar name.
@@ -280,15 +282,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                                                 <button type="button" class="btn vd-btn-outline btn-sm vd-queue-primary-action" data-queue-action="serveNext" data-appointment-id="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>">Move to next</button>
                                             <?php else: ?><span class="vd-queue-action-note">Selected by staff</span><?php endif; ?>
                                         <?php elseif ($entry['appointment_status'] === 'In Progress'): ?>
-                                            <button type="button" class="btn vd-btn-gold btn-sm vd-queue-primary-action" data-complete-with-billing
-                                                data-appointment-id="<?= (int) $entry['appointment_id'] ?>"
-                                                data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>"
-                                                data-services="<?= htmlspecialchars($entry['service_name'] ?: 'Service not listed') ?>"
-                                                data-service-ids="<?= dashboardServiceIdsPayload((int) $entry['appointment_id'], $todayServiceDetails) ?>"
-                                                data-clinic="<?= htmlspecialchars($entry['clinic_name']) ?>"
-                                                data-deposit="<?= htmlspecialchars((string) ((float) $entry['verified_deposit'])) ?>">
-                                                <i class="ti ti-check" aria-hidden="true"></i>Complete visit
-                                            </button>
+                                            <span class="vd-queue-action-note">Awaiting admin settlement</span>
                                         <?php else: ?><span class="vd-queue-action-note"><?= htmlspecialchars($entry['checked_in_by'] ?: 'No action available') ?></span><?php endif; ?>
                                     </td>
                                 </tr>
@@ -354,6 +348,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
     <?php endif; ?>
 </div>
 
+<?php if ($isAdminQueueView): ?>
 <div class="modal fade vd-final-billing-modal" id="finalBillingModal" tabindex="-1" aria-labelledby="finalBillingTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content vd-modal-content">
@@ -423,6 +418,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="modal fade vd-transaction-receipt-modal" id="logbookBillingDetailsModal" tabindex="-1" aria-labelledby="logbookBillingDetailsTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -480,6 +476,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
             document.querySelector('[data-page="appointment-content.php"]')?.click();
         });
         const csrfToken = <?= json_encode($csrfToken) ?>;
+        <?php if ($isAdminQueueView): ?>
         let activeBillingAppointment = null;
         const finalBillingModalElement = document.getElementById('finalBillingModal');
         let finalBillingModal = null;
@@ -686,6 +683,7 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
             });
             LoadingUI.setButton(completeBillingButton, false);
         });
+        <?php endif; ?>
 
         document.querySelectorAll('[data-view-logbook-billing]').forEach(button => button.addEventListener('click', () => {
             const billing = JSON.parse(button.dataset.viewLogbookBilling);

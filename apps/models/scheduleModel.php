@@ -153,24 +153,37 @@ class Schedule {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getAvailableSchedulesByClinic($clinic_id) {
+    public function getAvailableSchedulesByClinic($clinic_id, ?string $minimumDate = null) {
         try {
-            $stmt = $this->conn->prepare("
+            $sql = "
                 SELECT
-                    schedule_id,
-                    clinic_id,
-                    sched_date,
-                    start_time,
-                    end_time,
-                    capacity AS max_appointments,
-                    booked AS total_appointments,
-                    available_slots
-                FROM vw_schedule_utilization
-                WHERE clinic_id = :clinic_id
-                  AND TIMESTAMP(sched_date, start_time) >= NOW()
-                ORDER BY sched_date ASC, start_time ASC
-            ");
-            $stmt->execute([':clinic_id' => $clinic_id]);
+                    util.schedule_id,
+                    util.clinic_id,
+                    util.sched_date,
+                    util.start_time,
+                    util.end_time,
+                    util.capacity AS max_appointments,
+                    util.booked AS total_appointments,
+                    GREATEST(util.available_slots - COALESCE(holds.active_holds, 0), 0) AS available_slots
+                FROM vw_schedule_utilization util
+                LEFT JOIN (
+                    SELECT target_schedule_id, COUNT(*) AS active_holds
+                    FROM appointment_reschedule_requests
+                    WHERE status = 'Pending' AND expires_at > NOW()
+                    GROUP BY target_schedule_id
+                ) holds ON holds.target_schedule_id = util.schedule_id
+                WHERE util.clinic_id = :clinic_id
+                  AND TIMESTAMP(util.sched_date, util.start_time) >= NOW()
+            ";
+            $params = [':clinic_id' => $clinic_id];
+            if ($minimumDate !== null) {
+                $sql .= ' AND util.sched_date >= :minimum_date';
+                $params[':minimum_date'] = $minimumDate;
+            }
+            $sql .= ' ORDER BY util.sched_date ASC, util.start_time ASC';
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("getAvailableSchedulesByClinic error: " . $e->getMessage());

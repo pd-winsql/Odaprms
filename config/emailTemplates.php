@@ -128,6 +128,51 @@ return [
         'footer' => 'Keep this code private and bring it with you to the clinic.'
     ],
 
+    'reschedule_requested' => [
+        'subject' => 'Reschedule Request Received',
+        'heading' => 'Reschedule Request Received',
+        'intro' => 'Your preferred replacement schedule has been sent to the clinic for approval.',
+        'instruction' => 'Requested schedule: {requested_schedule} The clinic has until {approval_deadline} to review it. Your current appointment remains unchanged until approval.',
+        'label' => 'Request Status',
+        'footer' => 'You will receive another notification when the clinic responds.'
+    ],
+
+    'reschedule_approved' => [
+        'subject' => 'Reschedule Approved',
+        'heading' => 'Your Appointment Was Rescheduled',
+        'intro' => 'The clinic approved your reschedule request.',
+        'instruction' => 'New schedule: {schedule_summary} {arrival_instruction}',
+        'label' => 'Request Status',
+        'footer' => 'Your appointment code, selected services, and deposit remain unchanged.'
+    ],
+
+    'reschedule_rejected' => [
+        'subject' => 'Reschedule Request Not Approved',
+        'heading' => 'Reschedule Request Rejected',
+        'intro' => 'The clinic was unable to approve your requested replacement schedule.',
+        'instruction' => 'Requested schedule: {requested_schedule} Your original appointment remains confirmed.',
+        'label' => 'Reason',
+        'footer' => 'You may submit another reschedule request if another eligible schedule is available.'
+    ],
+
+    'reschedule_withdrawn' => [
+        'subject' => 'Reschedule Request Withdrawn',
+        'heading' => 'Reschedule Request Withdrawn',
+        'intro' => 'Your pending reschedule request has been withdrawn.',
+        'instruction' => 'Your original appointment remains confirmed: {schedule_summary}',
+        'label' => 'Request Status',
+        'footer' => 'No changes were made to your appointment.'
+    ],
+
+    'reschedule_expired' => [
+        'subject' => 'Reschedule Request Expired',
+        'heading' => 'Reschedule Request Expired',
+        'intro' => 'The clinic did not complete the review within the 24-hour approval window.',
+        'instruction' => 'Requested schedule: {requested_schedule} Your original appointment remains confirmed.',
+        'label' => 'Request Status',
+        'footer' => 'You may submit another reschedule request if an eligible schedule is available.'
+    ],
+
     'staff_account_created' => [
 
         'subject' => 'Your Dental Assistant Account Has Been Created',

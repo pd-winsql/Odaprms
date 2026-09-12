@@ -2,6 +2,7 @@
 require_once '../models/appointmentModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
+require_once '../models/rescheduleModel.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 require_once '../helpers/patientEligibility.php';
@@ -13,12 +14,14 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 class AppointmentController {
     private $appointmentModel;
     private $patientModel;
+    private $rescheduleModel;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
         $this->appointmentModel = new Appointment($conn);
         $this->patientModel = new Patient($conn);
+        $this->rescheduleModel = new RescheduleModel($conn);
     }
 
     //Patient: upcoming appointments
@@ -348,6 +351,7 @@ class AppointmentController {
             'latest_appointment_id' => $this->appointmentModel->getLatestAppointmentId(),
             'deposit_feed_version' => $this->appointmentModel->getDepositFeedVersion(),
             'staff_operations_feed_version' => $this->appointmentModel->getStaffOperationsFeedVersion(),
+            'reschedule_events' => $this->rescheduleModel->getStaffNotificationEvents(),
         ]);
         exit;
     }
@@ -371,6 +375,7 @@ class AppointmentController {
         echo json_encode([
             'success' => true,
             'appointments' => $this->appointmentModel->getPatientNotificationSnapshot((int) $_SESSION['user_id']),
+            'reschedules' => $this->rescheduleModel->getPatientNotificationSnapshot((int) $_SESSION['user_id']),
         ]);
         exit;
     }

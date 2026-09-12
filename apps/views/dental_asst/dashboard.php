@@ -397,7 +397,8 @@ $today = date('l, F j Y');
                 const staffOperationsVersion = String(result.staff_operations_feed_version || '');
                 appointmentNotificationCenter?.observe({
                     appointmentId: latestId,
-                    depositVersion
+                    depositVersion,
+                    rescheduleEvents: result.reschedule_events
                 });
                 const hasNewAppointment = latestId > lastKnownAppointmentId;
                 const hasDepositChange = depositVersion !== lastKnownDepositVersion;
@@ -444,6 +445,7 @@ $today = date('l, F j Y');
             }
         }
 
+        checkForNewAppointments();
         window.setInterval(checkForNewAppointments, 10000);
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) checkForNewAppointments();

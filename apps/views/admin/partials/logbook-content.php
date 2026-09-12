@@ -78,9 +78,7 @@ if ($hasSelectedRecordDate) {
                                     <?php elseif ($isToday && $entry['appointment_status'] === 'Checked In'): ?>
                                         <button type="button" class="btn vd-btn-outline btn-sm" data-open-today-queue>Manage Queue</button>
                                     <?php elseif ($isToday && $entry['appointment_status'] === 'In Progress'): ?>
-                                        <button type="button" class="btn vd-btn-gold btn-sm" data-open-today-queue>
-                                            <i class="ti ti-cash-check me-1"></i>Open Final Billing
-                                        </button>
+                                        <span class="vd-appt-meta">Awaiting admin settlement</span>
                                     <?php elseif ($entry['appointment_status'] === 'Completed'): ?>
                                         <span class="vd-appt-meta">Visit completed</span>
                                     <?php else: ?>
@@ -147,16 +145,16 @@ if ($hasSelectedRecordDate) {
     document.querySelectorAll('[data-visit-status]').forEach(button => {
         button.addEventListener('click', async () => {
             const status = button.dataset.visitStatus;
+            if (status !== 'In Progress') return;
             const appointmentId = button.dataset.appointmentId;
-            const label = status === 'In Progress' ? 'start treatment' : 'complete this visit';
 
             if (typeof window.showActionModal === 'function') {
                 const confirmation = await window.showActionModal({
-                    title: status === 'In Progress' ? 'Start Treatment' : 'Complete Visit',
+                    title: 'Start Treatment',
                     kicker: 'Appointment workflow',
-                    message: `Are you sure you want to ${label}?`,
-                    confirmText: status === 'In Progress' ? 'Start Treatment' : 'Complete Visit',
-                    icon: status === 'In Progress' ? 'ti-player-play' : 'ti-check',
+                    message: 'Confirm that the patient is ready to start treatment.',
+                    confirmText: 'Start Treatment',
+                    icon: 'ti-player-play',
                     tone: 'primary'
                 });
                 if (!confirmation.confirmed) return;
@@ -168,7 +166,7 @@ if ($hasSelectedRecordDate) {
             body.append('appointment_id', appointmentId);
             body.append('status', status);
 
-            LoadingUI.setButton(button, true, status === 'In Progress' ? 'Starting…' : 'Completing…');
+            LoadingUI.setButton(button, true, 'Starting…');
             try {
                 const response = await fetch('../../controllers/logbookController.php', { method: 'POST', body });
                 const result = await response.json();

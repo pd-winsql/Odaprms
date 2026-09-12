@@ -25,6 +25,20 @@ $minimumPatientAge = max(
         (int) ($settings['minimum_patient_age_years'] ?? SiteSettingsModel::DEFAULT_MINIMUM_PATIENT_AGE)
     )
 );
+$minimumBookingLeadDays = max(
+    SiteSettingsModel::MINIMUM_BOOKING_LEAD_DAYS_LIMIT,
+    min(
+        SiteSettingsModel::MAXIMUM_BOOKING_LEAD_DAYS_LIMIT,
+        (int) ($settings['minimum_booking_lead_days'] ?? SiteSettingsModel::DEFAULT_MINIMUM_BOOKING_LEAD_DAYS)
+    )
+);
+$minimumRescheduleLeadDays = max(
+    0,
+    min(
+        $minimumBookingLeadDays,
+        (int) ($settings['minimum_reschedule_lead_days'] ?? SiteSettingsModel::DEFAULT_MINIMUM_RESCHEDULE_LEAD_DAYS)
+    )
+);
 $transitionMinutes = max(
     Schedule::MIN_TRANSITION_MINUTES,
     min(Schedule::MAX_TRANSITION_MINUTES, (int) ($settings['clinic_transition_minutes'] ?? 90))
@@ -289,6 +303,42 @@ function sv($settings, $key)
         </div>
     </div>
 
+    <div class="vd-dash-card">
+        <div class="vd-dash-card-header">
+            <span class="vd-dash-card-title">Booking Policy</span>
+        </div>
+        <div class="vd-dash-card-body">
+            <p class="vd-appt-meta mb-3">Set the notice required for new bookings and reschedule requests. Existing requests keep the policy captured when submitted.</p>
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-lg-4">
+                    <label class="vd-label form-label" for="minimumBookingLeadDays">Minimum booking notice</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control vd-input vd-field" id="minimumBookingLeadDays"
+                            data-field="minimum_booking_lead_days" value="<?= $minimumBookingLeadDays ?>"
+                            min="<?= SiteSettingsModel::MINIMUM_BOOKING_LEAD_DAYS_LIMIT ?>" max="<?= SiteSettingsModel::MAXIMUM_BOOKING_LEAD_DAYS_LIMIT ?>"
+                            step="1" inputmode="numeric" required aria-describedby="minimumBookingLeadDaysHint">
+                        <span class="input-group-text">days</span>
+                    </div>
+                    <div class="form-text" id="minimumBookingLeadDaysHint">Use 0 to allow same-day requests when a future clinic window is available.</div>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <label class="vd-label form-label" for="minimumRescheduleLeadDays">Minimum reschedule notice</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control vd-input vd-field" id="minimumRescheduleLeadDays"
+                            data-field="minimum_reschedule_lead_days" value="<?= $minimumRescheduleLeadDays ?>"
+                            min="0" max="<?= $minimumBookingLeadDays ?>" step="1" inputmode="numeric" required
+                            aria-describedby="minimumRescheduleLeadDaysHint">
+                        <span class="input-group-text">days</span>
+                    </div>
+                    <div class="form-text" id="minimumRescheduleLeadDaysHint">Cannot be greater than the booking notice.</div>
+                </div>
+                <div class="col-lg-4 d-flex justify-content-lg-end">
+                    <button type="button" class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="booking">Save Booking Policy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php endif; ?>
 
 </div>
@@ -318,6 +368,16 @@ function sv($settings, $key)
         const CONTROLLER = '../../../apps/controllers/siteSettingsController.php';
         const settingsCsrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
         const clinicTimePickers = new WeakMap();
+        const bookingLeadInput = document.getElementById('minimumBookingLeadDays');
+        const rescheduleLeadInput = document.getElementById('minimumRescheduleLeadDays');
+
+        function syncRescheduleLeadMaximum() {
+            if (!bookingLeadInput || !rescheduleLeadInput) return;
+            const maximum = Math.max(0, Math.min(14, Number(bookingLeadInput.value) || 0));
+            rescheduleLeadInput.max = String(maximum);
+        }
+        bookingLeadInput?.addEventListener('input', syncRescheduleLeadMaximum);
+        syncRescheduleLeadMaximum();
 
         const groupLabels = {
             brand: 'Brand Text',
@@ -326,6 +386,7 @@ function sv($settings, $key)
             contact: 'Contact Information',
             payment: 'GCash Deposit Settings',
             eligibility: 'Patient Eligibility',
+            booking: 'Booking Policy',
         };
 
         function showToast(msg, success) {

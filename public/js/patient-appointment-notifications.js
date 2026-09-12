@@ -2,13 +2,18 @@
     'use strict';
 
     const STORAGE_PREFIX = 'vdPatientAppointmentNotifications:v1:';
-    const MAX_NOTIFICATIONS = 8;
+    const MAX_NOTIFICATIONS = 12;
     const NOTIFICATION_TYPES = {
         deposit_required: { destination: 'billing-content.php', icon: 'ti-receipt' },
         payment_rejected: { destination: 'billing-content.php', icon: 'ti-alert-triangle' },
         appointment_confirmed: { destination: 'home-content.php', icon: 'ti-circle-check' },
         appointment_rejected: { destination: 'history-content.php', icon: 'ti-calendar-x' },
-        appointment_cancelled: { destination: 'history-content.php', icon: 'ti-calendar-cancel' }
+        appointment_cancelled: { destination: 'history-content.php', icon: 'ti-calendar-cancel' },
+        reschedule_requested: { destination: 'home-content.php', icon: 'ti-calendar-time' },
+        reschedule_approved: { destination: 'home-content.php', icon: 'ti-calendar-check' },
+        reschedule_rejected: { destination: 'home-content.php', icon: 'ti-calendar-x' },
+        reschedule_withdrawn: { destination: 'home-content.php', icon: 'ti-arrow-back-up' },
+        reschedule_expired: { destination: 'home-content.php', icon: 'ti-clock-x' }
     };
 
     function safeParse(value) {
@@ -99,6 +104,11 @@
         if (type === 'appointment_rejected') {
             return `Your appointment request for ${date}${clinic} was not accepted.${reason}`;
         }
+        if (type === 'reschedule_requested') return `Your reschedule request for ${date}${clinic} is awaiting clinic review.`;
+        if (type === 'reschedule_approved') return `Your appointment was moved to ${date}${clinic}.`;
+        if (type === 'reschedule_rejected') return `Your reschedule request for ${date}${clinic} was not approved.${reason}`;
+        if (type === 'reschedule_withdrawn') return 'Your reschedule request was withdrawn. Your original appointment is unchanged.';
+        if (type === 'reschedule_expired') return 'Your reschedule request expired. Your original appointment is unchanged.';
         return `Your appointment on ${date}${clinic} was cancelled.${reason}`;
     }
 
@@ -116,6 +126,28 @@
         };
     }
 
+    function normalizeReschedule(item) {
+        return {
+            requestId: Math.max(0, Number(item?.request_id) || 0),
+            appointmentId: Math.max(0, Number(item?.appointment_id) || 0),
+            status: String(item?.status || ''),
+            date: String(item?.target_date || ''),
+            clinicName: String(item?.clinic_name || ''),
+            reason: String(item?.rejection_reason || ''),
+            stateChangedAt: String(item?.state_changed_at || ''),
+            expiresAt: String(item?.expires_at || '')
+        };
+    }
+
+    function rescheduleNotificationType(previous, current) {
+        if (previous?.status === current.status) return null;
+        const types = {
+            Pending: 'reschedule_requested', Approved: 'reschedule_approved',
+            Rejected: 'reschedule_rejected', Withdrawn: 'reschedule_withdrawn', Expired: 'reschedule_expired'
+        };
+        return types[current.status] || null;
+    }
+
     function create(config) {
         const button = document.getElementById(config.buttonId);
         const panel = document.getElementById(config.panelId);
@@ -129,7 +161,7 @@
         const storageKey = STORAGE_PREFIX + String(config.userId);
 
         function defaultState() {
-            return { initialized: false, appointments: {}, notifications: [] };
+            return { initialized: false, appointments: {}, reschedules: {}, notifications: [] };
         }
 
         function loadState() {
@@ -146,6 +178,7 @@
             return {
                 initialized: stored.initialized === true,
                 appointments: stored.appointments && typeof stored.appointments === 'object' ? stored.appointments : {},
+                reschedules: stored.reschedules && typeof stored.reschedules === 'object' ? stored.reschedules : {},
                 notifications
             };
         }
@@ -236,11 +269,15 @@
             state.notifications = state.notifications.slice(0, MAX_NOTIFICATIONS);
         }
 
-        function observe(items) {
+        function observe(items, rescheduleItems = []) {
             const appointments = Array.isArray(items) ? items.map(normalizeAppointment) : [];
+            const reschedules = Array.isArray(rescheduleItems) ? rescheduleItems.map(normalizeReschedule) : [];
             if (!state.initialized) {
                 appointments.forEach(item => {
                     if (item.appointmentId) state.appointments[item.appointmentId] = item;
+                });
+                reschedules.forEach(item => {
+                    if (item.requestId) state.reschedules[item.requestId] = item;
                 });
                 state.initialized = true;
                 saveState();
@@ -257,6 +294,13 @@
                 }
                 state.appointments[current.appointmentId] = current;
             });
+            reschedules.forEach(current => {
+                if (!current.requestId) return;
+                const previous = state.reschedules[current.requestId] || null;
+                const type = rescheduleNotificationType(previous, current);
+                if (type && previous) addNotification(type, current);
+                state.reschedules[current.requestId] = current;
+            });
             saveState();
             render();
         }
@@ -269,7 +313,7 @@
                 });
                 if (!response.ok) return;
                 const result = await response.json();
-                if (result?.success) observe(result.appointments);
+                if (result?.success) observe(result.appointments, result.reschedules);
             } catch (error) {
                 // A later poll will retry; appointment pages remain the source of truth.
             }

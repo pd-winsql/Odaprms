@@ -17,8 +17,7 @@ function vdIsDentalAssistant(): bool
 
 function vdCanPerformBilling(): bool
 {
-    return isset($_SESSION['user_id'])
-        && in_array(vdCurrentRole(), ['Admin', 'Dental Assistant'], true);
+    return vdIsAdmin();
 }
 
 function vdRequireRoleJson(array $roles, string $message = 'Forbidden.'): void
@@ -40,4 +39,3 @@ function vdRequireAdminJson(): void
 {
     vdRequireRoleJson(['Admin']);
 }
-

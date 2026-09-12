@@ -28,7 +28,11 @@ patientNotificationExpect(
     'Patient bell exposes accessible panel controls and a conditional unread dot.'
 );
 
-foreach (['deposit_required', 'payment_rejected', 'appointment_confirmed', 'appointment_rejected', 'appointment_cancelled'] as $type) {
+foreach ([
+    'deposit_required', 'payment_rejected', 'appointment_confirmed', 'appointment_rejected',
+    'appointment_cancelled', 'reschedule_requested', 'reschedule_approved', 'reschedule_rejected',
+    'reschedule_withdrawn', 'reschedule_expired',
+] as $type) {
     patientNotificationExpect(str_contains($script, $type), "Patient notification script handles {$type}.");
 }
 
@@ -44,6 +48,7 @@ patientNotificationExpect(
 patientNotificationExpect(
     str_contains($controller, 'patientNotificationSnapshot')
         && str_contains($controller, "(\$_SESSION['user_role'] ?? '') !== 'Patient'")
+        && str_contains($controller, "'reschedules' => \$this->rescheduleModel->getPatientNotificationSnapshot")
         && str_contains($model, 'WHERE p.user_id = :user_id'),
     'Snapshot endpoint is restricted to the signed-in patient account.'
 );

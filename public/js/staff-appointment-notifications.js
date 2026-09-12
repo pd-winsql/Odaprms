@@ -2,7 +2,7 @@
     'use strict';
 
     const STORAGE_PREFIX = 'vdStaffAppointmentNotifications:v1:';
-    const MAX_NOTIFICATIONS = 8;
+    const MAX_NOTIFICATIONS = 12;
     const NOTIFICATION_TYPES = {
         appointment_created: {
             message: 'A new appointment request was received.',
@@ -13,6 +13,26 @@
             message: 'A deposit record was updated.',
             destination: 'payment-review-content.php',
             icon: 'ti-receipt'
+        },
+        reschedule_requested: {
+            message: 'A patient requested a new appointment schedule.',
+            destination: 'appointment-content.php',
+            icon: 'ti-calendar-time'
+        },
+        reschedule_reminder: {
+            message: 'A reschedule request is waiting for review.',
+            destination: 'appointment-content.php',
+            icon: 'ti-clock-exclamation'
+        },
+        reschedule_urgent: {
+            message: 'A reschedule request will expire soon.',
+            destination: 'appointment-content.php',
+            icon: 'ti-alert-triangle'
+        },
+        reschedule_expired: {
+            message: 'A reschedule request expired without review.',
+            destination: 'appointment-content.php',
+            icon: 'ti-calendar-x'
         }
     };
 
@@ -185,10 +205,10 @@
             state.notifications.unshift({
                 id,
                 type,
-                message: definition.message,
-                destination: definition.destination,
+                message: details.message || definition.message,
+                destination: details.destination || definition.destination,
                 appointmentId: details.appointmentId || null,
-                createdAt: new Date().toISOString(),
+                createdAt: details.createdAt || new Date().toISOString(),
                 read: false
             });
             state.notifications = state.notifications.slice(0, MAX_NOTIFICATIONS);
@@ -201,6 +221,7 @@
             const previousDepositVersion = state.cursors.depositVersion;
             const hasNewAppointment = appointmentId > previousAppointmentId;
             const hasDepositChange = depositVersion !== previousDepositVersion;
+            const rescheduleEvents = Array.isArray(feed.rescheduleEvents) ? feed.rescheduleEvents : [];
 
             if (hasNewAppointment) {
                 addNotification('appointment_created', appointmentId, { appointmentId });
@@ -208,6 +229,15 @@
             if (hasDepositChange) {
                 addNotification('deposit_updated', depositVersion);
             }
+            rescheduleEvents.forEach(event => {
+                if (!event?.id || !NOTIFICATION_TYPES[event.type]) return;
+                addNotification(event.type, event.id, {
+                    message: event.message,
+                    destination: event.destination,
+                    appointmentId: event.appointment_id,
+                    createdAt: event.created_at
+                });
+            });
 
             // A restored or replaced database can have a lower cursor. Treat it as
             // the new baseline instead of generating a misleading notification.

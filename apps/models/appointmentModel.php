@@ -3,6 +3,7 @@
 require_once __DIR__ . '/auditLogModel.php';
 require_once __DIR__ . '/emailNotificationModel.php';
 require_once __DIR__ . '/../helpers/paymentSettings.php';
+require_once __DIR__ . '/../helpers/bookingPolicy.php';
 
 class Appointment
 {
@@ -84,6 +85,16 @@ class Appointment
                 return false;
             }
 
+            $leadDays = BookingPolicy::minimumLeadDays($this->conn);
+            $bookingPolicy = BookingPolicy::assessDate($schedule['sched_date'], $leadDays);
+            if (!$bookingPolicy['eligible']) {
+                $this->conn->rollBack();
+                return [
+                    'success' => false,
+                    'message' => $bookingPolicy['message'],
+                ];
+            }
+
             // -----------------------------------------------------------------
             // Prevent the patient from having more than one active appointment
             // on the same date. The status filter covers all states that should
@@ -126,7 +137,10 @@ class Appointment
                     AND status IN ('Pending Review', 'Awaiting Deposit', 'Payment Under Review', 'Confirmed', 'Checked In', 'In Progress', 'Completed')
             ");
             $capacityStmt->execute([':schedule_id' => $schedule_id]);
-            if ((int) $capacityStmt->fetchColumn() >= (int) $schedule['max_appointments']) {
+            $holdStmt = $this->conn->prepare("SELECT COUNT(*) FROM appointment_reschedule_requests
+                WHERE target_schedule_id = :schedule_id AND status = 'Pending' AND expires_at > NOW()");
+            $holdStmt->execute([':schedule_id' => $schedule_id]);
+            if ((int) $capacityStmt->fetchColumn() + (int) $holdStmt->fetchColumn() >= (int) $schedule['max_appointments']) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'No available slots remain for this schedule.'];
             }
@@ -566,7 +580,11 @@ class Appointment
         ");
 
         $stmt->execute([':schedule_id' => $schedule_id]);
-        return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        $appointments = (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        $holds = $this->conn->prepare("SELECT COUNT(*) FROM appointment_reschedule_requests
+            WHERE target_schedule_id = :schedule_id AND status = 'Pending' AND expires_at > NOW()");
+        $holds->execute([':schedule_id' => $schedule_id]);
+        return $appointments + (int) $holds->fetchColumn();
     }
 
     // ===== DASHBOARD FEED HELPERS =====

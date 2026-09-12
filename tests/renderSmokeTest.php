@@ -68,17 +68,42 @@ if ($case === 'dental-settings') {
     }
 }
 if ($case === 'settings'
-    && (!str_contains($html, 'Brand & Logo') || str_contains($html, 'Clinic Schedule Defaults'))) {
+    && (!str_contains($html, 'Brand & Logo')
+        || !str_contains($html, 'minimum_reschedule_lead_days')
+        || str_contains($html, 'Clinic Schedule Defaults'))) {
     fwrite(STDERR, "Admin settings did not render the intended system-only controls.\n");
     exit(1);
 }
+if ($case === 'patient-home'
+    && (!str_contains($html, 'id="patientRescheduleModal"')
+        || !str_contains($html, 'Available schedules at both clinics')
+        || !str_contains($html, 'rescheduleController.php'))) {
+    fwrite(STDERR, "Patient home did not render the reschedule interaction.\n");
+    exit(1);
+}
+if ($case === 'dental-appointments'
+    && (!str_contains($html, 'RESCHEDULE_CONTROLLER')
+        || !str_contains($html, 'data-approve-reschedule')
+        || !str_contains($html, 'data-reject-reschedule'))) {
+    // Action buttons are data-driven, but the handlers must always be present.
+    if (!str_contains($html, "runRescheduleAction(button, 'approve')")
+        || !str_contains($html, "runRescheduleAction(button, 'reject')")) {
+        fwrite(STDERR, "Dental Assistant appointments did not render reschedule review behavior.\n");
+        exit(1);
+    }
+}
 if ($case === 'dashboard'
-    && (!str_contains($html, 'Treatment oversight') || str_contains($html, 'id="checkinLookup"'))) {
+    && (!str_contains($html, 'Treatment oversight')
+        || !str_contains($html, 'id="finalBillingModal"')
+        || str_contains($html, 'id="checkinLookup"'))) {
     fwrite(STDERR, "Admin queue did not render in oversight mode.\n");
     exit(1);
 }
 if ($case === 'dental-dashboard'
-    && (!str_contains($html, 'Clinic operations') || !str_contains($html, 'id="checkinLookup"'))) {
+    && (!str_contains($html, 'Clinic operations')
+        || !str_contains($html, 'id="checkinLookup"')
+        || str_contains($html, 'id="finalBillingModal"')
+        || str_contains($html, 'data-complete-with-billing'))) {
     fwrite(STDERR, "Dental Assistant queue did not render its operational controls.\n");
     exit(1);
 }
@@ -125,6 +150,23 @@ if ($case === 'patient-history'
     fwrite(STDERR, "The patient visit-rating interface did not render.\n");
     exit(1);
 }
+if ($case === 'patient-booking'
+    && (!str_contains($html, 'id="bookingConfirmationModal"')
+        || !str_contains($html, 'id="bookingConfirmRequest"')
+        || !str_contains($html, 'populateConfirmationPreview')
+        || !str_contains($html, 'new FormData(bookingForm)')
+        || !str_contains($html, 'advance notice')
+        || !str_contains($html, 'current notice policy'))) {
+    fwrite(STDERR, "The patient booking confirmation preview did not render correctly.\n");
+    exit(1);
+}
+if ($case === 'settings'
+    && (!str_contains($html, 'Booking Policy')
+        || !str_contains($html, 'data-field="minimum_booking_lead_days"')
+        || !str_contains($html, 'max="14"'))) {
+    fwrite(STDERR, "The configurable booking notice policy did not render correctly.\n");
+    exit(1);
+}
 if ($case === 'patient-profile'
     && (!str_contains($html, 'saveOwnProfile')
         || !str_contains($html, 'Save profile changes')
@@ -134,7 +176,9 @@ if ($case === 'patient-profile'
     exit(1);
 }
 if ($case === 'dental-settings') {
-    if (!str_contains($html, 'Clinic Schedule Defaults') || str_contains($html, 'Brand &amp; Logo')) {
+    if (!str_contains($html, 'Clinic Schedule Defaults')
+        || str_contains($html, 'Brand &amp; Logo')
+        || str_contains($html, 'data-field="minimum_booking_lead_days"')) {
         fwrite(STDERR, "Dental Assistant schedule-settings access was not correctly scoped.\n");
         exit(1);
     }

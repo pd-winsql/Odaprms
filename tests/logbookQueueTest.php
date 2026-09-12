@@ -21,7 +21,8 @@ $initialOperationsFeedVersion = $appointments->getStaffOperationsFeedVersion();
 
 try {
     $serviceId = (int) $conn->query('SELECT service_id FROM services WHERE is_active = 1 ORDER BY service_id LIMIT 1')->fetchColumn();
-    $staffId = (int) $conn->query("SELECT id FROM users WHERE user_role IN ('Admin','Dental Assistant') ORDER BY id LIMIT 1")->fetchColumn();
+    $staffId = (int) $conn->query("SELECT id FROM users WHERE user_role = 'Dental Assistant' ORDER BY id LIMIT 1")->fetchColumn();
+    $adminId = (int) $conn->query("SELECT id FROM users WHERE user_role = 'Admin' ORDER BY id LIMIT 1")->fetchColumn();
     $schedule = $conn->query('SELECT schedule_id, clinic_id FROM schedules WHERE sched_date = CURDATE() LIMIT 1')->fetch(PDO::FETCH_ASSOC);
     $scheduleId = (int) ($schedule['schedule_id'] ?? 0);
     $clinicId = (int) ($schedule['clinic_id'] ?? 0);
@@ -32,7 +33,7 @@ try {
         $scheduleId = (int) $conn->lastInsertId();
         $createdScheduleId = $scheduleId;
     }
-    queueExpect($clinicId > 0 && $serviceId > 0 && $staffId > 0, 'Queue test fixtures are available.');
+    queueExpect($clinicId > 0 && $serviceId > 0 && $staffId > 0 && $adminId > 0, 'Queue test fixtures for the dental assistant and admin are available.');
 
     $insertPatient = $conn->prepare("
         INSERT INTO patients (firstname, lastname, email, profile_status, profile_completed_at)
@@ -120,8 +121,8 @@ try {
         $directCompletion = $appointments->updateAppointmentStatus($appointmentIds[2], 'Completed', $staffId);
         queueExpect(!$directCompletion['success'], 'Treatment cannot be completed without final billing.');
         $billingFeedVersion = $appointments->getStaffOperationsFeedVersion();
-        $settled = $billings->settleAndCompleteVisit($appointmentIds[2], 0, 0, $staffId, '', [$serviceId]);
-        queueExpect($settled['success'], 'Final billing completes treatment and releases the queue for the next patient.');
+        $settled = $billings->settleAndCompleteVisit($appointmentIds[2], 0, 0, $adminId, '', [$serviceId]);
+        queueExpect($settled['success'], 'Admin final billing completes treatment and releases the queue for the next patient.');
         queueExpect(
             $appointments->getStaffOperationsFeedVersion() !== $billingFeedVersion,
             'The staff operations feed detects completed billing.'

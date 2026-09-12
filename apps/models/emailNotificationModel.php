@@ -19,7 +19,8 @@ class EmailNotificationModel {
         int $appointmentId,
         string $templateKey,
         string $value,
-        string $deduplicationKey
+        string $deduplicationKey,
+        array $templateVariables = []
     ): ?array {
         $recipientStmt = $this->conn->prepare("
             SELECT p.user_id, p.email, p.firstname, p.lastname,
@@ -65,16 +66,17 @@ class EmailNotificationModel {
         ");
         $paymentStmt->execute([':appointment_id' => $appointmentId]);
         $payment = $paymentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $defaultVariables = [
+            '{deposit_amount}' => vdFormatPesoAmount((float) ($payment['deposit_amount'] ?? 400)),
+            '{payment_deadline}' => vdFormatDurationMinutes((int) ($payment['payment_deadline_minutes'] ?? 480)),
+            '{schedule_summary}' => $scheduleSummary,
+            '{arrival_instruction}' => 'Please arrive by ' . date('g:i A', strtotime($recipient['start_time'])) . ' or earlier. Patients are served first come, first served.',
+        ];
         $payload = json_encode([
             'to_name' => $name !== '' ? $name : 'Patient',
             'template_key' => $templateKey,
             'value' => $value,
-            'template_variables' => [
-                '{deposit_amount}' => vdFormatPesoAmount((float) ($payment['deposit_amount'] ?? 400)),
-                '{payment_deadline}' => vdFormatDurationMinutes((int) ($payment['payment_deadline_minutes'] ?? 480)),
-                '{schedule_summary}' => $scheduleSummary,
-                '{arrival_instruction}' => 'Please arrive by ' . date('g:i A', strtotime($recipient['start_time'])) . ' or earlier. Patients are served first come, first served.',
-            ],
+            'template_variables' => array_merge($defaultVariables, $templateVariables),
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         // The audit-based key makes retries safe: the same business event can
