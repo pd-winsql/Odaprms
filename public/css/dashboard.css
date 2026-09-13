@@ -8376,10 +8376,28 @@ button.vd-topbar-bell {
 .vd-reschedule-details-expiry strong { color: var(--dark); font-size: 13px; }
 .vd-reschedule-details-expiry span { margin-top: 2px; color: var(--mid); font-size: 12px; }
 
+/* Read-only appointment details inside a selected patient's transaction history. */
+.vd-patient-transaction-action-cell { width: 1%; white-space: nowrap; }
+
+.vd-patient-transaction-details {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+.vd-patient-transaction-details > i { display: none; font-size: 17px; }
+.vd-patient-transaction-modal .modal-dialog { max-width: 780px; }
+
 @media (max-width: 575.98px) {
     .vd-reschedule-details-modal .modal-dialog { align-items: flex-end; min-height: 100%; margin: 0; }
     .vd-reschedule-details-modal .modal-content { max-height: calc(100dvh - 10px); border-radius: 18px 18px 0 0; }
     .vd-reschedule-details-meta { grid-template-columns: 1fr; }
     .vd-reschedule-details-comparison { grid-template-columns: 1fr; }
     .vd-reschedule-details-comparison > i { justify-self: center; transform: rotate(90deg); }
+    .vd-patient-transaction-details { width: 44px; padding-inline: 0; }
+    .vd-patient-transaction-details > i { display: inline-block; }
+    .vd-patient-transaction-details > span { display: none; }
 }

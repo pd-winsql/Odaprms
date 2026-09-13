@@ -15,6 +15,7 @@ $files = [
     'payment-review' => __DIR__ . '/../apps/views/admin/partials/payment-review-content.php',
     'appointments' => __DIR__ . '/../apps/views/admin/partials/appointment-content.php',
     'dental-appointments' => __DIR__ . '/../apps/views/dental_asst/partials/appointment-content.php',
+    'dental-patient-transactions' => __DIR__ . '/../apps/views/dental_asst/partials/_patient-transactions.php',
     'clinics' => __DIR__ . '/../apps/views/admin/partials/clinic-content.php',
     'dental-clinics' => __DIR__ . '/../apps/views/dental_asst/partials/clinic-content.php',
     'dental-services' => __DIR__ . '/../apps/views/dental_asst/partials/services-content.php',
@@ -45,7 +46,7 @@ if (!isset($files[$case])) {
     exit(2);
 }
 if ($case === 'historical-logbook') $_GET['date'] = date('Y-m-d');
-if (in_array($case, ['staff-patient-form', 'staff-checkin-form'], true)) $_GET['id'] = 14;
+if (in_array($case, ['staff-patient-form', 'staff-checkin-form', 'dental-patient-transactions'], true)) $_GET['id'] = 14;
 
 ob_start();
 include $files[$case];
@@ -90,6 +91,14 @@ if ($case === 'dental-appointments'
         || !str_contains($html, "document.querySelectorAll('[data-view-reschedule]')"))) {
     // Request rows are data-driven, so verify the always-rendered interaction shell and handlers.
     fwrite(STDERR, "Dental Assistant appointments did not render reschedule review behavior.\n");
+    exit(1);
+}
+if ($case === 'dental-patient-transactions'
+    && (!str_contains($html, 'id="patientTransactionDetailsModal"')
+        || !str_contains($html, 'data-patient-transaction-details')
+        || !str_contains($html, 'id="patientTransactionServiceList"')
+        || !str_contains($html, 'Appointment information'))) {
+    fwrite(STDERR, "Dental Assistant patient transactions did not render appointment details.\n");
     exit(1);
 }
 if ($case === 'dashboard'

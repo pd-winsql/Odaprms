@@ -680,6 +680,7 @@ class Appointment
             $stmt = $this->conn->prepare("
                 SELECT
                     a.appointment_id,
+                    a.appointment_code,
                     a.service_name,
                     a.date, a.start_time, a.end_time,
                     a.status,
