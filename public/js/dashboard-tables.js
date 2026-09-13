@@ -117,6 +117,8 @@
             return;
 
         let currentPage = 1;
+        const configuredPageSize = Number.parseInt(table.dataset.pageSize, 10);
+        const pageSize = configuredPageSize > 0 ? configuredPageSize : PAGE_SIZE;
         const pagination = document.createElement("nav");
         pagination.className = "vd-table-pagination";
         pagination.setAttribute("aria-label", "Table pagination");
@@ -150,6 +152,10 @@
             return rows.filter((row) => row.style.display !== "none");
         }
 
+        function getTotalPages() {
+            return Math.max(1, Math.ceil(filteredRows().length / pageSize));
+        }
+
         function setRowOnPage(row, isOnPage) {
             row.classList.toggle("vd-page-hidden", !isOnPage);
             const editRow = row.nextElementSibling;
@@ -161,8 +167,6 @@
         function render(resetPage = false) {
             const availableRows = filteredRows();
             const totalRows = availableRows.length;
-            const pageSize =
-                Number.parseInt(table.dataset.pageSize, 10) || PAGE_SIZE;
             const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
 
             if (resetPage) currentPage = 1;
@@ -194,11 +198,7 @@
         });
 
         next.addEventListener("click", () => {
-            const totalPages = Math.max(
-                1,
-                Math.ceil(filteredRows().length / pageSize),
-            );
-            if (currentPage >= totalPages) return;
+            if (currentPage >= getTotalPages()) return;
             currentPage++;
             render();
             tableWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });

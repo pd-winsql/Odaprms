@@ -284,7 +284,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             <div class="vd-empty-state">No upcoming appointments found.</div>
         <?php else: ?>
             <div class="vd-appt-table-wrap">
-            <table class="vd-appt-table w-100" id="upcomingApptTable">
+            <table class="vd-appt-table w-100" id="upcomingApptTable" data-page-size="15">
                 <thead>
                 <tr>
                     <th>Patient</th>
@@ -448,7 +448,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             <div class="vd-empty-state">No past appointments found.</div>
         <?php else: ?>
             <div class="vd-appt-table-wrap">
-            <table class="vd-appt-table w-100" id="pastApptTable">
+            <table class="vd-appt-table w-100" id="pastApptTable" data-page-size="15">
                 <thead>
                 <tr>
                     <th>Patient</th>

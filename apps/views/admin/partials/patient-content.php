@@ -72,7 +72,7 @@ krsort($months); // latest first
 			<div class="vd-empty-state">No patients found.</div>
 		<?php else: ?>
 			<div class="vd-appt-table-wrap">
-			<table class="vd-appt-table w-100" id="patientsTable">
+			<table class="vd-appt-table w-100" id="patientsTable" data-page-size="15">
 				<thead>
 				<tr>
 					<th>Patient</th>

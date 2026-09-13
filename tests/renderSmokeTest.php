@@ -97,8 +97,11 @@ if ($case === 'dental-patient-transactions'
     && (!str_contains($html, 'id="patientTransactionDetailsModal"')
         || !str_contains($html, 'data-patient-transaction-details')
         || !str_contains($html, 'id="patientTransactionServiceList"')
+        || !str_contains($html, 'id="patientTransactionBillingSummary"')
+        || !str_contains($html, 'Final billing')
+        || !str_contains($html, 'Finalized by')
         || !str_contains($html, 'Appointment information'))) {
-    fwrite(STDERR, "Dental Assistant patient transactions did not render appointment details.\n");
+    fwrite(STDERR, "Dental Assistant patient transactions did not render appointment and final billing details.\n");
     exit(1);
 }
 if ($case === 'dashboard'

@@ -59,6 +59,16 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
             'category' => $service['category_name'] ?? 'Dental service',
             'description' => $service['service_description'] ?? '',
         ], $services),
+        'billing' => !empty($transaction['billing_id']) ? [
+            'actualCharge' => (float) ($transaction['actual_service_amount'] ?? 0),
+            'depositApplied' => (float) ($transaction['deposit_applied'] ?? 0),
+            'amountDue' => (float) ($transaction['remaining_balance'] ?? 0),
+            'cashTendered' => (float) ($transaction['cash_received'] ?? 0),
+            'status' => $transaction['payment_status'] ?? 'Recorded',
+            'recordedAt' => $transaction['billing_recorded_at'] ?? '',
+            'recordedBy' => $transaction['billing_recorded_by'] ?? '',
+            'notes' => $transaction['billing_notes'] ?? '',
+        ] : null,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
 }
 ?>
@@ -153,6 +163,15 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
                     </div>
                     <div class="vd-appointment-service-list" id="patientTransactionServiceList"></div>
                 </section>
+                <section class="vd-appointment-payment-section" aria-labelledby="patientTransactionBillingHeading">
+                    <div class="vd-appointment-section-heading">
+                        <h6 class="vd-appointment-details-section-title mb-0" id="patientTransactionBillingHeading">Final billing</h6>
+                        <span class="vd-status d-none" id="patientTransactionBillingStatus"></span>
+                    </div>
+                    <div class="vd-final-billing-summary d-none" id="patientTransactionBillingSummary"></div>
+                    <div class="vd-appointment-payment-note" id="patientTransactionBillingEmpty"></div>
+                    <div class="vd-appointment-payment-note d-none" id="patientTransactionBillingNotes"></div>
+                </section>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
@@ -184,6 +203,50 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
         container.appendChild(item);
     }
 
+    function appendBillingRow(container, label, value, emphasized = false) {
+        const row = document.createElement('div');
+        if (emphasized) row.className = 'vd-final-billing-total';
+        const labelElement = document.createElement('span');
+        labelElement.textContent = label;
+        const valueElement = document.createElement('strong');
+        valueElement.textContent = value;
+        row.append(labelElement, valueElement);
+        container.appendChild(row);
+    }
+
+    function formatMoney(value) {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 2,
+        }).format(Number(value) || 0);
+    }
+
+    function formatDateTime(value) {
+        if (!value) return 'Not recorded';
+        const date = new Date(String(value).replace(' ', 'T'));
+        return Number.isNaN(date.getTime())
+            ? value
+            : date.toLocaleString([], {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
+    }
+
+    function billingEmptyMessage(status) {
+        const normalizedStatus = String(status || '').toLowerCase();
+        if (['cancelled', 'rejected', 'no-show'].includes(normalizedStatus)) {
+            return 'No final billing is required for this appointment.';
+        }
+        if (normalizedStatus === 'completed') {
+            return 'Final billing has not been recorded for this completed visit.';
+        }
+        return 'Final billing will appear after the Admin completes the visit settlement.';
+    }
+
     document.querySelectorAll('[data-patient-transaction-details]').forEach(button => {
         button.addEventListener('click', () => {
             try {
@@ -192,6 +255,10 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
                 const grid = document.getElementById('patientTransactionDetailGrid');
                 const serviceList = document.getElementById('patientTransactionServiceList');
                 const services = Array.isArray(details.services) ? details.services : [];
+                const billingStatus = document.getElementById('patientTransactionBillingStatus');
+                const billingSummary = document.getElementById('patientTransactionBillingSummary');
+                const billingEmpty = document.getElementById('patientTransactionBillingEmpty');
+                const billingNotes = document.getElementById('patientTransactionBillingNotes');
 
                 document.getElementById('patientTransactionDetailsTitle').textContent = details.patientName || 'Patient appointment';
                 document.getElementById('patientTransactionDetailsSubtitle').textContent = `${details.date} · ${details.clinic}`;
@@ -234,6 +301,36 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
                         card.append(icon, copy);
                         serviceList.appendChild(card);
                     });
+                }
+
+                billingSummary.replaceChildren();
+                billingNotes.textContent = '';
+                billingStatus.classList.toggle('d-none', !details.billing);
+                billingSummary.classList.toggle('d-none', !details.billing);
+                billingEmpty.classList.toggle('d-none', Boolean(details.billing));
+                billingNotes.classList.add('d-none');
+
+                if (details.billing) {
+                    const billing = details.billing;
+                    const amountDue = Number(billing.amountDue) || 0;
+                    const cashTendered = Number(billing.cashTendered) || 0;
+                    billingStatus.className = `vd-status vd-status-${String(billing.status || 'recorded').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+                    billingStatus.textContent = billing.status || 'Recorded';
+                    appendBillingRow(billingSummary, 'Treatment total', formatMoney(billing.actualCharge));
+                    appendBillingRow(billingSummary, 'Deposit applied', `−${formatMoney(billing.depositApplied)}`);
+                    appendBillingRow(billingSummary, 'Amount due', formatMoney(amountDue), true);
+                    appendBillingRow(billingSummary, 'Cash tendered', formatMoney(cashTendered));
+                    appendBillingRow(billingSummary, 'Change', formatMoney(Math.max(0, cashTendered - amountDue)));
+                    appendBillingRow(billingSummary, 'Finalized by', billing.recordedBy || 'Admin');
+                    appendBillingRow(billingSummary, 'Finalized', formatDateTime(billing.recordedAt));
+                    if (billing.notes) {
+                        billingNotes.textContent = `Billing note: ${billing.notes}`;
+                        billingNotes.classList.remove('d-none');
+                    }
+                } else {
+                    billingStatus.className = 'vd-status d-none';
+                    billingStatus.textContent = '';
+                    billingEmpty.textContent = billingEmptyMessage(details.status);
                 }
 
                 bootstrap.Modal.getOrCreateInstance(modalElement).show();

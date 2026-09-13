@@ -684,8 +684,19 @@ class Appointment
                     a.service_name,
                     a.date, a.start_time, a.end_time,
                     a.status,
-                    a.clinic_name
+                    a.clinic_name,
+                    payment.billing_id,
+                    payment.actual_service_amount,
+                    payment.deposit_applied,
+                    payment.remaining_balance,
+                    payment.cash_received,
+                    payment.payment_status,
+                    payment.billing_recorded_at,
+                    payment.billing_recorded_by,
+                    payment.billing_notes
                 FROM vw_appointment_overview a
+                LEFT JOIN vw_appointment_payment_summary payment
+                    ON payment.appointment_id = a.appointment_id
                 WHERE a.patient_id = :patient_id
                 ORDER BY a.date DESC
             ");
