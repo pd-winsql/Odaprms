@@ -127,6 +127,16 @@ if ($case === 'insights'
     fwrite(STDERR, "Clinic Insights did not render its combined modules.\n");
     exit(1);
 }
+if ($case === 'cash-billing'
+    && (!str_contains($html, 'id="billingInsightsPage"')
+        || !str_contains($html, 'Revenue &amp; Settlements')
+        || !str_contains($html, 'id="billingCollectionChart"')
+        || !str_contains($html, 'id="billingClinicComparison"')
+        || !str_contains($html, 'id="billingPagination"')
+        || !str_contains($html, 'AdminBillingSummary'))) {
+    fwrite(STDERR, "Admin billing insights did not render the financial summary, trend, clinic comparison, and records.\n");
+    exit(1);
+}
 if ($case === 'activity-logs'
     && (!str_contains($html, 'Recorded actions') || !str_contains($html, 'Read-only history'))) {
     fwrite(STDERR, "The read-only activity log did not render.\n");

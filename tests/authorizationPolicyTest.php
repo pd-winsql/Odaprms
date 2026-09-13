@@ -40,6 +40,8 @@ foreach ($dailyControllers as $file => $permissionCheck) {
 $billingController = file_get_contents($root . '/apps/controllers/billingController.php');
 policyExpect(str_contains($billingController, 'vdCanPerformBilling'), 'Final billing uses the central Admin-only permission check.');
 policyExpect(str_contains($billingController, 'http_response_code(403)'), 'Unauthorized final billing requests return HTTP 403.');
+$billingInsightsController = file_get_contents($root . '/apps/controllers/billingInsightsController.php');
+policyExpect(str_contains($billingInsightsController, 'vdRequireAdminJson'), 'Billing insight data remains Admin-only.');
 $sharedQueue = file_get_contents($root . '/apps/views/admin/partials/dashboard-content.php');
 policyExpect(str_contains($sharedQueue, 'Awaiting admin settlement'), 'The Dental Assistant queue exposes the Admin settlement handoff state.');
 $assistantAppointments = file_get_contents($root . '/apps/views/admin/partials/appointment-content.php');

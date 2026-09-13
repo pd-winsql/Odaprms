@@ -171,6 +171,7 @@ $today = date('l, F j Y');
     <script type="module" src="../../../public/js/vendor/clock-timepicker/clock-timepicker.js?v=<?= filemtime(__DIR__ . '/../../../public/js/vendor/clock-timepicker/clock-timepicker.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="../../../public/js/admin-analytics.js?v=5"></script>
+    <script src="../../../public/js/admin-billing-summary.js?v=<?= filemtime(__DIR__ . '/../../../public/js/admin-billing-summary.js') ?>"></script>
     <script>
         // Expose a global showToast() so all loaded partials can call it
         window.showToast = function(message, success = true, duration = 4000) {
