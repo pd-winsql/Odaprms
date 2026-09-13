@@ -117,6 +117,41 @@ class SiteSettingsController {
         exit;
     }
 
+    public function updateDefaultScheduleCapacity(): void
+    {
+        $this->requireScheduleSettingsAccess();
+        $rawCapacity = trim((string) ($_POST['default_schedule_capacity'] ?? ''));
+        if (!ctype_digit($rawCapacity)) {
+            echo json_encode(['success' => false, 'message' => 'Default patient slots must be a whole number.']);
+            exit;
+        }
+
+        $capacity = (int) $rawCapacity;
+        if ($capacity < Schedule::MIN_CAPACITY || $capacity > Schedule::MAX_CAPACITY) {
+            echo json_encode(['success' => false, 'message' => 'Default patient slots must be between 1 and 50.']);
+            exit;
+        }
+
+        $oldSettings = $this->settings->getSettings();
+        $oldCapacity = (int) ($oldSettings['default_schedule_capacity'] ?? Schedule::DEFAULT_CAPACITY);
+        $saved = $this->settings->updateDefaultScheduleCapacity($capacity);
+        if ($saved) {
+            $this->auditLog->recordForUser(
+                'site_settings',
+                1,
+                'schedule_capacity_default_updated',
+                'Updated the default patient slots for new schedules.',
+                ['default_schedule_capacity' => $oldCapacity],
+                ['default_schedule_capacity' => $capacity],
+                (int) $_SESSION['user_id']
+            );
+        }
+        echo json_encode($saved
+            ? ['success' => true, 'message' => 'Default patient slots saved. New schedules will use this capacity.']
+            : ['success' => false, 'message' => 'Unable to save the default patient slots.']);
+        exit;
+    }
+
     private function requireAdmin() {
         header('Content-Type: application/json');
         vdRequireAdminJson();
@@ -321,6 +356,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->updateClinicHours();
     } elseif ($action === 'updateClinicTransitionMinutes') {
         $controller->updateClinicTransitionMinutes();
+    } elseif ($action === 'updateDefaultScheduleCapacity') {
+        $controller->updateDefaultScheduleCapacity();
     } else {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Unknown action.']);

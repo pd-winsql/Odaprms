@@ -43,6 +43,10 @@ $transitionMinutes = max(
     Schedule::MIN_TRANSITION_MINUTES,
     min(Schedule::MAX_TRANSITION_MINUTES, (int) ($settings['clinic_transition_minutes'] ?? 90))
 );
+$defaultScheduleCapacity = max(
+    Schedule::MIN_CAPACITY,
+    min(Schedule::MAX_CAPACITY, (int) ($settings['default_schedule_capacity'] ?? Schedule::DEFAULT_CAPACITY))
+);
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 function sv($settings, $key)
@@ -68,6 +72,7 @@ function sv($settings, $key)
                 <span class="vd-schedule-defaults-summary" id="clinicDefaultsSummary">
                     <?php foreach ($clinics as $index => $clinic): ?><?= $index ? ' · ' : '' ?><?= htmlspecialchars($clinic['clinic_name']) ?>: <?= htmlspecialchars(Schedule::formatTimeRange($clinic['default_start_time'] ?? '08:00:00', $clinic['default_end_time'] ?? '17:00:00')) ?><?php endforeach; ?>
                     · <span id="clinicTransitionSummary"><?= $transitionMinutes > 0 ? $transitionMinutes . '-minute separation' : 'No buffer (overlap blocked)' ?></span>
+                    · <span><?= $defaultScheduleCapacity ?> default patient slots</span>
                 </span>
             </span>
             <span class="vd-schedule-defaults-action"><span>Edit defaults</span><i class="ti ti-chevron-down" aria-hidden="true"></i></span>
@@ -111,6 +116,20 @@ function sv($settings, $key)
                     </div>
                 </div>
                 <button type="button" class="btn vd-btn-gold" id="saveClinicTransition"><i class="ti ti-check" aria-hidden="true"></i><span>Save policy</span></button>
+            </div>
+            <div class="vd-schedule-policy-editor">
+                <div class="vd-schedule-policy-copy">
+                    <i class="ti ti-users" aria-hidden="true"></i>
+                    <span><strong>Default patient slots</strong><small>Capacity prefilled for each newly created schedule. Individual schedules can still be adjusted.</small></span>
+                </div>
+                <div class="vd-schedule-policy-control">
+                    <label class="vd-label form-label" for="defaultScheduleCapacity">Patients</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control vd-input" id="defaultScheduleCapacity" min="1" max="50" step="1" value="<?= $defaultScheduleCapacity ?>" inputmode="numeric" required>
+                        <span class="input-group-text">slots</span>
+                    </div>
+                </div>
+                <button type="button" class="btn vd-btn-gold" id="saveDefaultScheduleCapacity"><i class="ti ti-check" aria-hidden="true"></i><span>Save policy</span></button>
             </div>
             <div class="vd-schedule-policy-note mt-3"><i class="ti ti-info-circle" aria-hidden="true"></i><span>Clinic hours are limited to 8:00 AM–5:30 PM. A larger separation can only be saved when all upcoming clinic windows already meet it.</span></div>
         </div>
@@ -561,6 +580,51 @@ function sv($settings, $key)
                             const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
                             const result = await response.json();
                             showToast(result.message || 'Unable to save the clinic separation.', result.success);
+                            if (!result.success) {
+                                expandScheduleDefaults();
+                                return false;
+                            }
+                            keepScheduleDefaultsOpenAfterRefresh();
+                            return true;
+                        } catch (error) {
+                            expandScheduleDefaults();
+                            showToast('Network error. Please try again.', false);
+                            return false;
+                        } finally {
+                            LoadingUI.setButton(saveButton, false);
+                        }
+                    }
+                );
+            });
+        }
+
+        const capacityInput = document.getElementById('defaultScheduleCapacity');
+        const saveCapacityButton = document.getElementById('saveDefaultScheduleCapacity');
+        if (capacityInput && saveCapacityButton) {
+            saveCapacityButton.addEventListener('click', function() {
+                expandScheduleDefaults();
+                const rawCapacity = capacityInput.value.trim();
+                const capacity = Number(rawCapacity);
+                if (!/^\d+$/.test(rawCapacity) || capacity < 1 || capacity > 50) {
+                    capacityInput.setCustomValidity('Use a whole number from 1 to 50.');
+                    capacityInput.reportValidity();
+                    capacityInput.setCustomValidity('');
+                    return;
+                }
+
+                const saveButton = this;
+                askForSaveConfirmation(
+                    `Use ${capacity} patient slots as the default for new schedules?`,
+                    async function() {
+                        const formData = new FormData();
+                        formData.append('action', 'updateDefaultScheduleCapacity');
+                        formData.append('csrf_token', settingsCsrfToken);
+                        formData.append('default_schedule_capacity', String(capacity));
+                        LoadingUI.setButton(saveButton, true, 'Saving…');
+                        try {
+                            const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+                            const result = await response.json();
+                            showToast(result.message || 'Unable to save the default patient slots.', result.success);
                             if (!result.success) {
                                 expandScheduleDefaults();
                                 return false;

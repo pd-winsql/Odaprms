@@ -3,9 +3,13 @@
 class Schedule {
     public const MIN_TRANSITION_MINUTES = 0;
     public const MAX_TRANSITION_MINUTES = 240;
+    public const DEFAULT_CAPACITY = 15;
+    public const MIN_CAPACITY = 1;
+    public const MAX_CAPACITY = 50;
 
     private $conn;
     private int $transitionMinutes;
+    private int $defaultCapacity;
 
     public function __construct($conn) 
     {
@@ -13,11 +17,15 @@ class Schedule {
         $rules = require __DIR__ . '/../../config/appointment.php';
         $fallbackMinutes = (int) ($rules['clinic_transition_minutes'] ?? 90);
         $configuredMinutes = $fallbackMinutes;
+        $configuredCapacity = self::DEFAULT_CAPACITY;
         try {
-            $stmt = $this->conn->query('SELECT clinic_transition_minutes FROM site_settings WHERE id = 1');
-            $storedMinutes = $stmt ? $stmt->fetchColumn() : false;
-            if ($storedMinutes !== false && $storedMinutes !== null) {
-                $configuredMinutes = (int) $storedMinutes;
+            $stmt = $this->conn->query('SELECT * FROM site_settings WHERE id = 1');
+            $storedSettings = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+            if ($storedSettings) {
+                if ($storedSettings['clinic_transition_minutes'] !== null) {
+                    $configuredMinutes = (int) $storedSettings['clinic_transition_minutes'];
+                }
+                $configuredCapacity = (int) ($storedSettings['default_schedule_capacity'] ?? self::DEFAULT_CAPACITY);
             }
         } catch (Throwable $e) {
             // The configuration value remains the safe fallback while a pending
@@ -26,6 +34,10 @@ class Schedule {
         $this->transitionMinutes = max(
             self::MIN_TRANSITION_MINUTES,
             min(self::MAX_TRANSITION_MINUTES, $configuredMinutes)
+        );
+        $this->defaultCapacity = max(
+            self::MIN_CAPACITY,
+            min(self::MAX_CAPACITY, $configuredCapacity ?? self::DEFAULT_CAPACITY)
         );
     }
 
@@ -59,6 +71,10 @@ class Schedule {
 
     public function getTransitionMinutes(): int {
         return $this->transitionMinutes;
+    }
+
+    public function getDefaultCapacity(): int {
+        return $this->defaultCapacity;
     }
 
     /**

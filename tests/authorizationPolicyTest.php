@@ -69,7 +69,7 @@ $auditCoverage = [
     'clinicController.php' => ['clinic_created', 'clinic_updated'],
     'scheduleController.php' => ['schedule_created', 'schedule_deleted', 'schedule_updated'],
     'serviceController.php' => ['service_category_created', 'service_created', 'service_updated'],
-    'siteSettingsController.php' => ['schedule_defaults_updated', 'settings_updated', 'gcash_qr_updated'],
+    'siteSettingsController.php' => ['schedule_defaults_updated', 'schedule_capacity_default_updated', 'settings_updated', 'gcash_qr_updated'],
     'staffController.php' => ['staff_account_created', 'staff_account_updated', 'staff_status_updated'],
 ];
 foreach ($auditCoverage as $file => $actions) {

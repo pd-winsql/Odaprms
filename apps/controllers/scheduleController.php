@@ -88,7 +88,7 @@ class ScheduleController {
                 'sched_date' => $_POST['sched_date'] ?? '',
                 'start_time' => $sharedStartTime,
                 'end_time' => $sharedEndTime,
-                'max_appointments' => $_POST['max_appointments'] ?? 8,
+                'max_appointments' => $_POST['max_appointments'] ?? $this->schedules->getDefaultCapacity(),
             ]];
         }
         if (empty($submittedSchedules) || count($submittedSchedules) > 100) {

@@ -11,7 +11,10 @@
             </div>
             <form id="add-schedule-form">
                 <div class="modal-body d-flex flex-column gap-3">
-                    <?php $modalTransitionMinutes = (int) ($scheduleModel->getTransitionMinutes() ?? 90); ?>
+                    <?php
+                    $modalTransitionMinutes = (int) ($scheduleModel->getTransitionMinutes() ?? 90);
+                    $modalDefaultCapacity = (int) ($scheduleModel->getDefaultCapacity() ?? Schedule::DEFAULT_CAPACITY);
+                    ?>
                     <p class="vd-schedule-modal-intro mb-0" id="scheduleModalIntro">Select dates and set the clinic’s availability window. <?= $modalTransitionMinutes > 0 ? "Another clinic may use the same date when there are at least {$modalTransitionMinutes} minutes between their windows." : 'Another clinic may use the same date when the windows do not overlap.' ?></p>
 
                     <div id="scheduleBatchDateGroup">
@@ -50,7 +53,7 @@
                     <div>
                         <label class="vd-label form-label" id="scheduleCapacityLabel" for="scheduleMaxAppointments">Max patients per selected date</label>
                         <input type="number" id="scheduleMaxAppointments"
-                            class="form-control vd-input" value="8" min="1" max="50" required>
+                            class="form-control vd-input" value="<?= $modalDefaultCapacity ?>" min="1" max="50" required>
                         <div id="scheduleCapacityHelp" class="vd-schedule-selection-count d-none"></div>
                     </div>
 
@@ -93,6 +96,7 @@
     const occupiedDatesByClinic = <?= json_encode($occupiedScheduleDatesByClinic ?? []) ?>;
     const existingScheduleWindows = <?= json_encode($scheduleWindows ?? []) ?>;
     const transitionMinutes = <?= (int) ($scheduleModel->getTransitionMinutes() ?? 90) ?>;
+    const defaultScheduleCapacity = <?= (int) ($scheduleModel->getDefaultCapacity() ?? Schedule::DEFAULT_CAPACITY) ?>;
     const csrfToken = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
 
     if (!modalElement || !form) return;
@@ -291,7 +295,7 @@
         capacityLabel.textContent = 'Max patients per selected date';
         capacityHelp.classList.add('d-none');
         maxAppointmentsInput.min = '1';
-        maxAppointmentsInput.value = 8;
+        maxAppointmentsInput.value = String(defaultScheduleCapacity);
         submitButton.textContent = 'Add Schedules';
         setDatePickerEnabled(editDatePicker, true);
         setClockPickerEnabled(startTimePicker, startTimeInput, true);
@@ -331,7 +335,7 @@
         capacityHelp.textContent = `Minimum capacity: ${Math.max(1, booked)}`;
         capacityHelp.classList.remove('d-none');
         maxAppointmentsInput.min = String(Math.max(1, booked));
-        maxAppointmentsInput.value = button.dataset.max || 8;
+        maxAppointmentsInput.value = button.dataset.max || String(defaultScheduleCapacity);
         submitButton.textContent = 'Save Changes';
 
         const blockedDates = (occupiedDatesByClinic[clinicId] || []).filter(date => date !== originalDate);

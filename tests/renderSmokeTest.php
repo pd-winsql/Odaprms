@@ -54,8 +54,9 @@ $html = ob_get_clean();
 if ($case === 'dental-schedules') {
     if (!str_contains($html, '<clock-timepicker')
         || !str_contains($html, 'precision="00:05"')
-        || !str_contains($html, 'scheduleTimeAvailability')) {
-        fwrite(STDERR, "Schedule management clock picker or availability feedback did not render.\n");
+        || !str_contains($html, 'scheduleTimeAvailability')
+        || !str_contains($html, 'defaultScheduleCapacity')) {
+        fwrite(STDERR, "Schedule management defaults, clock picker, or availability feedback did not render.\n");
         exit(1);
     }
 }
@@ -63,8 +64,10 @@ if ($case === 'dental-settings') {
     if (substr_count($html, '<clock-timepicker') < 2
         || !str_contains($html, 'clinicScheduleDefaultsBody')
         || !str_contains($html, 'clinicTransitionMinutes')
-        || !str_contains($html, 'updateClinicTransitionMinutes')) {
-        fwrite(STDERR, "Collapsible clinic defaults or the dynamic separation control did not render.\n");
+        || !str_contains($html, 'updateClinicTransitionMinutes')
+        || !str_contains($html, 'defaultScheduleCapacity')
+        || !str_contains($html, 'updateDefaultScheduleCapacity')) {
+        fwrite(STDERR, "Collapsible clinic defaults or the dynamic schedule policies did not render.\n");
         exit(1);
     }
 }
