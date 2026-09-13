@@ -164,16 +164,47 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     <strong><?= htmlspecialchars($patientName ?: 'Patient') ?></strong>
                     <small>Appointment #<?= (int) $request['appointment_id'] ?></small>
                 </div>
-                <div class="vd-reschedule-review-change">
-                    <div><span>Current</span><strong><?= htmlspecialchars($request['original_clinic_name']) ?></strong><small><?= date('M j, Y · g:i A', strtotime($request['original_date'] . ' ' . $request['original_start_time'])) ?></small></div>
-                    <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                    <div><span>Requested</span><strong><?= htmlspecialchars($request['target_clinic_name']) ?></strong><small><?= date('M j, Y · g:i A', strtotime($request['target_date'] . ' ' . $request['target_start_time'])) ?></small></div>
+                <div class="vd-reschedule-review-target">
+                    <span>Requested schedule</span>
+                    <strong><?= htmlspecialchars($request['target_clinic_name']) ?></strong>
+                    <small><?= date('M j, Y · g:i A', strtotime($request['target_date'] . ' ' . $request['target_start_time'])) ?></small>
                 </div>
-                <div class="vd-reschedule-review-reason"><span>Reason</span><p><?= htmlspecialchars($request['reason']) ?></p></div>
-                <div class="vd-reschedule-review-deadline"><i class="ti ti-hourglass"></i><span><?= $hoursRemaining ?>h left<small>Expires <?= date('M j, g:i A', strtotime($request['expires_at'])) ?></small></span></div>
                 <div class="vd-reschedule-review-actions">
-                    <button type="button" class="btn vd-btn-outline" data-reject-reschedule="<?= (int) $request['request_id'] ?>" data-patient-name="<?= htmlspecialchars($patientName, ENT_QUOTES) ?>">Reject</button>
-                    <button type="button" class="btn vd-btn-gold" data-approve-reschedule="<?= (int) $request['request_id'] ?>" data-patient-name="<?= htmlspecialchars($patientName, ENT_QUOTES) ?>">Approve</button>
+                    <div class="dropdown vd-appt-action-menu">
+                        <button type="button" class="btn vd-appt-action-toggle" id="rescheduleActions-<?= (int) $request['request_id'] ?>"
+                            data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-offset="0,6" aria-expanded="false"
+                            aria-label="Open reschedule request actions for <?= htmlspecialchars($patientName ?: 'patient', ENT_QUOTES) ?>">
+                            <i class="ti ti-dots" aria-hidden="true"></i>
+                            <span>Actions</span>
+                            <i class="ti ti-chevron-down vd-appt-action-caret" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end vd-appt-action-dropdown" aria-labelledby="rescheduleActions-<?= (int) $request['request_id'] ?>">
+                            <div class="vd-action-group">
+                                <button type="button" class="btn vd-btn-outline vd-appt-menu-item vd-reschedule-details-btn"
+                                    data-view-reschedule='<?= htmlspecialchars(json_encode([
+                                        'patient' => $patientName ?: 'Patient',
+                                        'appointment' => '#' . (int) $request['appointment_id'],
+                                        'submitted' => date('M j, Y · g:i A', strtotime($request['created_at'])),
+                                        'currentClinic' => $request['original_clinic_name'],
+                                        'currentSchedule' => date('M j, Y · g:i A', strtotime($request['original_date'] . ' ' . $request['original_start_time'])) . '–' . date('g:i A', strtotime($request['original_end_time'])),
+                                        'requestedClinic' => $request['target_clinic_name'],
+                                        'requestedSchedule' => date('M j, Y · g:i A', strtotime($request['target_date'] . ' ' . $request['target_start_time'])) . '–' . date('g:i A', strtotime($request['target_end_time'])),
+                                        'services' => array_values(array_filter(array_column($servicesByAppointment[(int) $request['appointment_id']] ?? [], 'service_name'))),
+                                        'reason' => $request['reason'],
+                                        'timeLeft' => $hoursRemaining . 'h left',
+                                        'expires' => date('M j, Y · g:i A', strtotime($request['expires_at'])),
+                                    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8') ?>'>
+                                    <i class="ti ti-eye" aria-hidden="true"></i><span>View details</span>
+                                </button>
+                                <button type="button" class="btn vd-btn-outline vd-appt-menu-item vd-appt-menu-danger" data-reject-reschedule="<?= (int) $request['request_id'] ?>" data-patient-name="<?= htmlspecialchars($patientName, ENT_QUOTES) ?>">
+                                    <i class="ti ti-calendar-x" aria-hidden="true"></i><span>Reject request</span>
+                                </button>
+                                <button type="button" class="btn vd-btn-gold vd-appt-menu-item vd-appt-menu-primary" data-approve-reschedule="<?= (int) $request['request_id'] ?>" data-patient-name="<?= htmlspecialchars($patientName, ENT_QUOTES) ?>">
+                                    <i class="ti ti-calendar-check" aria-hidden="true"></i><span>Approve request</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </article>
             <?php endforeach; ?>
@@ -484,6 +515,59 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 
 </div>
 
+<div class="modal fade vd-reschedule-details-modal" id="rescheduleDetailsModal" tabindex="-1"
+    aria-labelledby="rescheduleDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="vd-action-modal-kicker">Reschedule request</div>
+                    <h5 class="modal-title vd-modal-title mb-0" id="rescheduleDetailsTitle">Request details</h5>
+                    <p class="vd-reschedule-details-subtitle mb-0" id="rescheduleDetailsSubtitle"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="vd-reschedule-details-meta" id="rescheduleDetailsMeta"></div>
+                <section class="vd-reschedule-details-section" aria-labelledby="rescheduleScheduleComparisonTitle">
+                    <h6 id="rescheduleScheduleComparisonTitle">Schedule change</h6>
+                    <div class="vd-reschedule-details-comparison">
+                        <div class="vd-reschedule-details-schedule">
+                            <span>Current appointment</span>
+                            <strong id="rescheduleCurrentClinic"></strong>
+                            <small id="rescheduleCurrentSchedule"></small>
+                        </div>
+                        <i class="ti ti-arrow-right" aria-hidden="true"></i>
+                        <div class="vd-reschedule-details-schedule is-requested">
+                            <span>Requested schedule</span>
+                            <strong id="rescheduleRequestedClinic"></strong>
+                            <small id="rescheduleRequestedSchedule"></small>
+                        </div>
+                    </div>
+                </section>
+                <section class="vd-reschedule-details-section" aria-labelledby="rescheduleServicesTitle">
+                    <div class="vd-reschedule-details-section-heading">
+                        <h6 id="rescheduleServicesTitle">Selected services</h6>
+                        <span id="rescheduleServicesCount"></span>
+                    </div>
+                    <ul class="vd-reschedule-details-services" id="rescheduleDetailsServices" aria-labelledby="rescheduleServicesTitle"></ul>
+                </section>
+                <section class="vd-reschedule-details-section" aria-labelledby="rescheduleReasonTitle">
+                    <h6 id="rescheduleReasonTitle">Patient’s reason</h6>
+                    <p class="vd-reschedule-details-reason" id="rescheduleDetailsReason"></p>
+                </section>
+                <div class="vd-reschedule-details-expiry" role="note">
+                    <i class="ti ti-hourglass" aria-hidden="true"></i>
+                    <div><strong id="rescheduleDetailsTimeLeft"></strong><span id="rescheduleDetailsExpires"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade vd-appointment-details-modal" id="appointmentDetailsModal" tabindex="-1"
     aria-labelledby="appointmentDetailsTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -616,6 +700,52 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     });
     document.querySelectorAll('[data-reject-reschedule]').forEach(button => {
         button.addEventListener('click', () => runRescheduleAction(button, 'reject'));
+    });
+
+    document.querySelectorAll('[data-view-reschedule]').forEach(button => {
+        button.addEventListener('click', () => {
+            try {
+                const details = JSON.parse(button.dataset.viewReschedule);
+                document.getElementById('rescheduleDetailsTitle').textContent = details.patient;
+                document.getElementById('rescheduleDetailsSubtitle').textContent = `Appointment ${details.appointment}`;
+                const meta = document.getElementById('rescheduleDetailsMeta');
+                meta.replaceChildren();
+                appendAppointmentDetail(meta, 'Request status', 'Awaiting clinic review');
+                appendAppointmentDetail(meta, 'Submitted', details.submitted);
+                document.getElementById('rescheduleCurrentClinic').textContent = details.currentClinic;
+                document.getElementById('rescheduleCurrentSchedule').textContent = details.currentSchedule;
+                document.getElementById('rescheduleRequestedClinic').textContent = details.requestedClinic;
+                document.getElementById('rescheduleRequestedSchedule').textContent = details.requestedSchedule;
+                const services = Array.isArray(details.services) ? details.services : [];
+                const serviceList = document.getElementById('rescheduleDetailsServices');
+                const serviceCount = document.getElementById('rescheduleServicesCount');
+                serviceList.replaceChildren();
+                serviceCount.textContent = `${services.length} service${services.length === 1 ? '' : 's'}`;
+                if (services.length) {
+                    services.forEach(service => {
+                        const item = document.createElement('li');
+                        const icon = document.createElement('i');
+                        icon.className = 'ti ti-check';
+                        icon.setAttribute('aria-hidden', 'true');
+                        const name = document.createElement('span');
+                        name.textContent = service;
+                        item.append(icon, name);
+                        serviceList.appendChild(item);
+                    });
+                } else {
+                    const item = document.createElement('li');
+                    item.className = 'is-empty';
+                    item.textContent = 'No services are linked to this appointment.';
+                    serviceList.appendChild(item);
+                }
+                document.getElementById('rescheduleDetailsReason').textContent = details.reason || 'No reason was provided.';
+                document.getElementById('rescheduleDetailsTimeLeft').textContent = details.timeLeft;
+                document.getElementById('rescheduleDetailsExpires').textContent = `Temporary hold expires ${details.expires}`;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('rescheduleDetailsModal')).show();
+            } catch (error) {
+                showToast('Unable to display the reschedule request details.', false);
+            }
+        });
     });
 
     function updateStatusPill(id, newStatus) {

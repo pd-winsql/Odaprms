@@ -83,14 +83,14 @@ if ($case === 'patient-home'
 }
 if ($case === 'dental-appointments'
     && (!str_contains($html, 'RESCHEDULE_CONTROLLER')
-        || !str_contains($html, 'data-approve-reschedule')
-        || !str_contains($html, 'data-reject-reschedule'))) {
-    // Action buttons are data-driven, but the handlers must always be present.
-    if (!str_contains($html, "runRescheduleAction(button, 'approve')")
-        || !str_contains($html, "runRescheduleAction(button, 'reject')")) {
-        fwrite(STDERR, "Dental Assistant appointments did not render reschedule review behavior.\n");
-        exit(1);
-    }
+        || !str_contains($html, "runRescheduleAction(button, 'approve')")
+        || !str_contains($html, "runRescheduleAction(button, 'reject')")
+        || !str_contains($html, 'id="rescheduleDetailsModal"')
+        || !str_contains($html, 'id="rescheduleDetailsServices"')
+        || !str_contains($html, "document.querySelectorAll('[data-view-reschedule]')"))) {
+    // Request rows are data-driven, so verify the always-rendered interaction shell and handlers.
+    fwrite(STDERR, "Dental Assistant appointments did not render reschedule review behavior.\n");
+    exit(1);
 }
 if ($case === 'dashboard'
     && (!str_contains($html, 'Treatment oversight')

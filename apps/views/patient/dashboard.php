@@ -141,7 +141,10 @@ $today    = date('l, F j Y');
         <button type="button" class="vd-toast-close" aria-label="Dismiss notification"><i class="ti ti-x" aria-hidden="true"></i></button>
     </div>
 
+    <?php include __DIR__ . '/../shared/staff-action-modal.php'; ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../public/js/action-modal.js?v=3"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/patient-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/patient-appointment-notifications.js') ?>"></script>
     <script>

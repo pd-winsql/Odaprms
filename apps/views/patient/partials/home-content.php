@@ -106,8 +106,22 @@ $missingProfileFields = array_keys(array_filter(
         <?php $nextRequest = $latestRescheduleByAppointment[(int) $next['appointment_id']] ?? null; ?>
         <?php if (($nextRequest['status'] ?? '') === 'Pending'): ?>
         <div class="vd-reschedule-pending" role="status">
-            <div><strong>Reschedule awaiting clinic review</strong><span><?= htmlspecialchars($nextRequest['target_clinic_name']) ?> · <?= date('M j, Y, g:i A', strtotime($nextRequest['target_date'] . ' ' . $nextRequest['target_start_time'])) ?></span></div>
-            <button type="button" class="btn vd-btn-outline btn-sm" data-withdraw-reschedule="<?= (int) $nextRequest['request_id'] ?>">Withdraw</button>
+            <i class="ti ti-calendar-time vd-reschedule-pending-icon" aria-hidden="true"></i>
+            <div class="vd-reschedule-pending-copy">
+                <div class="vd-reschedule-pending-heading">
+                    <strong>Reschedule request pending</strong>
+                    <span class="vd-reschedule-pending-badge">Awaiting clinic review</span>
+                </div>
+                <span class="vd-reschedule-pending-label">Requested schedule</span>
+                <span class="vd-reschedule-pending-schedule"><?= htmlspecialchars($nextRequest['target_clinic_name']) ?> · <?= date('M j, Y, g:i A', strtotime($nextRequest['target_date'] . ' ' . $nextRequest['target_start_time'])) ?></span>
+                <small>Your original appointment remains confirmed until the clinic approves this request.</small>
+            </div>
+            <button type="button" class="btn vd-reschedule-withdraw-btn"
+                data-withdraw-reschedule="<?= (int) $nextRequest['request_id'] ?>"
+                data-withdraw-label="<?= htmlspecialchars(($nextRequest['target_clinic_name'] ?? 'Clinic') . ' · ' . date('M j, Y, g:i A', strtotime($nextRequest['target_date'] . ' ' . $nextRequest['target_start_time'])), ENT_QUOTES) ?>">
+                <i class="ti ti-arrow-back-up" aria-hidden="true"></i>
+                <span>Withdraw request</span>
+            </button>
         </div>
         <?php elseif (($next['status'] ?? '') === 'Confirmed'): ?>
         <button type="button" class="btn vd-home-next-cta" data-open-reschedule
@@ -153,7 +167,7 @@ $missingProfileFields = array_keys(array_filter(
                     </span>
                     <?php $otherRequest = $latestRescheduleByAppointment[(int) $appointment['appointment_id']] ?? null; ?>
                     <?php if (($otherRequest['status'] ?? '') === 'Pending'): ?>
-                    <button type="button" class="btn vd-btn-outline btn-sm vd-other-appt-action" data-withdraw-reschedule="<?= (int) $otherRequest['request_id'] ?>">Withdraw request</button>
+                    <button type="button" class="btn vd-btn-outline btn-sm vd-other-appt-action" data-withdraw-reschedule="<?= (int) $otherRequest['request_id'] ?>" data-withdraw-label="<?= htmlspecialchars(($otherRequest['target_clinic_name'] ?? 'Clinic') . ' · ' . date('M j, Y, g:i A', strtotime($otherRequest['target_date'] . ' ' . $otherRequest['target_start_time'])), ENT_QUOTES) ?>">Withdraw request</button>
                     <?php elseif ($appointmentStatus === 'Confirmed'): ?>
                     <button type="button" class="btn vd-btn-outline btn-sm vd-other-appt-action" data-open-reschedule
                         data-appointment-id="<?= (int) $appointment['appointment_id'] ?>"
@@ -299,7 +313,23 @@ $missingProfileFields = array_keys(array_filter(
 
     document.querySelectorAll('[data-withdraw-reschedule]').forEach(button => {
         button.addEventListener('click', async () => {
-            if (!window.confirm('Withdraw this pending reschedule request? Your original appointment will remain confirmed.')) return;
+            const requestedSchedule = button.dataset.withdrawLabel || 'Requested replacement schedule';
+            const decision = typeof window.showActionModal === 'function'
+                ? await window.showActionModal({
+                    title: 'Withdraw Reschedule Request',
+                    kicker: 'Pending schedule change',
+                    message: 'This cancels only the requested schedule change. Your original appointment remains confirmed.',
+                    confirmText: 'Withdraw Request',
+                    cancelText: 'Keep Request',
+                    icon: 'ti-calendar-x',
+                    tone: 'warning',
+                    details: [
+                        { label: 'Requested schedule', value: requestedSchedule },
+                        { label: 'Original appointment', value: 'Remains confirmed' }
+                    ]
+                })
+                : { confirmed: window.confirm('Withdraw this pending reschedule request? Your original appointment will remain confirmed.') };
+            if (!decision.confirmed) return;
             const data = new FormData();
             data.append('action', 'withdraw');
             data.append('request_id', button.dataset.withdrawReschedule);
