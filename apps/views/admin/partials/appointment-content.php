@@ -157,12 +157,30 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 $secondsRemaining = max(0, strtotime($request['expires_at']) - time());
                 $hoursRemaining = (int) ceil($secondsRemaining / 3600);
                 $urgency = $hoursRemaining <= 8 ? ' is-urgent' : ($hoursRemaining <= 16 ? ' is-due' : '');
+                $requestServiceNames = array_values(array_filter(array_column(
+                    $servicesByAppointment[(int) $request['appointment_id']] ?? [],
+                    'service_name'
+                )));
+                $serviceSummary = $requestServiceNames[0] ?? 'No service listed';
+                $additionalServiceCount = max(0, count($requestServiceNames) - 1);
             ?>
             <article class="vd-reschedule-review-item<?= $urgency ?>" data-reschedule-request-row="<?= (int) $request['request_id'] ?>">
                 <div class="vd-reschedule-review-patient">
                     <span>Patient</span>
                     <strong><?= htmlspecialchars($patientName ?: 'Patient') ?></strong>
                     <small>Appointment #<?= (int) $request['appointment_id'] ?></small>
+                </div>
+                <div class="vd-reschedule-review-services" title="<?= htmlspecialchars(implode(', ', $requestServiceNames), ENT_QUOTES) ?>" aria-label="Selected services: <?= htmlspecialchars(implode(', ', $requestServiceNames) ?: 'No service listed', ENT_QUOTES) ?>">
+                    <span>Services</span>
+                    <strong><?= htmlspecialchars($serviceSummary) ?></strong>
+                    <?php if ($additionalServiceCount > 0): ?>
+                    <small>+<?= $additionalServiceCount ?> more</small>
+                    <?php endif; ?>
+                </div>
+                <div class="vd-reschedule-review-current">
+                    <span>Current schedule</span>
+                    <strong><?= htmlspecialchars($request['original_clinic_name']) ?></strong>
+                    <small><?= date('M j, Y · g:i A', strtotime($request['original_date'] . ' ' . $request['original_start_time'])) ?></small>
                 </div>
                 <div class="vd-reschedule-review-target">
                     <span>Requested schedule</span>
@@ -189,7 +207,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                                         'currentSchedule' => date('M j, Y · g:i A', strtotime($request['original_date'] . ' ' . $request['original_start_time'])) . '–' . date('g:i A', strtotime($request['original_end_time'])),
                                         'requestedClinic' => $request['target_clinic_name'],
                                         'requestedSchedule' => date('M j, Y · g:i A', strtotime($request['target_date'] . ' ' . $request['target_start_time'])) . '–' . date('g:i A', strtotime($request['target_end_time'])),
-                                        'services' => array_values(array_filter(array_column($servicesByAppointment[(int) $request['appointment_id']] ?? [], 'service_name'))),
+                                        'services' => $requestServiceNames,
                                         'reason' => $request['reason'],
                                         'timeLeft' => $hoursRemaining . 'h left',
                                         'expires' => date('M j, Y · g:i A', strtotime($request['expires_at'])),
