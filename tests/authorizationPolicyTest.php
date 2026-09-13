@@ -86,4 +86,18 @@ foreach (['deposit_transferred_out', 'deposit_transferred', 'deposit_refunded'] 
 $activityLogPage = file_get_contents($root . '/apps/views/admin/partials/activity-logs-content.php');
 policyExpect(str_contains($activityLogPage, "!== 'Admin'") && !str_contains($activityLogPage, '<form'), 'Activity Logs are Admin-only and read-only.');
 
+$legacyAuthRedirectFiles = [
+    'apps/views/admin/dashboard.php',
+    'apps/views/dental_asst/dashboard.php',
+    'apps/views/patient/dashboard.php',
+    'apps/controllers/appointmentController.php',
+    'apps/controllers/patientController.php',
+];
+$legacyModalQuery = 'openModal' . '=true';
+foreach ($legacyAuthRedirectFiles as $relativePath) {
+    $source = file_get_contents($root . '/' . $relativePath);
+    policyExpect(!str_contains($source, $legacyModalQuery), "{$relativePath} no longer uses the obsolete landing-page modal redirect.");
+    policyExpect(str_contains($source, 'login.php'), "{$relativePath} sends unauthenticated users to the sign-in page.");
+}
+
 echo "Authorization policy test completed.\n";

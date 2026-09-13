@@ -27,7 +27,7 @@ class AppointmentController {
     //Patient: upcoming appointments
     public function upcomingAppointments() {
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ../../../index.php?openModal=true');
+            header('Location: ../views/login.php');
             exit;
         }
 
@@ -51,7 +51,7 @@ class AppointmentController {
     //Patient: past appointments
     public function pastAppointments() {
             if (!isset($_SESSION['user_id'])) {
-                header('Location: ../../../index.php?openModal=true');
+                header('Location: ../views/login.php');
                 exit;
             }
 
@@ -74,7 +74,7 @@ class AppointmentController {
     //Admin: all upcoming appointments
     public function adminUpcoming() {
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ../../../index.php?openModal=true');
+            header('Location: ../views/login.php');
             exit;
         }
 
@@ -90,7 +90,7 @@ class AppointmentController {
     //Admin: all past appointments
     public function adminPast() {
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ../../../index.php?openModal=true');
+            header('Location: ../views/login.php');
             exit;
         }
 

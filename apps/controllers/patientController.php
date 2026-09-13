@@ -24,7 +24,7 @@ class PatientController {
     //Admin: all patients
     public function adminAllPatients() {
         if (!isset($_SESSION['user_id'])) {
-            header('Location: ../../../index.php?openModal=true');
+            header('Location: ../views/login.php');
             exit;
         }
 

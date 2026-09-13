@@ -12,7 +12,7 @@ header('Pragma: no-cache');
 
 // Auth guard
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../../index.php?openModal=true');
+    header('Location: ../login.php');
     exit;
 }
 if (($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
