@@ -19,7 +19,8 @@ if (!validate_csrf()) {
 }
 
 $db = new Database();
-$model = new LogbookModel($db->connect());
+$conn = $db->connect();
+$model = new LogbookModel($conn);
 $action = $_POST['action'] ?? '';
 
 // Handles patient check-in requests.
@@ -33,6 +34,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'checkIn') {
 // Looks up a confirmed appointment scheduled for today.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'lookup') {
     echo json_encode(['success' => true, 'matches' => $model->lookupToday(trim($_POST['term'] ?? ''))]);
+    exit;
+}
+
+// Marks an unarrived patient as no-show from today's check-in workflow.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'markNoShow') {
+    $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
+    if ($appointmentId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'Invalid appointment.']);
+        exit;
+    }
+
+    $appointmentModel = new Appointment($conn);
+    echo json_encode($appointmentModel->updateAppointmentStatus(
+        $appointmentId,
+        'No-show',
+        (int) $_SESSION['user_id']
+    ));
     exit;
 }
 
@@ -66,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'updateVisitStatus') {
         exit;
     }
 
-    $appointmentModel = new Appointment($db->connect());
+    $appointmentModel = new Appointment($conn);
     echo json_encode($appointmentModel->updateAppointmentStatus(
         $appointmentId,
         $status,

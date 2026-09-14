@@ -425,22 +425,32 @@ class Appointment
             // Start a DB transaction so the multi-step status update is atomic.
             $this->conn->beginTransaction();
 
-            // Lock the appointment row to read the current status and prevent
-            // concurrent status changes from racing with this update.
+            // Lock the appointment row to read the current state and prevent
+            // concurrent status or check-in changes from racing with this update.
             $currentStmt = $this->conn->prepare("
-                SELECT status
-                FROM appointments
-                WHERE appointment_id = :id
+                SELECT
+                    a.status,
+                    a.date,
+                    s.start_time,
+                    EXISTS (
+                        SELECT 1
+                        FROM appointment_checkins ac
+                        WHERE ac.appointment_id = a.appointment_id
+                    ) AS has_checkin
+                FROM appointments a
+                JOIN schedules s ON s.schedule_id = a.schedule_id
+                WHERE a.appointment_id = :id
                 FOR UPDATE
             ");
             $currentStmt->execute([':id' => $appointment_id]);
-            $oldStatus = $currentStmt->fetchColumn();
+            $currentAppointment = $currentStmt->fetch(PDO::FETCH_ASSOC);
 
             // If appointment not found, rollback and return an error.
-            if ($oldStatus === false) {
+            if (!$currentAppointment) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Appointment not found.'];
             }
+            $oldStatus = $currentAppointment['status'];
 
             // If no change is necessary, rollback the transaction and return
             // a success response indicating nothing changed.
@@ -457,6 +467,22 @@ class Appointment
                     'success' => false,
                     'message' => "Status cannot be changed from {$oldStatus} to {$status}.",
                 ];
+            }
+
+            if ($status === 'No-show') {
+                $today = date('Y-m-d');
+                if ($currentAppointment['date'] !== $today) {
+                    $this->conn->rollBack();
+                    return ['success' => false, 'message' => 'A patient can only be marked as no-show on the appointment date.'];
+                }
+                if (date('H:i:s') < $currentAppointment['start_time']) {
+                    $this->conn->rollBack();
+                    return ['success' => false, 'message' => 'Wait until the clinic window begins before marking a patient as no-show.'];
+                }
+                if ((int) $currentAppointment['has_checkin'] === 1) {
+                    $this->conn->rollBack();
+                    return ['success' => false, 'message' => 'A checked-in patient cannot be marked as no-show.'];
+                }
             }
 
             // Require a reason when rejecting or cancelling an appointment.
@@ -512,7 +538,9 @@ class Appointment
                 'changed' => true,
                 'message' => $status === 'Awaiting Deposit'
                     ? 'Appointment accepted. The patient now has ' . vdFormatDurationMinutes($minutes) . ' to submit the ' . vdFormatPesoAmount($amount) . ' deposit.'
-                    : ($status === 'In Progress' ? 'Treatment started for the next patient.' : 'Status updated successfully.'),
+                    : ($status === 'In Progress'
+                        ? 'Treatment started for the next patient.'
+                        : ($status === 'No-show' ? 'Patient marked as no-show.' : 'Status updated successfully.')),
                 'audit' => [
                     'performed_by_name' => $actor['name'],
                     'performed_by_role' => $actor['role'],

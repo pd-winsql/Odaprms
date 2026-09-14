@@ -220,6 +220,10 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                             <?php foreach ($activeQueueEntries as $entry):
                                 $queueState = dashboardQueueState($entry);
                                 $queueRowClass = $entry['is_in_treatment'] ? 'vd-queue-row-current' : ($entry['is_next'] ? 'vd-queue-row-next' : '');
+                                $canMarkNoShow = !$entry['checkin_id']
+                                    && $entry['appointment_status'] === 'Confirmed'
+                                    && $entry['date'] === date('Y-m-d')
+                                    && strtotime($entry['date'] . ' ' . $entry['start_time']) <= time();
                             ?>
                                 <tr class="<?= $queueRowClass ?>" data-logbook-patient="<?= (int) $entry['patient_id'] ?>">
                                     <td>
@@ -265,7 +269,18 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                                                 <?php endif; ?>
                                             </div>
                                         <?php elseif (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
-                                            <span class="vd-queue-action-note">Waiting for patient code</span>
+                                            <div class="vd-queue-action-group">
+                                                <span class="vd-queue-action-note">Waiting for patient code</span>
+                                                <?php if ($canMarkNoShow): ?>
+                                                    <button type="button" class="btn vd-btn-outline btn-sm vd-queue-secondary-action"
+                                                        data-mark-no-show
+                                                        data-appointment-id="<?= (int) $entry['appointment_id'] ?>"
+                                                        data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname'])) ?>"
+                                                        data-window="<?= htmlspecialchars(date('g:i A', strtotime($entry['start_time'])) . '–' . date('g:i A', strtotime($entry['end_time']))) ?>">
+                                                        <i class="ti ti-user-off" aria-hidden="true"></i>Mark no-show
+                                                    </button>
+                                                <?php endif; ?>
+                                            </div>
                                         <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?>
                                             <button type="button" class="btn vd-btn-outline btn-sm vd-queue-primary-action" data-complete-profile="<?= (int) $entry['patient_id'] ?>" data-appointment-id="<?= (int) $entry['appointment_id'] ?>">Review profile</button>
                                         <?php elseif ($entry['appointment_status'] === 'Checked In' && $entry['checkin_status'] === 'Ready' && $entry['is_next']): ?>
@@ -960,6 +975,44 @@ function dashboardServiceIdsPayload(int $appointmentId, array $serviceDetails): 
                     document.querySelector('[data-page="dashboard-content.php"]')?.click();
                 } catch (error) {
                     window.showToast(error.message || 'Unable to update the visit.', false);
+                    LoadingUI.setButton(button, false);
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-mark-no-show]').forEach(button => {
+            button.addEventListener('click', async () => {
+                const confirmation = await window.showActionModal({
+                    title: 'Mark Patient as No-show',
+                    kicker: "Today's check-in",
+                    message: 'Confirm that the patient did not arrive. Any verified deposit for this appointment will be forfeited.',
+                    confirmText: 'Mark No-show',
+                    icon: 'ti-user-off',
+                    tone: 'warning',
+                    details: [
+                        { label: 'Patient', value: button.dataset.patient },
+                        { label: 'Clinic window', value: button.dataset.window }
+                    ]
+                });
+                if (!confirmation.confirmed) return;
+
+                const body = new FormData();
+                body.append('action', 'markNoShow');
+                body.append('appointment_id', button.dataset.appointmentId);
+                body.append('csrf_token', csrfToken);
+
+                LoadingUI.setButton(button, true, 'Updating…');
+                try {
+                    const response = await fetch('../../controllers/logbookController.php', {
+                        method: 'POST',
+                        body
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.success) throw new Error(result.message || 'Unable to mark the patient as no-show.');
+                    window.showToast(result.message || 'Patient marked as no-show.', true);
+                    document.querySelector('[data-page="dashboard-content.php"]')?.click();
+                } catch (error) {
+                    window.showToast(error.message || 'Unable to mark the patient as no-show.', false);
                     LoadingUI.setButton(button, false);
                 }
             });

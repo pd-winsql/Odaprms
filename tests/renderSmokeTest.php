@@ -91,7 +91,8 @@ if ($case === 'dental-appointments'
         || !str_contains($html, "runRescheduleAction(button, 'reject')")
         || !str_contains($html, 'id="rescheduleDetailsModal"')
         || !str_contains($html, 'id="rescheduleDetailsServices"')
-        || !str_contains($html, "document.querySelectorAll('[data-view-reschedule]')"))) {
+        || !str_contains($html, "document.querySelectorAll('[data-view-reschedule]')")
+        || str_contains($html, 'Mark as no-show'))) {
     // Request rows are data-driven, so verify the always-rendered interaction shell and handlers.
     fwrite(STDERR, "Dental Assistant appointments did not render reschedule review behavior.\n");
     exit(1);
@@ -117,6 +118,8 @@ if ($case === 'dashboard'
 if ($case === 'dental-dashboard'
     && (!str_contains($html, 'Clinic operations')
         || !str_contains($html, 'id="checkinLookup"')
+        || !str_contains($html, "document.querySelectorAll('[data-mark-no-show]')")
+        || !str_contains($html, "body.append('action', 'markNoShow')")
         || str_contains($html, 'id="finalBillingModal"')
         || str_contains($html, 'data-complete-with-billing'))) {
     fwrite(STDERR, "Dental Assistant queue did not render its operational controls.\n");

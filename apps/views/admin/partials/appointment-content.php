@@ -375,9 +375,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-danger" data-status-action="Cancelled"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
                             data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-calendar-cancel" aria-hidden="true"></i><span>Cancel appointment</span></button>
-                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-status-action="No-show"
-                            data-appointment-id="<?= (int)$appt['appointment_id'] ?>" data-email="<?= htmlspecialchars($appt['email']) ?>"
-                            data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-user-off" aria-hidden="true"></i><span>Mark as no-show</span></button>
                         <?php elseif ($appt['status'] === 'Checked In'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-open-today-queue><i class="ti ti-list-check" aria-hidden="true"></i><span>Manage queue</span></button>
                         <?php elseif ($appt['status'] === 'In Progress'): ?>
@@ -869,7 +866,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             addStatusAction('Cancel appointment', 'Cancelled', 'ti-calendar-cancel', 'danger');
         } else if (details.status === 'Confirmed') {
             addStatusAction('Cancel appointment', 'Cancelled', 'ti-calendar-cancel', 'danger');
-            addStatusAction('Mark as no-show', 'No-show', 'ti-user-off');
         } else if (details.status === 'Checked In') {
             actionGroup.append(makeActionButton('Manage queue', menuClass, () => {
                 document.querySelector('[data-page="dashboard-content.php"]')?.click();
@@ -1292,14 +1288,13 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             const labels = {
                 'Awaiting Deposit': ['Accept Appointment Request', 'Accept Appointment', 'The patient will be asked to submit the required deposit.'],
                 'Cancelled': ['Cancel Appointment', 'Cancel Appointment', 'This action updates the appointment and notifies the patient.'],
-                'No-show': ['Mark Patient as No-show', 'Mark No-show', 'The verified deposit will be marked as forfeited.'],
                 'In Progress': ['Start Treatment', 'Start Treatment', 'Confirm that the patient profile and check-in are ready.']
             };
             const copy = labels[newStatus] || ['Update Appointment', 'Confirm', `Change this appointment to ${newStatus}.`];
             const confirmation = await window.showActionModal({
                 title: copy[0], kicker: 'Appointment action', message: copy[2], confirmText: copy[1],
                 icon: newStatus === 'Awaiting Deposit' ? 'ti-calendar-check' : 'ti-calendar-cog',
-                tone: ['Cancelled', 'No-show'].includes(newStatus) ? 'warning' : 'success',
+                tone: newStatus === 'Cancelled' ? 'warning' : 'success',
                 details: [{ label: 'Patient', value: name }]
             });
             if (!confirmation.confirmed) return;
