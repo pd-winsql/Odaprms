@@ -453,23 +453,29 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             ? appointment.services
             : String(appointment.service_name || 'Service not specified').split(',').map(serviceName => ({
                 service_name: serviceName.trim(),
-                service_icon: 'fa-solid fa-tooth'
+                service_image: ''
             }));
         selectedServices.forEach(selectedService => {
             const service = document.createElement('div');
             service.className = 'vd-schedule-appointment-service';
-            const serviceIcon = document.createElement('span');
-            serviceIcon.className = 'vd-schedule-appointment-service-icon';
-            const serviceIconGlyph = document.createElement('i');
-            serviceIconGlyph.className = selectedService.service_icon || 'fa-solid fa-tooth';
-            serviceIconGlyph.setAttribute('aria-hidden', 'true');
-            serviceIcon.appendChild(serviceIconGlyph);
+            const serviceMedia = document.createElement('span');
+            serviceMedia.className = 'vd-schedule-appointment-service-media';
+            const serviceImagePath = String(selectedService.service_image || '').replace(/^\/+/, '');
+            if (serviceImagePath.startsWith('public/uploads/services/')) {
+                const serviceImage = document.createElement('img');
+                serviceImage.src = `../../../${serviceImagePath}`;
+                serviceImage.alt = '';
+                serviceImage.loading = 'lazy';
+                serviceMedia.appendChild(serviceImage);
+            } else {
+                serviceMedia.textContent = 'Image pending';
+            }
             const serviceText = document.createElement('strong');
             serviceText.textContent = selectedService.service_name || 'Service';
             const included = document.createElement('span');
             included.className = 'vd-schedule-appointment-service-status';
             included.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Included';
-            service.append(serviceIcon, serviceText, included);
+            service.append(serviceMedia, serviceText, included);
             services.appendChild(service);
         });
 

@@ -10,6 +10,7 @@ require_once  __DIR__ . '/../../../../config/conn.php';
 require_once  __DIR__ . '/../../../models/appointmentModel.php';
 require_once  __DIR__ . '/../../../models/rescheduleModel.php';
 require_once  __DIR__ . '/../../../helpers/paymentSettings.php';
+require_once  __DIR__ . '/../../../helpers/serviceImage.php';
 
 $db   = new Database();
 $conn = $db->connect();
@@ -126,7 +127,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             'name' => $service['service_name'] ?? '',
             'description' => $service['service_description'] ?? '',
             'category' => $service['category_name'] ?? 'Dental Service',
-            'icon' => $service['service_icon'] ?? 'fa-solid fa-tooth',
+            'image' => vdServiceImageUrl($service['service_image'] ?? null, '../../../'),
         ], $services),
         'activity' => !empty($appointment['status_changed_by']) ? [
             'name' => $appointment['status_changed_by'],
@@ -1077,12 +1078,17 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 const card = document.createElement('article');
                 card.className = 'vd-appointment-service-card';
 
-                const icon = document.createElement('span');
-                icon.className = 'vd-appointment-service-icon';
-                const iconGlyph = document.createElement('i');
-                iconGlyph.className = service.icon || 'fa-solid fa-tooth';
-                iconGlyph.setAttribute('aria-hidden', 'true');
-                icon.appendChild(iconGlyph);
+                const media = document.createElement('span');
+                media.className = 'vd-appointment-service-media';
+                if (service.image) {
+                    const image = document.createElement('img');
+                    image.src = service.image;
+                    image.alt = '';
+                    image.loading = 'lazy';
+                    media.appendChild(image);
+                } else {
+                    media.textContent = 'Image pending';
+                }
 
                 const copy = document.createElement('span');
                 copy.className = 'vd-appointment-service-copy';
@@ -1104,7 +1110,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 includedText.textContent = 'Included';
                 included.append(includedIcon, includedText);
 
-                card.append(icon, copy, included);
+                card.append(media, copy, included);
                 serviceList.appendChild(card);
             });
         }

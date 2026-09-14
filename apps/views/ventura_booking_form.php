@@ -7,6 +7,7 @@
     require_once '../models/clinicModel.php';
     require_once '../models/serviceModel.php';
     require_once '../helpers/siteBranding.php';
+    require_once '../helpers/serviceImage.php';
 
     $db = new Database();
     $conn = $db->connect();
@@ -33,7 +34,7 @@
                 'service_id'          => $row['service_id'],
                 'service_name'        => $row['service_name'],
                 'service_description' => $row['service_description'],
-                'service_icon'        => $row['service_icon'],
+                'service_image'       => $row['service_image'],
             ];
         }
     }
@@ -178,7 +179,14 @@
                                 <?php foreach ($cat['services'] as $svc): ?>
                                 <div class="vd-svc-card" onclick="toggleServiceCard(this)">
                                     <input type="checkbox" class="d-none vd-service-checkbox" name="service_ids[]" value="<?= (int)$svc['service_id'] ?>">
-                                    <i class="fa-solid <?= htmlspecialchars($svc['service_icon'] ?: 'fa-tooth') ?>"></i>
+                                    <div class="vd-svc-card-media">
+                                        <?php $serviceImageUrl = vdServiceImageUrl($svc['service_image'] ?? null, '../../'); ?>
+                                        <?php if ($serviceImageUrl !== ''): ?>
+                                            <img src="<?= htmlspecialchars($serviceImageUrl) ?>" alt="" loading="lazy" width="1200" height="900">
+                                        <?php else: ?>
+                                            <span>Image pending</span>
+                                        <?php endif; ?>
+                                    </div>
                                     <div class="vd-svc-card-name"><?= htmlspecialchars($svc['service_name']) ?></div>
                                     <div class="vd-svc-card-desc"><?= htmlspecialchars($svc['service_description'] ?? '') ?></div>
                                 </div>

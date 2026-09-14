@@ -106,7 +106,7 @@ class ServiceModel {
         }
     }
 
-    public function addService($name, $description, $icon, $category_id, $isActive, $order)
+    public function addService($name, $description, $image, $category_id, $isActive, $order)
     {
         try {
             $this->conn->beginTransaction();
@@ -136,7 +136,7 @@ class ServiceModel {
                 (
                     service_name,
                     service_description,
-                    service_icon,
+                    service_image,
                     category_id,
                     is_active,
                     display_order
@@ -145,7 +145,7 @@ class ServiceModel {
                 (
                     :name,
                     :description,
-                    :icon,
+                    :image,
                     :category_id,
                     :active,
                     :order
@@ -155,7 +155,7 @@ class ServiceModel {
             $stmt->execute([
                 ':name' => $name,
                 ':description' => $description,
-                ':icon' => $icon,
+                ':image' => $image,
                 ':category_id' => $category_id,
                 ':active' => $isActive,
                 ':order' => $desiredOrder
@@ -173,7 +173,7 @@ class ServiceModel {
         }
     }
 
-    public function updateService($service_id, $name, $description, $icon, $category_id, $is_active, $display_order) {
+    public function updateService($service_id, $name, $description, $image, $category_id, $is_active, $display_order) {
         try {
             $this->conn->beginTransaction();
 
@@ -236,7 +236,7 @@ class ServiceModel {
                 SET
                     service_name = :name,
                     service_description = :description,
-                    service_icon = :icon,
+                    service_image = :image,
                     category_id = :category_id,
                     is_active = :active,
                     display_order = :display_order
@@ -246,7 +246,7 @@ class ServiceModel {
             $updated = $stmt->execute([
                 ':name' => $name,
                 ':description' => $description,
-                ':icon' => $icon,
+                ':image' => $image,
                 ':category_id' => $category_id,
                 ':active' => $is_active,
                 ':display_order' => $desiredOrder,
@@ -343,7 +343,7 @@ class ServiceModel {
                     s.service_id,
                     s.service_name,
                     s.service_description,
-                    s.service_icon
+                    s.service_image
                 FROM service_categories c
                 LEFT JOIN services s
                     ON s.category_id = c.category_id

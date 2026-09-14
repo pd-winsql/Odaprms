@@ -577,7 +577,7 @@ class Appointment
                     s.service_id,
                     s.service_name,
                     s.service_description,
-                    s.service_icon,
+                    s.service_image,
                     c.category_name
                 FROM appointment_services aps
                 JOIN services s ON s.service_id = aps.service_id

@@ -152,6 +152,7 @@ if ($action === 'verifyOTP') {
 if ($action === 'resetPassword') {
     $token       = trim($_POST['token']        ?? '');
     $newPassword = trim($_POST['new_password'] ?? '');
+    $confirmPassword = trim($_POST['confirm_password'] ?? '');
 
     // Make sure we still know which email is resetting
     if (!isset($_SESSION['reset_email'])) {
@@ -193,8 +194,13 @@ if ($action === 'resetPassword') {
         exit;
     }
 
-    if (strlen($newPassword) < 8) {
-        echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters.']);
+    if (!preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $newPassword)) {
+        echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include both letters and numbers.']);
+        exit;
+    }
+
+    if ($newPassword !== $confirmPassword) {
+        echo json_encode(['success' => false, 'message' => 'Passwords do not match.']);
         exit;
     }
 

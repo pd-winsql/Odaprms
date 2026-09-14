@@ -10,6 +10,8 @@ require_once '../helpers/authorization.php';
 class serviceController {
     private $services;
     private $auditLog;
+    private const MAX_SERVICE_IMAGE_BYTES = 5 * 1024 * 1024;
+    private const SERVICE_IMAGE_WEB_PATH = 'public/uploads/services/';
 
     public function __construct() {
         $db = new Database();
@@ -24,6 +26,56 @@ class serviceController {
         if (!validate_csrf()) {
             echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
             exit;
+        }
+    }
+
+    private function storeServiceImage(?array $file): array
+    {
+        if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return ['success' => true, 'path' => null];
+        }
+        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            return ['success' => false, 'message' => 'The service image could not be uploaded.'];
+        }
+        if (($file['size'] ?? 0) <= 0 || $file['size'] > self::MAX_SERVICE_IMAGE_BYTES) {
+            return ['success' => false, 'message' => 'Service images must be 5 MB or smaller.'];
+        }
+
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+        $extensions = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+        if (!isset($extensions[$mime]) || getimagesize($file['tmp_name']) === false) {
+            return ['success' => false, 'message' => 'Upload a valid JPG, PNG, or WebP image.'];
+        }
+
+        $uploadDirectory = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'services';
+        if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0775, true) && !is_dir($uploadDirectory)) {
+            return ['success' => false, 'message' => 'The service image directory is unavailable.'];
+        }
+
+        $filename = 'service-' . bin2hex(random_bytes(16)) . '.' . $extensions[$mime];
+        $destination = $uploadDirectory . DIRECTORY_SEPARATOR . $filename;
+        if (!move_uploaded_file($file['tmp_name'], $destination)) {
+            return ['success' => false, 'message' => 'The service image could not be saved.'];
+        }
+
+        return ['success' => true, 'path' => self::SERVICE_IMAGE_WEB_PATH . $filename];
+    }
+
+    private function deleteUploadedServiceImage(?string $path): void
+    {
+        $normalized = str_replace('\\', '/', trim((string) $path));
+        $filename = basename($normalized);
+        if (!str_starts_with($normalized, self::SERVICE_IMAGE_WEB_PATH) || !str_starts_with($filename, 'service-')) {
+            return;
+        }
+
+        $absolutePath = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalized);
+        if (is_file($absolutePath)) {
+            unlink($absolutePath);
         }
     }
 
@@ -97,7 +149,6 @@ class serviceController {
 
         $name        = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
-        $icon        = trim($_POST['icon'] ?? '');
         $isActive    = isset($_POST['is_active']) ? 1 : 0;
         $order       = (int)($_POST['order'] ?? 0);
         $category_id = (int)($_POST['category_id'] ?? 0);
@@ -107,21 +158,29 @@ class serviceController {
             exit;
         }
 
+        $imageResult = $this->storeServiceImage($_FILES['service_image'] ?? null);
+        if (!$imageResult['success']) {
+            echo json_encode($imageResult);
+            exit;
+        }
+        $image = $imageResult['path'];
+
         $newId = $this->services->addService(
             $name,
             $description,
-            $icon,
+            $image,
             $category_id,
             $isActive,
             $order
         );
 
         if (!$newId) {
+            $this->deleteUploadedServiceImage($image);
             echo json_encode(['success' => false, 'message' => 'Failed to add service.']);
             exit;
         }
 
-        $this->auditLog->recordForUser('service', (int) $newId, 'service_created', "Created service {$name}.", null, ['name' => $name, 'description' => $description, 'icon' => $icon, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
+        $this->auditLog->recordForUser('service', (int) $newId, 'service_created', "Created service {$name}.", null, ['name' => $name, 'description' => $description, 'image' => $image, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
 
         echo json_encode(['success' => true, 'message' => 'Service added.', 'service_id' => $newId]);
         exit;
@@ -133,7 +192,6 @@ class serviceController {
         $id          = $_POST['service_id'] ?? '';
         $name        = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
-        $icon        = trim($_POST['icon'] ?? '');
         $isActive    = isset($_POST['is_active']) ? 1 : 0;
         $order       = (int)($_POST['order'] ?? 0);
         $category_id = (int)($_POST['category_id'] ?? 0);
@@ -144,16 +202,37 @@ class serviceController {
         }
 
         $old = $this->services->getServiceById($id);
+        if (!$old) {
+            echo json_encode(['success' => false, 'message' => 'Service not found.']);
+            exit;
+        }
+
+        $imageResult = $this->storeServiceImage($_FILES['service_image'] ?? null);
+        if (!$imageResult['success']) {
+            echo json_encode($imageResult);
+            exit;
+        }
+        $uploadedImage = $imageResult['path'];
+        $removeImage = ($_POST['remove_image'] ?? '') === '1';
+        $image = $uploadedImage ?: ($removeImage ? null : ($old['service_image'] ?? null));
+
         $result = $this->services->updateService(
             $id,
             $name,
             $description,
-            $icon,
+            $image,
             $category_id,
             $isActive,
             $order
         );
-        if ($result) $this->auditLog->recordForUser('service', (int) $id, 'service_updated', "Updated service {$name}.", $old ?: null, ['name' => $name, 'description' => $description, 'icon' => $icon, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
+        if ($result) {
+            if (($old['service_image'] ?? null) !== $image) {
+                $this->deleteUploadedServiceImage($old['service_image'] ?? null);
+            }
+            $this->auditLog->recordForUser('service', (int) $id, 'service_updated', "Updated service {$name}.", $old, ['name' => $name, 'description' => $description, 'image' => $image, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
+        } elseif ($uploadedImage) {
+            $this->deleteUploadedServiceImage($uploadedImage);
+        }
 
         echo json_encode($result
             ? ['success' => true, 'message' => 'Service updated.']
@@ -165,7 +244,10 @@ class serviceController {
         $this->requireStaff();
         $old = $this->services->getServiceById($id);
         $result = $this->services->deleteService($id);
-        if ($result && $old) $this->auditLog->recordForUser('service', (int) $id, 'service_deleted', 'Deleted service ' . $old['service_name'] . '.', $old, null, (int) $_SESSION['user_id']);
+        if ($result && $old) {
+            $this->deleteUploadedServiceImage($old['service_image'] ?? null);
+            $this->auditLog->recordForUser('service', (int) $id, 'service_deleted', 'Deleted service ' . $old['service_name'] . '.', $old, null, (int) $_SESSION['user_id']);
+        }
         echo json_encode($result
             ? ['success' => true, 'message' => 'Service deleted.']
             : ['success' => false, 'message' => 'Failed to delete service.']);
@@ -208,7 +290,7 @@ class serviceController {
                     'service_id'          => $row['service_id'],
                     'service_name'        => $row['service_name'],
                     'service_description' => $row['service_description'],
-                    'service_icon'        => $row['service_icon'],
+                    'service_image'       => $row['service_image'],
                 ];
             }
         }

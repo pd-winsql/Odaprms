@@ -37,7 +37,22 @@ try {
     chatReject(fn() => new ChatModel($db, $adminId), 'Admin oversight cannot access daily clinic messages.');
     $assistant = new ChatModel($db, $assistantOneId);
     $secondAssistant = new ChatModel($db, $assistantTwoId);
-    chatExpect($p1->messages(0)['conversationId'] === 0, 'Opening an empty patient panel does not create a conversation.');
+    $emptyMessages = $p1->messages(0);
+    chatExpect(
+        $emptyMessages['conversationId'] === 0
+            && $emptyMessages['messages'] === []
+            && $emptyMessages['hasMore'] === false
+            && $emptyMessages['markReadThrough'] === 0,
+        'Opening an empty patient panel returns a complete empty conversation state.'
+    );
+    $emptySync = $p1->sync(0, 0, '', 0, '');
+    chatExpect(
+        $emptySync['conversationId'] === 0
+            && $emptySync['messages'] === []
+            && $emptySync['markReadThrough'] === 0
+            && $emptySync['unread'] === 0,
+        'Synchronizing an empty patient conversation succeeds without warnings.'
+    );
     chatReject(fn() => $p1->inbox('', 0), 'Patients cannot browse the clinic inbox.');
     chatReject(fn() => $p1->send(0, ' ', str_repeat('a', 32)), 'Blank messages are rejected.');
     chatReject(fn() => $p1->send(0, str_repeat('x', 2001), str_repeat('a', 32)), 'Messages exceeding the limit are rejected.');

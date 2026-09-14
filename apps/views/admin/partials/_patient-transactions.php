@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental A
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/patientModel.php';
 require_once __DIR__ . '/../../../models/appointmentModel.php';
+require_once __DIR__ . '/../../../helpers/serviceImage.php';
 
 $patient_id = $_GET['id'] ?? null;
 
@@ -58,6 +59,7 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
             'name' => $service['service_name'] ?? 'Service',
             'category' => $service['category_name'] ?? 'Dental service',
             'description' => $service['service_description'] ?? '',
+            'image' => vdServiceImageUrl($service['service_image'] ?? null, '../../../'),
         ], $services),
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
 }
@@ -215,9 +217,17 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
                     services.forEach(service => {
                         const card = document.createElement('article');
                         card.className = 'vd-appointment-service-card';
-                        const icon = document.createElement('span');
-                        icon.className = 'vd-appointment-service-icon';
-                        icon.innerHTML = '<i class="fa-solid fa-tooth" aria-hidden="true"></i>';
+                        const media = document.createElement('span');
+                        media.className = 'vd-appointment-service-media';
+                        if (service.image) {
+                            const image = document.createElement('img');
+                            image.src = service.image;
+                            image.alt = '';
+                            image.loading = 'lazy';
+                            media.appendChild(image);
+                        } else {
+                            media.textContent = 'Image pending';
+                        }
                         const copy = document.createElement('span');
                         copy.className = 'vd-appointment-service-copy';
                         const category = document.createElement('span');
@@ -231,7 +241,7 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
                             description.textContent = service.description;
                             copy.appendChild(description);
                         }
-                        card.append(icon, copy);
+                        card.append(media, copy);
                         serviceList.appendChild(card);
                     });
                 }

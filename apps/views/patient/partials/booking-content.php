@@ -13,6 +13,7 @@ require_once __DIR__ . '/../../../models/scheduleModel.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
 require_once __DIR__ . '/../../../helpers/patientEligibility.php';
 require_once __DIR__ . '/../../../helpers/bookingPolicy.php';
+require_once __DIR__ . '/../../../helpers/serviceImage.php';
 $appointmentRules = require __DIR__ . '/../../../../config/appointment.php';
 $maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
 
@@ -221,7 +222,14 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
                         <label class="vd-booking-service-option">
                             <input type="checkbox" name="service_ids[]" value="<?= (int) $service['service_id'] ?>">
                             <span class="vd-booking-service-card">
-                                <span class="vd-booking-service-icon"><i class="<?= htmlspecialchars($service['service_icon'] ?: 'fa-solid fa-tooth', ENT_QUOTES) ?>" aria-hidden="true"></i></span>
+                                <span class="vd-booking-service-media">
+                                    <?php $bookingServiceImage = vdServiceImageUrl($service['service_image'] ?? null, '../../../'); ?>
+                                    <?php if ($bookingServiceImage !== ''): ?>
+                                        <img src="<?= htmlspecialchars($bookingServiceImage) ?>" alt="" loading="lazy" width="1200" height="900">
+                                    <?php else: ?>
+                                        <span>Image pending</span>
+                                    <?php endif; ?>
+                                </span>
                                 <span class="vd-booking-service-copy">
                                     <strong><?= htmlspecialchars($service['service_name']) ?></strong>
                                     <small><?= htmlspecialchars($service['service_description'] ?: 'Contact the clinic for more information about this service.') ?></small>

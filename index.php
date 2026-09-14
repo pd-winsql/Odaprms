@@ -7,6 +7,7 @@ require_once 'apps/models/serviceModel.php';
 require_once 'apps/models/siteSettingsModel.php';
 require_once 'apps/helpers/siteBranding.php';
 require_once 'apps/helpers/csrf.php';
+require_once 'apps/helpers/serviceImage.php';
 
 $db = new Database();
 $conn = $db->connect();
@@ -64,7 +65,7 @@ foreach ($allCategories as $cat) {
     if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
     $categoryServices[] = [
       'name' => $servicesById[$sid]['service_name'],
-      'icon' => $servicesById[$sid]['service_icon'],
+      'image' => vdServiceImageUrl($servicesById[$sid]['service_image'] ?? null),
       'desc' => $servicesById[$sid]['service_description'],
     ];
     $activeServiceCount++;
@@ -183,8 +184,14 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
             <?php foreach ($category['services'] as $service): ?>
               <div class="col">
                 <div class="vd-service-item h-100">
-                  <div class="vd-service-icon"><i class="<?= htmlspecialchars($service['icon']) ?>"></i></div>
-                  <div>
+                  <div class="vd-service-media">
+                    <?php if ($service['image'] !== ''): ?>
+                      <img src="<?= htmlspecialchars($service['image']) ?>" alt="<?= htmlspecialchars($service['name']) ?> dental service" loading="lazy" width="1200" height="900">
+                    <?php else: ?>
+                      <span class="vd-service-image-placeholder">Service image coming soon</span>
+                    <?php endif; ?>
+                  </div>
+                  <div class="vd-service-copy">
                     <div class="vd-service-name"><?= htmlspecialchars($service['name']) ?></div>
                     <div class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></div>
                   </div>

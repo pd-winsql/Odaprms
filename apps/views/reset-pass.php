@@ -65,18 +65,26 @@ if (!$token) {
                 <label class="vd-label" for="newPw">New Password</label>
                 <div class="vd-auth-input-wrap">
                 <input type="password" name="new_password" id="newPw"
-                    class="vd-auth-input" placeholder="Min. 8 characters" required>
+                    class="vd-auth-input" placeholder="Min. 8 characters" autocomplete="new-password" required
+                    aria-describedby="resetPasswordRequirements">
                 <button type="button" class="vd-pw-toggle" id="toggleNewPw" aria-label="Show password">
                     <i class="ti ti-eye" id="newPwIcon"></i>
                 </button>
                 </div>
+                <ul class="vd-auth-password-requirements" id="resetPasswordRequirements"
+                    aria-label="Password requirements" aria-live="polite">
+                    <li data-reset-password-rule="length">At least 8 characters</li>
+                    <li data-reset-password-rule="letter">Contains a letter</li>
+                    <li data-reset-password-rule="number">Contains a number</li>
+                    <li data-reset-password-rule="match">Passwords match</li>
+                </ul>
             </div>
 
             <div class="vd-auth-group">
                 <label class="vd-label" for="confirmPw">Confirm New Password</label>
                 <div class="vd-auth-input-wrap">
                 <input type="password" name="confirm_password" id="confirmPw"
-                    class="vd-auth-input" placeholder="Re-enter password" required>
+                    class="vd-auth-input" placeholder="Re-enter password" autocomplete="new-password" required>
                 <button type="button" class="vd-pw-toggle" id="toggleConfirmPw" aria-label="Show password">
                     <i class="ti ti-eye" id="confirmPwIcon"></i>
                 </button>
@@ -105,6 +113,36 @@ if (!$token) {
         document.getElementById('toggleNewPw').addEventListener('click', () => togglePw('newPw', 'newPwIcon'));
         document.getElementById('toggleConfirmPw').addEventListener('click', () => togglePw('confirmPw', 'confirmPwIcon'));
 
+        const newPasswordInput = document.getElementById('newPw');
+        const confirmPasswordInput = document.getElementById('confirmPw');
+        const passwordRules = Object.fromEntries(
+            Array.from(document.querySelectorAll('[data-reset-password-rule]'))
+                .map(item => [item.dataset.resetPasswordRule, item])
+        );
+
+        function getPasswordState() {
+            const password = newPasswordInput.value;
+            const confirmation = confirmPasswordInput.value;
+            return {
+                length: password.length >= 8,
+                letter: /[A-Za-z]/.test(password),
+                number: /\d/.test(password),
+                match: password.length > 0 && confirmation.length > 0 && password === confirmation
+            };
+        }
+
+        function updatePasswordRequirements() {
+            const state = getPasswordState();
+            Object.entries(state).forEach(([rule, isMet]) => {
+                passwordRules[rule]?.classList.toggle('is-met', isMet);
+            });
+            return state;
+        }
+
+        newPasswordInput.addEventListener('input', updatePasswordRequirements);
+        confirmPasswordInput.addEventListener('input', updatePasswordRequirements);
+        updatePasswordRequirements();
+
         document.getElementById('resetForm').addEventListener('submit', async function (e) {
         e.preventDefault();
         const btn   = document.getElementById('rpBtn');
@@ -113,17 +151,18 @@ if (!$token) {
         errEl.classList.add('d-none');
         sucEl.classList.add('d-none');
 
-        const newPw  = document.getElementById('newPw').value;
-        const confPw = document.getElementById('confirmPw').value;
+        const passwordState = updatePasswordRequirements();
 
-        if (newPw.length < 8) {
-            errEl.textContent = 'Password must be at least 8 characters.';
+        if (!passwordState.length || !passwordState.letter || !passwordState.number) {
+            errEl.textContent = 'Password must be at least 8 characters and include both letters and numbers.';
             errEl.classList.remove('d-none');
+            newPasswordInput.focus();
             return;
         }
-        if (newPw !== confPw) {
+        if (!passwordState.match) {
             errEl.textContent = 'Passwords do not match.';
             errEl.classList.remove('d-none');
+            confirmPasswordInput.focus();
             return;
         }
 

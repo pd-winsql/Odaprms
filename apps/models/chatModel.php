@@ -75,7 +75,14 @@ class ChatModel {
 
     public function messages(int $id, int $after = 0, int $before = 0): array {
         $id = $this->conversation($id);
-        if (!$id) return ['conversationId' => 0, 'messages' => [], 'hasMore' => false];
+        if (!$id) {
+            return [
+                'conversationId' => 0,
+                'messages' => [],
+                'hasMore' => false,
+                'markReadThrough' => 0,
+            ];
+        }
         $params = [$id];
         $where = '';
         if ($before > 0) { $where = ' AND m.message_id < ?'; $params[] = $before; }

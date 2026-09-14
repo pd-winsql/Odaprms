@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental A
 
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
+require_once __DIR__ . '/../../../helpers/serviceImage.php';
 
 $db   = new Database();
 $conn = $db->connect();
@@ -46,13 +47,18 @@ function renderServiceRow($service, $assignedCategoryIds) {
          data-service-id="<?= $id ?>"
          data-name="<?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>"
          data-description="<?= htmlspecialchars($service['service_description'], ENT_QUOTES) ?>"
-         data-icon="<?= htmlspecialchars($service['service_icon'], ENT_QUOTES) ?>"
+         data-image="<?= htmlspecialchars(vdServiceImageUrl($service['service_image'] ?? null, '../../../'), ENT_QUOTES) ?>"
          data-order="<?= (int)$service['display_order'] ?>"
          data-category-ids="<?= htmlspecialchars($catCsv) ?>"
          data-active="<?= $isActive ? '1' : '0' ?>">
         <div class="vd-service-list-main">
-            <div class="vd-service-summary-icon" aria-hidden="true">
-                <i class="<?= htmlspecialchars($service['service_icon']) ?>"></i>
+            <div class="vd-service-summary-image">
+                <?php $serviceImageUrl = vdServiceImageUrl($service['service_image'] ?? null, '../../../'); ?>
+                <?php if ($serviceImageUrl !== ''): ?>
+                    <img src="<?= htmlspecialchars($serviceImageUrl) ?>" alt="" loading="lazy">
+                <?php else: ?>
+                    <span aria-hidden="true">Image pending</span>
+                <?php endif; ?>
             </div>
             <div class="vd-service-list-copy">
                 <div class="vd-category-list-name"><?= htmlspecialchars($service['service_name']) ?></div>
@@ -213,9 +219,17 @@ function renderServiceRow($service, $assignedCategoryIds) {
           <input type="hidden" id="serviceModalId" value="">
           <input type="hidden" id="serviceModalActive" value="1">
 
-          <div>
-            <label class="vd-label form-label">Choose an Icon</label>
-            <div class="vd-icon-picker" id="iconPicker"></div>
+          <div class="vd-service-image-editor">
+            <label class="vd-label form-label" for="serviceModalImage">Service Image</label>
+            <div class="vd-service-image-preview" id="serviceImagePreview">
+              <img id="serviceImagePreviewImg" src="" alt="Service image preview" hidden>
+              <span id="serviceImagePreviewEmpty">No image selected</span>
+            </div>
+            <input type="file" class="form-control vd-input" id="serviceModalImage" accept="image/jpeg,image/png,image/webp">
+            <div class="d-flex align-items-center justify-content-between gap-3 mt-2">
+              <small class="text-muted">JPG, PNG, or WebP · maximum 5 MB · 4:3 recommended</small>
+              <button type="button" class="btn vd-btn-outline btn-sm" id="serviceImageRemoveBtn">Remove image</button>
+            </div>
           </div>
 
           <div>
@@ -350,26 +364,6 @@ function renderServiceRow($service, $assignedCategoryIds) {
         element.addEventListener('click', () => tooltip.hide());
     });
 
-    // The dashboard shell only loads Tabler icons. Service icons are stored
-    // as Font Awesome classes (matching the public landing page), so load
-    // Font Awesome once here for the picker/preview/receipt to render correctly.
-    if (!document.getElementById('vdFontAwesomeCdn')) {
-        const link = document.createElement('link');
-        link.id = 'vdFontAwesomeCdn';
-        link.rel = 'stylesheet';
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-        document.head.appendChild(link);
-    }
-
-    const ICONS = [
-        'fa-solid fa-tooth', 'fa-solid fa-broom', 'fa-solid fa-teeth', 'fa-solid fa-teeth-open',
-        'fa-solid fa-x-ray', 'fa-solid fa-crown', 'fa-solid fa-link', 'fa-solid fa-syringe',
-        'fa-solid fa-star', 'fa-solid fa-gem', 'fa-solid fa-briefcase-medical', 'fa-solid fa-notes-medical',
-        'fa-solid fa-hand-holding-medical', 'fa-solid fa-stethoscope', 'fa-solid fa-band-aid',
-        'fa-solid fa-shield-heart', 'fa-solid fa-microscope', 'fa-solid fa-vial',
-        'fa-solid fa-mortar-pestle', 'fa-solid fa-kit-medical',
-    ];
-
     function showToast(msg, success) {
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
         console.warn('showToast not available:', msg);
@@ -403,7 +397,10 @@ function renderServiceRow($service, $assignedCategoryIds) {
     const serviceModal   = new bootstrap.Modal(serviceModalEl);
     const formStep       = document.getElementById('serviceModalFormStep');
     const confirmStep    = document.getElementById('serviceModalConfirmStep');
-    const iconPicker     = document.getElementById('iconPicker');
+    const imageInput     = document.getElementById('serviceModalImage');
+    const imagePreview   = document.getElementById('serviceImagePreviewImg');
+    const imageEmpty     = document.getElementById('serviceImagePreviewEmpty');
+    const imageRemoveBtn = document.getElementById('serviceImageRemoveBtn');
     const nameInput      = document.getElementById('serviceModalName');
     const descInput      = document.getElementById('serviceModalDescription');
     const orderInput     = document.getElementById('serviceModalOrder');
@@ -412,19 +409,33 @@ function renderServiceRow($service, $assignedCategoryIds) {
     const errorBox       = document.getElementById('serviceModalError');
     const categoriesWrap = document.getElementById('serviceModalCategories');
 
-    let selectedIcon = '';
+    let currentImage = '';
+    let removeImage = false;
+    let previewObjectUrl = '';
 
-    // Build the icon picker grid once
-    iconPicker.innerHTML = ICONS.map(icon =>
-        `<span class="vd-icon-swatch" data-icon="${icon}" title="${icon}"><i class="${icon}"></i></span>`
-    ).join('');
+    function showImagePreview(src) {
+        const previewSource = src || '';
+        imagePreview.hidden = !previewSource;
+        imageEmpty.hidden = Boolean(previewSource);
+        imagePreview.src = previewSource;
+        imageRemoveBtn.disabled = !previewSource;
+    }
 
-    iconPicker.addEventListener('click', function (e) {
-        const swatch = e.target.closest('.vd-icon-swatch');
-        if (!swatch) return;
-        iconPicker.querySelectorAll('.vd-icon-swatch').forEach(s => s.classList.remove('vd-icon-swatch-selected'));
-        swatch.classList.add('vd-icon-swatch-selected');
-        selectedIcon = swatch.dataset.icon;
+    imageInput.addEventListener('change', () => {
+        if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+        const file = imageInput.files[0];
+        previewObjectUrl = file ? URL.createObjectURL(file) : '';
+        removeImage = false;
+        showImagePreview(previewObjectUrl || currentImage);
+    });
+
+    imageRemoveBtn.addEventListener('click', () => {
+        if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+        previewObjectUrl = '';
+        imageInput.value = '';
+        currentImage = '';
+        removeImage = true;
+        showImagePreview('');
     });
 
     categoriesWrap.addEventListener('click', function (e) {
@@ -442,9 +453,13 @@ function renderServiceRow($service, $assignedCategoryIds) {
         descInput.value = '';
         orderInput.value = '0';
         activeInput.value = '1';
-        selectedIcon = '';
+        currentImage = '';
+        removeImage = false;
+        if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
+        previewObjectUrl = '';
+        imageInput.value = '';
+        showImagePreview('');
         errorBox.classList.add('d-none');
-        iconPicker.querySelectorAll('.vd-icon-swatch').forEach(s => s.classList.remove('vd-icon-swatch-selected'));
         categoriesWrap.querySelectorAll('.vd-chip').forEach(c => c.classList.remove('vd-chip-selected'));
         formStep.classList.remove('d-none');
         confirmStep.classList.add('d-none');
@@ -460,10 +475,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
             descInput.value = data.description;
             orderInput.value = data.order;
             activeInput.value = data.active === '1' ? '1' : '0';
-            selectedIcon = data.icon;
-
-            const swatch = iconPicker.querySelector(`[data-icon="${data.icon}"]`);
-            if (swatch) swatch.classList.add('vd-icon-swatch-selected');
+            currentImage = data.image || '';
+            showImagePreview(currentImage);
 
             const assignedIds = (data.categoryIds || '').split(',').filter(Boolean);
             assignedIds.forEach(cid => {
@@ -484,7 +497,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
                 serviceId: card.dataset.serviceId,
                 name: card.dataset.name,
                 description: card.dataset.description,
-                icon: card.dataset.icon,
+                image: card.dataset.image,
                 order: card.dataset.order,
                 active: card.dataset.active,
                 categoryIds: card.dataset.categoryIds,
@@ -515,23 +528,42 @@ function renderServiceRow($service, $assignedCategoryIds) {
         });
     });
 
+    function appendServiceReceiptRow(container, label, value, imageSource = '') {
+        const row = document.createElement('div');
+        row.className = 'vd-receipt-row';
+        const labelElement = document.createElement('span');
+        labelElement.className = 'vd-receipt-row-label';
+        labelElement.textContent = label;
+        const valueElement = document.createElement('span');
+        if (imageSource) {
+            row.classList.add('vd-service-receipt-image');
+            const image = document.createElement('img');
+            image.src = imageSource;
+            image.alt = '';
+            valueElement.appendChild(image);
+        } else {
+            valueElement.textContent = value;
+        }
+        row.append(labelElement, valueElement);
+        container.appendChild(row);
+    }
+
     document.getElementById('serviceModalReviewBtn').addEventListener('click', function () {
         const name = nameInput.value.trim();
 
         if (!name) { errorBox.textContent = 'Service name is required.'; errorBox.classList.remove('d-none'); return; }
-        if (!selectedIcon) { errorBox.textContent = 'Please choose an icon.'; errorBox.classList.remove('d-none'); return; }
         errorBox.classList.add('d-none');
 
         const selectedCats = Array.from(categoriesWrap.querySelectorAll('.vd-chip-selected')).map(c => c.textContent.trim());
         const isActive = activeInput.value === '1';
 
-        document.getElementById('serviceReceiptBody').innerHTML = `
-            <div class="vd-receipt-row"><span class="vd-receipt-row-label">Icon</span><span class="vd-receipt-icon"><i class="${selectedIcon}"></i></span></div>
-            <div class="vd-receipt-row"><span class="vd-receipt-row-label">Name</span><span>${name}</span></div>
-            <div class="vd-receipt-row"><span class="vd-receipt-row-label">Description</span><span>${descInput.value.trim() || '—'}</span></div>
-            <div class="vd-receipt-row"><span class="vd-receipt-row-label">Categories</span><span>${selectedCats.length ? selectedCats.join(', ') : '—'}</span></div>
-            <div class="vd-receipt-row"><span class="vd-receipt-row-label">Status</span><span>${isActive ? 'Active' : 'Inactive'}</span></div>
-        `;
+        const receiptBody = document.getElementById('serviceReceiptBody');
+        receiptBody.replaceChildren();
+        appendServiceReceiptRow(receiptBody, 'Image', 'No image', previewObjectUrl || currentImage);
+        appendServiceReceiptRow(receiptBody, 'Name', name);
+        appendServiceReceiptRow(receiptBody, 'Description', descInput.value.trim() || '—');
+        appendServiceReceiptRow(receiptBody, 'Categories', selectedCats.length ? selectedCats.join(', ') : '—');
+        appendServiceReceiptRow(receiptBody, 'Status', isActive ? 'Active' : 'Inactive');
 
         formStep.classList.add('d-none');
         confirmStep.classList.remove('d-none');
@@ -553,7 +585,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
         if (id) formData.append('service_id', id);
         formData.append('name', nameInput.value.trim());
         formData.append('description', descInput.value.trim());
-        formData.append('icon', selectedIcon);
+        if (imageInput.files[0]) formData.append('service_image', imageInput.files[0]);
+        if (removeImage) formData.append('remove_image', '1');
         formData.append('order', orderInput.value);
         if (activeInput.value === '1') formData.append('is_active', '1');
         formData.append('category_id', selectedCategoryId);

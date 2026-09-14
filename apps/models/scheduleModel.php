@@ -279,7 +279,7 @@ class Schedule {
                 $servicePlaceholders = implode(',', array_fill(0, count($appointmentIds), '?'));
                 $serviceStmt = $this->conn->prepare("
                     SELECT appointment_service.appointment_id, service.service_name,
-                        service.service_icon
+                        service.service_image
                     FROM appointment_services appointment_service
                     JOIN services service
                         ON service.service_id = appointment_service.service_id
@@ -291,7 +291,7 @@ class Schedule {
                 foreach ($serviceStmt->fetchAll(PDO::FETCH_ASSOC) as $service) {
                     $servicesByAppointment[(int) $service['appointment_id']][] = [
                         'service_name' => $service['service_name'],
-                        'service_icon' => $service['service_icon'],
+                        'service_image' => $service['service_image'],
                     ];
                 }
             }

@@ -668,7 +668,7 @@ CREATE TABLE IF NOT EXISTS `services` (
   `category_id` int(11) NOT NULL,
   `service_name` varchar(100) NOT NULL,
   `service_description` varchar(255) DEFAULT NULL,
-  `service_icon` varchar(100) DEFAULT NULL,
+  `service_image` varchar(255) DEFAULT NULL,
   `default_price` decimal(10,2) DEFAULT NULL COMMENT 'Current catalog price; NULL until service pricing is configured.',
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `display_order` int(11) NOT NULL DEFAULT 0
@@ -678,20 +678,20 @@ CREATE TABLE IF NOT EXISTS `services` (
 -- Dumping data for table `services`
 --
 
-INSERT INTO `services` (`service_id`, `category_id`, `service_name`, `service_description`, `service_icon`, `is_active`, `display_order`) VALUES
-(1, 1, 'Cleaning (Prophylaxis)', 'Professional plaque and tartar removal for a fresher, healthier smile.', 'fa-solid fa-broom', 1, 1),
-(2, 1, 'Scaling', 'Deep cleaning below the gumline to treat and help prevent gum disease.', 'fa-solid fa-teeth', 1, 2),
-(3, 1, 'Periapical X-ray', 'Detailed imaging of a tooth\'s root and the surrounding bone.', 'fa-solid fa-x-ray', 1, 3),
-(4, 2, 'Restoration (Fillings)', 'Composite or amalgam fillings that repair cavities and minor damage.', 'fa-solid fa-tooth', 1, 4),
-(5, 2, 'Crown / Jackets', 'A custom cap that protects and rebuilds a weakened or broken tooth.', 'fa-solid fa-crown', 1, 5),
-(6, 2, 'Bridge', 'A fixed replacement that closes the gap left by a missing tooth.', 'fa-solid fa-link', 1, 6),
-(7, 2, 'Root Canal', 'Treats infected or damaged tooth pulp to help save the natural tooth.', 'fa-solid fa-syringe', 1, 7),
-(8, 2, 'Dentures', 'Removable replacements for some or all missing teeth.', 'fa-solid fa-teeth', 1, 8),
-(9, 3, 'Extraction', 'Safe removal of a damaged, decayed, or problematic tooth.', 'fa-solid fa-tooth', 1, 9),
-(10, 3, 'Wisdom Tooth Removal', 'Removal of impacted or emerging third molars.', 'fa-solid fa-tooth', 1, 10),
-(11, 4, 'Braces', 'Gradually aligns crowded, gapped, or misaligned teeth over time.', 'fa-solid fa-teeth-open', 1, 11),
-(12, 4, 'Whitening', 'A professional treatment to brighten stained or discolored teeth.', 'fa-solid fa-star', 1, 12),
-(13, 4, 'Veneer', 'Thin custom shells that reshape and brighten the front of a tooth.', 'fa-solid fa-gem', 1, 13);
+INSERT INTO `services` (`service_id`, `category_id`, `service_name`, `service_description`, `service_image`, `is_active`, `display_order`) VALUES
+(1, 1, 'Cleaning (Prophylaxis)', 'Professional plaque and tartar removal for a fresher, healthier smile.', 'public/uploads/services/cleaning-prophylaxis.webp', 1, 1),
+(2, 1, 'Scaling', 'Deep cleaning below the gumline to treat and help prevent gum disease.', 'public/uploads/services/scaling.webp', 1, 2),
+(3, 1, 'Periapical X-ray', 'Detailed imaging of a tooth\'s root and the surrounding bone.', 'public/uploads/services/periapical-xray.webp', 1, 3),
+(4, 2, 'Restoration (Fillings)', 'Composite or amalgam fillings that repair cavities and minor damage.', 'public/uploads/services/restoration-fillings.webp', 1, 4),
+(5, 2, 'Crown / Jackets', 'A custom cap that protects and rebuilds a weakened or broken tooth.', 'public/uploads/services/crown-jackets.webp', 1, 5),
+(6, 2, 'Bridge', 'A fixed replacement that closes the gap left by a missing tooth.', 'public/uploads/services/bridge.webp', 1, 6),
+(7, 2, 'Root Canal', 'Treats infected or damaged tooth pulp to help save the natural tooth.', 'public/uploads/services/root-canal.webp', 1, 7),
+(8, 2, 'Dentures', 'Removable replacements for some or all missing teeth.', 'public/uploads/services/dentures.webp', 1, 8),
+(9, 3, 'Extraction', 'Safe removal of a damaged, decayed, or problematic tooth.', 'public/uploads/services/extraction.webp', 1, 9),
+(10, 3, 'Wisdom Tooth Removal', 'Removal of impacted or emerging third molars.', 'public/uploads/services/wisdom-tooth-removal.webp', 1, 10),
+(11, 4, 'Braces', 'Gradually aligns crowded, gapped, or misaligned teeth over time.', 'public/uploads/services/braces.webp', 1, 11),
+(12, 4, 'Whitening', 'A professional treatment to brighten stained or discolored teeth.', 'public/uploads/services/whitening.webp', 1, 12),
+(13, 4, 'Veneer', 'Thin custom shells that reshape and brighten the front of a tooth.', 'public/uploads/services/veneer.webp', 1, 13);
 
 -- --------------------------------------------------------
 
