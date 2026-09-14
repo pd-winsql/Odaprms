@@ -66,58 +66,73 @@ function depositStatusClass($status) {
                 <span class="vd-dash-card-title">Appointment #<?= (int) $deposit['appointment_id'] ?></span>
                 <span class="<?= depositStatusClass($deposit['deposit_status']) ?>"><?= htmlspecialchars($deposit['deposit_status']) ?></span>
             </div>
-            <div class="vd-dash-card-body">
-                <div class="row g-4">
-                    <div class="col-12 col-lg-7">
-                        <div class="vd-booking-profile-grid mb-3">
-                            <div class="vd-booking-profile-item"><span>Clinic</span><strong><?= htmlspecialchars($deposit['clinic_name']) ?></strong></div>
-                            <div class="vd-booking-profile-item"><span>Date</span><strong><?= date('F j, Y', strtotime($deposit['date'])) ?></strong></div>
-                            <div class="vd-booking-profile-item"><span>Clinic window</span><strong><?= date('g:i A', strtotime($deposit['start_time'])) ?>–<?= date('g:i A', strtotime($deposit['end_time'])) ?><small class="d-block mt-1">Arrive by <?= date('g:i A', strtotime($deposit['start_time'])) ?> or earlier</small></strong></div>
-                            <div class="vd-booking-profile-item"><span>Services</span><strong><?= htmlspecialchars($deposit['service_name'] ?: '—') ?></strong></div>
-                            <div class="vd-booking-profile-item"><span>Required deposit</span><strong>₱<?= number_format((float) $deposit['amount'], 2) ?></strong></div>
+            <div class="vd-dash-card-body vd-deposit-card-body">
+                <div class="vd-deposit-summary-grid" aria-label="Appointment details">
+                    <div class="vd-booking-profile-item"><span>Clinic</span><strong><?= htmlspecialchars($deposit['clinic_name']) ?></strong></div>
+                    <div class="vd-booking-profile-item"><span>Date</span><strong><?= date('F j, Y', strtotime($deposit['date'])) ?></strong></div>
+                    <div class="vd-booking-profile-item vd-deposit-summary-span"><span>Clinic window</span><strong><?= date('g:i A', strtotime($deposit['start_time'])) ?>–<?= date('g:i A', strtotime($deposit['end_time'])) ?><small class="d-block mt-1">Arrive by <?= date('g:i A', strtotime($deposit['start_time'])) ?> or earlier</small></strong></div>
+                    <div class="vd-booking-profile-item vd-deposit-summary-span"><span>Services</span><strong><?= htmlspecialchars($deposit['service_name'] ?: '—') ?></strong></div>
+                    <div class="vd-booking-profile-item vd-deposit-summary-amount"><span>Required deposit</span><strong>₱<?= number_format((float) $deposit['amount'], 2) ?></strong></div>
+                </div>
+
+                <?php if ($deadline && $canSubmit): ?>
+                    <div class="vd-deposit-deadline" data-payment-deadline="<?= htmlspecialchars(date(DATE_ATOM, strtotime($deadline))) ?>">
+                        <span class="vd-deposit-deadline-icon"><i class="ti ti-clock-hour-4" aria-hidden="true"></i></span>
+                        <div>
+                            <strong>Complete your deposit before <?= date('M j, Y · g:i A', strtotime($deadline)) ?></strong>
+                            <span>Upload a valid receipt before the payment window closes to keep this appointment.</span>
                         </div>
+                        <span class="vd-deposit-countdown" data-countdown>calculating…</span>
+                    </div>
+                <?php endif; ?>
 
-                        <?php if ($deadline && $canSubmit): ?>
-                            <div class="alert alert-warning small" data-payment-deadline="<?= htmlspecialchars(date(DATE_ATOM, strtotime($deadline))) ?>">
-                                Submit your receipt within <strong data-countdown>calculating…</strong> to keep this slot.
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ($deposit['deposit_status'] === 'Rejected'): ?>
-                            <div class="alert alert-danger small">
-                                <strong>Reason:</strong> <?= htmlspecialchars($deposit['rejection_reason'] ?: 'The submitted proof could not be verified.') ?>
-                            </div>
-                        <?php elseif ($deposit['deposit_status'] === 'Under Review'): ?>
-                            <div class="alert alert-info small mb-0">
-                                Your receipt is waiting for staff verification. Your slot remains reserved.
-                                <?php if ($deposit['receipt_amount'] !== null && $deposit['gcash_transaction_at']): ?>
-                                    <span class="d-block mt-1">₱<?= number_format((float) $deposit['receipt_amount'], 2) ?> · <?= date('M d, Y g:i A', strtotime($deposit['gcash_transaction_at'])) ?></span>
-                                <?php endif; ?>
-                            </div>
-                        <?php elseif ($deposit['deposit_status'] === 'Verified'): ?>
-                            <div class="alert alert-success small mb-0">Deposit verified. Your appointment is confirmed.</div>
-                        <?php elseif ($deposit['deposit_status'] === 'Expired'): ?>
-                            <div class="alert alert-secondary small mb-0">The payment deadline expired and this booking was cancelled.</div>
+                <?php if ($deposit['deposit_status'] === 'Rejected'): ?>
+                    <div class="alert alert-danger small vd-deposit-state-note">
+                        <strong>Receipt needs correction:</strong> <?= htmlspecialchars($deposit['rejection_reason'] ?: 'The submitted proof could not be verified.') ?>
+                    </div>
+                <?php elseif ($deposit['deposit_status'] === 'Under Review'): ?>
+                    <div class="alert alert-info small mb-0 vd-deposit-state-note">
+                        Your receipt is waiting for staff verification. Your slot remains reserved.
+                        <?php if ($deposit['receipt_amount'] !== null && $deposit['gcash_transaction_at']): ?>
+                            <span class="d-block mt-1">₱<?= number_format((float) $deposit['receipt_amount'], 2) ?> · <?= date('M d, Y g:i A', strtotime($deposit['gcash_transaction_at'])) ?></span>
                         <?php endif; ?>
                     </div>
+                <?php elseif ($deposit['deposit_status'] === 'Verified'): ?>
+                    <div class="alert alert-success small mb-0 vd-deposit-state-note">Deposit verified. Your appointment is confirmed.</div>
+                <?php elseif ($deposit['deposit_status'] === 'Expired'): ?>
+                    <div class="alert alert-secondary small mb-0 vd-deposit-state-note">The payment deadline expired and this booking was cancelled.</div>
+                <?php endif; ?>
 
-                    <?php if ($canSubmit): ?>
-                    <div class="col-12 col-lg-5">
-                        <div class="border rounded p-3 h-100">
-                            <div class="text-center mb-3">
-                                <?php if (!empty($settings['gcash_qr_path'])): ?>
-                                    <img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="GCash payment QR code" class="img-fluid rounded" style="max-height:220px;">
-                                <?php else: ?>
-                                    <div class="vd-empty-state border rounded">GCash QR code has not been configured yet.</div>
-                                <?php endif; ?>
-                                <?php if (!empty($settings['gcash_account_name'])): ?>
-                                    <strong class="d-block mt-2"><?= htmlspecialchars($settings['gcash_account_name']) ?></strong>
-                                <?php endif; ?>
-                                <?php if (!empty($settings['gcash_account_number'])): ?>
-                                    <span class="text-muted small"><?= htmlspecialchars($settings['gcash_account_number']) ?></span>
-                                <?php endif; ?>
+                <?php if ($canSubmit): ?>
+                    <div class="vd-deposit-workspace">
+                        <section class="vd-deposit-pay-panel" aria-labelledby="depositPayTitle<?= (int) $deposit['deposit_id'] ?>">
+                            <div class="vd-deposit-pay-head">
+                                <div>
+                                    <span class="vd-receipt-kicker">Step 1 · Pay</span>
+                                    <h3 id="depositPayTitle<?= (int) $deposit['deposit_id'] ?>">Scan to pay with GCash</h3>
+                                </div>
+                                <div class="vd-deposit-pay-amount"><span>Send exactly</span><strong>₱<?= number_format((float) $deposit['amount'], 2) ?></strong></div>
                             </div>
-                            <form class="depositSubmissionForm" enctype="multipart/form-data" data-deposit-ocr-form
+                            <figure class="vd-deposit-qr">
+                                <?php if (!empty($settings['gcash_qr_path'])): ?>
+                                    <img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="GCash payment QR code for <?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'the clinic') ?>">
+                                <?php else: ?>
+                                    <div class="vd-empty-state">GCash QR code has not been configured yet.</div>
+                                <?php endif; ?>
+                            </figure>
+                            <div class="vd-deposit-account">
+                                <span>GCash recipient</span>
+                                <strong><?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'Account name unavailable') ?></strong>
+                                <small><?= htmlspecialchars(($settings['gcash_account_number'] ?? '') ?: 'Account number unavailable') ?></small>
+                            </div>
+                            <ol class="vd-deposit-steps">
+                                <li><span>1</span><p>Scan the QR code and send the exact deposit amount.</p></li>
+                                <li><span>2</span><p>Save a clear screenshot of the completed GCash receipt.</p></li>
+                                <li><span>3</span><p>Upload it and review the detected payment details.</p></li>
+                            </ol>
+                        </section>
+
+                        <form class="depositSubmissionForm vd-deposit-proof-panel" enctype="multipart/form-data" data-deposit-ocr-form
                                 data-ocr-endpoint="../../controllers/depositController.php"
                                 data-required-amount="<?= htmlspecialchars(number_format((float) $deposit['amount'], 2, '.', '')) ?>">
                                 <input type="hidden" name="action" value="submit">
@@ -125,7 +140,7 @@ function depositStatusClass($status) {
                                 <input type="hidden" name="appointment_id" value="<?= (int) $deposit['appointment_id'] ?>">
                                 <div class="vd-receipt-assistant">
                                     <div class="vd-receipt-assistant-head">
-                                        <div class="vd-receipt-kicker">Payment proof</div>
+                                        <div class="vd-receipt-kicker">Step 2 · Submit proof</div>
                                         <h3 class="vd-receipt-assistant-title">Upload your GCash receipt</h3>
                                         <p class="vd-receipt-assistant-copy">A clear screenshot will automatically fill the payment details below.</p>
                                     </div>
@@ -163,11 +178,9 @@ function depositStatusClass($status) {
                                         <button type="submit" class="btn vd-btn-gold w-100">Submit for Verification</button>
                                     </div>
                                 </div>
-                            </form>
-                        </div>
+                        </form>
                     </div>
-                    <?php endif; ?>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>

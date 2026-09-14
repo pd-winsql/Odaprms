@@ -137,6 +137,15 @@ if ($case === 'cash-billing'
     fwrite(STDERR, "Admin billing insights did not render the financial summary, trend, clinic comparison, and records.\n");
     exit(1);
 }
+if ($case === 'patient-billing'
+    && (!str_contains($html, 'vd-deposit-summary-grid')
+        || !str_contains($html, 'vd-deposit-deadline')
+        || !str_contains($html, 'vd-deposit-workspace')
+        || !str_contains($html, 'Step 1 · Pay')
+        || !str_contains($html, 'Step 2 · Submit proof'))) {
+    fwrite(STDERR, "The patient deposit page did not render the payment and proof-submission workspace.\n");
+    exit(1);
+}
 if ($case === 'activity-logs'
     && (!str_contains($html, 'Recorded actions') || !str_contains($html, 'Read-only history'))) {
     fwrite(STDERR, "The read-only activity log did not render.\n");

@@ -2080,3 +2080,307 @@
         transition: none;
     }
 }
+
+/* Patient deposit workspace: appointment context, payment, then proof submission. */
+.vd-deposit-card-body {
+    padding: 24px 28px 28px;
+}
+
+.vd-deposit-summary-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1.35fr 1.35fr 1fr;
+    gap: 10px;
+}
+
+.vd-deposit-summary-grid .vd-booking-profile-item {
+    padding: 12px 13px;
+}
+
+.vd-deposit-summary-amount {
+    border-color: rgba(166, 124, 36, .32);
+    background: var(--gold-pale);
+}
+
+.vd-deposit-summary-amount strong {
+    color: var(--gold-dark);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.vd-deposit-deadline {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+    margin-top: 14px;
+    padding: 13px 15px;
+    border: 1px solid #ebcf82;
+    border-radius: 9px;
+    background: #fff4cd;
+    color: #654b13;
+}
+
+.vd-deposit-deadline-icon {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(166, 124, 36, .13);
+    color: var(--gold-dark);
+    font-size: 19px;
+}
+
+.vd-deposit-deadline div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vd-deposit-deadline strong {
+    color: #4f3b10;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vd-deposit-deadline div span {
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.vd-deposit-countdown {
+    min-width: 88px;
+    padding: 8px 10px;
+    border-left: 1px solid rgba(101, 75, 19, .2);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.vd-deposit-state-note {
+    margin: 14px 0 0;
+}
+
+.vd-deposit-workspace {
+    display: grid;
+    grid-template-columns: minmax(310px, .9fr) minmax(430px, 1.1fr);
+    gap: 18px;
+    align-items: stretch;
+    margin-top: 18px;
+}
+
+.vd-deposit-pay-panel,
+.vd-deposit-proof-panel {
+    min-width: 0;
+}
+
+.vd-deposit-pay-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 22px;
+    border: 1px solid #ded5c7;
+    border-radius: 12px;
+    background: #fffdfa;
+}
+
+.vd-deposit-pay-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.vd-deposit-pay-head h3 {
+    margin: 0;
+    color: var(--dark);
+    font-family: "Cormorant Garamond", serif;
+    font-size: 27px;
+    font-weight: 600;
+    line-height: 1.08;
+}
+
+.vd-deposit-pay-amount {
+    flex: 0 0 auto;
+    text-align: right;
+}
+
+.vd-deposit-pay-amount span,
+.vd-deposit-account span {
+    display: block;
+    color: var(--mid);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.vd-deposit-pay-amount strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--gold-dark);
+    font-size: 18px;
+}
+
+.vd-deposit-qr {
+    display: grid;
+    min-height: 230px;
+    margin: 18px 0 14px;
+    place-items: center;
+}
+
+.vd-deposit-qr img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 240px;
+    border-radius: 8px;
+}
+
+.vd-deposit-qr .vd-empty-state {
+    width: 100%;
+    min-height: 210px;
+    border: 1px dashed #cfc3b2;
+    border-radius: 9px;
+}
+
+.vd-deposit-account {
+    padding: 12px 14px;
+    border-left: 3px solid var(--gold);
+    background: #f8f4ed;
+}
+
+.vd-deposit-account strong,
+.vd-deposit-account small {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.vd-deposit-account strong {
+    margin-top: 3px;
+    color: var(--dark);
+    font-size: 14px;
+}
+
+.vd-deposit-account small {
+    margin-top: 2px;
+    color: var(--mid);
+    font-size: 12px;
+}
+
+.vd-deposit-steps {
+    display: grid;
+    gap: 9px;
+    margin: auto 0 0;
+    padding: 17px 0 0;
+    list-style: none;
+}
+
+.vd-deposit-steps li {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+}
+
+.vd-deposit-steps li > span {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border: 1px solid #d8c9ae;
+    border-radius: 50%;
+    color: var(--gold-dark);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.vd-deposit-steps p {
+    margin: 0;
+    color: var(--mid);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.vd-deposit-proof-panel .vd-receipt-assistant {
+    height: 100%;
+}
+
+@media (max-width: 1199px) {
+    .vd-deposit-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .vd-deposit-workspace {
+        grid-template-columns: minmax(280px, .8fr) minmax(390px, 1.2fr);
+    }
+}
+
+@media (max-width: 991px) {
+    .vd-deposit-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .vd-deposit-qr {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .vd-deposit-card-body {
+        padding: 18px;
+    }
+
+    .vd-deposit-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vd-deposit-summary-span,
+    .vd-deposit-summary-amount {
+        grid-column: 1 / -1;
+    }
+
+    .vd-deposit-deadline {
+        grid-template-columns: 34px minmax(0, 1fr);
+    }
+
+    .vd-deposit-deadline-icon {
+        width: 34px;
+        height: 34px;
+    }
+
+    .vd-deposit-countdown {
+        grid-column: 2;
+        width: fit-content;
+        min-width: 0;
+        padding: 3px 0 0;
+        border-left: 0;
+        font-size: 14px;
+        text-align: left;
+    }
+}
+
+@media (max-width: 575px) {
+    .vd-deposit-card-body {
+        padding: 14px;
+    }
+
+    .vd-deposit-pay-panel {
+        padding: 18px 16px;
+    }
+
+    .vd-deposit-pay-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .vd-deposit-pay-amount {
+        text-align: left;
+    }
+
+    .vd-deposit-qr img {
+        max-height: 220px;
+    }
+}
