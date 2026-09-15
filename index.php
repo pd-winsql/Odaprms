@@ -74,6 +74,7 @@ foreach ($allCategories as $cat) {
   if (empty($categoryServices)) continue; // skip empty categories on the public page
 
   $serviceCategories[] = [
+    'id' => (int)$cat['category_id'],
     'title' => $cat['category_name'],
     'description' => $cat['category_description'],
     'services' => $categoryServices,
@@ -88,6 +89,9 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
   'Patient'          => 'apps/views/patient/dashboard.php',
   default            => 'index.php',
 };
+$bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
+  ? 'apps/views/patient/dashboard.php#booking-content.php'
+  : 'apps/views/login.php?next=booking';
 ?>
 
 <!DOCTYPE html>
@@ -149,7 +153,7 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
             <h1 class="vd-hero-title"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
             <p class="vd-hero-sub"><?= sv($settings, 'hero_subtext', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.') ?></p>
             <div class="d-flex flex-wrap gap-3">
-              <a href="<?= $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient' ? 'apps/views/patient/dashboard.php#booking-content.php' : 'apps/views/login.php?next=booking' ?>" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
+              <a href="<?= htmlspecialchars($bookingUrl) ?>" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
               <a href="#services" class="btn vd-btn-outline px-4 py-2">View Services</a>
             </div>
           </div>
@@ -174,33 +178,52 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
         <p class="vd-section-intro">Care organized by category, from everyday prevention to more involved restorative, surgical, and cosmetic treatment.</p>
       </div>
 
+      <?php if (count($serviceCategories) > 1): ?>
+        <nav class="vd-service-category-nav" aria-label="Browse service categories">
+          <?php foreach ($serviceCategories as $category): ?>
+            <a href="#service-category-<?= (int)$category['id'] ?>"><?= htmlspecialchars($category['title']) ?></a>
+          <?php endforeach; ?>
+        </nav>
+      <?php endif; ?>
+
       <?php foreach ($serviceCategories as $category): ?>
-        <div class="vd-service-category">
+        <?php $serviceCount = count($category['services']); ?>
+        <section class="vd-service-category" id="service-category-<?= (int)$category['id'] ?>"
+          aria-labelledby="service-category-title-<?= (int)$category['id'] ?>">
           <div class="vd-service-category-header">
-            <h3 class="vd-service-category-title"><?= htmlspecialchars($category['title']) ?></h3>
+            <h3 class="vd-service-category-title" id="service-category-title-<?= (int)$category['id'] ?>"><?= htmlspecialchars($category['title']) ?></h3>
             <p class="vd-service-category-desc"><?= htmlspecialchars($category['description']) ?></p>
           </div>
-          <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+          <div class="vd-service-grid<?= $serviceCount % 3 === 2 ? ' vd-service-grid--remainder-two' : '' ?>">
             <?php foreach ($category['services'] as $service): ?>
-              <div class="col">
-                <div class="vd-service-item h-100">
+              <article class="vd-service-item">
                   <div class="vd-service-media">
                     <?php if ($service['image'] !== ''): ?>
                       <img src="<?= htmlspecialchars($service['image']) ?>" alt="<?= htmlspecialchars($service['name']) ?> dental service" loading="lazy" width="1200" height="900">
                     <?php else: ?>
-                      <span class="vd-service-image-placeholder">Service image coming soon</span>
+                      <span class="vd-service-image-placeholder">
+                        <i class="fa-solid fa-tooth" aria-hidden="true"></i>
+                        <span>Dental care</span>
+                      </span>
                     <?php endif; ?>
                   </div>
                   <div class="vd-service-copy">
-                    <div class="vd-service-name"><?= htmlspecialchars($service['name']) ?></div>
-                    <div class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></div>
+                    <h4 class="vd-service-name"><?= htmlspecialchars($service['name']) ?></h4>
+                    <p class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></p>
                   </div>
-                </div>
-              </div>
+              </article>
             <?php endforeach; ?>
           </div>
-        </div>
+        </section>
       <?php endforeach; ?>
+
+      <div class="vd-services-cta">
+        <div>
+          <h3>Not sure which treatment you need?</h3>
+          <p>Book a visit and let the clinic team help you choose the appropriate care.</p>
+        </div>
+        <a href="<?= htmlspecialchars($bookingUrl) ?>" class="btn vd-btn-gold">Book a consultation</a>
+      </div>
     </div>
   </section>
 
@@ -255,12 +278,19 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
                   <div class="ratio ratio-4x3 mt-3">
                     <iframe
                       src="<?= htmlspecialchars($clinic['embed_url']) ?>"
+                      title="Map showing <?= htmlspecialchars($clinic['clinic_name']) ?>"
                       style="border:0;"
                       allowfullscreen=""
                       loading="lazy"
                       referrerpolicy="strict-origin-when-cross-origin"></iframe>
                   </div>
                 <?php endif; ?>
+                <a class="btn vd-btn-outline vd-clinic-directions"
+                  href="https://www.google.com/maps/search/?api=1&amp;query=<?= rawurlencode($clinic['clinic_address']) ?>"
+                  target="_blank" rel="noopener noreferrer">
+                  <i class="fa-solid fa-diamond-turn-right" aria-hidden="true"></i>
+                  Get directions
+                </a>
               </div>
             </div>
           </div>
