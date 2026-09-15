@@ -64,6 +64,7 @@ foreach ($allCategories as $cat) {
   foreach ($serviceIds as $sid) {
     if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
     $categoryServices[] = [
+      'id' => $serviceId,
       'name' => $servicesById[$sid]['service_name'],
       'image' => vdServiceImageUrl($servicesById[$sid]['service_image'] ?? null),
       'desc' => $servicesById[$sid]['service_description'],
@@ -77,6 +78,7 @@ foreach ($allCategories as $cat) {
     'id' => (int)$cat['category_id'],
     'title' => $cat['category_name'],
     'description' => $cat['category_description'],
+    'image' => array_values(array_filter(array_column($categoryServices, 'image')))[0] ?? '',
     'services' => $categoryServices,
   ];
 }
@@ -172,50 +174,96 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
   <!-- SERVICES -->
   <section id="services" class="py-5 vd-services-section">
     <div class="container">
-      <div class="text-center mb-5">
+      <header class="vd-services-heading">
         <div class="vd-eyebrow">What We Offer</div>
-        <h2 class="vd-section-heading mb-2">Our Services</h2>
-        <p class="vd-section-intro">Care organized by category, from everyday prevention to more involved restorative, surgical, and cosmetic treatment.</p>
-      </div>
+        <h2 class="vd-section-heading">Care for every stage of your smile.</h2>
+        <p>Browse treatments by type. If you are unsure what you need, choose a consultation and the clinic team will guide you after an examination.</p>
+      </header>
 
-      <?php if (count($serviceCategories) > 1): ?>
-        <nav class="vd-service-category-nav" aria-label="Browse service categories">
-          <?php foreach ($serviceCategories as $category): ?>
-            <a href="#service-category-<?= (int)$category['id'] ?>"><?= htmlspecialchars($category['title']) ?></a>
-          <?php endforeach; ?>
-        </nav>
-      <?php endif; ?>
+      <?php if ($serviceCategories): ?>
+        <div class="vd-service-explorer" data-service-explorer>
+          <?php if (count($serviceCategories) > 1): ?>
+            <nav class="vd-service-category-nav" role="tablist" aria-label="Browse service categories">
+              <span class="vd-service-nav-label">Explore care</span>
+              <?php foreach ($serviceCategories as $categoryIndex => $category): ?>
+                <a
+                  href="#service-category-<?= (int)$category['id'] ?>"
+                  id="service-tab-<?= (int)$category['id'] ?>"
+                  class="vd-service-category-tab<?= $categoryIndex === 0 ? ' is-active' : '' ?>"
+                  role="tab"
+                  aria-selected="<?= $categoryIndex === 0 ? 'true' : 'false' ?>"
+                  aria-controls="service-category-<?= (int)$category['id'] ?>">
+                  <span><?= htmlspecialchars($category['title']) ?></span>
+                  <span class="vd-service-category-count" aria-label="<?= count($category['services']) ?> services"><?= str_pad((string)count($category['services']), 2, '0', STR_PAD_LEFT) ?></span>
+                </a>
+              <?php endforeach; ?>
+            </nav>
+          <?php endif; ?>
 
-      <?php foreach ($serviceCategories as $category): ?>
-        <?php $serviceCount = count($category['services']); ?>
-        <section class="vd-service-category" id="service-category-<?= (int)$category['id'] ?>"
-          aria-labelledby="service-category-title-<?= (int)$category['id'] ?>">
-          <div class="vd-service-category-header">
-            <h3 class="vd-service-category-title" id="service-category-title-<?= (int)$category['id'] ?>"><?= htmlspecialchars($category['title']) ?></h3>
-            <p class="vd-service-category-desc"><?= htmlspecialchars($category['description']) ?></p>
-          </div>
-          <div class="vd-service-grid<?= $serviceCount % 3 === 2 ? ' vd-service-grid--remainder-two' : '' ?>">
-            <?php foreach ($category['services'] as $service): ?>
-              <article class="vd-service-item">
-                  <div class="vd-service-media">
-                    <?php if ($service['image'] !== ''): ?>
-                      <img src="<?= htmlspecialchars($service['image']) ?>" alt="<?= htmlspecialchars($service['name']) ?> dental service" loading="lazy" width="1200" height="900">
-                    <?php else: ?>
-                      <span class="vd-service-image-placeholder">
-                        <i class="fa-solid fa-tooth" aria-hidden="true"></i>
-                        <span>Dental care</span>
-                      </span>
-                    <?php endif; ?>
+          <div class="vd-service-panels">
+            <?php foreach ($serviceCategories as $categoryIndex => $category): ?>
+              <details
+                class="vd-service-category"
+                id="service-category-<?= (int)$category['id'] ?>"
+                data-service-panel
+                data-tab="service-tab-<?= (int)$category['id'] ?>"
+                open>
+                <summary class="vd-service-category-summary">
+                  <span>
+                    <span class="vd-service-category-order"><?= str_pad((string)($categoryIndex + 1), 2, '0', STR_PAD_LEFT) ?></span>
+                    <strong><?= htmlspecialchars($category['title']) ?></strong>
+                  </span>
+                  <span class="vd-service-summary-meta">
+                    <?= count($category['services']) ?> treatment<?= count($category['services']) === 1 ? '' : 's' ?>
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                  </span>
+                </summary>
+
+                <div class="vd-service-category-body">
+                  <header class="vd-service-category-header">
+                    <div class="vd-service-category-media">
+                      <?php if ($category['image'] !== ''): ?>
+                        <img src="<?= htmlspecialchars($category['image']) ?>" alt="" loading="lazy" width="1200" height="900">
+                      <?php else: ?>
+                        <span class="vd-service-image-placeholder">
+                          <i class="fa-solid fa-tooth" aria-hidden="true"></i>
+                          <span>Dental care</span>
+                        </span>
+                      <?php endif; ?>
+                    </div>
+                    <div class="vd-service-category-copy">
+                      <span class="vd-service-category-order">Category <?= str_pad((string)($categoryIndex + 1), 2, '0', STR_PAD_LEFT) ?></span>
+                      <h3 class="vd-service-category-title"><?= htmlspecialchars($category['title']) ?></h3>
+                      <p class="vd-service-category-desc"><?= htmlspecialchars($category['description']) ?></p>
+                      <p class="vd-service-category-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Treatment recommendations are confirmed after a dental examination.</p>
+                    </div>
+                  </header>
+
+                  <div class="vd-service-list" aria-label="<?= htmlspecialchars($category['title']) ?> services">
+                    <?php foreach ($category['services'] as $serviceIndex => $service): ?>
+                      <details class="vd-service-item" id="service-<?= (int)$service['id'] ?>">
+                        <summary>
+                          <span class="vd-service-number"><?= str_pad((string)($serviceIndex + 1), 2, '0', STR_PAD_LEFT) ?></span>
+                          <span class="vd-service-identity">
+                            <strong class="vd-service-name"><?= htmlspecialchars($service['name']) ?></strong>
+                            <span>View treatment details</span>
+                          </span>
+                          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        </summary>
+                        <div class="vd-service-detail">
+                          <p><?= htmlspecialchars($service['desc']) ?></p>
+                        </div>
+                      </details>
+                    <?php endforeach; ?>
                   </div>
-                  <div class="vd-service-copy">
-                    <h4 class="vd-service-name"><?= htmlspecialchars($service['name']) ?></h4>
-                    <p class="vd-service-desc"><?= htmlspecialchars($service['desc']) ?></p>
-                  </div>
-              </article>
+                </div>
+              </details>
             <?php endforeach; ?>
           </div>
-        </section>
-      <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <p class="vd-services-empty">Service information is being updated. Please contact the clinic for assistance.</p>
+      <?php endif; ?>
 
       <div class="vd-services-cta">
         <div>
@@ -353,6 +401,7 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="public/js/index-services.js?v=<?= filemtime(__DIR__ . '/public/js/index-services.js') ?>"></script>
 </body>
 
 </html>
