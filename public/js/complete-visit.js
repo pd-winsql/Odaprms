@@ -123,7 +123,7 @@ const csrfToken = activeBillingAppointment.csrfToken;
             if (finalOdontogramRoot.classList.contains('is-dirty')) {
                 const discard = await window.showActionModal({
                     title: 'Unsaved dental chart', message: 'Cancel to save the chart, or discard its unsaved edits before completing payment.',
-                    confirmText: 'Discard chart edits', tone: 'warning', icon: 'ti-tooth'
+                    confirmText: 'Discard chart edits', tone: 'warning', icon: 'ti-dental'
                 });
                 if (!discard.confirmed) return;
                 try {
@@ -200,4 +200,3 @@ const csrfToken = activeBillingAppointment.csrfToken;
 
 
 });
-

@@ -348,7 +348,7 @@ function dashboardBillingPayload(array $entry): string
             <div class="modal-body">
                 <article class="vd-transaction-receipt" aria-label="Completed transaction receipt">
                     <div class="vd-receipt-brand">
-                        <span class="vd-receipt-mark"><i class="ti ti-tooth" aria-hidden="true"></i></span>
+                        <span class="vd-receipt-mark"><i class="ti ti-dental" aria-hidden="true"></i></span>
                         <div><strong>Dr. Aprille Ventura</strong><span>Clinica Dental</span></div>
                         <span class="vd-status vd-status-paid" id="logbookReceiptStatus">Paid</span>
                     </div>

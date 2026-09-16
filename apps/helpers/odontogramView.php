@@ -58,7 +58,7 @@ function vdRenderOdontogramWorkspace(string $id, bool $readOnly, bool $billingCo
 
             <aside class="vd-odontogram-inspector" aria-live="polite">
                 <div class="vd-odontogram-inspector-empty" data-inspector-empty>
-                    <i class="ti ti-tooth" aria-hidden="true"></i>
+                    <i class="ti ti-dental" aria-hidden="true"></i>
                     <strong>Select a tooth</strong>
                     <span>Its conditions, restorations, and surgery records will appear here.</span>
                 </div>

@@ -40,7 +40,7 @@ function val($v, $fallback = '—') {
         <i class="ti ti-arrow-left me-1"></i> <?= $isAdminViewer ? 'Back to Today’s Queue' : 'Back to Patients' ?>
     </button>
     <button class="btn vd-btn-gold ms-2" id="openPatientOdontogram" data-patient-id="<?= (int) $patient_id ?>">
-        <i class="ti ti-tooth me-1" aria-hidden="true"></i> Dental chart
+        <i class="ti ti-dental me-1" aria-hidden="true"></i> Dental chart
     </button>
 </div>
 

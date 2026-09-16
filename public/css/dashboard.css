@@ -4265,11 +4265,6 @@ button.vd-stat-card {
     object-fit: cover;
     border-radius: 8px;
 }
-.vd-patient-actions {
-    flex-wrap: nowrap;
-    gap: 8px;
-}
-
 .vd-table-icon-btn {
     align-items: center;
     display: inline-flex;
@@ -6052,6 +6047,8 @@ button.vd-stat-card {
     border-radius: 11px;
     box-shadow: 0 14px 30px rgba(62, 45, 23, 0.16);
     min-width: 210px;
+    max-width: calc(100vw - 24px);
+    width: max-content;
     padding: 6px;
     z-index: 1080;
 }
@@ -6062,29 +6059,31 @@ button.vd-stat-card {
     flex-direction: column;
     flex-wrap: nowrap;
     gap: 2px;
+    width: 100%;
 }
 
-.vd-appt-action-dropdown .vd-appt-menu-item,
-.vd-appt-action-dropdown .vd-action-group .vd-btn-gold,
-.vd-appt-action-dropdown .vd-appointment-details-btn {
+.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item,
+.vd-dash-body .vd-appt-action-dropdown .vd-action-group .vd-btn-gold,
+.vd-dash-body .vd-appt-action-dropdown .vd-appointment-details-btn {
     align-items: center;
     background: transparent;
     border: 0;
     border-radius: 8px;
     box-shadow: none;
     color: var(--dark);
-    display: flex;
-    font-size: 11px;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    font-size: 14px;
     font-weight: 400;
-    gap: 9px;
-    justify-content: flex-start;
+    gap: 0 9px;
+    justify-content: initial;
     letter-spacing: 0;
-    min-height: 36px;
+    min-height: 44px;
     padding: 8px 10px;
     text-align: left;
     text-transform: none;
     transform: none;
-    white-space: nowrap;
+    white-space: normal;
     width: 100%;
 }
 
@@ -6113,9 +6112,9 @@ button.vd-stat-card {
 
 .vd-appt-action-dropdown .vd-appt-menu-item i {
     color: #826a3b;
-    flex: 0 0 16px;
     font-size: 16px;
     text-align: center;
+    width: 20px;
 }
 
 .vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-primary,
@@ -7798,26 +7797,6 @@ button.vd-topbar-bell {
     .vd-notification-panel:not([hidden]) {
         animation: none;
     }
-}
-
-/* Keep every appointment dropdown action on one icon/text alignment grid,
-   regardless of the button variant used by the action. */
-.vd-appt-action-dropdown .vd-action-group {
-    width: 100%;
-}
-
-.vd-dash-body .vd-appt-action-dropdown .vd-appt-menu-item,
-.vd-dash-body .vd-appt-action-dropdown .vd-action-group .vd-btn-gold,
-.vd-dash-body .vd-appt-action-dropdown .vd-appointment-details-btn {
-    display: grid;
-    grid-template-columns: 20px minmax(0, 1fr);
-    align-items: center;
-    gap: 0 9px;
-    justify-content: initial;
-}
-
-.vd-appt-action-dropdown .vd-appt-menu-item i {
-    width: 20px;
 }
 
 .vd-appt-action-dropdown .vd-appt-menu-item span {

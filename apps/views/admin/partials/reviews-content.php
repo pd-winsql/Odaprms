@@ -122,7 +122,7 @@ $roundedAverage = (int) round($average);
                             <dd><?= reviewEscape($review['clinic_name'] ?: 'Not listed') ?></dd>
                         </div>
                         <div>
-                            <dt><i class="ti ti-tooth" aria-hidden="true"></i> Service</dt>
+                            <dt><i class="ti ti-dental" aria-hidden="true"></i> Service</dt>
                             <dd><?= reviewEscape($review['service_names'] ?: 'Not listed') ?></dd>
                         </div>
                         <div>

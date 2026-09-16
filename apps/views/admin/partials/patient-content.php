@@ -2,8 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
-    echo '<div class="vd-empty-state">Unauthorized.</div>';
-    exit;
+	echo '<div class="vd-empty-state">Unauthorized.</div>';
+	exit;
 }
 
 require_once '../../../../config/conn.php';
@@ -19,9 +19,9 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 // Build unique months from patient records for the dropdown
 $months = [];
 foreach ($patients as $p) {
-    $key   = date('Y-m', strtotime($p['created_at']));
-    $label = date('F Y', strtotime($p['created_at']));
-    $months[$key] = $label;
+	$key   = date('Y-m', strtotime($p['created_at']));
+	$label = date('F Y', strtotime($p['created_at']));
+	$months[$key] = $label;
 }
 krsort($months); // latest first
 ?>
@@ -30,121 +30,125 @@ krsort($months); // latest first
 
 	<div class="vd-dash-card">
 		<div class="vd-dash-card-header">
-		<span class="vd-dash-card-title">Patients</span>
-		<span class="vd-topbar-date" id="patientCountLabel"><?= count($patients) ?> of <?= count($patients) ?> total</span>
+			<span class="vd-dash-card-title">Patients</span>
+			<span class="vd-topbar-date" id="patientCountLabel"><?= count($patients) ?> of <?= count($patients) ?> total</span>
 		</div>
 
 		<!-- Filter bar -->
 		<div class="vd-filter-bar">
-		<div class="vd-filter-group">
-			<label class="vd-label form-label">Search</label>
-			<div class="vd-search-wrap">
-			<i class="ti ti-search vd-search-icon" aria-hidden="true"></i>
-			<input type="text" id="searchInput" class="form-control vd-input vd-search-input"
-				placeholder="Name or email…">
+			<div class="vd-filter-group">
+				<label class="vd-label form-label">Search</label>
+				<div class="vd-search-wrap">
+					<i class="ti ti-search vd-search-icon" aria-hidden="true"></i>
+					<input type="text" id="searchInput" class="form-control vd-input vd-search-input"
+						placeholder="Name or email…">
+				</div>
 			</div>
-		</div>
-		<div class="vd-filter-group">
-			<label class="vd-label form-label">Form Status</label>
-			<select id="filterForm" class="form-select vd-input vd-filter-select">
-			<option value="">All</option>
-			<option value="complete">Complete</option>
-			<option value="incomplete">Incomplete</option>
-			</select>
-		</div>
-		<div class="vd-filter-group">
-			<label class="vd-label form-label">Month Registered</label>
-			<select id="filterMonth" class="form-select vd-input vd-filter-select">
-			<option value="">All Months</option>
-			<?php foreach ($months as $key => $label): ?>
-				<option value="<?= $key ?>"><?= $label ?></option>
-			<?php endforeach; ?>
-			</select>
-		</div>
-		<div class="vd-filter-group vd-filter-clear">
-			<button id="clearFilters" class="btn vd-btn-outline">Clear</button>
-		</div>
+			<div class="vd-filter-group">
+				<label class="vd-label form-label">Form Status</label>
+				<select id="filterForm" class="form-select vd-input vd-filter-select">
+					<option value="">All</option>
+					<option value="complete">Complete</option>
+					<option value="incomplete">Incomplete</option>
+				</select>
+			</div>
+			<div class="vd-filter-group">
+				<label class="vd-label form-label">Month Registered</label>
+				<select id="filterMonth" class="form-select vd-input vd-filter-select">
+					<option value="">All Months</option>
+					<?php foreach ($months as $key => $label): ?>
+						<option value="<?= $key ?>"><?= $label ?></option>
+					<?php endforeach; ?>
+				</select>
+			</div>
+			<div class="vd-filter-group vd-filter-clear">
+				<button id="clearFilters" class="btn vd-btn-outline">Clear</button>
+			</div>
 		</div>
 
 		<!-- Table -->
 		<div class="vd-dash-card-body">
-		<?php if (empty($patients)): ?>
-			<div class="vd-empty-state">No patients found.</div>
-		<?php else: ?>
-			<div class="vd-appt-table-wrap">
-			<table class="vd-appt-table w-100" id="patientsTable" data-page-size="15">
-				<thead>
-				<tr>
-					<th>Patient</th>
-					<th>Age</th>
-					<th>Gender</th>
-					<th>Phone</th>
-					<th>Registered</th>
-					<th>Form</th>
-					<th>Action</th>
-				</tr>
-				</thead>
-				<tbody>
-				<?php foreach ($patients as $p):
-					$formComplete = !empty($p['profile_completed_at']);
-					$monthKey     = date('Y-m', strtotime($p['created_at']));
-					$patientId    = $p['patient_id'] ?? $p['id'] ?? null;
-					$profilePage  = $patientId ? '_patient-profie.php?id=' . $patientId : '#';
-				?>
-				<tr
-					data-name="<?= strtolower($p['lastname'] . ' ' . $p['firstname']) ?>"
-					data-email="<?= strtolower($p['email'] ?? '') ?>"
-					data-form="<?= $formComplete ? 'complete' : 'incomplete' ?>"
-					data-month="<?= $monthKey ?>">
-					<td>
-					<div class="vd-appt-name">
-						<?= htmlspecialchars($p['lastname'] . ', ' . $p['firstname']) ?>
+			<?php if (empty($patients)): ?>
+				<div class="vd-empty-state">No patients found.</div>
+			<?php else: ?>
+				<div class="vd-appt-table-wrap">
+					<table class="vd-appt-table w-100" id="patientsTable" data-page-size="15">
+						<thead>
+							<tr>
+								<th>Patient</th>
+								<th>Age</th>
+								<th>Gender</th>
+								<th>Phone</th>
+								<th>Registered</th>
+								<th>Form</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ($patients as $p):
+								$formComplete = !empty($p['profile_completed_at']);
+								$monthKey     = date('Y-m', strtotime($p['created_at']));
+								$patientId    = $p['patient_id'] ?? $p['id'] ?? null;
+								$profilePage  = $patientId ? '_patient-profie.php?id=' . $patientId : '#';
+							?>
+								<tr
+									data-name="<?= strtolower($p['lastname'] . ' ' . $p['firstname']) ?>"
+									data-email="<?= strtolower($p['email'] ?? '') ?>"
+									data-form="<?= $formComplete ? 'complete' : 'incomplete' ?>"
+									data-month="<?= $monthKey ?>">
+									<td>
+										<div class="vd-appt-name">
+											<?= htmlspecialchars($p['lastname'] . ', ' . $p['firstname']) ?>
+										</div>
+										<div class="vd-appt-meta"><?= htmlspecialchars($p['email'] ?? '—') ?></div>
+									</td>
+									<td class="vd-appt-meta"><?= htmlspecialchars($p['age'] ?? '—') ?></td>
+									<td class="vd-appt-meta"><?= htmlspecialchars($p['gender'] ?? '—') ?></td>
+									<td class="vd-appt-meta"><?= htmlspecialchars($p['phone_number'] ?? '—') ?></td>
+									<td class="vd-appt-meta"><?= date('M d, Y', strtotime($p['created_at'])) ?></td>
+									<td>
+										<?php if ($formComplete): ?>
+											<span class="vd-status vd-status-confirmed">Complete</span>
+										<?php else: ?>
+											<span class="vd-status vd-status-pending">Incomplete</span>
+										<?php endif; ?>
+									</td>
+									<td>
+										<div class="dropdown vd-appt-action-menu vd-patient-action-menu">
+											<button type="button" class="vd-appt-action-toggle" id="patientActions-<?= (int)$p['patient_id'] ?>"
+												data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-offset="0,6" aria-expanded="false"
+												aria-label="Actions for <?= htmlspecialchars($p['lastname'] . ', ' . $p['firstname'], ENT_QUOTES) ?>">
+												<span>Actions</span><i class="ti ti-chevron-down vd-appt-action-caret" aria-hidden="true"></i>
+											</button>
+											<div class="dropdown-menu dropdown-menu-end vd-appt-action-dropdown" aria-labelledby="patientActions-<?= (int)$p['patient_id'] ?>">
+												<button type="button" class="dropdown-item vd-appt-menu-item vd-view-profile-btn"
+													data-id="<?= $p['patient_id'] ?>"
+													aria-label="View profile">
+													<i class="ti ti-user" aria-hidden="true"></i><span>View profile</span>
+												</button>
+												<button type="button" class="dropdown-item vd-appt-menu-item vd-view-odontogram-btn"
+													data-id="<?= $p['patient_id'] ?>"
+													aria-label="View dental chart, read-only">
+													<i class="ti ti-dental" aria-hidden="true"></i><span>Dental chart</span>
+												</button>
+												<button type="button" class="dropdown-item vd-appt-menu-item vd-view-transactions-btn"
+													data-id="<?= $p['patient_id'] ?>"
+													aria-label="Transaction history">
+													<i class="ti ti-receipt" aria-hidden="true"></i><span>Transaction history</span>
+												</button>
+												<?php if (empty($p['user_id'])): ?><button type="button" class="dropdown-item vd-appt-menu-item" data-authorize-link="<?= (int)$p['patient_id'] ?>"><i class="ti ti-user-link" aria-hidden="true"></i><span>Authorize account link</span></button><?php endif; ?>
+											</div>
+										</div>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+					<div id="noResults" class="vd-empty-state d-none">
+						No patients match your search or filters.
 					</div>
-					<div class="vd-appt-meta"><?= htmlspecialchars($p['email'] ?? '—') ?></div>
-					</td>
-					<td class="vd-appt-meta"><?= htmlspecialchars($p['age'] ?? '—') ?></td>
-					<td class="vd-appt-meta"><?= htmlspecialchars($p['gender'] ?? '—') ?></td>
-					<td class="vd-appt-meta"><?= htmlspecialchars($p['phone_number'] ?? '—') ?></td>
-					<td class="vd-appt-meta"><?= date('M d, Y', strtotime($p['created_at'])) ?></td>
-					<td>
-					<?php if ($formComplete): ?>
-						<span class="vd-status vd-status-confirmed">Complete</span>
-					<?php else: ?>
-						<span class="vd-status vd-status-pending">Incomplete</span>
-					<?php endif; ?>
-					</td>
-					<td>
-						<div class="vd-action-group vd-patient-actions">
-						<button class="btn vd-btn-outline vd-table-icon-btn vd-view-profile-btn"
-							data-id="<?= $p['patient_id'] ?>"
-							data-bs-toggle="tooltip" data-bs-placement="top"
-							title="View profile" aria-label="View profile">
-							<i class="ti ti-user" aria-hidden="true"></i>
-						</button>
-						<button class="btn vd-btn-outline vd-table-icon-btn vd-view-transactions-btn"
-							data-id="<?= $p['patient_id'] ?>"
-							data-bs-toggle="tooltip" data-bs-placement="top"
-							title="Transaction history" aria-label="Transaction history">
-							<i class="ti ti-receipt" aria-hidden="true"></i>
-						</button>
-						<button class="btn vd-btn-outline vd-table-icon-btn vd-view-odontogram-btn"
-							data-id="<?= $p['patient_id'] ?>"
-							data-bs-toggle="tooltip" data-bs-placement="top"
-							title="Dental chart" aria-label="View dental chart">
-							<i class="ti ti-tooth" aria-hidden="true"></i>
-						</button>
-						<?php if (empty($p['user_id'])): ?><button class="btn vd-btn-outline vd-table-icon-btn" data-authorize-link="<?= (int)$p['patient_id'] ?>" title="Authorize account link" aria-label="Authorize account link"><i class="ti ti-user-link"></i></button><?php endif; ?>
-						</div>
-					</td>
-				</tr>
-				<?php endforeach; ?>
-				</tbody>
-			</table>
-			<div id="noResults" class="vd-empty-state d-none">
-				No patients match your search or filters.
-			</div>
-			</div>
-		<?php endif; ?>
+				</div>
+			<?php endif; ?>
 		</div>
 
 	</div>
@@ -152,78 +156,237 @@ krsort($months); // latest first
 </div>
 
 <script>
-(function () {
-	const searchInput  = document.getElementById('searchInput');
-	const filterForm   = document.getElementById('filterForm');
-	const filterMonth  = document.getElementById('filterMonth');
-	const clearBtn     = document.getElementById('clearFilters');
-	const rows         = document.querySelectorAll('#patientsTable tbody tr');
-	const noResults    = document.getElementById('noResults');
-	const countLabel   = document.getElementById('patientCountLabel');
-	const totalCount   = rows.length;
+	(function() {
+		const searchInput = document.getElementById('searchInput');
+		const filterForm = document.getElementById('filterForm');
+		const filterMonth = document.getElementById('filterMonth');
+		const clearBtn = document.getElementById('clearFilters');
+		const rows = document.querySelectorAll('#patientsTable tbody tr');
+		const noResults = document.getElementById('noResults');
+		const countLabel = document.getElementById('patientCountLabel');
+		const totalCount = rows.length;
 
-	document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
-		const tooltip = bootstrap.Tooltip.getOrCreateInstance(element, { container: 'body' });
-		element.addEventListener('click', () => tooltip.hide());
-	});
-
-	function filterTable() {
-		const search = searchInput.value.toLowerCase().trim();
-		const form   = filterForm.value;
-		const month  = filterMonth.value;
-		let visible  = 0;
-
-		rows.forEach(row => {
-		const matchSearch = !search || row.dataset.name.includes(search) || row.dataset.email.includes(search);
-		const matchForm   = !form   || row.dataset.form   === form;
-		const matchMonth  = !month  || row.dataset.month  === month;
-
-		if (matchSearch && matchForm && matchMonth) {
-			row.style.display = '';
-			visible++;
-		} else {
-			row.style.display = 'none';
-		}
+		// Reuse the appointment menu's portal pattern to avoid clipping in the table.
+		document.querySelectorAll('.vd-patient-action-menu').forEach(menu => {
+			const toggle = menu.querySelector('[data-bs-toggle="dropdown"]');
+			const dropdown = menu.querySelector('.dropdown-menu');
+			const instance = bootstrap.Dropdown.getOrCreateInstance(toggle);
+			let placeholder = null;
+			toggle.addEventListener('show.bs.dropdown', () => {
+				placeholder = document.createComment('patient-action-menu');
+				dropdown.before(placeholder);
+				dropdown.classList.add('vd-appt-action-dropdown-portal');
+				document.body.appendChild(dropdown);
+			});
+			toggle.addEventListener('hidden.bs.dropdown', () => {
+				placeholder?.replaceWith(dropdown);
+				dropdown.classList.remove('vd-appt-action-dropdown-portal');
+				placeholder = null;
+			});
+			// Close before a handler replaces the patient table or opens a dialog.
+			dropdown.addEventListener('click', event => {
+				if (event.target.closest('.dropdown-item')) instance.hide();
+			}, true);
+			// Bootstrap's delegated keyboard lookup cannot find a portalled toggle.
+			dropdown.addEventListener('keydown', event => {
+				if (!['ArrowDown', 'ArrowUp', 'Escape'].includes(event.key)) return;
+				event.preventDefault();
+				event.stopPropagation();
+				if (event.key === 'Escape') {
+					instance.hide();
+					toggle.focus();
+					return;
+				}
+				const items = Array.from(dropdown.querySelectorAll('.dropdown-item:not(:disabled)'));
+				const index = items.indexOf(document.activeElement);
+				const next = index + (event.key === 'ArrowDown' ? 1 : -1);
+				items[Math.max(0, Math.min(items.length - 1, next))]?.focus();
+			});
+			dropdown.addEventListener('focusout', event => {
+				if (!dropdown.contains(event.relatedTarget) && event.relatedTarget !== toggle) instance.hide();
+			});
 		});
 
-		noResults.classList.toggle('d-none', visible > 0);
-		if (countLabel) {
-			countLabel.textContent = `${visible} of ${totalCount} total`;
+		function filterTable() {
+			const search = searchInput.value.toLowerCase().trim();
+			const form = filterForm.value;
+			const month = filterMonth.value;
+			let visible = 0;
+
+			rows.forEach(row => {
+				const matchSearch = !search || row.dataset.name.includes(search) || row.dataset.email.includes(search);
+				const matchForm = !form || row.dataset.form === form;
+				const matchMonth = !month || row.dataset.month === month;
+
+				if (matchSearch && matchForm && matchMonth) {
+					row.style.display = '';
+					visible++;
+				} else {
+					row.style.display = 'none';
+				}
+			});
+
+			noResults.classList.toggle('d-none', visible > 0);
+			if (countLabel) {
+				countLabel.textContent = `${visible} of ${totalCount} total`;
+			}
 		}
-	}
 
-	searchInput.addEventListener('input', filterTable);
-	filterForm.addEventListener('change', filterTable);
-	filterMonth.addEventListener('change', filterTable);
+		searchInput.addEventListener('input', filterTable);
+		filterForm.addEventListener('change', filterTable);
+		filterMonth.addEventListener('change', filterTable);
 
-	document.querySelectorAll('a[data-page]').forEach(link => {
-		link.addEventListener('click', async (e) => {
-			e.preventDefault();
-			const page = link.getAttribute('data-page');
-			if (page) await loadpage(page);
+		document.querySelectorAll('a[data-page]').forEach(link => {
+			link.addEventListener('click', async (e) => {
+				e.preventDefault();
+				const page = link.getAttribute('data-page');
+				if (page) await loadpage(page);
+			});
 		});
-	});
 
-	clearBtn.addEventListener('click', () => {
-		searchInput.value  = '';
-		filterForm.value   = '';
-		filterMonth.value  = '';
-		filterTable();
-	});
+		clearBtn.addEventListener('click', () => {
+			searchInput.value = '';
+			filterForm.value = '';
+			filterMonth.value = '';
+			filterTable();
+		});
 
-	document.querySelectorAll('.vd-view-profile-btn').forEach(btn => {
-		btn.addEventListener('click', async function () {
-			const patientId = this.dataset.id;
-			const dashContent = document.querySelector('.vd-dash-content');
-			LoadingUI.showContent(dashContent, { label: 'Loading patient profile…' });
+		document.querySelectorAll('.vd-view-profile-btn').forEach(btn => {
+			btn.addEventListener('click', async function() {
+				const patientId = this.dataset.id;
+				const dashContent = document.querySelector('.vd-dash-content');
+				LoadingUI.showContent(dashContent, {
+					label: 'Loading patient profile…'
+				});
 
+				try {
+					const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
+					if (!response.ok) throw new Error('Failed to load profile');
+					const html = await response.text();
+					dashContent.innerHTML = html;
+
+					// Re-execute scripts in the loaded partial
+					dashContent.querySelectorAll('script').forEach(oldScript => {
+						const newScript = document.createElement('script');
+						newScript.textContent = oldScript.textContent;
+						document.body.appendChild(newScript);
+						oldScript.remove();
+					});
+
+				} catch (err) {
+					dashContent.innerHTML = '<div class="vd-empty-state">Error loading patient profile.</div>';
+					console.error(err);
+				} finally {
+					LoadingUI.finishContent(dashContent);
+				}
+			});
+		});
+
+		document.querySelectorAll('.vd-view-transactions-btn').forEach(btn => {
+			btn.addEventListener('click', async function() {
+				const patientId = this.dataset.id;
+				const dashContent = document.querySelector('.vd-dash-content');
+				LoadingUI.showContent(dashContent, {
+					label: 'Loading transaction history…'
+				});
+
+				try {
+					const response = await fetch(`partials/_patient-transactions.php?id=${patientId}`);
+					if (!response.ok) throw new Error('Failed to load transaction history');
+					const html = await response.text();
+					dashContent.innerHTML = html;
+
+					// Re-execute scripts in the loaded partial
+					dashContent.querySelectorAll('script').forEach(oldScript => {
+						const newScript = document.createElement('script');
+						newScript.textContent = oldScript.textContent;
+						document.body.appendChild(newScript);
+						oldScript.remove();
+					});
+
+				} catch (err) {
+					dashContent.innerHTML = '<div class="vd-empty-state">Error loading transaction history.</div>';
+					console.error(err);
+				} finally {
+					LoadingUI.finishContent(dashContent);
+				}
+			});
+		});
+
+		document.querySelectorAll('.vd-view-odontogram-btn').forEach(btn => {
+			btn.addEventListener('click', async function() {
+				const dashContent = document.querySelector('.vd-dash-content');
+				LoadingUI.showContent(dashContent, {
+					label: 'Loading dental chart…'
+				});
+				try {
+					const response = await fetch(`partials/_patient-odontogram.php?id=${encodeURIComponent(this.dataset.id)}`);
+					if (!response.ok) throw new Error('Failed to load dental chart');
+					dashContent.innerHTML = await response.text();
+					dashContent.querySelectorAll('script').forEach(oldScript => {
+						const newScript = document.createElement('script');
+						newScript.textContent = oldScript.textContent;
+						document.body.appendChild(newScript);
+						oldScript.remove();
+					});
+				} catch (error) {
+					dashContent.innerHTML = '<div class="vd-empty-state">Error loading dental chart.</div>';
+					console.error(error);
+				} finally {
+					LoadingUI.finishContent(dashContent);
+				}
+			});
+		});
+
+		document.querySelectorAll('[data-authorize-link]').forEach(btn => btn.addEventListener('click', async function() {
+			const response = await window.showActionModal({
+				title: 'Authorize Patient Account Link',
+				kicker: 'Patient record access',
+				message: 'Enter the verified email that may claim this patient record. The authorization will be logged for staff accountability.',
+				confirmText: 'Authorize Email',
+				icon: 'ti-user-link',
+				tone: 'warning',
+				fields: [{
+					name: 'email',
+					label: 'Verified patient email',
+					placeholder: 'patient@example.com',
+					type: 'email',
+					required: true
+				}]
+			});
+			if (!response.confirmed) return;
+			const email = response.values.email;
+			const body = new FormData();
+			body.append('action', 'authorizeAccountLink');
+			body.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
+			body.append('patient_id', this.dataset.authorizeLink);
+			body.append('email', email);
 			try {
-const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
-			if (!response.ok) throw new Error('Failed to load profile');
+				const response = await fetch('../../controllers/patientController.php', {
+					method: 'POST',
+					body
+				});
+				const result = await response.json();
+				if (!result.success) throw new Error(result.message);
+				window.showToast(result.message, true);
+			} catch (error) {
+				window.showToast(error.message || 'Unable to authorize linking.', false);
+			}
+		}));
+
+	})();
+
+	async function loadpage(page) {
+		const dashContent = document.querySelector('.vd-dash-content');
+		LoadingUI.showContent(dashContent, {
+			label: 'Loading content…'
+		});
+		try {
+			const response = await fetch(`partials/${page}`);
+			if (!response.ok) throw new Error('Network response was not ok');
 			const html = await response.text();
 			dashContent.innerHTML = html;
 
-			// Re-execute scripts in the loaded partial
 			dashContent.querySelectorAll('script').forEach(oldScript => {
 				const newScript = document.createElement('script');
 				newScript.textContent = oldScript.textContent;
@@ -231,109 +394,14 @@ const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
 				oldScript.remove();
 			});
 
-			} catch (err) {
-			dashContent.innerHTML = '<div class="vd-empty-state">Error loading patient profile.</div>';
-			console.error(err);
-			} finally {
+			closeSidebar();
+		} catch (error) {
+			if (dashContent) {
+				dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
+			}
+			console.error('Error fetching page:', error);
+		} finally {
 			LoadingUI.finishContent(dashContent);
-			}
-		});
-});
-
-	document.querySelectorAll('.vd-view-transactions-btn').forEach(btn => {
-		btn.addEventListener('click', async function () {
-			const patientId = this.dataset.id;
-			const dashContent = document.querySelector('.vd-dash-content');
-			LoadingUI.showContent(dashContent, { label: 'Loading transaction history…' });
-
-			try {
-				const response = await fetch(`partials/_patient-transactions.php?id=${patientId}`);
-				if (!response.ok) throw new Error('Failed to load transaction history');
-				const html = await response.text();
-				dashContent.innerHTML = html;
-
-				// Re-execute scripts in the loaded partial
-				dashContent.querySelectorAll('script').forEach(oldScript => {
-					const newScript = document.createElement('script');
-					newScript.textContent = oldScript.textContent;
-					document.body.appendChild(newScript);
-					oldScript.remove();
-				});
-
-			} catch (err) {
-				dashContent.innerHTML = '<div class="vd-empty-state">Error loading transaction history.</div>';
-				console.error(err);
-			} finally {
-				LoadingUI.finishContent(dashContent);
-			}
-		});
-	});
-
-	document.querySelectorAll('.vd-view-odontogram-btn').forEach(btn => {
-		btn.addEventListener('click', async function () {
-			const dashContent = document.querySelector('.vd-dash-content');
-			LoadingUI.showContent(dashContent, { label: 'Loading dental chart…' });
-			try {
-				const response = await fetch(`partials/_patient-odontogram.php?id=${encodeURIComponent(this.dataset.id)}`);
-				if (!response.ok) throw new Error('Failed to load dental chart');
-				dashContent.innerHTML = await response.text();
-				dashContent.querySelectorAll('script').forEach(oldScript => {
-					const newScript = document.createElement('script');
-					newScript.textContent = oldScript.textContent;
-					document.body.appendChild(newScript);
-					oldScript.remove();
-				});
-			} catch (error) {
-				dashContent.innerHTML = '<div class="vd-empty-state">Error loading dental chart.</div>';
-				console.error(error);
-			} finally {
-				LoadingUI.finishContent(dashContent);
-			}
-		});
-	});
-
-	document.querySelectorAll('[data-authorize-link]').forEach(btn => btn.addEventListener('click', async function(){
-		const response = await window.showActionModal({
-			title: 'Authorize Patient Account Link',
-			kicker: 'Patient record access',
-			message: 'Enter the verified email that may claim this patient record. The authorization will be logged for staff accountability.',
-			confirmText: 'Authorize Email',
-			icon: 'ti-user-link',
-			tone: 'warning',
-			fields: [{ name: 'email', label: 'Verified patient email', placeholder: 'patient@example.com', type: 'email', required: true }]
-		});
-		if (!response.confirmed) return;
-		const email = response.values.email;
-		const body=new FormData();body.append('action','authorizeAccountLink');body.append('csrf_token',<?= json_encode($_SESSION['csrf_token']) ?>);body.append('patient_id',this.dataset.authorizeLink);body.append('email',email);
-		try{const response=await fetch('../../controllers/patientController.php',{method:'POST',body});const result=await response.json();if(!result.success)throw new Error(result.message);window.showToast(result.message,true);}catch(error){window.showToast(error.message||'Unable to authorize linking.',false);}
-	}));
-
-})();
-
-    async function loadpage(page) {
-        const dashContent = document.querySelector('.vd-dash-content');
-        LoadingUI.showContent(dashContent, { label: 'Loading content…' });
-        try {
-            const response = await fetch(`partials/${page}`);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const html = await response.text();
-            dashContent.innerHTML = html;
-
-            dashContent.querySelectorAll('script').forEach(oldScript => {
-            const newScript = document.createElement('script');
-            newScript.textContent = oldScript.textContent;
-            document.body.appendChild(newScript);
-            oldScript.remove();
-            });
-        
-            closeSidebar();
-            } catch (error) {
-            if (dashContent) {
-                dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
-            }
-            console.error('Error fetching page:', error);
-            } finally {
-            LoadingUI.finishContent(dashContent);
-            }
-        }
+		}
+	}
 </script>
