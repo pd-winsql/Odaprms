@@ -196,7 +196,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <button type="button" class="btn vd-appt-action-toggle" id="rescheduleActions-<?= (int) $request['request_id'] ?>"
                             data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-offset="0,6" aria-expanded="false"
                             aria-label="Open reschedule request actions for <?= htmlspecialchars($patientName ?: 'patient', ENT_QUOTES) ?>">
-                            <i class="ti ti-dots" aria-hidden="true"></i>
                             <span>Actions</span>
                             <i class="ti ti-chevron-down vd-appt-action-caret" aria-hidden="true"></i>
                         </button>
@@ -345,7 +344,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <button type="button" class="btn vd-appt-action-toggle" id="apptActions-<?= (int)$appt['appointment_id'] ?>"
                             data-bs-toggle="dropdown" data-bs-auto-close="true" data-bs-boundary="viewport" data-bs-offset="0,6" aria-expanded="false"
                             aria-label="Open actions for <?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
-                            <i class="ti ti-dots" aria-hidden="true"></i>
                             <span>Actions</span>
                             <i class="ti ti-chevron-down vd-appt-action-caret" aria-hidden="true"></i>
                         </button>
@@ -510,7 +508,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                         <button type="button" class="btn vd-appt-action-toggle" id="pastApptActions-<?= (int)$appt['appointment_id'] ?>"
                             data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-offset="0,6" aria-expanded="false"
                             aria-label="Open actions for <?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>">
-                            <i class="ti ti-dots" aria-hidden="true"></i>
                             <span>Actions</span>
                             <i class="ti ti-chevron-down vd-appt-action-caret" aria-hidden="true"></i>
                         </button>
