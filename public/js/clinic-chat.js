@@ -109,6 +109,9 @@
                 query = search.value.trim(); offset = 0; listVersion++;
                 clearTimeout(debounce); debounce = setTimeout(inbox, 250);
             });
+            search.addEventListener('keydown', event => {
+                if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) event.preventDefault();
+            });
             previous.onclick = () => { offset = Math.max(0, offset - 50); listVersion++; inbox(); };
             next.onclick = () => { offset += 50; listVersion++; inbox(); };
         }
@@ -146,6 +149,13 @@
             if (input.value.trim() && composeBaseMessageId === null) composeBaseMessageId = last;
             if (!input.value.trim()) composeBaseMessageId = null;
             remember(); count(); resizeComposer(); enable();
+        });
+        input.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey
+                || event.isComposing || event.keyCode === 229
+                || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+            event.preventDefault();
+            if (!event.repeat && !send.disabled) form.requestSubmit(send);
         });
         function parsedDate(value) { return new Date(value.replace(' ', 'T')); }
         function messageDay(value) {

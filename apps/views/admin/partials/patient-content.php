@@ -233,6 +233,9 @@ krsort($months); // latest first
 		}
 
 		searchInput.addEventListener('input', filterTable);
+		searchInput.addEventListener('keydown', event => {
+			if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) event.preventDefault();
+		});
 		filterForm.addEventListener('change', filterTable);
 		filterMonth.addEventListener('change', filterTable);
 

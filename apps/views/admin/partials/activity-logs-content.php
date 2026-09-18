@@ -104,6 +104,9 @@ function activityValueSummary(?string $json): string
         empty.classList.toggle('d-none', visible !== 0);
     };
     search.addEventListener('input', apply);
+    search.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) event.preventDefault();
+    });
     [entity, role, date].forEach(control => control.addEventListener('change', apply));
     document.getElementById('clearActivityFilters').addEventListener('click', () => { search.value = ''; entity.value = ''; role.value = ''; date.value = ''; apply(); });
 })();

@@ -806,6 +806,9 @@ function renderServiceRow($service, $assignedCategoryIds) {
     }
 
     [searchInput, categoryFilter, statusFilter].forEach(el => el.addEventListener('input', applyFilters));
+    searchInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) event.preventDefault();
+    });
     applyFilters();
 })();
 </script>

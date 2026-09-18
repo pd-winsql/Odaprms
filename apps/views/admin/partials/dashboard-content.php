@@ -427,7 +427,13 @@ function dashboardBillingPayload(array $entry): string
             note.classList.toggle('d-none', !billing.notes);
             bootstrap.Modal.getOrCreateInstance(document.getElementById('logbookBillingDetailsModal')).show();
         }));
-        document.getElementById('findCheckinAppointment')?.addEventListener('click', async () => {
+        const findAppointment = document.getElementById('findCheckinAppointment');
+        document.getElementById('checkinLookup')?.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' || event.isComposing || event.keyCode === 229) return;
+            event.preventDefault();
+            if (!event.repeat && !findAppointment.disabled) findAppointment.click();
+        });
+        findAppointment?.addEventListener('click', async () => {
             const term = document.getElementById('checkinLookup').value.trim();
             if (term.length < 2) {
                 window.showToast('Enter an appointment code or at least two letters of the patient name.', false);
@@ -437,6 +443,7 @@ function dashboardBillingPayload(array $entry): string
             lookupBody.append('action', 'lookup');
             lookupBody.append('term', term);
             lookupBody.append('csrf_token', csrfToken);
+            findAppointment.disabled = true;
             try {
                 const lookupResponse = await fetch('../../controllers/logbookController.php', {
                     method: 'POST',
@@ -506,6 +513,8 @@ function dashboardBillingPayload(array $entry): string
                 document.querySelector('[data-page="dashboard-content.php"]')?.click();
             } catch (error) {
                 window.showToast(error.message, false);
+            } finally {
+                findAppointment.disabled = false;
             }
         });
 
