@@ -222,12 +222,12 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
                         <label class="vd-booking-service-option">
                             <input type="checkbox" name="service_ids[]" value="<?= (int) $service['service_id'] ?>">
                             <span class="vd-booking-service-card">
-                                <span class="vd-booking-service-media">
+                                <span class="vd-booking-service-media" aria-hidden="true">
                                     <?php $bookingServiceImage = vdServiceImageUrl($service['service_image'] ?? null, '../../../'); ?>
                                     <?php if ($bookingServiceImage !== ''): ?>
-                                        <img src="<?= htmlspecialchars($bookingServiceImage) ?>" alt="" loading="lazy" width="1200" height="900">
+                                        <img src="<?= htmlspecialchars($bookingServiceImage) ?>" alt="" loading="lazy" width="64" height="64">
                                     <?php else: ?>
-                                        <span>Image pending</span>
+                                        <i class="ti ti-photo" aria-hidden="true"></i>
                                     <?php endif; ?>
                                 </span>
                                 <span class="vd-booking-service-copy">

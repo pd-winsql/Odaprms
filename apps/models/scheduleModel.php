@@ -451,10 +451,33 @@ class Schedule {
         }
     }
 
+    public function getDeletionBlockReason($schedule_id): ?string {
+        try {
+            $stmt = $this->conn->prepare("SELECT
+                EXISTS(SELECT 1 FROM appointments WHERE schedule_id = :appointment_schedule) AS has_appointments,
+                EXISTS(SELECT 1 FROM appointment_reschedule_requests
+                    WHERE original_schedule_id = :original_schedule OR target_schedule_id = :target_schedule) AS has_reschedules");
+            $stmt->execute([
+                ':appointment_schedule' => $schedule_id,
+                ':original_schedule' => $schedule_id,
+                ':target_schedule' => $schedule_id,
+            ]);
+            $references = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!empty($references['has_appointments'])) return 'Schedules with appointment records cannot be deleted.';
+            if (!empty($references['has_reschedules'])) return 'Schedules linked to reschedule requests cannot be deleted.';
+            return null;
+        } catch (PDOException $e) {
+            error_log('Schedule deletion reference check: ' . $e->getMessage());
+            return 'Unable to verify schedule records. Please try again.';
+        }
+    }
+
     public function deleteSchedule($schedule_id) {
         try {
+            if ($this->getDeletionBlockReason($schedule_id) !== null) return false;
             $stmt = $this->conn->prepare("DELETE FROM schedules WHERE schedule_id = :schedule_id");
-            return $stmt->execute([':schedule_id' => $schedule_id]);
+            $stmt->execute([':schedule_id' => $schedule_id]);
+            return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log("deleteSchedule error: " . $e->getMessage());
             return false;

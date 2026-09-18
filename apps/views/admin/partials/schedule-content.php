@@ -141,6 +141,9 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             $d      = new DateTime($sched['sched_date']);
                             $isPast = $d < new DateTime('today');
                             $booked = (int) $sched['total_appointments'];
+                            $deletionBlockReason = $booked > 0
+                                ? 'Schedules with existing bookings cannot be deleted.'
+                                : $scheduleModel->getDeletionBlockReason($sched['schedule_id']);
                             $capacity = (int) $sched['max_appointments'];
                             $available = max(0, (int) $sched['available_slots']);
                             $usagePercent = $capacity > 0 ? min(100, (int) round(($booked / $capacity) * 100)) : 0;
@@ -183,9 +186,9 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                                 </button>
                                 <button type="button" class="vd-sched-btn vd-delete-btn"
                                     data-id="<?= $sched['schedule_id'] ?>"
-                                    <?= $booked > 0 ? 'disabled' : '' ?>
-                                    title="<?= $booked > 0 ? 'Schedules with bookings cannot be deleted' : 'Delete schedule' ?>"
-                                    aria-label="<?= $booked > 0 ? 'Cannot delete this schedule because it has bookings' : 'Delete this schedule' ?>">
+                                    <?= $deletionBlockReason !== null ? 'disabled' : '' ?>
+                                    title="<?= htmlspecialchars($deletionBlockReason ?? 'Delete schedule', ENT_QUOTES) ?>"
+                                    aria-label="<?= htmlspecialchars($deletionBlockReason ?? 'Delete this schedule', ENT_QUOTES) ?>">
                                     <i class="ti ti-trash" aria-hidden="true"></i>
                                 </button>
                                 </div>
@@ -572,12 +575,12 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         let shouldRefresh = false;
         try {
             const resp = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: formData });
-            const text = await resp.text();
-            if (text.trim() === 'success') {
-                showToast('Schedule deleted successfully!', true);
+            const result = await resp.json();
+            if (resp.ok && result.success) {
+                showToast(result.message || 'Schedule deleted successfully!', true);
                 shouldRefresh = true;
             } else {
-                showToast('Error: ' + text, false);
+                showToast(result.message || 'Unable to delete schedule. Please try again.', false);
             }
         } catch (err) {
             showToast('Network error. Please try again.', false);

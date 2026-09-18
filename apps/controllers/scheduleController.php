@@ -182,20 +182,25 @@ class ScheduleController {
 
         $booked = $this->schedules->getBookedCountForSchedule($schedule_id);
         if ($booked < 0) {
-            echo 'Unable to verify existing bookings. Please try again.';
+            echo json_encode(['success' => false, 'message' => 'Unable to verify existing bookings. Please try again.']);
             exit;
         }
         if ($booked > 0) {
-            echo 'Schedules with existing bookings cannot be deleted.';
+            echo json_encode(['success' => false, 'message' => 'Schedules with existing bookings cannot be deleted.']);
             exit;
         }
 
+        $blockReason = $this->schedules->getDeletionBlockReason($schedule_id);
+        if ($blockReason !== null) {
+            echo json_encode(['success' => false, 'message' => $blockReason]);
+            exit;
+        }
         $old = $this->schedules->getScheduleById($schedule_id);
         $result = $this->schedules->deleteSchedule($schedule_id);
 
         if ($result) {
             if ($old) $this->auditLog->recordForUser('schedule', (int) $schedule_id, 'schedule_deleted', 'Deleted a clinic schedule.', $old, null, (int) $_SESSION['user_id']);
-            echo 'success';
+            echo json_encode(['success' => true, 'message' => 'Schedule deleted successfully!']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to delete schedule.']);
         }
