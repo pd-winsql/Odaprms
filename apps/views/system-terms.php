@@ -14,7 +14,7 @@
       </div>
       <div class="modal-footer">
         <span class="vd-terms-scroll-status" id="systemTermsScrollStatus" role="status" aria-live="polite">Scroll to the end to continue.</span>
-        <a class="vd-terms-page-link" href="terms.php" target="_blank" rel="noopener">Open full page <span class="visually-hidden">(opens in a new tab)</span></a>
+        <a class="vd-terms-page-link" href="terms.php?from=register" target="_blank" rel="noopener">Open full page <span class="visually-hidden">(opens in a new tab)</span></a>
         <button type="button" class="vd-btn-gold vd-terms-agree-btn" id="systemTermsAgreeButton" disabled>I Agree</button>
       </div>
     </div>

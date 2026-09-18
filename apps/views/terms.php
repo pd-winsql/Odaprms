@@ -1,6 +1,7 @@
 <?php
 require_once '../helpers/siteBranding.php';
 $branding = vdLoadSiteBranding();
+$fromRegistration = ($_GET['from'] ?? '') === 'register';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -29,7 +30,7 @@ $branding = vdLoadSiteBranding();
     <article class="vd-terms-body">
       <?php require __DIR__ . '/system-terms-content.php'; ?>
     </article>
-    <a class="vd-terms-back-link" href="../../index.php">← Back to home</a>
+    <a class="vd-terms-back-link" href="<?= $fromRegistration ? 'register.php' : '../../index.php' ?>">← <?= $fromRegistration ? 'Back to sign up' : 'Back to home' ?></a>
   </main>
 </body>
 </html>
