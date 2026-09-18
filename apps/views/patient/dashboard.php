@@ -146,7 +146,7 @@ $today    = date('l, F j Y');
     <?php include __DIR__ . '/../shared/staff-action-modal.php'; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../../../public/js/action-modal.js?v=3"></script>
+    <script src="../../../public/js/action-modal.js?v=<?= filemtime(__DIR__ . '/../../../public/js/action-modal.js') ?>"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/patient-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/patient-appointment-notifications.js') ?>"></script>
     <script>

@@ -529,6 +529,12 @@ body {
 }
 
 /* Reusable staff confirmation and data-entry dialog. */
+.vd-stacked-action-modal {
+    z-index: var(--vd-action-modal-z);
+}
+.vd-stacked-action-backdrop {
+    z-index: var(--vd-action-backdrop-z);
+}
 .vd-staff-action-modal {
     overflow: hidden;
 }

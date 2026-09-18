@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Action modal lifecycle regression</title>
+    <link rel="stylesheet" href="../public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../public/css/styles.css">
+</head>
+<body>
+    <button id="runTests" type="button">Run modal lifecycle regression</button>
+    <pre id="results" role="status">No database requests are made by this test.</pre>
+    <div class="modal fade" id="testParentModal" tabindex="-1" aria-label="Test parent dialog">
+        <div class="modal-dialog"><div class="modal-content"><div class="modal-body">
+            <button id="testParentButton" type="button">Parent action</button>
+        </div></div></div>
+    </div>
+    <div class="modal fade" id="staffActionModal" tabindex="-1" aria-labelledby="staffActionModalTitle">
+        <div class="modal-dialog"><div class="modal-content"><div class="modal-body">
+            <span id="staffActionModalIcon"></span>
+            <div id="staffActionModalKicker"></div>
+            <h2 id="staffActionModalTitle"></h2>
+            <p id="staffActionModalMessage"></p>
+            <div id="staffActionModalDetails"></div>
+            <div id="staffActionModalFields"></div>
+            <div id="staffActionModalError"></div>
+            <button id="staffActionModalCancel" type="button" data-bs-dismiss="modal">Cancel</button>
+            <button id="staffActionModalConfirm" type="button">Confirm</button>
+        </div></div></div>
+    </div>
+    <script src="../public/js/bootstrap.bundle.min.js"></script>
+    <script src="../public/js/action-modal.js"></script>
+    <script>
+        const results = document.getElementById('results');
+        const parent = document.getElementById('testParentModal');
+        const action = document.getElementById('staffActionModal');
+        const parentInstance = bootstrap.Modal.getOrCreateInstance(parent);
+        const eventOnce = (element, event) => new Promise(resolve => element.addEventListener(event, resolve, { once: true }));
+        const assert = (condition, message) => {
+            if (!condition) throw new Error(message);
+            results.textContent += `PASS: ${message}\n`;
+        };
+        const openAction = async () => {
+            const shown = eventOnce(action, 'shown.bs.modal');
+            const outcome = window.showActionModal({ title: 'Test-only confirmation' });
+            await shown;
+            return { outcome };
+        };
+        document.getElementById('runTests').addEventListener('click', async function () {
+            this.disabled = true;
+            results.textContent = '';
+            try {
+                for (const decision of ['Confirm', 'Cancel']) {
+                    const parentShown = eventOnce(parent, 'shown.bs.modal');
+                    parentInstance.show();
+                    await parentShown;
+                    document.getElementById('testParentButton').focus();
+                    const nested = await openAction();
+                    const backdrop = document.querySelector('.vd-stacked-action-backdrop');
+                    assert(parent.inert, `${decision}: parent is non-interactive`);
+                    assert(backdrop && Number(getComputedStyle(backdrop).zIndex) > Number(getComputedStyle(parent).zIndex), `${decision}: backdrop darkens parent`);
+                    assert(Number(getComputedStyle(action).zIndex) > Number(getComputedStyle(backdrop).zIndex), `${decision}: confirmation remains above backdrop`);
+                    document.getElementById(`staffActionModal${decision}`).click();
+                    const outcome = await nested.outcome;
+                    assert(outcome.confirmed === (decision === 'Confirm'), `${decision}: expected outcome`);
+                    assert(!backdrop.classList.contains('vd-stacked-action-backdrop') && !backdrop.style.getPropertyValue('--vd-action-backdrop-z'), `${decision}: detached backdrop is reset`);
+                    assert(!parent.inert && parent.contains(document.activeElement), `${decision}: parent interaction and focus restored`);
+                    const parentHidden = eventOnce(parent, 'hidden.bs.modal');
+                    parentInstance.hide();
+                    await parentHidden;
+                    const standalone = await openAction();
+                    const reusedBackdrop = document.querySelector('.modal-backdrop');
+                    assert(reusedBackdrop === backdrop, `${decision}: Bootstrap reuses the same backdrop node`);
+                    assert(Number(getComputedStyle(action).zIndex) > Number(getComputedStyle(reusedBackdrop).zIndex) && !action.inert, `${decision}: next standalone prompt remains interactive above backdrop`);
+                    document.getElementById('staffActionModalCancel').click();
+                    await standalone.outcome;
+                    assert(document.querySelectorAll('.modal-backdrop').length === 0, `${decision}: all backdrops cleaned up`);
+                }
+                results.textContent += 'ALL TESTS PASSED\n';
+            } catch (error) {
+                results.textContent += `FAIL: ${error.message}\n`;
+            } finally {
+                this.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

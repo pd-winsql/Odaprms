@@ -165,7 +165,7 @@ $today = date('l, F j Y');
     <?php include __DIR__ . '/../shared/staff-action-modal.php'; ?>
 
     <script src="../../../public/js/bootstrap.bundle.min.js"></script>
-    <script src="../../../public/js/action-modal.js?v=3"></script>
+    <script src="../../../public/js/action-modal.js?v=<?= filemtime(__DIR__ . '/../../../public/js/action-modal.js') ?>"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/dashboard-tables.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-tables.js') ?>"></script>
     <script src="../../../public/js/odontogram.js?v=<?= filemtime(__DIR__ . '/../../../public/js/odontogram.js') ?>"></script>

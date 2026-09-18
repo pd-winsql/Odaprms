@@ -2,6 +2,56 @@
     'use strict';
 
     let pendingResolution = null;
+    let releaseRestoredFocus = null;
+    let actionBackdrop = null;
+
+    function resetStacking(modal) {
+        modal.classList.remove('vd-stacked-action-modal');
+        modal.style.removeProperty('--vd-action-modal-z');
+        if (actionBackdrop) {
+            // Bootstrap detaches but reuses this node on the next opening.
+            actionBackdrop.classList.remove('vd-stacked-action-backdrop');
+            actionBackdrop.style.removeProperty('--vd-action-backdrop-z');
+        }
+    }
+
+    function restoreParentFocus(parent, trigger) {
+        if (!parent.isConnected || !parent.classList.contains('show')) return;
+        const focusableElements = () => Array.from(parent.querySelectorAll(
+            'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )).filter(element => !element.disabled && !element.closest('[inert]') && element.getClientRects().length);
+        const focusInside = () => {
+            const target = trigger?.isConnected && parent.contains(trigger) && !trigger.disabled
+                ? trigger : (focusableElements()[0] || parent);
+            target.focus({ preventScroll: true });
+        };
+        const onFocus = event => {
+            if (!parent.contains(event.target)) focusInside();
+        };
+        const onKeydown = event => {
+            if (event.key !== 'Tab') return;
+            const elements = focusableElements();
+            const first = elements[0] || parent;
+            const last = elements[elements.length - 1] || parent;
+            if ((event.shiftKey && document.activeElement === first)
+                || (!event.shiftKey && document.activeElement === last)
+                || document.activeElement === parent) {
+                event.preventDefault();
+                (event.shiftKey ? last : first).focus({ preventScroll: true });
+            }
+        };
+        const release = () => {
+            document.removeEventListener('focusin', onFocus);
+            document.removeEventListener('keydown', onKeydown);
+            parent.removeEventListener('hide.bs.modal', release);
+            if (releaseRestoredFocus === release) releaseRestoredFocus = null;
+        };
+        document.addEventListener('focusin', onFocus);
+        document.addEventListener('keydown', onKeydown);
+        parent.addEventListener('hide.bs.modal', release, { once: true });
+        releaseRestoredFocus = release;
+        focusInside();
+    }
 
     function getElements() {
         const modal = document.getElementById('staffActionModal');
@@ -110,6 +160,23 @@
         const elements = getElements();
         if (!elements) return Promise.resolve({ confirmed: false, values: {} });
         if (pendingResolution) finish({ confirmed: false, values: {} });
+        if (releaseRestoredFocus) releaseRestoredFocus();
+        resetStacking(elements.modal);
+
+        const trigger = document.activeElement;
+        const parents = Array.from(document.querySelectorAll('.modal.show')).filter(modal => modal !== elements.modal);
+        const parentState = parents.map(modal => ({
+            modal, inert: modal.inert, ariaModal: modal.getAttribute('aria-modal'),
+            ariaHidden: modal.getAttribute('aria-hidden')
+        }));
+        const parent = parents[parents.length - 1];
+        const backdropsBefore = new Set(document.querySelectorAll('.modal-backdrop'));
+        let result = { confirmed: false, values: {} };
+        if (parent) {
+            const topZ = Math.max(...parents.map(modal => Number.parseInt(getComputedStyle(modal).zIndex, 10) || 1055));
+            elements.modal.classList.add('vd-stacked-action-modal');
+            elements.modal.style.setProperty('--vd-action-modal-z', String(topZ + 20));
+        }
 
         const tone = ['info', 'warning', 'danger', 'success'].includes(options.tone) ? options.tone : 'info';
         elements.title.textContent = options.title || 'Confirm Action';
@@ -155,23 +222,46 @@
                 values[input.name] = value;
             }
             elements.confirm.removeEventListener('click', confirmHandler);
+            result = { confirmed: true, values };
             elements.instance.hide();
-            finish({ confirmed: true, values });
         };
 
         elements.confirm.addEventListener('click', confirmHandler);
         elements.modal.addEventListener('hidden.bs.modal', () => {
             elements.confirm.removeEventListener('click', confirmHandler);
-            finish({ confirmed: false, values: {} });
+            parentState.forEach(state => {
+                state.modal.inert = state.inert;
+                if (!state.modal.classList.contains('show')) return;
+                for (const [attribute, value] of [['aria-modal', state.ariaModal], ['aria-hidden', state.ariaHidden]]) {
+                    if (value === null) state.modal.removeAttribute(attribute);
+                    else state.modal.setAttribute(attribute, value);
+                }
+            });
+            resetStacking(elements.modal);
+            if (parents.some(modal => modal.isConnected && modal.classList.contains('show'))) {
+                document.body.classList.add('modal-open');
+                restoreParentFocus(parent, trigger);
+            }
+            finish(result);
         }, { once: true });
 
         return new Promise((resolve) => {
             pendingResolution = resolve;
-            elements.instance.show();
             elements.modal.addEventListener('shown.bs.modal', () => {
+                parentState.forEach(state => {
+                    state.modal.inert = true;
+                    state.modal.removeAttribute('aria-modal');
+                    state.modal.setAttribute('aria-hidden', 'true');
+                });
                 const firstInput = elements.fields.querySelector('[data-action-field]');
                 (firstInput || elements.confirm).focus();
             }, { once: true });
+            elements.instance.show();
+            actionBackdrop = Array.from(document.querySelectorAll('.modal-backdrop')).find(element => !backdropsBefore.has(element)) || null;
+            if (parent && actionBackdrop) {
+                actionBackdrop.classList.add('vd-stacked-action-backdrop');
+                actionBackdrop.style.setProperty('--vd-action-backdrop-z', String(Number(elements.modal.style.getPropertyValue('--vd-action-modal-z')) - 10));
+            }
         });
     };
 })();

@@ -1363,7 +1363,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 ? 'Confirm that this payment appears in the clinic’s GCash account. The appointment will be confirmed and receive a check-in code.'
                 : 'The patient will see the reason and receive more time to submit a replacement receipt.',
             confirmText: approving ? 'Approve Payment' : 'Reject Payment',
-            icon: approving ? 'ti-receipt-check' : 'ti-receipt-off',
+            icon: approving ? 'ti-credit-card' : 'ti-receipt-off',
             tone: approving ? 'success' : 'danger',
             fields: approving ? [] : [{ name: 'reason', label: 'Reason shown to the patient', multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255 }]
         });
