@@ -6,10 +6,6 @@ require_once '../../config/mailer.php';
 header('Content-Type: application/json');
 session_start();
 
-error_log(print_r($_POST, true));
-$action = $_POST['action'] ?? '';
-error_log("Action received: " . $action);
-
 $db   = new Database();
 $conn = $db->connect();
 $userModel = new User($conn);
