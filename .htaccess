@@ -1,0 +1,11 @@
+# Apache 2.4: never expose directory contents or negotiate private filenames.
+Options -Indexes -MultiViews
+
+# Private directories remain readable by PHP, but not directly over HTTP.
+RewriteEngine On
+RewriteRule (^|/)(?:\.git|tests|database|storage|backups?)(?:/|$) - [F,L,NC]
+
+# Protect secrets, database exports, editor copies, and common backup names.
+<FilesMatch "(?i)(^\.env.*$|^\.git(?:ignore|attributes|modules)?$|\.(?:sql|sqlite|sqlite3|db)(?:\.(?:gz|bz2|xz|zip))?$|\.(?:bak|backup|old|orig|save|swp|swo)$|~$|(?:^|[._-])backup(?:[._-].*)?$)">
+    Require all denied
+</FilesMatch>
