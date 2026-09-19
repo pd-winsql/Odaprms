@@ -65,6 +65,7 @@ class ScheduleController {
 
     public function available($clinic_id) {
         header('Content-Type: application/json');
+        header('Cache-Control: no-store, max-age=0');
         $leadDays = BookingPolicy::minimumLeadDays($this->conn);
         $minimumDate = BookingPolicy::earliestBookableDate($leadDays);
         $data = $this->schedules->getAvailableSchedulesByClinic($clinic_id, $minimumDate);

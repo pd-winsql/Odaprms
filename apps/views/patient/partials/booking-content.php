@@ -160,8 +160,9 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
             <span class="vd-topbar-date" id="bookingClinicLabel"></span>
         </header>
         <div class="vd-booking-arrival-policy"><i class="ti ti-user-clock" aria-hidden="true"></i><span><strong>Arrive by the opening time or earlier.</strong> Patients are served first come, first served during the clinic window.</span></div>
+        <div class="alert alert-warning d-none mb-3" id="bookingScheduleStatus" role="status" aria-live="polite"></div>
         <div class="vd-booking-schedule-grid" id="bookingScheduleGrid"></div>
-        <div class="vd-empty-state d-none" id="bookingScheduleEmpty">No schedules are available for this clinic on or after <?= htmlspecialchars($earliestBookableLabel) ?>.</div>
+        <div class="vd-empty-state d-none" id="bookingScheduleEmpty" role="status" aria-live="polite">No schedules are available for this clinic on or after <?= htmlspecialchars($earliestBookableLabel) ?>.</div>
     </section>
 
     <section class="vd-booking-step" id="bookingStepPanel2" data-booking-step="2" data-step-title="Services and review" hidden>
@@ -340,6 +341,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     const bookingStepButtons = Array.from(document.querySelectorAll('[data-booking-step-target]'));
     const grid = document.getElementById('bookingScheduleGrid');
     const empty = document.getElementById('bookingScheduleEmpty');
+    const scheduleStatus = document.getElementById('bookingScheduleStatus');
     const clinicInput = document.getElementById('dashboardClinicInput');
     const scheduleInput = document.getElementById('dashboardScheduleInput');
     const clinicLabel = document.getElementById('bookingClinicLabel');
@@ -370,6 +372,8 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     let furthestStep = 0;
     let selectedSchedule = null;
     let isSubmitting = false;
+    let scheduleRefreshSequence = 0;
+    const emptyScheduleMessage = empty.textContent;
 
     confirmationModalElement.addEventListener('hide.bs.modal', event => {
         if (isSubmitting) event.preventDefault();
@@ -441,6 +445,10 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         submitButton.hidden = currentStep !== bookingSteps.length - 1;
         updateActionSummary();
 
+        if (currentStep === 1) {
+            void refreshSchedulesForActiveClinic();
+        }
+
         if (focusHeading) {
             const heading = bookingSteps[currentStep].querySelector('h2');
             if (heading) {
@@ -487,7 +495,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         updateActionSummary();
     }
 
-    function renderSchedules(button) {
+    function renderSchedules(button, preferredScheduleId = '') {
         const clinicId = button.dataset.clinicId;
         const schedules = schedulesByClinic[clinicId] || [];
         clinicButtons.forEach(item => {
@@ -500,6 +508,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         scheduleInput.value = '';
         selectedSchedule = null;
         selectedDate.textContent = '';
+        empty.textContent = emptyScheduleMessage;
         furthestStep = Math.min(furthestStep, 1);
         empty.classList.toggle('d-none', schedules.length > 0);
         grid.classList.toggle('d-none', schedules.length === 0);
@@ -527,8 +536,63 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
                 <span class="vd-booking-schedule-check" aria-hidden="true"><i class="ti ti-check"></i></span>`;
             if (!isFull) card.addEventListener('click', () => chooseSchedule(card, clinicId, schedule));
             grid.appendChild(card);
+            if (!isFull && String(schedule.schedule_id) === String(preferredScheduleId)) {
+                chooseSchedule(card, clinicId, schedule);
+            }
         });
         updateActionSummary();
+    }
+
+    async function refreshSchedulesForActiveClinic() {
+        const button = clinicButtons.find(item => item.classList.contains('active'));
+        if (!button) return;
+
+        const clinicId = button.dataset.clinicId;
+        const preferredScheduleId = scheduleInput.value;
+        const refreshSequence = ++scheduleRefreshSequence;
+        nextButton.disabled = true;
+        grid.setAttribute('aria-busy', 'true');
+        grid.classList.add('d-none');
+        scheduleStatus.classList.add('d-none');
+        scheduleStatus.textContent = '';
+        empty.textContent = 'Refreshing available schedules…';
+        empty.classList.remove('d-none');
+
+        try {
+            const response = await fetch(
+                '../../controllers/scheduleController.php?action=available&clinic_id=' + encodeURIComponent(clinicId),
+                { cache: 'no-store', headers: { Accept: 'application/json' } }
+            );
+            if (!response.ok) throw new Error('Schedule request failed.');
+
+            const responseBody = await response.text();
+            let schedules;
+            try {
+                schedules = JSON.parse(responseBody);
+            } catch (parseError) {
+                console.error('Unexpected schedule response:', responseBody, parseError);
+                throw new Error('Schedule response could not be read.');
+            }
+            if (!Array.isArray(schedules)) throw new Error('Invalid schedule response.');
+            if (refreshSequence !== scheduleRefreshSequence || currentStep !== 1) return;
+
+            schedulesByClinic[clinicId] = schedules;
+            renderSchedules(button, preferredScheduleId);
+            if (preferredScheduleId && !scheduleInput.value) {
+                scheduleStatus.textContent = 'Your previous schedule is no longer available. Please choose another.';
+                scheduleStatus.classList.remove('d-none');
+            }
+        } catch (error) {
+            if (refreshSequence !== scheduleRefreshSequence || currentStep !== 1) return;
+            console.error('Unable to refresh schedules:', error);
+            renderSchedules(button, preferredScheduleId);
+            scheduleStatus.textContent = 'Unable to refresh right now. Showing the availability loaded when this page opened.';
+            scheduleStatus.classList.remove('d-none');
+        } finally {
+            if (refreshSequence === scheduleRefreshSequence) {
+                grid.removeAttribute('aria-busy');
+            }
+        }
     }
 
     clinicButtons.forEach(button => button.addEventListener('click', () => {
