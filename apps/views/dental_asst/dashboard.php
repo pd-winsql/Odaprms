@@ -2,6 +2,7 @@
 session_start();
 require_once '../../../config/conn.php';
 require_once '../../models/appointmentModel.php';
+require_once '../../models/depositModel.php';
 require_once '../../models/clinicModel.php';
 require_once '../../helpers/siteBranding.php';
 
@@ -29,11 +30,13 @@ $db   = new Database();
 $conn = $db->connect();
 
 $appointmentModel = new Appointment($conn);
+$depositModel     = new DepositModel($conn);
 $clinicModel      = new Clinic($conn);
 
 $upcoming = $appointmentModel->getAllUpcomingWithStatus();
 $latestAppointmentId = $appointmentModel->getLatestAppointmentId();
 $depositFeedVersion = $appointmentModel->getDepositFeedVersion();
+$latestDepositSubmission = $depositModel->getLatestSubmissionEvent();
 $staffOperationsFeedVersion = $appointmentModel->getStaffOperationsFeedVersion();
 $clinics  = $clinicModel->getAllClinics();
 $branding = vdLoadSiteBranding($conn);
@@ -280,6 +283,7 @@ $today = date('l, F j Y');
             userId: <?= json_encode((string) $_SESSION['user_id']) ?>,
             initialAppointmentId: lastKnownAppointmentId,
             initialDepositVersion: lastKnownDepositVersion,
+            initialDepositSubmissionId: <?= json_encode((string) ($latestDepositSubmission['id'] ?? '')) ?>,
             buttonId: 'staffNotificationButton',
             panelId: 'staffNotificationPanel',
             listId: 'staffNotificationList',
@@ -290,6 +294,9 @@ $today = date('l, F j Y');
             onNavigate(notification) {
                 if (notification.type === 'appointment_created') {
                     sessionStorage.setItem('venturaAppointmentStatusFilter', 'Pending Review');
+                } else if (notification.type === 'deposit_submitted') {
+                    sessionStorage.setItem('venturaAppointmentView', 'upcoming');
+                    sessionStorage.setItem('venturaAppointmentStatusFilter', 'Payment Under Review');
                 }
                 document.querySelector(`.vd-nav-item[data-page="${notification.destination}"]`)?.click();
             }
@@ -435,6 +442,7 @@ $today = date('l, F j Y');
                 appointmentNotificationCenter?.observe({
                     appointmentId: latestId,
                     depositVersion,
+                    depositSubmission: result.latest_deposit_submission,
                     rescheduleEvents: result.reschedule_events
                 });
                 const hasNewAppointment = latestId > lastKnownAppointmentId;

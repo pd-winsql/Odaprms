@@ -1269,6 +1269,8 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     const toggleBtns = document.querySelectorAll('.vd-toggle-btn');
     const upcomingView = document.getElementById('upcomingView');
     const pastView = document.getElementById('pastView');
+    const requestedAppointmentView = sessionStorage.getItem('venturaAppointmentView');
+    sessionStorage.removeItem('venturaAppointmentView');
     if (toggleBtns && toggleBtns.length) {
         toggleBtns.forEach(btn => {
             btn.addEventListener('click', function () {
@@ -1286,7 +1288,11 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         });
     }
 
-    if (requestedStatusFilter && !document.querySelector(`#upcomingApptTable tr[data-status="${CSS.escape(requestedStatusFilter)}"]`)
+    if (requestedAppointmentView === 'upcoming' || requestedAppointmentView === 'past') {
+        document.querySelector(`.vd-toggle-btn[data-view="${requestedAppointmentView}"]`)?.click();
+    }
+
+    if (!requestedAppointmentView && requestedStatusFilter && !document.querySelector(`#upcomingApptTable tr[data-status="${CSS.escape(requestedStatusFilter)}"]`)
         && document.querySelector(`#pastApptTable tr[data-status="${CSS.escape(requestedStatusFilter)}"]`)) {
         document.querySelector('[data-view="past"]')?.click();
     }

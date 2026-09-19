@@ -14,13 +14,15 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 class AppointmentController {
     private $appointmentModel;
+    private $depositModel;
     private $patientModel;
     private $rescheduleModel;
 
     public function __construct() {
         $db = new Database();
         $conn = $db->connect();
-        (new DepositModel($conn))->expireUnpaidAppointments();
+        $this->depositModel = new DepositModel($conn);
+        $this->depositModel->expireUnpaidAppointments();
         $this->appointmentModel = new Appointment($conn);
         $this->patientModel = new Patient($conn);
         $this->rescheduleModel = new RescheduleModel($conn);
@@ -352,6 +354,7 @@ class AppointmentController {
             'success' => true,
             'latest_appointment_id' => $this->appointmentModel->getLatestAppointmentId(),
             'deposit_feed_version' => $this->appointmentModel->getDepositFeedVersion(),
+            'latest_deposit_submission' => $this->depositModel->getLatestSubmissionEvent(),
             'staff_operations_feed_version' => $this->appointmentModel->getStaffOperationsFeedVersion(),
             'reschedule_events' => $this->rescheduleModel->getStaffNotificationEvents(),
         ]);

@@ -6113,6 +6113,11 @@ button.vd-stat-card {
     z-index: 1080;
 }
 
+/* A single action does not need the full multi-action menu width. */
+.vd-appt-action-dropdown:has(> .vd-action-group > .vd-appt-menu-item:only-child) {
+    min-width: 180px;
+}
+
 .vd-appt-action-dropdown .vd-action-group {
     align-items: stretch;
     display: flex;

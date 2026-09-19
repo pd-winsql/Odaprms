@@ -288,6 +288,36 @@ class DepositModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getLatestSubmissionEvent(): ?array {
+        try {
+            $stmt = $this->conn->query("
+                SELECT d.deposit_id, d.appointment_id, d.submitted_at,
+                       p.firstname, p.lastname
+                FROM appointment_deposits d
+                JOIN appointments a ON a.appointment_id = d.appointment_id
+                JOIN patients p ON p.patient_id = a.patient_id
+                WHERE d.status = 'Under Review'
+                  AND a.status = 'Payment Under Review'
+                  AND d.submitted_at IS NOT NULL
+                ORDER BY d.submitted_at DESC, d.deposit_id DESC
+                LIMIT 1
+            ");
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return null;
+
+            $submittedAt = (string) $row['submitted_at'];
+            return [
+                'id' => 'deposit:' . (int) $row['deposit_id'] . ':' . str_replace(['-', ':', ' '], '', $submittedAt),
+                'appointment_id' => (int) $row['appointment_id'],
+                'patient_name' => trim((string) $row['firstname'] . ' ' . (string) $row['lastname']),
+                'created_at' => $submittedAt,
+            ];
+        } catch (PDOException $e) {
+            error_log('getLatestSubmissionEvent error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     public function getAllRecords(): array {
         $stmt = $this->conn->query("
             SELECT

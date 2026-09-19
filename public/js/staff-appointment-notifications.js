@@ -9,9 +9,9 @@
             destination: 'appointment-content.php',
             icon: 'ti-calendar-plus'
         },
-        deposit_updated: {
-            message: 'A deposit record was updated.',
-            destination: 'payment-review-content.php',
+        deposit_submitted: {
+            message: 'A patient submitted a deposit for review.',
+            destination: 'appointment-content.php',
             icon: 'ti-receipt'
         },
         reschedule_requested: {
@@ -76,7 +76,8 @@
         const storageKey = STORAGE_PREFIX + String(config.userId);
         const initialCursors = {
             appointmentId: Math.max(0, Number(config.initialAppointmentId) || 0),
-            depositVersion: String(config.initialDepositVersion || '0:0:0')
+            depositVersion: String(config.initialDepositVersion || '0:0:0'),
+            depositSubmissionId: String(config.initialDepositSubmissionId || '')
         };
 
         function defaultState() {
@@ -101,7 +102,8 @@
             return {
                 cursors: {
                     appointmentId: Math.max(0, Number(stored.cursors?.appointmentId) || 0),
-                    depositVersion: String(stored.cursors?.depositVersion || initialCursors.depositVersion)
+                    depositVersion: String(stored.cursors?.depositVersion || initialCursors.depositVersion),
+                    depositSubmissionId: String(stored.cursors?.depositSubmissionId || initialCursors.depositSubmissionId)
                 },
                 notifications
             };
@@ -219,15 +221,28 @@
             const depositVersion = String(feed.depositVersion || '0:0:0');
             const previousAppointmentId = state.cursors.appointmentId;
             const previousDepositVersion = state.cursors.depositVersion;
+            const previousDepositSubmissionId = state.cursors.depositSubmissionId;
             const hasNewAppointment = appointmentId > previousAppointmentId;
             const hasDepositChange = depositVersion !== previousDepositVersion;
+            const depositSubmission = feed.depositSubmission && typeof feed.depositSubmission === 'object'
+                ? feed.depositSubmission
+                : null;
+            const depositSubmissionId = String(depositSubmission?.id || '');
+            const hasDepositSubmission = depositSubmissionId !== ''
+                && depositSubmissionId !== previousDepositSubmissionId;
             const rescheduleEvents = Array.isArray(feed.rescheduleEvents) ? feed.rescheduleEvents : [];
 
             if (hasNewAppointment) {
                 addNotification('appointment_created', appointmentId, { appointmentId });
             }
-            if (hasDepositChange) {
-                addNotification('deposit_updated', depositVersion);
+            if (hasDepositSubmission) {
+                addNotification('deposit_submitted', depositSubmissionId, {
+                    message: depositSubmission.patient_name
+                        ? `${depositSubmission.patient_name} submitted a deposit for review.`
+                        : undefined,
+                    appointmentId: depositSubmission.appointment_id,
+                    createdAt: depositSubmission.created_at
+                });
             }
             rescheduleEvents.forEach(event => {
                 if (!event?.id || !NOTIFICATION_TYPES[event.type]) return;
@@ -243,10 +258,11 @@
             // the new baseline instead of generating a misleading notification.
             state.cursors.appointmentId = appointmentId;
             state.cursors.depositVersion = depositVersion;
+            state.cursors.depositSubmissionId = depositSubmissionId;
             saveState();
             render();
 
-            return { hasNewAppointment, hasDepositChange };
+            return { hasNewAppointment, hasDepositChange, hasDepositSubmission };
         }
 
         button.addEventListener('click', () => {
