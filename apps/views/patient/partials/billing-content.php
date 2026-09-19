@@ -174,8 +174,10 @@ function depositStatusClass($status) {
                                             </div>
                                         </div>
                                         <p class="vd-receipt-review-note">Review these details before submitting. You may correct anything that was read incorrectly.</p>
-                                        <div class="alert alert-danger d-none depositError" role="alert" aria-live="assertive"></div>
-                                        <button type="submit" class="btn vd-btn-gold w-100">Submit for Verification</button>
+                                        <div class="vd-receipt-submit-group">
+                                            <div class="alert alert-danger d-none depositError" role="alert" aria-live="assertive"></div>
+                                            <button type="submit" class="btn vd-btn-gold w-100">Submit for Verification</button>
+                                        </div>
                                     </div>
                                 </div>
                         </form>

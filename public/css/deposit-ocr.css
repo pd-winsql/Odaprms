@@ -171,6 +171,11 @@
     line-height: 1.5;
 }
 
+.vd-receipt-submit-group {
+    display: grid;
+    gap: 12px;
+}
+
 @keyframes vdOcrPulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(166, 124, 36, 0.16); }
     50% { box-shadow: 0 0 0 5px rgba(166, 124, 36, 0); }

@@ -213,8 +213,10 @@ $today    = date('l, F j Y');
             dashTitle.textContent = getPageTitle(page);
         }
 
-        async function loadPage(page) {
-        LoadingUI.showContent(dashContent, { label: 'Loading dashboard…', page });
+        async function loadPage(page, options = {}) {
+        const silent = options.silent === true;
+        let loaded = false;
+        if (!silent) LoadingUI.showContent(dashContent, { label: 'Loading dashboard…', page });
         try {
             const response = await fetch(`partials/${page}`, { cache: 'no-store' });
             if (!response.ok) throw new Error('Failed to load');
@@ -228,14 +230,41 @@ $today    = date('l, F j Y');
             oldScript.remove();
             });
 
-            closeSidebar();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (!silent) {
+                closeSidebar();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            loaded = true;
         } catch (err) {
-            dashContent.innerHTML = '<div class="vd-empty-state">Error loading content.</div>';
+            if (!silent) dashContent.innerHTML = '<div class="vd-empty-state">Error loading content.</div>';
             console.error(err);
         } finally {
-            LoadingUI.finishContent(dashContent);
+            if (!silent) LoadingUI.finishContent(dashContent);
         }
+        return loaded;
+        }
+
+        const appointmentAutoRefreshPages = new Set([
+            'home-content.php',
+            'billing-content.php',
+            'history-content.php'
+        ]);
+        const pendingAppointmentRefreshPages = new Set();
+        let appointmentPageRefreshInFlight = false;
+
+        async function refreshCurrentAppointmentPage() {
+            if (appointmentPageRefreshInFlight || document.hidden || document.querySelector('.modal.show')) return;
+            const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
+            if (!appointmentAutoRefreshPages.has(currentPage) || !pendingAppointmentRefreshPages.has(currentPage)) return;
+
+            appointmentPageRefreshInFlight = true;
+            try {
+                if (await loadPage(currentPage, { silent: true })) {
+                    pendingAppointmentRefreshPages.delete(currentPage);
+                }
+            } finally {
+                appointmentPageRefreshInFlight = false;
+            }
         }
 
         navItems.forEach(item => {
@@ -254,7 +283,7 @@ $today    = date('l, F j Y');
 
             window.location.hash = page;
             setDashboardTitle(page);
-            await loadPage(page);
+            if (await loadPage(page)) pendingAppointmentRefreshPages.delete(page);
         });
         });
 
@@ -271,7 +300,18 @@ $today    = date('l, F j Y');
             dotId: 'patientNotificationDot',
             onNavigate(destination) {
                 document.querySelector(`.vd-nav-item[data-page="${destination}"]`)?.click();
+            },
+            onStatusChange(destinations) {
+                destinations
+                    .filter(destination => appointmentAutoRefreshPages.has(destination))
+                    .forEach(destination => pendingAppointmentRefreshPages.add(destination));
+                void refreshCurrentAppointmentPage();
             }
+        });
+
+        document.addEventListener('hidden.bs.modal', () => void refreshCurrentAppointmentPage());
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) void refreshCurrentAppointmentPage();
         });
 
         // Restore last page on reload
@@ -283,7 +323,7 @@ $today    = date('l, F j Y');
             navItems.forEach(i => i.classList.remove('active'));
             matchingNav.classList.add('active');
             setDashboardTitle(hash);
-            await loadPage(hash);
+            if (await loadPage(hash)) pendingAppointmentRefreshPages.delete(hash);
             }
         }
         });

@@ -3,6 +3,11 @@
 
     const STORAGE_PREFIX = 'vdPatientAppointmentNotifications:v1:';
     const MAX_NOTIFICATIONS = 12;
+    const APPOINTMENT_CONTENT_DESTINATIONS = [
+        'home-content.php',
+        'billing-content.php',
+        'history-content.php'
+    ];
     const NOTIFICATION_TYPES = {
         deposit_required: { destination: 'billing-content.php', icon: 'ti-receipt' },
         payment_rejected: { destination: 'billing-content.php', icon: 'ti-alert-triangle' },
@@ -272,6 +277,7 @@
         function observe(items, rescheduleItems = []) {
             const appointments = Array.isArray(items) ? items.map(normalizeAppointment) : [];
             const reschedules = Array.isArray(rescheduleItems) ? rescheduleItems.map(normalizeReschedule) : [];
+            const changedDestinations = new Set();
             if (!state.initialized) {
                 appointments.forEach(item => {
                     if (item.appointmentId) state.appointments[item.appointmentId] = item;
@@ -282,27 +288,38 @@
                 state.initialized = true;
                 saveState();
                 render();
-                return;
+                return [];
             }
 
             appointments.forEach(current => {
                 if (!current.appointmentId) return;
                 const previous = state.appointments[current.appointmentId] || null;
+                if (!previous || JSON.stringify(previous) !== JSON.stringify(current)) {
+                    APPOINTMENT_CONTENT_DESTINATIONS.forEach(destination => changedDestinations.add(destination));
+                }
                 const type = notificationType(previous, current);
                 if (type && (previous || current.status !== 'Pending Review')) {
                     addNotification(type, current);
+                    changedDestinations.add(NOTIFICATION_TYPES[type].destination);
                 }
                 state.appointments[current.appointmentId] = current;
             });
             reschedules.forEach(current => {
                 if (!current.requestId) return;
                 const previous = state.reschedules[current.requestId] || null;
+                if (!previous || JSON.stringify(previous) !== JSON.stringify(current)) {
+                    APPOINTMENT_CONTENT_DESTINATIONS.forEach(destination => changedDestinations.add(destination));
+                }
                 const type = rescheduleNotificationType(previous, current);
-                if (type) addNotification(type, current);
+                if (type) {
+                    addNotification(type, current);
+                    changedDestinations.add(NOTIFICATION_TYPES[type].destination);
+                }
                 state.reschedules[current.requestId] = current;
             });
             saveState();
             render();
+            return Array.from(changedDestinations);
         }
 
         async function refresh() {
@@ -313,7 +330,12 @@
                 });
                 if (!response.ok) return;
                 const result = await response.json();
-                if (result?.success) observe(result.appointments, result.reschedules);
+                if (result?.success) {
+                    const changedDestinations = observe(result.appointments, result.reschedules);
+                    if (changedDestinations.length && typeof config.onStatusChange === 'function') {
+                        config.onStatusChange(changedDestinations);
+                    }
+                }
             } catch (error) {
                 // A later poll will retry; appointment pages remain the source of truth.
             }
