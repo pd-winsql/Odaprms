@@ -455,7 +455,14 @@ $today = date('l, F j Y');
                     'payment-review-content.php',
                     'cash-billing-content.php'
                 ];
-                if (!refreshablePages.includes(currentPage)) {
+                const pageHasRelevantChange = currentPage === 'dashboard-content.php'
+                    ? hasStaffOperationsChange
+                    : currentPage === 'payment-review-content.php'
+                        ? hasDepositChange
+                        : currentPage === 'cash-billing-content.php'
+                            ? hasStaffOperationsChange
+                            : false;
+                if (!refreshablePages.includes(currentPage) || !pageHasRelevantChange) {
                     lastKnownAppointmentId = latestId;
                     lastKnownDepositVersion = depositVersion;
                     lastKnownStaffOperationsVersion = staffOperationsVersion;
@@ -464,9 +471,7 @@ $today = date('l, F j Y');
                 if (document.querySelector('.modal.show')) return;
 
                 appointmentRefreshInFlight = true;
-                const state = currentPage === 'appointment-content.php'
-                    ? appointmentViewState()
-                    : currentPage === 'payment-review-content.php'
+                const state = currentPage === 'payment-review-content.php'
                         ? depositViewState()
                         : currentPage === 'cash-billing-content.php'
                             ? billingViewState()
@@ -475,8 +480,7 @@ $today = date('l, F j Y');
                     silent: true
                 });
                 if (!refreshed) return;
-                if (currentPage === 'appointment-content.php') restoreAppointmentViewState(state);
-                else if (currentPage === 'payment-review-content.php') restoreDepositViewState(state);
+                if (currentPage === 'payment-review-content.php') restoreDepositViewState(state);
                 else if (currentPage === 'cash-billing-content.php') restoreBillingViewState(state);
                 else restoreDashboardViewState(state);
                 lastKnownAppointmentId = latestId;
