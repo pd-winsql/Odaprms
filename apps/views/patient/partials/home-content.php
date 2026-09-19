@@ -227,7 +227,7 @@ $missingProfileFields = array_keys(array_filter(
                 <div class="form-text">The clinic will approve or reject your selected schedule within 24 hours.</div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Keep current appointment</button>
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Keep appointment</button>
                 <button type="submit" class="btn vd-btn-gold" id="patientRescheduleSubmit" disabled>Send request</button>
             </div>
         </form>
