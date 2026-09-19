@@ -257,11 +257,12 @@ $today = date('l, F j Y');
                     document.body.appendChild(newScript);
                     oldScript.remove();
                 });
+                window.VenturaTables?.enhance(dashContent);
 
                 closeSidebar();
                 loaded = true;
             } catch (error) {
-                dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
+                if (!silent) dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
                 console.error('Error fetching page:', error);
             } finally {
                 if (!silent) LoadingUI.finishContent(dashContent);
@@ -302,7 +303,10 @@ $today = date('l, F j Y');
                 upcomingFrom: dashContent.querySelector('#filterDateFromUpcoming')?.value || '',
                 upcomingTo: dashContent.querySelector('#filterDateToUpcoming')?.value || '',
                 pastFrom: dashContent.querySelector('#filterDateFromPast')?.value || '',
-                pastTo: dashContent.querySelector('#filterDateToPast')?.value || ''
+                pastTo: dashContent.querySelector('#filterDateToPast')?.value || '',
+                upcomingPage: Number(dashContent.querySelector('#upcomingView .vd-table-pagination')?.dataset.currentPage) || 1,
+                pastPage: Number(dashContent.querySelector('#pastView .vd-table-pagination')?.dataset.currentPage) || 1,
+                scrollY: window.scrollY
             };
         }
 
@@ -320,6 +324,37 @@ $today = date('l, F j Y');
             };
             restoreFilter('upcoming', 'Upcoming', state.upcomingStatus, state.upcomingFrom, state.upcomingTo);
             restoreFilter('past', 'Past', state.pastStatus, state.pastFrom, state.pastTo);
+            dashContent.querySelector('#upcomingApptTable')?.dispatchEvent(new CustomEvent('ventura:table-page', {
+                detail: { page: state.upcomingPage }
+            }));
+            dashContent.querySelector('#pastApptTable')?.dispatchEvent(new CustomEvent('ventura:table-page', {
+                detail: { page: state.pastPage }
+            }));
+            window.scrollTo({ top: state.scrollY || 0 });
+        }
+
+        function showAppointmentUpdateNotice() {
+            const notice = dashContent.querySelector('#appointmentUpdateNotice');
+            const refreshButton = dashContent.querySelector('#appointmentUpdateRefresh');
+            if (!notice || !refreshButton) return;
+            notice.hidden = false;
+            refreshButton.onclick = async () => {
+                if (appointmentRefreshInFlight) return;
+                appointmentRefreshInFlight = true;
+                refreshButton.disabled = true;
+                refreshButton.textContent = 'Refreshing…';
+                const state = appointmentViewState();
+                try {
+                    const refreshed = await loadpage('appointment-content.php', { silent: true });
+                    if (refreshed) restoreAppointmentViewState(state);
+                    else {
+                        refreshButton.disabled = false;
+                        refreshButton.textContent = 'Try again';
+                    }
+                } finally {
+                    appointmentRefreshInFlight = false;
+                }
+            };
         }
 
         function depositViewState() {
@@ -407,9 +442,16 @@ $today = date('l, F j Y');
                 const hasStaffOperationsChange = staffOperationsVersion !== lastKnownStaffOperationsVersion;
                 if (!hasNewAppointment && !hasDepositChange && !hasStaffOperationsChange) return;
 
+                if (currentPage === 'appointment-content.php') {
+                    lastKnownAppointmentId = latestId;
+                    lastKnownDepositVersion = depositVersion;
+                    lastKnownStaffOperationsVersion = staffOperationsVersion;
+                    showAppointmentUpdateNotice();
+                    return;
+                }
+
                 const refreshablePages = [
                     'dashboard-content.php',
-                    'appointment-content.php',
                     'payment-review-content.php',
                     'cash-billing-content.php'
                 ];

@@ -239,6 +239,13 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         <button type="button" class="vd-toggle-btn" data-view="past">Past<?= $overduePaymentCount ? ' · ' . $overduePaymentCount . ' payments to review' : '' ?></button>
     </div>
 
+    <?php if (($_SESSION['user_role'] ?? '') === 'Dental Assistant'): ?>
+    <div class="vd-appointment-update-notice" id="appointmentUpdateNotice" role="status" aria-live="polite" hidden>
+        <span><i class="ti ti-refresh" aria-hidden="true"></i> Appointment updates are available.</span>
+        <button type="button" id="appointmentUpdateRefresh">Refresh list</button>
+    </div>
+    <?php endif; ?>
+
     <!-- ── UPCOMING APPOINTMENTS ── -->
     <div id="upcomingView">
     <div class="vd-dash-card">

@@ -186,6 +186,7 @@
             pagination.classList.toggle("d-none", totalRows === 0);
             summary.textContent = `Showing ${totalRows ? startIndex + 1 : 0}–${endIndex} of ${totalRows}`;
             pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
+            pagination.dataset.currentPage = String(currentPage);
             previous.disabled = currentPage === 1;
             next.disabled = currentPage === totalPages;
         }
@@ -205,6 +206,12 @@
         });
 
         table.addEventListener("ventura:table-filtered", () => render(true));
+        table.addEventListener("ventura:table-page", (event) => {
+            const requestedPage = Number(event.detail?.page);
+            if (!Number.isInteger(requestedPage) || requestedPage < 1) return;
+            currentPage = Math.min(requestedPage, getTotalPages());
+            render();
+        });
 
         const card = table.closest(".vd-dash-card");
         if (card) {

@@ -4071,6 +4071,66 @@ button.vd-stat-card {
     color: #fff;
 }
 
+.vd-appointment-update-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border-left: 3px solid var(--gold);
+    background: var(--gold-pale);
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.vd-appointment-update-notice[hidden] {
+    display: none;
+}
+
+.vd-appointment-update-notice span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.vd-appointment-update-notice i,
+.vd-appointment-update-notice button {
+    color: var(--gold-dark);
+}
+
+.vd-appointment-update-notice button {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 4px 6px;
+    border: 0;
+    background: transparent;
+    font: 600 12px "Jost", sans-serif;
+    cursor: pointer;
+}
+
+.vd-appointment-update-notice button:hover,
+.vd-appointment-update-notice button:focus-visible {
+    text-decoration: underline;
+}
+
+.vd-appointment-update-notice button:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.vd-appointment-update-notice button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+@media (max-width: 575px) {
+    .vd-appointment-update-notice {
+        align-items: flex-start;
+    }
+}
+
 /* Read-only category rows */
 .vd-category-list-row {
     display: flex;
