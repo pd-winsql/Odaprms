@@ -840,7 +840,9 @@ class Appointment
         $active = $this->conn->prepare("
             SELECT appointment_id
             FROM appointments
-            WHERE status = 'In Progress' AND appointment_id <> :id
+            WHERE status = 'In Progress'
+                AND date = CURDATE()
+                AND appointment_id <> :id
             FOR UPDATE
         ");
         $active->execute([':id' => $appointment_id]);

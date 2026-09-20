@@ -1,5 +1,6 @@
 <?php
 
+putenv('APP_BASE_URL=/Capstone%20System');
 require_once __DIR__ . '/../config/conn.php';
 
 $conn = (new Database())->connect();
@@ -40,7 +41,10 @@ printRenderExpect(str_contains($html, 'Medical Conditions'), 'The front includes
 printRenderExpect(str_contains($html, 'Odontogram &amp; Treatment History'), 'The back includes the odontogram.');
 printRenderExpect(str_contains($html, 'Procedure and Settlement Ledger'), 'The back includes the settlement ledger.');
 printRenderExpect(str_contains($html, 'Print double-sided, flip on long edge'), 'The preview explains the duplex printer setting.');
-printRenderExpect(str_contains($html, '../admin/dashboard.php'), 'An Admin preview has a safe dashboard fallback when tab closing is blocked.');
+printRenderExpect(
+    str_contains($html, vdAppUrl('apps/views/admin/dashboard.php')),
+    'An Admin preview has a safe dashboard fallback when tab closing is blocked.'
+);
 printRenderExpect(!preg_match('~<script[^>]+src=~i', $html), 'The print workflow has no third-party script dependency.');
 
 session_destroy();

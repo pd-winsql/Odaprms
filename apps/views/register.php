@@ -200,6 +200,8 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     const birthdateInput = document.getElementById('regBirthdate');
     let termsOpener = termsTrigger;
     let termsEndReached = null;
+    let termsModalShown = false;
+    let termsEscapePending = false;
 
     function hasReachedTermsEnd() {
       return termsScrollRegion.scrollHeight - termsScrollRegion.scrollTop - termsScrollRegion.clientHeight <= 8;
@@ -224,6 +226,7 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     });
 
     termsModal.addEventListener('shown.bs.modal', function () {
+      termsModalShown = true;
       if (!termsAccepted.checked) {
         termsScrollRegion.scrollTop = 0;
         termsAgreeButton.textContent = 'Agree to Terms and close';
@@ -235,6 +238,19 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
         termsScrollStatus.textContent = 'Terms accepted for this registration.';
       }
       termsHeading.focus();
+
+      // Bootstrap ignores hide() while its opening transition is still in
+      // progress. Edge can deliver Escape during that small interval even
+      // when reduced motion makes the transition visually instantaneous.
+      if (termsEscapePending) {
+        termsEscapePending = false;
+        bootstrap.Modal.getOrCreateInstance(termsModal).hide();
+      }
+    });
+
+    termsModal.addEventListener('hide.bs.modal', function () {
+      termsModalShown = false;
+      termsEscapePending = false;
     });
 
     termsModal.addEventListener('hidden.bs.modal', function () {
@@ -246,13 +262,19 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
 
     termsScrollRegion.addEventListener('scroll', updateTermsAgreementAvailability, { passive: true });
 
-    termsModal.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') {
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && termsModal.classList.contains('show')) {
         event.preventDefault();
-        event.stopPropagation();
-        bootstrap.Modal.getOrCreateInstance(termsModal).hide();
-        return;
+        event.stopImmediatePropagation();
+        if (termsModalShown) {
+          bootstrap.Modal.getOrCreateInstance(termsModal).hide();
+        } else {
+          termsEscapePending = true;
+        }
       }
+    }, true);
+
+    termsModal.addEventListener('keydown', function (event) {
       if (event.key !== 'Tab') {
         return;
       }

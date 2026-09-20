@@ -42,7 +42,7 @@ notificationExpect(
 $script = file_get_contents($root . '/public/js/staff-appointment-notifications.js');
 notificationExpect(
     str_contains($script, "appointment_created")
-        && str_contains($script, "deposit_updated")
+        && str_contains($script, "deposit_submitted")
         && str_contains($script, 'reschedule_requested')
         && str_contains($script, 'reschedule_reminder')
         && str_contains($script, 'reschedule_urgent')
