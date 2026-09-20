@@ -93,6 +93,73 @@
     white-space: nowrap;
 }
 
+.vd-receipt-view-button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: var(--receipt-gold);
+    display: inline-flex;
+    font-size: 10px;
+    font-weight: 600;
+    gap: 5px;
+    letter-spacing: .06em;
+    margin-top: 8px;
+    padding: 2px 0;
+    text-transform: uppercase;
+}
+
+.vd-receipt-view-button:disabled {
+    color: #aaa196;
+    cursor: not-allowed;
+}
+
+.vd-receipt-view-button:not(:disabled):hover {
+    color: #745412;
+}
+
+.vd-receipt-view-button:focus-visible {
+    border-radius: 3px;
+    outline: 3px solid rgba(166, 124, 36, .24);
+    outline-offset: 3px;
+}
+
+.vd-uploaded-receipt-dialog {
+    max-width: min(620px, calc(100vw - 2rem));
+}
+
+.vd-uploaded-receipt-modal .modal-header,
+.vd-uploaded-receipt-modal .modal-footer {
+    border-color: rgba(181, 146, 76, .18);
+    padding: 1rem 1.25rem;
+}
+
+.vd-uploaded-receipt-body {
+    align-items: center;
+    background: #f3eee4;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px;
+}
+
+.vd-uploaded-receipt-body img {
+    display: block;
+    height: auto;
+    max-height: min(62vh, 620px);
+    max-width: 100%;
+    object-fit: contain;
+    width: auto;
+}
+
+.vd-uploaded-receipt-body p {
+    color: var(--receipt-muted);
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 0;
+    max-width: 480px;
+    text-align: center;
+}
+
 .vd-ocr-status {
     display: flex;
     align-items: flex-start;
@@ -198,6 +265,11 @@
     .vd-receipt-preview-shell { width: 68px; height: 84px; }
     .vd-receipt-fields { grid-template-columns: 1fr; }
     .vd-receipt-field-wide { grid-column: auto; }
+    .vd-uploaded-receipt-dialog { margin: .5rem; max-width: none; }
+    .vd-uploaded-receipt-modal .modal-header,
+    .vd-uploaded-receipt-modal .modal-footer { padding: .85rem 1rem; }
+    .vd-uploaded-receipt-body { padding: 10px; }
+    .vd-uploaded-receipt-body img { max-height: 64vh; }
 }
 
 @media (prefers-reduced-motion: reduce) {

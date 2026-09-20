@@ -158,6 +158,10 @@ function depositStatusClass($status) {
                                                 <label class="vd-label form-label" for="depositReceipt<?= (int) $deposit['deposit_id'] ?>">Receipt screenshot</label>
                                                 <input id="depositReceipt<?= (int) $deposit['deposit_id'] ?>" type="file" name="receipt" class="form-control vd-input" accept="image/jpeg,image/png" required>
                                                 <small class="vd-receipt-file-name" data-receipt-filename>JPG or PNG · maximum 5 MB</small>
+                                                <button type="button" class="vd-receipt-view-button" data-receipt-view
+                                                        data-bs-toggle="modal" data-bs-target="#uploadedReceiptPreviewModal" disabled>
+                                                    <i class="ti ti-eye" aria-hidden="true"></i> View receipt
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="vd-ocr-status" data-ocr-status data-state="idle" role="status" aria-live="polite">
@@ -272,6 +276,27 @@ function depositStatusClass($status) {
     </div>
 </div>
 <?php endif; ?>
+
+<div class="modal fade vd-uploaded-receipt-modal" id="uploadedReceiptPreviewModal" tabindex="-1" aria-labelledby="uploadedReceiptPreviewTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered vd-uploaded-receipt-dialog">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="vd-action-modal-kicker">Payment proof</div>
+                    <h2 class="modal-title vd-modal-title mb-0" id="uploadedReceiptPreviewTitle">Review uploaded receipt</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close receipt preview"></button>
+            </div>
+            <div class="modal-body vd-uploaded-receipt-body">
+                <img data-uploaded-receipt-modal-image alt="Uploaded GCash receipt preview">
+                <p>Compare the receipt with the detected amount, reference number, and transaction date before submitting.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 (function () {

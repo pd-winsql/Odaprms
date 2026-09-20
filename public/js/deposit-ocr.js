@@ -13,6 +13,7 @@
         const preview = form.querySelector('[data-receipt-preview]');
         const empty = form.querySelector('[data-receipt-empty]');
         const filename = form.querySelector('[data-receipt-filename]');
+        const viewButton = form.querySelector('[data-receipt-view]');
         if (!preview || !empty) return;
 
         if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
@@ -22,6 +23,23 @@
         preview.classList.remove('d-none');
         empty.classList.add('d-none');
         if (filename) filename.textContent = file.name;
+        if (viewButton) viewButton.disabled = false;
+    }
+
+    function clearPreview(form) {
+        const preview = form.querySelector('[data-receipt-preview]');
+        const empty = form.querySelector('[data-receipt-empty]');
+        const filename = form.querySelector('[data-receipt-filename]');
+        const viewButton = form.querySelector('[data-receipt-view]');
+        if (!preview || !empty) return;
+
+        if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+        preview.removeAttribute('src');
+        delete preview.dataset.objectUrl;
+        preview.classList.add('d-none');
+        empty.classList.remove('d-none');
+        if (filename) filename.textContent = 'JPG or PNG · maximum 5 MB';
+        if (viewButton) viewButton.disabled = true;
     }
 
     function resetFields(form) {
@@ -91,6 +109,13 @@
         const input = form.querySelector('input[type="file"][name="receipt"]');
         if (!input || !form.dataset.ocrEndpoint) return;
 
+        const viewButton = form.querySelector('[data-receipt-view]');
+        viewButton?.addEventListener('click', () => {
+            const preview = form.querySelector('[data-receipt-preview]');
+            const modalImage = document.querySelector('[data-uploaded-receipt-modal-image]');
+            if (preview?.src && modalImage) modalImage.src = preview.src;
+        });
+
         form.querySelectorAll('[data-ocr-field]').forEach(field => {
             field.addEventListener('input', () => field.classList.remove('is-ocr-filled'));
         });
@@ -99,11 +124,13 @@
             const file = input.files?.[0];
             resetFields(form);
             if (!file) {
+                clearPreview(form);
                 setStatus(form, 'idle', 'Choose a receipt screenshot to fill the details automatically.');
                 return;
             }
             if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024) {
                 input.value = '';
+                clearPreview(form);
                 setStatus(form, 'manual', 'Choose a JPG or PNG image no larger than 5 MB.');
                 return;
             }
