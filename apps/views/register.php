@@ -203,6 +203,13 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     let termsModalShown = false;
     let termsEscapePending = false;
 
+    // Do not leave Bootstrap's transition state machine active when the user
+    // has requested reduced motion. A zero-duration CSS transition can still
+    // make Bootstrap treat the modal as animated for one event-loop turn.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      termsModal.classList.remove('fade');
+    }
+
     function hasReachedTermsEnd() {
       return termsScrollRegion.scrollHeight - termsScrollRegion.scrollTop - termsScrollRegion.clientHeight <= 8;
     }
