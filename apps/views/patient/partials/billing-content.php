@@ -115,7 +115,11 @@ function depositStatusClass($status) {
                             </div>
                             <figure class="vd-deposit-qr">
                                 <?php if (!empty($settings['gcash_qr_path'])): ?>
-                                    <img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="GCash payment QR code for <?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'the clinic') ?>">
+                                    <button type="button" class="vd-deposit-qr-trigger" data-bs-toggle="modal" data-bs-target="#gcashQrPreviewModal"
+                                            aria-label="View a larger GCash payment QR code">
+                                        <img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="GCash payment QR code for <?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'the clinic') ?>">
+                                        <span><i class="ti ti-maximize" aria-hidden="true"></i> View larger</span>
+                                    </button>
                                 <?php else: ?>
                                     <div class="vd-empty-state">GCash QR code has not been configured yet.</div>
                                 <?php endif; ?>
@@ -240,6 +244,34 @@ function depositStatusClass($status) {
         </div>
     <?php endif; ?>
 </div>
+
+<?php if (!empty($settings['gcash_qr_path'])): ?>
+<div class="modal fade vd-qr-preview-modal" id="gcashQrPreviewModal" tabindex="-1" aria-labelledby="gcashQrPreviewTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered vd-qr-preview-dialog">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="vd-action-modal-kicker">GCash payment</div>
+                    <h2 class="modal-title vd-modal-title mb-0" id="gcashQrPreviewTitle">Scan payment QR</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close QR preview"></button>
+            </div>
+            <div class="modal-body vd-qr-preview-body">
+                <img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="Enlarged GCash payment QR code for <?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'the clinic') ?>">
+                <div class="vd-qr-preview-account">
+                    <span>Confirm recipient</span>
+                    <strong><?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'Account name unavailable') ?></strong>
+                    <small><?= htmlspecialchars(($settings['gcash_account_number'] ?? '') ?: 'Account number unavailable') ?></small>
+                </div>
+                <p>On this phone? Take a screenshot, then import the QR image in GCash.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <script>
 (function () {

@@ -654,10 +654,10 @@ body {
 }
 
 .vd-receipt-preview-dialog {
-    max-width: min(1100px, calc(100vw - 2rem));
+    max-width: min(720px, calc(100vw - 2rem));
 }
 .vd-receipt-preview-modal {
-    height: min(820px, calc(100vh - 2rem));
+    height: min(820px, 88vh);
     overflow: hidden;
 }
 .vd-receipt-preview-modal .modal-header,
@@ -666,19 +666,26 @@ body {
     padding: 1rem 1.25rem;
 }
 .vd-receipt-preview-modal .modal-body {
-    background: #2d2a26;
+    align-items: center;
+    background: #f3eee4;
+    display: flex;
+    justify-content: center;
     min-height: 0;
+    overflow: hidden;
+    padding: 1rem !important;
     position: relative;
 }
-.vd-receipt-preview-frame {
-    background: #fff;
-    border: 0;
+.vd-receipt-preview-image {
+    display: block;
     height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
     opacity: 0;
     transition: opacity 0.2s ease;
-    width: 100%;
+    width: auto;
 }
-.vd-receipt-preview-frame.is-ready {
+.vd-receipt-preview-image.is-ready {
     opacity: 1;
 }
 .vd-receipt-preview-loading {
@@ -699,6 +706,13 @@ body {
     }
     .vd-receipt-preview-modal {
         height: calc(100vh - 1rem);
+    }
+    .vd-receipt-preview-modal .modal-header,
+    .vd-receipt-preview-modal .modal-footer {
+        padding: 0.85rem 1rem;
+    }
+    .vd-receipt-preview-modal .modal-body {
+        padding: 0.5rem !important;
     }
 }
 

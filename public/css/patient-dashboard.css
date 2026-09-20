@@ -2259,6 +2259,98 @@
     border-radius: 8px;
 }
 
+.vd-deposit-qr-trigger {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: var(--gold-dark);
+    cursor: zoom-in;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 0;
+}
+
+.vd-deposit-qr-trigger > span {
+    align-items: center;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 600;
+    gap: 5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.vd-deposit-qr-trigger:focus-visible {
+    border-radius: 9px;
+    outline: 3px solid rgba(148, 107, 23, .3);
+    outline-offset: 5px;
+}
+
+.vd-qr-preview-dialog {
+    max-width: min(540px, calc(100vw - 2rem));
+}
+
+.vd-qr-preview-modal .modal-header,
+.vd-qr-preview-modal .modal-footer {
+    border-color: rgba(181, 146, 76, .18);
+    padding: 1rem 1.25rem;
+}
+
+.vd-qr-preview-body {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 24px;
+}
+
+.vd-qr-preview-body > img {
+    display: block;
+    height: auto;
+    max-height: min(56vh, 520px);
+    max-width: 100%;
+    object-fit: contain;
+    width: auto;
+}
+
+.vd-qr-preview-account {
+    border-left: 3px solid var(--gold);
+    max-width: 420px;
+    padding: 9px 12px;
+    width: 100%;
+}
+
+.vd-qr-preview-account span,
+.vd-qr-preview-account strong,
+.vd-qr-preview-account small {
+    display: block;
+}
+
+.vd-qr-preview-account span {
+    color: var(--mid);
+    font-size: 9px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.vd-qr-preview-account strong {
+    color: var(--dark);
+    font-size: 14px;
+    margin-top: 3px;
+}
+
+.vd-qr-preview-account small,
+.vd-qr-preview-body > p {
+    color: var(--mid);
+    font-size: 12px;
+}
+
+.vd-qr-preview-body > p {
+    margin: 0;
+    text-align: center;
+}
+
 .vd-deposit-qr .vd-empty-state {
     width: 100%;
     min-height: 210px;
@@ -2403,5 +2495,23 @@
 
     .vd-deposit-qr img {
         max-height: 220px;
+    }
+
+    .vd-qr-preview-dialog {
+        margin: .5rem;
+        max-width: none;
+    }
+
+    .vd-qr-preview-modal .modal-header,
+    .vd-qr-preview-modal .modal-footer {
+        padding: .85rem 1rem;
+    }
+
+    .vd-qr-preview-body {
+        padding: 14px;
+    }
+
+    .vd-qr-preview-body > img {
+        max-height: 55vh;
     }
 }

@@ -106,10 +106,10 @@ sort($depositStatuses);
 </div>
 
 <div class="modal fade" id="receiptPreviewModal" tabindex="-1" aria-labelledby="receiptPreviewTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl vd-receipt-preview-dialog">
+    <div class="modal-dialog modal-dialog-centered vd-receipt-preview-dialog">
         <div class="modal-content vd-modal-content vd-receipt-preview-modal">
             <div class="modal-header"><div><div class="vd-action-modal-kicker">Payment proof</div><h5 class="modal-title vd-modal-title mb-0" id="receiptPreviewTitle">Receipt Preview</h5></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
-            <div class="modal-body p-0"><div class="vd-receipt-preview-loading" id="receiptPreviewLoading"><span class="vd-spinner" aria-hidden="true"></span><span>Loading receipt...</span></div><iframe id="receiptPreviewFrame" class="vd-receipt-preview-frame" title="GCash receipt preview"></iframe></div>
+            <div class="modal-body p-0"><div class="vd-receipt-preview-loading" id="receiptPreviewLoading"><span class="vd-spinner" aria-hidden="true"></span><span>Loading receipt...</span></div><img id="receiptPreviewImage" class="vd-receipt-preview-image" alt="Submitted GCash receipt"></div>
             <div class="modal-footer"><button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close Preview</button></div>
         </div>
     </div>
@@ -139,13 +139,19 @@ sort($depositStatuses);
 
     const modalElement = document.getElementById('receiptPreviewModal');
     const modal = modalElement ? bootstrap.Modal.getOrCreateInstance(modalElement) : null;
-    const frame = document.getElementById('receiptPreviewFrame');
+    const image = document.getElementById('receiptPreviewImage');
     const loading = document.getElementById('receiptPreviewLoading');
     document.querySelectorAll('[data-view-receipt]').forEach(button => button.addEventListener('click', () => {
         document.getElementById('receiptPreviewTitle').textContent = button.dataset.receiptLabel || 'Receipt Preview';
-        loading.classList.remove('d-none'); frame.classList.remove('is-ready'); frame.src = button.dataset.receiptUrl; modal.show();
+        loading.classList.remove('d-none'); image.classList.remove('is-ready'); image.src = button.dataset.receiptUrl; modal.show();
     }));
-    frame?.addEventListener('load', () => { loading.classList.add('d-none'); frame.classList.add('is-ready'); });
-    modalElement?.addEventListener('hidden.bs.modal', () => { frame.removeAttribute('src'); frame.classList.remove('is-ready'); loading.classList.remove('d-none'); });
+    image?.addEventListener('load', () => { loading.classList.add('d-none'); image.classList.add('is-ready'); });
+    image?.addEventListener('error', () => { loading.querySelector('span:last-child').textContent = 'Receipt preview unavailable.'; });
+    modalElement?.addEventListener('hidden.bs.modal', () => {
+        image.removeAttribute('src');
+        image.classList.remove('is-ready');
+        loading.querySelector('span:last-child').textContent = 'Loading receipt...';
+        loading.classList.remove('d-none');
+    });
 })();
 </script>
