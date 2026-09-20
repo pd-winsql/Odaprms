@@ -136,6 +136,12 @@ krsort($months); // latest first
 													aria-label="Transaction history">
 													<i class="ti ti-receipt" aria-hidden="true"></i><span>Transaction history</span>
 												</button>
+												<a class="dropdown-item vd-appt-menu-item"
+													href="../shared/patient-record-print.php?patient_id=<?= (int) $p['patient_id'] ?>"
+													target="_blank" rel="noopener"
+													aria-label="Print dental record for <?= htmlspecialchars($p['lastname'] . ', ' . $p['firstname'], ENT_QUOTES) ?>">
+													<i class="ti ti-printer" aria-hidden="true"></i><span>Print dental record</span>
+												</a>
 												<?php if (empty($p['user_id'])): ?><button type="button" class="dropdown-item vd-appt-menu-item" data-authorize-link="<?= (int)$p['patient_id'] ?>"><i class="ti ti-user-link" aria-hidden="true"></i><span>Authorize account link</span></button><?php endif; ?>
 											</div>
 										</div>
@@ -263,7 +269,7 @@ krsort($months); // latest first
 				});
 
 				try {
-					const response = await fetch(`partials/_patient-profie.php?id=${patientId}`);
+					const response = await fetch(window.vdDashboardPartialUrl(`_patient-profie.php?id=${patientId}`));
 					if (!response.ok) throw new Error('Failed to load profile');
 					const html = await response.text();
 					dashContent.innerHTML = html;
@@ -294,7 +300,7 @@ krsort($months); // latest first
 				});
 
 				try {
-					const response = await fetch(`partials/_patient-transactions.php?id=${patientId}`);
+					const response = await fetch(window.vdDashboardPartialUrl(`_patient-transactions.php?id=${patientId}`));
 					if (!response.ok) throw new Error('Failed to load transaction history');
 					const html = await response.text();
 					dashContent.innerHTML = html;
@@ -323,7 +329,7 @@ krsort($months); // latest first
 					label: 'Loading dental chart…'
 				});
 				try {
-					const response = await fetch(`partials/_patient-odontogram.php?id=${encodeURIComponent(this.dataset.id)}`);
+					const response = await fetch(window.vdDashboardPartialUrl(`_patient-odontogram.php?id=${encodeURIComponent(this.dataset.id)}`));
 					if (!response.ok) throw new Error('Failed to load dental chart');
 					dashContent.innerHTML = await response.text();
 					dashContent.querySelectorAll('script').forEach(oldScript => {
@@ -365,7 +371,7 @@ krsort($months); // latest first
 			body.append('patient_id', this.dataset.authorizeLink);
 			body.append('email', email);
 			try {
-				const response = await fetch('../../controllers/patientController.php', {
+				const response = await fetch(window.vdAppUrl('apps/controllers/patientController.php'), {
 					method: 'POST',
 					body
 				});
@@ -385,7 +391,7 @@ krsort($months); // latest first
 			label: 'Loading content…'
 		});
 		try {
-			const response = await fetch(`partials/${page}`);
+			const response = await fetch(window.vdDashboardPartialUrl(page));
 			if (!response.ok) throw new Error('Network response was not ok');
 			const html = await response.text();
 			dashContent.innerHTML = html;

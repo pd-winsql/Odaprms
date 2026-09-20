@@ -20,7 +20,7 @@ function analyticsEscape($value): string
 ?>
 
 <section class="vd-analytics-page" id="analyticsPage"
-    data-endpoint="../../controllers/analyticsController.php">
+    data-endpoint="<?= htmlspecialchars(vdAppUrl('apps/controllers/analyticsController.php'), ENT_QUOTES, 'UTF-8') ?>">
     <div class="vd-dash-card vd-analytics-controls">
         <div class="vd-dash-card-header">
             <div>

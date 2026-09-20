@@ -181,7 +181,7 @@ const csrfToken = activeBillingAppointment.csrfToken;
             selection.selectedIds.forEach(serviceId => body.append('service_ids[]', String(serviceId)));
             body.append('service_change_reason', serviceChangeReasonInput.value.trim());
             try {
-                const response = await fetch('../../controllers/billingController.php', {
+                const response = await fetch(window.vdAppUrl('apps/controllers/billingController.php'), {
                     method: 'POST',
                     body
                 });

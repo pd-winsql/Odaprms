@@ -466,7 +466,7 @@
         LoadingUI.setButton(button, true, 'Booking…');
 
         try {
-        const response = await fetch('../../apps/controllers/appointmentController.php', {
+        const response = await fetch(<?= json_encode(vdAppUrl('apps/controllers/appointmentController.php'), JSON_UNESCAPED_SLASHES) ?>, {
             method: 'POST',
             body: formData
         });
@@ -570,7 +570,7 @@
             showScheduleState('loading');
 
             try {
-            const response  = await fetch(`../../apps/controllers/scheduleController.php?action=available&clinic_id=${clinicId}`);
+            const response  = await fetch(<?= json_encode(vdAppUrl('apps/controllers/scheduleController.php?action=available&clinic_id='), JSON_UNESCAPED_SLASHES) ?> + encodeURIComponent(clinicId));
             const schedules = await response.json();
 
             if (!schedules.length) {

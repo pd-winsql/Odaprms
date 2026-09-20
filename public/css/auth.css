@@ -164,9 +164,16 @@
   opacity: 1;
 }
 
+.vd-terms-checkbox:focus-visible {
+  outline: 3px solid rgba(128, 97, 31, 0.4);
+  outline-offset: 3px;
+}
+
 .vd-terms-consent-label {
+  display: block;
   color: var(--dark);
   font-size: 13px;
+  font-weight: 500;
   line-height: 1.5;
 }
 
@@ -197,6 +204,7 @@
   color: var(--mid);
   font-size: 11px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .vd-terms-consent-invalid {
@@ -207,6 +215,13 @@
 .vd-terms-consent-complete {
   border-color: var(--gold);
   background: #faf6ed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-terms-consent,
+  .vd-terms-trigger {
+    transition: none !important;
+  }
 }
 
 /* Heading */

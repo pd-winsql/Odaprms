@@ -3,6 +3,9 @@
 
 # Composer dependencies (regenerated via `composer install`)
 /vendor/
+/node_modules/
+/test-results/
+/playwright-report/
 
 # IDE / editor files
 .vscode/

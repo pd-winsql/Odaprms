@@ -180,7 +180,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 <script>
     (function() {
-        const CONTROLLER = '../../../apps/controllers/clinicController.php';
+        const CONTROLLER = window.vdAppUrl('apps/controllers/clinicController.php');
         const csrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
 
         const clinicModalElement = document.getElementById('clinicModal');

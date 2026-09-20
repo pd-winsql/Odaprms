@@ -1,0 +1,12 @@
+{
+  "name": "ventura-clinica-regression-tests",
+  "private": true,
+  "scripts": {
+    "test:patient-offline": "php tests/patientOfflineBrowserTest.php",
+    "test:terms-a11y": "playwright test tests/termsConsentAccessibility.spec.js",
+    "test:terms-a11y:firefox": "set PLAYWRIGHT_FIREFOX=1&& playwright test tests/termsConsentAccessibility.spec.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

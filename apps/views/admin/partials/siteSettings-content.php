@@ -190,13 +190,13 @@ function sv($settings, $key)
                     <div class="vd-appt-meta mb-2">No logo uploaded yet — showing the text wordmark.</div>
                 <?php endif; ?>
                 <div class="d-flex flex-wrap gap-2 align-items-center">
-                    <input type="file" id="logoInput" class="form-control form-control-sm" style="max-width: 280px;" accept="image/jpeg,image/png,image/webp,image/svg+xml">
+                    <input type="file" id="logoInput" class="form-control form-control-sm" style="max-width: 280px;" accept="image/jpeg,image/png,image/webp">
                     <button class="btn vd-btn-outline btn-sm" id="uploadLogoBtn">Upload Logo</button>
                     <?php if (!empty($settings['site_logo'])): ?>
                         <button class="btn vd-btn-outline btn-sm text-danger" id="removeLogoBtn">Remove Logo</button>
                     <?php endif; ?>
                 </div>
-                <div class="vd-appt-meta mt-2">PNG or JPG is recommended for the widest email-client compatibility. WEBP and SVG use the text fallback in email.</div>
+                <div class="vd-appt-meta mt-2">Upload a JPG, PNG, or WebP image up to 5 MB and 4096 × 4096 pixels. WebP uses the text fallback in email.</div>
             </div>
         </div>
     </section>
@@ -428,7 +428,7 @@ function sv($settings, $key)
 
 <script>
     (function() {
-        const CONTROLLER = '../../../apps/controllers/siteSettingsController.php';
+        const CONTROLLER = window.vdAppUrl('apps/controllers/siteSettingsController.php');
         const settingsCsrfToken = <?= json_encode($_SESSION['csrf_token']) ?>;
         const clinicTimePickers = new WeakMap();
         const bookingLeadInput = document.getElementById('minimumBookingLeadDays');

@@ -144,7 +144,7 @@ function staffRadio($name, $value, $current)
             body.set('save_mode', 'draft');
             this.disabled = true;
             try {
-                const response = await fetch('../../controllers/patientController.php', {
+                const response = await fetch(window.vdAppUrl('apps/controllers/patientController.php'), {
                     method: 'POST',
                     body
                 });
@@ -165,7 +165,7 @@ function staffRadio($name, $value, $current)
             errorBox.classList.add('d-none');
             LoadingUI.setButton(button, true, 'Saving…');
             try {
-                const response = await fetch('../../controllers/patientController.php', {
+                const response = await fetch(window.vdAppUrl('apps/controllers/patientController.php'), {
                     method: 'POST',
                     body: new FormData(this)
                 });

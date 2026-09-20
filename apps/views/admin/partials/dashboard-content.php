@@ -445,7 +445,7 @@ function dashboardBillingPayload(array $entry): string
             lookupBody.append('csrf_token', csrfToken);
             findAppointment.disabled = true;
             try {
-                const lookupResponse = await fetch('../../controllers/logbookController.php', {
+                const lookupResponse = await fetch(window.vdAppUrl('apps/controllers/logbookController.php'), {
                     method: 'POST',
                     body: lookupBody
                 });
@@ -503,7 +503,7 @@ function dashboardBillingPayload(array $entry): string
                 body.append('appointment_id', match.appointment_id);
                 body.append('lookup_method', match.lookup_method);
                 body.append('csrf_token', csrfToken);
-                const response = await fetch('../../controllers/logbookController.php', {
+                const response = await fetch(window.vdAppUrl('apps/controllers/logbookController.php'), {
                     method: 'POST',
                     body
                 });
@@ -525,7 +525,7 @@ function dashboardBillingPayload(array $entry): string
                     label: 'Loading patient form…'
                 });
                 try {
-                    const response = await fetch(`partials/_patient-checkin-form.php?id=${button.dataset.completeProfile}&appointment_id=${button.dataset.appointmentId}`);
+                    const response = await fetch(window.vdDashboardPartialUrl(`_patient-checkin-form.php?id=${button.dataset.completeProfile}&appointment_id=${button.dataset.appointmentId}`));
                     if (!response.ok) throw new Error('Unable to load patient form.');
                     content.innerHTML = await response.text();
                     content.querySelectorAll('script').forEach(oldScript => {
@@ -547,7 +547,7 @@ function dashboardBillingPayload(array $entry): string
                 const content = document.querySelector('.vd-dash-content');
                 LoadingUI.showContent(content, { label: 'Loading patient details…' });
                 try {
-                    const response = await fetch(`partials/_patient-profie.php?id=${encodeURIComponent(button.dataset.viewPatientDetails)}`);
+                    const response = await fetch(window.vdDashboardPartialUrl(`_patient-profie.php?id=${encodeURIComponent(button.dataset.viewPatientDetails)}`));
                     if (!response.ok) throw new Error('Unable to load patient details.');
                     content.innerHTML = await response.text();
                     document.getElementById('dashTitle').textContent = 'Patient Details';
@@ -618,7 +618,7 @@ function dashboardBillingPayload(array $entry): string
                 if (needsReason) body.append('reason', confirmation.values.reason);
                 LoadingUI.setButton(button, true, 'Updating…');
                 try {
-                    const response = await fetch('../../controllers/logbookController.php', {
+                    const response = await fetch(window.vdAppUrl('apps/controllers/logbookController.php'), {
                         method: 'POST',
                         body
                     });
@@ -657,7 +657,7 @@ function dashboardBillingPayload(array $entry): string
 
                 LoadingUI.setButton(button, true, isStarting ? 'Starting…' : 'Completing…');
                 try {
-                    const response = await fetch('../../controllers/logbookController.php', {
+                    const response = await fetch(window.vdAppUrl('apps/controllers/logbookController.php'), {
                         method: 'POST',
                         body
                     });
@@ -695,7 +695,7 @@ function dashboardBillingPayload(array $entry): string
 
                 LoadingUI.setButton(button, true, 'Updating…');
                 try {
-                    const response = await fetch('../../controllers/logbookController.php', {
+                    const response = await fetch(window.vdAppUrl('apps/controllers/logbookController.php'), {
                         method: 'POST',
                         body
                     });

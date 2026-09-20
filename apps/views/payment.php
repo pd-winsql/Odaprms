@@ -69,7 +69,7 @@ $deadline = $payment ? ($payment['resubmission_deadline_at'] ?: $payment['paymen
                                     <div class="alert alert-danger"><strong>Previous submission rejected:</strong> <?= htmlspecialchars($payment['rejection_reason']) ?></div>
                                 <?php endif; ?>
                                 <form id="publicDepositForm" enctype="multipart/form-data" data-deposit-ocr-form
-                                    data-ocr-endpoint="../controllers/depositController.php"
+                                    data-ocr-endpoint="<?= htmlspecialchars(vdAppUrl('apps/controllers/depositController.php'), ENT_QUOTES, 'UTF-8') ?>"
                                     data-required-amount="<?= htmlspecialchars(number_format((float) $payment['amount'], 2, '.', '')) ?>">
                                     <input type="hidden" name="action" value="submit">
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -164,7 +164,7 @@ document.getElementById('publicDepositForm').addEventListener('submit', async fu
     errorBox.classList.add('d-none');
     LoadingUI.setButton(button, true, 'Uploading…');
     try {
-        const response = await fetch('../controllers/depositController.php', { method: 'POST', body: new FormData(this) });
+        const response = await fetch(<?= json_encode(vdAppUrl('apps/controllers/depositController.php'), JSON_UNESCAPED_SLASHES) ?>, { method: 'POST', body: new FormData(this) });
         const result = await response.json();
         if (!result.success) throw new Error(result.message || 'Submission failed.');
         window.location.reload();

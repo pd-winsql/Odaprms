@@ -2,6 +2,7 @@
 session_start();
 require_once '../helpers/siteBranding.php';
 require_once '../helpers/patientEligibility.php';
+require_once '../support/RegistrationTermsConsent.php';
 $db = new Database();
 $conn = $db->connect();
 $branding = vdLoadSiteBranding($conn);
@@ -9,7 +10,7 @@ $minimumPatientAge = PatientEligibility::minimumAge($conn);
 $latestEligibleBirthdate = PatientEligibility::latestEligibleBirthdate($minimumPatientAge);
 $eligibilityRequirement = PatientEligibility::requirementMessage($minimumPatientAge);
 if (isset($_SESSION['user_id'])) {
-    header('Location: /Capstone System/index.php');
+    header('Location: ' . vdAppUrl('index.php'));
     exit;
 }
 
@@ -19,7 +20,7 @@ if (isset($_SESSION['user_id'])) {
 $pendingRegistration = $_SESSION['pending_registration'] ?? null;
 $isEditingRegistration = $pendingRegistration && isset($_GET['edit']);
 if ($pendingRegistration && !$isEditingRegistration) {
-    header('Location: /Capstone System/apps/views/verify-register.php?email=' . rawurlencode($pendingRegistration['email']));
+    header('Location: ' . vdAppUrl('apps/views/verify-register.php?email=' . rawurlencode($pendingRegistration['email'])));
     exit;
 }
 
@@ -35,6 +36,7 @@ $registrationValues = [
     'email' => $pendingRegistration['email'] ?? '',
 ];
 $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+$termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -79,7 +81,7 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
           <div class="vd-auth-sub">Fill in your details to get started.</div>
         </div>
 
-        <div id="registerError" class="vd-auth-error d-none" role="alert" aria-live="polite"></div>
+        <div id="registerError" class="vd-auth-error d-none" role="alert" aria-live="assertive" aria-atomic="true"></div>
         <div id="registerSuccess" class="vd-auth-success d-none" role="status" aria-live="polite"></div>
 
         <form id="registerForm" class="vd-auth-form vd-register-grid" novalidate>
@@ -132,14 +134,14 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
           </div>
 
           <div class="vd-terms-consent vd-register-span-2" id="termsConsentGroup">
-            <input type="checkbox" class="vd-terms-checkbox" id="termsAccepted" disabled aria-describedby="termsConsentHint termsConsentStatus">
+            <input type="hidden" name="terms_consent_token" value="<?= $escape($termsConsentToken) ?>">
+            <input type="checkbox" class="vd-terms-checkbox" id="termsAccepted" name="terms_accepted" value="1" required disabled aria-describedby="termsConsentHint termsConsentStatus">
             <div>
-              <div class="vd-terms-consent-label">
-                I agree to the
-                <button type="button" class="vd-terms-trigger" id="openSystemTerms" data-bs-toggle="modal" data-bs-target="#systemTermsModal">Terms and Conditions</button>.
-              </div>
+              <label class="vd-terms-consent-label" for="termsAccepted">I agree to the Terms and Conditions</label>
+              <button type="button" class="vd-terms-trigger" id="openSystemTerms" data-bs-toggle="modal" data-bs-target="#systemTermsModal"
+                aria-haspopup="dialog" aria-controls="systemTermsModal" aria-expanded="false">Review required Terms and Conditions</button>
               <p class="vd-terms-consent-hint" id="termsConsentHint">Open the terms and scroll to the end to enable agreement.</p>
-              <span class="visually-hidden" id="termsConsentStatus" role="status" aria-live="polite"></span>
+              <span class="visually-hidden" id="termsConsentStatus" role="status" aria-live="polite" aria-atomic="true"></span>
             </div>
           </div>
 
@@ -189,11 +191,15 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
     const termsScrollRegion = document.getElementById('systemTermsScrollRegion');
     const termsScrollStatus = document.getElementById('systemTermsScrollStatus');
     const termsAgreeButton = document.getElementById('systemTermsAgreeButton');
+    const termsHeading = document.getElementById('systemTermsModalLabel');
+    const termsTrigger = document.getElementById('openSystemTerms');
     const registrationPasswordKey = 'pendingRegistrationPasswords';
     const isEditingRegistration = <?= $isEditingRegistration ? 'true' : 'false' ?>;
     const minimumPatientAge = <?= $minimumPatientAge ?>;
     const latestEligibleBirthdate = <?= json_encode($latestEligibleBirthdate) ?>;
     const birthdateInput = document.getElementById('regBirthdate');
+    let termsOpener = termsTrigger;
+    let termsEndReached = null;
 
     function hasReachedTermsEnd() {
       return termsScrollRegion.scrollHeight - termsScrollRegion.scrollTop - termsScrollRegion.clientHeight <= 8;
@@ -201,26 +207,91 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
 
     function updateTermsAgreementAvailability() {
       const canAgree = hasReachedTermsEnd();
+      if (canAgree === termsEndReached) {
+        return;
+      }
+      termsEndReached = canAgree;
       termsAgreeButton.disabled = !canAgree;
       termsScrollStatus.textContent = canAgree ? 'You have reached the end of the terms.' : 'Scroll to the end to continue.';
+      if (canAgree) {
+        termsConsentStatus.textContent = 'End of terms reached. The Agree to Terms and close button is now available.';
+      }
     }
+
+    termsModal.addEventListener('show.bs.modal', function (event) {
+      termsOpener = event.relatedTarget || document.activeElement || termsTrigger;
+      termsTrigger.setAttribute('aria-expanded', 'true');
+    });
 
     termsModal.addEventListener('shown.bs.modal', function () {
       if (!termsAccepted.checked) {
         termsScrollRegion.scrollTop = 0;
+        termsAgreeButton.textContent = 'Agree to Terms and close';
+        termsEndReached = null;
+        updateTermsAgreementAvailability();
+      } else {
+        termsAgreeButton.disabled = false;
+        termsAgreeButton.textContent = 'Close terms';
+        termsScrollStatus.textContent = 'Terms accepted for this registration.';
       }
-      updateTermsAgreementAvailability();
-      termsScrollRegion.focus();
+      termsHeading.focus();
+    });
+
+    termsModal.addEventListener('hidden.bs.modal', function () {
+      termsTrigger.setAttribute('aria-expanded', 'false');
+      if (termsOpener && typeof termsOpener.focus === 'function') {
+        termsOpener.focus();
+      }
     });
 
     termsScrollRegion.addEventListener('scroll', updateTermsAgreementAvailability, { passive: true });
 
+    termsModal.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        bootstrap.Modal.getOrCreateInstance(termsModal).hide();
+        return;
+      }
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusable = Array.from(termsModal.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter(function (element) {
+        return element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true';
+      });
+      if (!focusable.length) {
+        event.preventDefault();
+        termsHeading.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === termsHeading)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === termsHeading)) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+
     termsAgreeButton.addEventListener('click', function () {
+      if (termsAccepted.checked) {
+        bootstrap.Modal.getOrCreateInstance(termsModal).hide();
+        return;
+      }
       if (!hasReachedTermsEnd()) {
         return;
       }
 
+      termsAccepted.disabled = false;
       termsAccepted.checked = true;
+      termsAccepted.removeAttribute('aria-invalid');
+      termsAccepted.removeAttribute('aria-errormessage');
       termsConsentGroup.classList.remove('vd-terms-consent-invalid');
       termsConsentGroup.classList.add('vd-terms-consent-complete');
       termsConsentHint.textContent = 'Review completed. Your agreement is confirmed for this registration.';
@@ -343,9 +414,11 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
 
       if (!termsAccepted.checked) {
         termsConsentGroup.classList.add('vd-terms-consent-invalid');
+        termsAccepted.setAttribute('aria-invalid', 'true');
+        termsAccepted.setAttribute('aria-errormessage', 'registerError');
         errEl.textContent = 'Please review and agree to the Terms and Conditions.';
         errEl.classList.remove('d-none');
-        document.getElementById('openSystemTerms').focus();
+        termsTrigger.focus();
         return;
       }
 
@@ -353,7 +426,7 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
       LoadingUI.setButton(btn, true, 'Sending code…');
 
       try {
-        const res    = await fetch('/Capstone System/apps/controllers/userController.php', {
+        const res    = await fetch(<?= json_encode(vdAppUrl('apps/controllers/userController.php'), JSON_UNESCAPED_SLASHES) ?>, {
           method: 'POST', body: formData
         });
         const result = await res.json();
@@ -374,7 +447,7 @@ $escape = static fn($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UT
           sucEl.classList.remove('d-none');
           const email = formData.get('email');
           setTimeout(() => {
-            window.location.href = '/Capstone System/apps/views/verify-register.php?email=' + encodeURIComponent(email);
+            window.location.href = <?= json_encode(vdAppUrl('apps/views/verify-register.php?email='), JSON_UNESCAPED_SLASHES) ?> + encodeURIComponent(email);
           }, 1500);
         } else {
           errEl.textContent = result.message;

@@ -4,18 +4,18 @@ require_once '../helpers/siteBranding.php';
 $branding = vdLoadSiteBranding();
 
 if (isset($_SESSION['user_id'])) {
-    header('Location: /Capstone System/index.php');
+    header('Location: ' . vdAppUrl('index.php'));
     exit;
 }
 
 if (!isset($_SESSION['pending_registration'])) {
-    header('Location: /Capstone System/apps/views/register.php');
+    header('Location: ' . vdAppUrl('apps/views/register.php'));
     exit;
 }
 
 $email = $_SESSION['pending_registration']['email'] ?? '';
 if (!$email) {
-    header('Location: /Capstone System/apps/views/register.php');
+    header('Location: ' . vdAppUrl('apps/views/register.php'));
     exit;
 }
 ?>
@@ -104,7 +104,7 @@ if (!$email) {
     </div>
 
     <script>
-        const CONTROLLER = '/Capstone System/apps/controllers/userController.php';
+        const CONTROLLER = <?= json_encode(vdAppUrl('apps/controllers/userController.php'), JSON_UNESCAPED_SLASHES) ?>;
 
         // ── Resend timer ──
         const timerEl   = document.getElementById('resendTimer');
@@ -289,7 +289,7 @@ if (!$email) {
             sucEl.textContent = 'Account created! Opening appointment booking…';
             sucEl.classList.remove('d-none');
             setTimeout(() => {
-                window.location.href = result.redirect || '/Capstone System/apps/views/patient/dashboard.php#booking-content.php';
+                window.location.href = result.redirect || <?= json_encode(vdAppUrl('apps/views/patient/dashboard.php#booking-content.php'), JSON_UNESCAPED_SLASHES) ?>;
             }, 1500);
             } else {
             showOtpError(result.message);

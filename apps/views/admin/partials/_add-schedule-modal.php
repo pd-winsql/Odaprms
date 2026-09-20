@@ -452,7 +452,7 @@
         setError('');
 
         try {
-            const response = await fetch('../../controllers/scheduleController.php', {
+            const response = await fetch(window.vdAppUrl('apps/controllers/scheduleController.php'), {
                 method: 'POST',
                 body: formData
             });

@@ -42,6 +42,10 @@ function val($v, $fallback = '—') {
     <button class="btn vd-btn-gold ms-2" id="openPatientOdontogram" data-patient-id="<?= (int) $patient_id ?>">
         <i class="ti ti-dental me-1" aria-hidden="true"></i> Dental chart
     </button>
+    <a class="btn vd-btn-outline ms-2" href="../shared/patient-record-print.php?patient_id=<?= (int) $patient_id ?>"
+        target="_blank" rel="noopener" aria-label="Open printable dental record for <?= val($patient['full_name']) ?>">
+        <i class="ti ti-printer me-1" aria-hidden="true"></i> Print dental record
+    </a>
 </div>
 
     <div class="d-flex flex-column gap-4">
@@ -360,7 +364,7 @@ function val($v, $fallback = '—') {
         const dashContent = document.querySelector('.vd-dash-content');
         LoadingUI.showContent(dashContent, { label: 'Loading dental chart…' });
         try {
-            const response = await fetch(`partials/_patient-odontogram.php?id=${encodeURIComponent(this.dataset.patientId)}`);
+            const response = await fetch(window.vdDashboardPartialUrl(`_patient-odontogram.php?id=${encodeURIComponent(this.dataset.patientId)}`));
             if (!response.ok) throw new Error('Failed to load dental chart');
             dashContent.innerHTML = await response.text();
             dashContent.querySelectorAll('script').forEach(oldScript => {

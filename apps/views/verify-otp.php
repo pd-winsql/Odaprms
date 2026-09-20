@@ -174,7 +174,7 @@ if (!$email) {
       LoadingUI.setButton(resendBtn, true, 'Sending…');
 
       try {
-        const res    = await fetch('../controllers/passwordResetController.php', {
+        const res    = await fetch(<?= json_encode(vdAppUrl('apps/controllers/passwordResetController.php'), JSON_UNESCAPED_SLASHES) ?>, {
           method: 'POST', body: formData
         });
         const result = await res.json();
@@ -223,7 +223,7 @@ if (!$email) {
       formData.append('action', 'verifyOTP');
 
       try {
-        const res    = await fetch('../controllers/passwordResetController.php', {
+        const res    = await fetch(<?= json_encode(vdAppUrl('apps/controllers/passwordResetController.php'), JSON_UNESCAPED_SLASHES) ?>, {
           method: 'POST', body: formData
         });
         const result = await res.json();

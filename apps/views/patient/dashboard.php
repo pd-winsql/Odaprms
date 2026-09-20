@@ -45,10 +45,12 @@ $today    = date('l, F j Y');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="vd-app-base-url" content="<?= htmlspecialchars(vdAppBaseUrl(), ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="vd-dashboard-partials" content="apps/views/patient/partials">
     <title>My Account | Dr. Aprille Ventura Clinica Dental</title>
+    <script src="<?= htmlspecialchars(vdAppUrl('public/js/app-url.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/../../../public/js/app-url.js') ?>"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../../public/css/bootstrap.min.css">
     <link rel="stylesheet" href="../../../public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../../public/css/styles.css') ?>">
     <link rel="stylesheet" href="../../../public/css/dashboard.css?v=<?= filemtime(__DIR__ . '/../../../public/css/dashboard.css') ?>">
@@ -56,6 +58,7 @@ $today    = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/ui-refinements.css?v=<?= filemtime(__DIR__ . '/../../../public/css/ui-refinements.css') ?>">
     <link rel="stylesheet" href="../../../public/css/deposit-ocr.css?v=<?= filemtime(__DIR__ . '/../../../public/css/deposit-ocr.css') ?>">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
+    <script src="../../../public/js/bootstrap.bundle.min.js?v=5.3.8"></script>
     <script src="../../../public/js/loading.js?v=20260822-dashboard-skeletons-1" defer></script>
     <script src="../../../public/js/deposit-ocr.js?v=<?= filemtime(__DIR__ . '/../../../public/js/deposit-ocr.js') ?>" defer></script>
 </head>
@@ -92,7 +95,7 @@ $today    = date('l, F j Y');
         <a href="#" class="vd-nav-item" data-page="change-password-content.php">
             <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
         </a>
-        <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
+        <a href="#" class="vd-nav-item" data-logout-confirm="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>">
             <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
         </a>
         </nav>
@@ -145,7 +148,6 @@ $today    = date('l, F j Y');
 
     <?php include __DIR__ . '/../shared/staff-action-modal.php'; ?>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../../public/js/action-modal.js?v=<?= filemtime(__DIR__ . '/../../../public/js/action-modal.js') ?>"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/patient-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/patient-appointment-notifications.js') ?>"></script>
@@ -218,7 +220,7 @@ $today    = date('l, F j Y');
         let loaded = false;
         if (!silent) LoadingUI.showContent(dashContent, { label: 'Loading dashboard…', page });
         try {
-            const response = await fetch(`partials/${page}`, { cache: 'no-store' });
+            const response = await fetch(window.vdDashboardPartialUrl(page), { cache: 'no-store' });
             if (!response.ok) throw new Error('Failed to load');
             const html = await response.text();
             dashContent.innerHTML = html;
@@ -289,7 +291,7 @@ $today    = date('l, F j Y');
 
         window.PatientAppointmentNotifications?.create({
             userId: <?= (int) $_SESSION['user_id'] ?>,
-            endpoint: '../../controllers/appointmentController.php?action=patientNotificationSnapshot',
+            endpoint: window.vdAppUrl('apps/controllers/appointmentController.php?action=patientNotificationSnapshot'),
             pollInterval: 10000,
             buttonId: 'patientNotificationButton',
             panelId: 'patientNotificationPanel',

@@ -1,6 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Admin') {
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Admin' && ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
     http_response_code(403);
     echo '<div class="vd-empty-state">Billing insights are available to administrators only.</div>';
     exit;
@@ -20,7 +20,7 @@ function billingInsightEscape($value): string
 ?>
 
 <section class="vd-billing-insights" id="billingInsightsPage"
-    data-endpoint="../../controllers/billingInsightsController.php">
+    data-endpoint="<?= htmlspecialchars(vdAppUrl('apps/controllers/billingInsightsController.php'), ENT_QUOTES, 'UTF-8') ?>">
     <div class="vd-dash-card vd-billing-controls">
         <div class="vd-dash-card-header">
             <div>
@@ -133,7 +133,13 @@ function billingInsightEscape($value): string
                 <div class="vd-appt-table-wrap" id="billingRecordsWrap">
                     <table class="vd-report-table w-100" id="billingRecordsTable">
                         <thead>
-                            <tr><th>Patient</th><th>Visit</th><th>Settlement</th><th>Finalized</th><th>Action</th></tr>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Visit</th>
+                                <th>Settlement</th>
+                                <th>Finalized</th>
+                                <th>Action</th>
+                            </tr>
                         </thead>
                         <tbody></tbody>
                     </table>
@@ -189,5 +195,5 @@ function billingInsightEscape($value): string
 </div>
 
 <script>
-window.AdminBillingSummary?.init(document.getElementById('billingInsightsPage'));
+    window.AdminBillingSummary?.init(document.getElementById('billingInsightsPage'));
 </script>

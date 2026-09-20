@@ -88,7 +88,7 @@ $exportQuery = http_build_query(array_merge($filters, ['action' => 'export_csv']
                 <div class="vd-report-help">Generate operational summaries from appointments and schedules.</div>
             </div>
             <div class="vd-report-actions">
-                <a class="btn vd-btn-outline" href="../../../apps/controllers/reportController.php?<?= reportEscape($exportQuery) ?>">
+                <a class="btn vd-btn-outline" href="<?= reportEscape(vdAppUrl('apps/controllers/reportController.php?' . $exportQuery)) ?>">
                     <i class="ti ti-file-spreadsheet me-1"></i> Export CSV
                 </a>
                 <button type="button" class="btn vd-btn-gold" id="printReportBtn">

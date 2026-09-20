@@ -574,7 +574,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
         let shouldRefresh = false;
         try {
-            const resp = await fetch('../../controllers/scheduleController.php', { method: 'POST', body: formData });
+            const resp = await fetch(window.vdAppUrl('apps/controllers/scheduleController.php'), { method: 'POST', body: formData });
             const result = await resp.json();
             if (resp.ok && result.success) {
                 showToast(result.message || 'Schedule deleted successfully!', true);

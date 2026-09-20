@@ -132,7 +132,7 @@ if (isset($_SESSION['user_id'])) {
 			let isRedirecting = false;
 
 			try {
-				const res = await fetch('../controllers/userController.php', {
+				const res = await fetch(<?= json_encode(vdAppUrl('apps/controllers/userController.php'), JSON_UNESCAPED_SLASHES) ?>, {
 					method: 'POST',
 					body: formData
 				});

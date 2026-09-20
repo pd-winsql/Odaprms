@@ -1,0 +1,212 @@
+:root {
+    --record-paper: #fffefb;
+    --record-ink: #201b15;
+    --record-muted: #625b51;
+    --record-rule: #786f63;
+    --record-soft-rule: #d7cec0;
+    --record-brand: #8b671b;
+    --record-wash: #f5efe5;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body { margin: 0; min-height: 100%; }
+
+body {
+    background: #e9e1d4;
+    color: var(--record-ink);
+    font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+.vd-print-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 14px max(20px, calc((100% - 8.5in) / 2));
+    background: rgba(255, 254, 251, .96);
+    border-bottom: 1px solid #d5c8b5;
+    box-shadow: 0 8px 24px rgba(54, 42, 25, .08);
+    backdrop-filter: blur(12px);
+}
+
+.vd-print-toolbar strong,
+.vd-print-toolbar span { display: block; }
+
+.vd-print-toolbar strong { font-family: Georgia, serif; font-size: 20px; font-weight: 400; }
+.vd-print-toolbar span { margin-top: 2px; color: #6e6253; font-size: 12px; }
+.vd-print-toolbar-actions { display: flex; gap: 10px; }
+
+.vd-print-button {
+    min-height: 44px;
+    padding: 0 22px;
+    border: 1px solid var(--record-brand);
+    border-radius: 8px;
+    background: var(--record-brand);
+    color: #fff;
+    font: 700 12px/1 "Trebuchet MS", sans-serif;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.vd-print-button-secondary { background: transparent; color: var(--record-brand); }
+.vd-print-button:focus-visible { outline: 3px solid rgba(139, 103, 27, .28); outline-offset: 2px; }
+
+.vd-print-document { padding: 28px 16px 64px; }
+
+.vd-print-page {
+    position: relative;
+    width: 8.5in;
+    height: 11in;
+    margin: 0 auto 28px;
+    padding: .34in .4in .32in;
+    overflow: hidden;
+    background: var(--record-paper);
+    box-shadow: 0 20px 54px rgba(52, 41, 24, .15);
+    font-size: 7.25pt;
+    line-height: 1.2;
+}
+
+.vd-print-clinic-header {
+    display: grid;
+    grid-template-columns: 2.25in 1fr 1.05in;
+    align-items: center;
+    gap: .16in;
+    min-height: .84in;
+    padding-bottom: .08in;
+    border-bottom: 1.5pt solid var(--record-brand);
+}
+
+.vd-print-brand { text-align: center; color: var(--record-brand); }
+.vd-print-brand img { display: block; max-width: 2.15in; max-height: .78in; margin: 0 auto; object-fit: contain; }
+.vd-print-brand span { display: block; font: italic 13pt Georgia, serif; }
+.vd-print-brand strong { display: block; font: 19pt/1 Georgia, serif; letter-spacing: .16em; }
+.vd-print-brand small { display: block; margin-top: 3px; letter-spacing: .2em; text-transform: uppercase; }
+
+.vd-print-clinic-details { border-left: 1px solid var(--record-soft-rule); padding-left: .16in; }
+.vd-print-clinic-details h1 { margin: 0 0 4px; font: 700 9.5pt/1.1 "Trebuchet MS", sans-serif; text-transform: uppercase; }
+.vd-print-clinic-details p { margin: 2px 0; color: var(--record-muted); }
+.vd-print-issued { align-self: start; padding-top: 5px; text-align: right; }
+.vd-print-issued span { display: block; color: var(--record-muted); text-transform: uppercase; letter-spacing: .08em; }
+.vd-print-issued strong { display: block; margin-top: 3px; }
+
+.vd-print-identity-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 .13in; }
+.vd-print-front > .vd-print-identity-grid { padding: .09in 0 .05in; }
+.vd-print-field { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; gap: 4px; min-width: 0; min-height: .22in; }
+.vd-print-field span { color: var(--record-muted); white-space: nowrap; }
+.vd-print-field strong { min-width: 0; overflow: hidden; border-bottom: .6pt solid var(--record-rule); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.vd-print-span-2 { grid-column: span 2; }
+
+.vd-print-compact-section,
+.vd-print-questionnaire,
+.vd-print-conditions { margin-top: .05in; }
+
+.vd-print-page h2 {
+    margin: 0 0 .035in;
+    font: 700 7.4pt/1.15 "Trebuchet MS", sans-serif;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+
+.vd-print-page h2 small { margin-left: 5px; color: var(--record-muted); font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+.vd-print-questionnaire table,
+.vd-print-ledger { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+.vd-print-questionnaire th,
+.vd-print-questionnaire td,
+.vd-print-ledger th,
+.vd-print-ledger td { border: .65pt solid var(--record-rule); padding: 1.5px 3px; vertical-align: middle; }
+
+.vd-print-questionnaire th,
+.vd-print-ledger th { background: var(--record-wash); font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+.vd-print-questionnaire th:nth-child(1) { width: 52%; }
+.vd-print-questionnaire th:nth-child(2) { width: 36%; }
+.vd-print-questionnaire th:nth-child(3),
+.vd-print-questionnaire th:nth-child(4),
+.vd-print-questionnaire td:nth-child(3),
+.vd-print-questionnaire td:nth-child(4) { width: 6%; text-align: center; }
+
+.vd-print-vitals { display: grid; grid-template-columns: 1fr 1fr; border: .65pt solid var(--record-rule); border-top: 0; }
+.vd-print-vitals span { padding: 3px 6px; }
+.vd-print-vitals span + span { border-left: .65pt solid var(--record-rule); }
+.vd-print-vitals strong { margin-left: 7px; }
+
+.vd-print-condition-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px 9px; }
+.vd-print-condition-grid span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.vd-print-consent { margin-top: .06in; padding: .06in .08in .05in; border: .8pt solid var(--record-rule); }
+.vd-print-consent p { margin: 0 0 3px; text-align: justify; }
+.vd-print-signatures { display: grid; grid-template-columns: 1.25fr 1.25fr .6fr; gap: .22in; padding-top: .12in; }
+.vd-print-signatures span { padding-top: 3px; border-top: .7pt solid var(--record-ink); text-align: center; text-transform: uppercase; }
+
+.vd-print-record-header { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding-bottom: .08in; border-bottom: 1.5pt solid var(--record-brand); }
+.vd-print-record-header span { display: block; color: var(--record-muted); text-transform: uppercase; letter-spacing: .12em; }
+.vd-print-record-header h1 { margin: 3px 0 0; color: var(--record-brand); font: 20pt/1 Georgia, serif; }
+.vd-print-record-header > div:last-child { text-align: right; }
+.vd-print-record-header strong { display: block; font-size: 9pt; }
+
+.vd-print-chart-layout { display: grid; grid-template-columns: 1.8fr .72fr; gap: .16in; padding: .12in 0; border-bottom: 1pt solid var(--record-rule); }
+.vd-print-orientation { display: flex; justify-content: space-between; margin-bottom: 2px; color: var(--record-muted); text-transform: uppercase; letter-spacing: .08em; }
+.vd-print-chart h2 { margin: 3px 0 2px; text-align: center; }
+.vd-print-arch { display: grid; grid-template-columns: repeat(16, 1fr); gap: 1px; }
+.vd-print-arch.vd-print-primary { grid-template-columns: repeat(10, 1fr); margin-inline: 14%; }
+.vd-print-tooth { min-width: 0; text-align: center; }
+.vd-print-tooth span { display: block; font-size: 6.3pt; }
+.vd-print-tooth svg { display: block; width: .26in; height: .28in; margin: 0 auto; fill: none; stroke: var(--record-ink); stroke-width: 1.1; }
+.vd-print-tooth b { display: block; min-height: 8px; overflow: hidden; color: var(--record-brand); font-size: 5.7pt; line-height: 1; white-space: nowrap; }
+.vd-print-midline { margin: 1px 0; border-top: .7pt solid var(--record-rule); }
+.vd-print-primary-midline { margin-inline: 14%; }
+
+.vd-print-assessment { border-left: .7pt solid var(--record-soft-rule); padding-left: .12in; }
+.vd-print-assessment dl { margin: 0; }
+.vd-print-assessment dl div { display: grid; grid-template-columns: .85in 1fr; gap: 4px; padding: 2px 0; border-bottom: .5pt solid var(--record-soft-rule); }
+.vd-print-assessment dt { color: var(--record-muted); font-weight: 400; }
+.vd-print-assessment dd { margin: 0; font-weight: 600; }
+.vd-print-legend { margin-top: 6px; }
+.vd-print-legend strong { text-transform: uppercase; letter-spacing: .08em; }
+.vd-print-legend p { margin: 3px 0 0; color: var(--record-muted); font-size: 6.2pt; }
+
+.vd-print-ledger-section { margin-top: .11in; }
+.vd-print-ledger-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: .05in; }
+.vd-print-ledger-heading span { color: var(--record-muted); text-transform: uppercase; letter-spacing: .1em; }
+.vd-print-ledger-heading h2,
+.vd-print-ledger-heading p { margin: 2px 0 0; }
+.vd-print-ledger th { height: .38in; text-align: center; }
+.vd-print-ledger td { height: .43in; overflow: hidden; overflow-wrap: anywhere; }
+.vd-print-ledger th:nth-child(1) { width: 10%; }
+.vd-print-ledger th:nth-child(2) { width: 9%; }
+.vd-print-ledger th:nth-child(3) { width: 25%; }
+.vd-print-ledger th:nth-child(4) { width: 13%; }
+.vd-print-ledger th:nth-child(5),
+.vd-print-ledger th:nth-child(6),
+.vd-print-ledger th:nth-child(7) { width: 10%; }
+.vd-print-ledger th:nth-child(8) { width: 13%; }
+.vd-print-ledger-blank td { height: .43in; }
+.vd-print-continuation-note { margin: 5px 0 0; color: var(--record-muted); font-size: 6.5pt; }
+
+.vd-print-page-footer { position: absolute; right: .4in; bottom: .15in; left: .4in; display: flex; justify-content: space-between; padding-top: 3px; border-top: .5pt solid var(--record-soft-rule); color: var(--record-muted); font-size: 6.3pt; }
+
+@media (max-width: 900px) {
+    .vd-print-toolbar { position: static; align-items: stretch; flex-direction: column; padding: 14px 16px; }
+    .vd-print-toolbar-actions { display: grid; grid-template-columns: 1fr 1fr; }
+    .vd-print-document { overflow-x: auto; padding-inline: 12px; }
+    .vd-print-page { margin-inline: 0; transform-origin: top left; }
+}
+
+@page { size: Letter portrait; margin: 0; }
+
+@media print {
+    :root { color-scheme: light; }
+    html,
+    body { width: 8.5in; height: auto; background: #fff; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .vd-print-toolbar { display: none; }
+    .vd-print-document { padding: 0; }
+    .vd-print-page { margin: 0; box-shadow: none; break-after: page; page-break-after: always; }
+    .vd-print-page:last-child { break-after: auto; page-break-after: auto; }
+}

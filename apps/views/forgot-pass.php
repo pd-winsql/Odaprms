@@ -106,7 +106,7 @@ if (isset($_GET['restart'])) {
         formData.append('action', 'sendOTP');
 
         try {
-            const res    = await fetch('../controllers/passwordResetController.php', {
+            const res    = await fetch(<?= json_encode(vdAppUrl('apps/controllers/passwordResetController.php'), JSON_UNESCAPED_SLASHES) ?>, {
             method: 'POST', body: formData
             });
             const result = await res.json();

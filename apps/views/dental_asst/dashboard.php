@@ -54,7 +54,10 @@ $today = date('l, F j Y');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="vd-app-base-url" content="<?= htmlspecialchars(vdAppBaseUrl(), ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="vd-dashboard-partials" content="apps/views/dental_asst/partials">
     <title>Dashboard | Dr. Aprille Ventura Clinica Dental</title>
+    <script src="<?= htmlspecialchars(vdAppUrl('public/js/app-url.js'), ENT_QUOTES, 'UTF-8') ?>?v=<?= filemtime(__DIR__ . '/../../../public/js/app-url.js') ?>"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -121,7 +124,7 @@ $today = date('l, F j Y');
             <a href="#" class="vd-nav-item" data-page="change-password-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
             </a>
-            <a href="#" class="vd-nav-item" data-logout-confirm="../../../apps/controllers/userController.php?action=logout">
+            <a href="#" class="vd-nav-item" data-logout-confirm="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>">
                 <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
             </a>
         </nav>
@@ -247,7 +250,7 @@ $today = date('l, F j Y');
                 page
             });
             try {
-                const response = await fetch(`partials/${page}`, {
+                const response = await fetch(window.vdDashboardPartialUrl(page), {
                     cache: 'no-store'
                 });
                 if (!response.ok) throw new Error('Network response was not ok');
@@ -427,7 +430,7 @@ $today = date('l, F j Y');
             if (document.hidden || appointmentRefreshInFlight) return;
             const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
             try {
-                const response = await fetch('../../controllers/appointmentController.php?action=latestAppointment', {
+                const response = await fetch(window.vdAppUrl('apps/controllers/appointmentController.php?action=latestAppointment'), {
                     cache: 'no-store',
                     headers: {
                         Accept: 'application/json'
@@ -551,7 +554,7 @@ $today = date('l, F j Y');
 
     <script>
         window.emailNotificationDeliveryConfig = {
-            endpoint: '../../controllers/emailNotificationController.php',
+            endpoint: window.vdAppUrl('apps/controllers/emailNotificationController.php'),
             csrfToken: <?= json_encode($_SESSION['csrf_token']) ?>
         };
     </script>

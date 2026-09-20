@@ -26,14 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const logoutModal = bootstrap.Modal.getOrCreateInstance(modalElement);
     let logoutUrl = '';
+    let logoutTrigger = null;
 
     logoutLinks.forEach((link) => {
         link.addEventListener('click', (event) => {
             event.preventDefault();
             logoutUrl = link.getAttribute('data-logout-confirm') || '';
+            logoutTrigger = link;
             resetModals();
             logoutModal.show();
         });
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        if (logoutTrigger?.isConnected) logoutTrigger.focus({ preventScroll: true });
     });
 
     confirmButton.addEventListener('click', () => {

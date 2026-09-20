@@ -4,6 +4,8 @@ require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../../config/mailer.php';
 require_once '../helpers/patientEligibility.php';
+require_once '../models/auditLogModel.php';
+require_once '../support/RegistrationTermsConsent.php';
 
 session_start();
 
@@ -11,6 +13,7 @@ class UserController {
     private $userModel;
     private $patientModel;
     private $conn;
+    private $auditLog;
 
     public function __construct() {
         $db   = new Database();
@@ -18,6 +21,7 @@ class UserController {
 
         $this->userModel = new User($this->conn);
         $this->patientModel = new Patient($this->conn);
+        $this->auditLog = new AuditLog($this->conn);
     }
 
     public function login() {
@@ -57,13 +61,13 @@ class UserController {
 
         // Role-based redirect
         $redirect = match($user['user_role']) {
-            'Admin'           => 'admin/dashboard.php',
-            'Dental Assistant'=> 'dental_asst/dashboard.php',
-            'Patient'         => 'patient/dashboard.php',
-            default           => '../../index.php',
+            'Admin'           => vdAppUrl('apps/views/admin/dashboard.php'),
+            'Dental Assistant'=> vdAppUrl('apps/views/dental_asst/dashboard.php'),
+            'Patient'         => vdAppUrl('apps/views/patient/dashboard.php'),
+            default           => vdAppUrl('index.php'),
         };
         if ($user['user_role'] === 'Patient' && ($_POST['next'] ?? '') === 'booking') {
-            $redirect = 'patient/dashboard.php#booking-content.php';
+            $redirect = vdAppUrl('apps/views/patient/dashboard.php#booking-content.php');
         }
 
         echo json_encode(['success' => true, 'redirect' => $redirect]);
@@ -132,6 +136,13 @@ class UserController {
             exit;
         }
 
+        $termsConsent = RegistrationTermsConsent::validate($_SESSION, $_POST);
+        if ($termsConsent === null) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'message' => 'Please review and agree to the current Terms and Conditions before registering.']);
+            exit;
+        }
+
         $exactPatient = $this->patientModel->findExactIdentity($identity);
         $linkAuthorization = null;
         if ($exactPatient) {
@@ -151,6 +162,7 @@ class UserController {
             'link_patient_id' => $exactPatient ? (int) $exactPatient['patient_id'] : null,
             'link_authorization_id' => $linkAuthorization ? (int) $linkAuthorization['authorization_id'] : null,
             'possible_match_ids' => $possibleMatches,
+            'terms_consent' => $termsConsent,
         ];
 
         // Returning to the registration form must not invalidate a code that
@@ -264,6 +276,11 @@ class UserController {
             exit;
         }
 
+        if (!RegistrationTermsConsent::isRecordedConsentValid($pending['terms_consent'] ?? null)) {
+            echo json_encode(['success' => false, 'message' => 'Terms consent could not be verified. Please restart registration.']);
+            exit;
+        }
+
         $minimumPatientAge = PatientEligibility::minimumAge($this->conn);
         $eligibility = PatientEligibility::assess($pending['identity']['birthdate'] ?? '', $minimumPatientAge);
         if (!$eligibility['eligible']) {
@@ -307,6 +324,15 @@ class UserController {
                 $patientId = $this->patientModel->createRegisteredPatient($user_id, $pending['identity'], $pending['email']);
                 $this->patientModel->flagPossibleDuplicates($patientId, $pending['possible_match_ids'] ?? []);
             }
+            $this->auditLog->recordForUser(
+                'user',
+                $user_id,
+                'registration_terms_accepted',
+                'Accepted the registration Terms and Conditions.',
+                null,
+                $pending['terms_consent'],
+                $user_id
+            );
             $this->conn->prepare("UPDATE email_verifications SET used = 1 WHERE id = :id")
                 ->execute([':id' => $record['id']]);
             $this->conn->commit();
@@ -321,16 +347,16 @@ class UserController {
         $_SESSION['email'] = $pending['email'];
         $_SESSION['display_name'] = trim($pending['identity']['firstname'] . ' ' . $pending['identity']['lastname']);
         $_SESSION['user_role'] = 'Patient';
-        unset($_SESSION['pending_registration']);
+        unset($_SESSION['pending_registration'], $_SESSION[RegistrationTermsConsent::SESSION_KEY]);
 
-        echo json_encode(['success' => true, 'message' => 'Account created successfully!', 'redirect' => '/Capstone System/apps/views/patient/dashboard.php#booking-content.php']);
+        echo json_encode(['success' => true, 'message' => 'Account created successfully!', 'redirect' => vdAppUrl('apps/views/patient/dashboard.php#booking-content.php')]);
         exit;
     }
 
 
     public function logout() {
         session_destroy();
-        header('Location: ../../index.php');
+        header('Location: ' . vdAppUrl('index.php'));
         exit;
     }
 }

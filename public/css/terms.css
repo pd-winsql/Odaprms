@@ -57,7 +57,30 @@
 
 .vd-terms-modal .modal-header {
   align-items: flex-start;
+  gap: 1rem;
   border-color: var(--border);
+}
+
+.vd-terms-modal .modal-header > div {
+  min-width: 0;
+}
+
+.vd-terms-close {
+  min-width: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dark);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.vd-terms-close:hover {
+  border-color: var(--gold);
+  color: var(--gold-hover);
 }
 
 .vd-terms-modal-description {
@@ -98,6 +121,13 @@
 .vd-terms-back-link:hover,
 .vd-terms-back-link:focus-visible {
   color: var(--gold-hover);
+}
+
+.vd-terms-close:focus-visible,
+.vd-terms-agree-btn:focus-visible,
+.vd-terms-page-link:focus-visible {
+  outline: 3px solid rgba(128, 97, 31, 0.4);
+  outline-offset: 2px;
 }
 
 .vd-terms-agree-btn {
@@ -184,6 +214,18 @@
 }
 
 @media (max-width: 575px) {
+  .vd-terms-modal .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .vd-terms-modal .modal-header {
+    flex-wrap: wrap;
+  }
+
+  .vd-terms-close {
+    width: 100%;
+  }
+
   .vd-terms-modal .modal-footer {
     align-items: stretch;
     flex-direction: column;
@@ -202,5 +244,15 @@
 
   .vd-terms-page-main {
     margin: 1.25rem auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-terms-modal,
+  .vd-terms-modal .modal-dialog,
+  .vd-terms-close,
+  .vd-terms-agree-btn {
+    scroll-behavior: auto;
+    transition: none !important;
   }
 }

@@ -129,7 +129,7 @@ if ($hasSelectedRecordDate) {
         datePicker = null;
         LoadingUI.showContent(content, { label: 'Loading logbook…' });
         try {
-            const response = await fetch(`partials/logbook-content.php?date=${encodeURIComponent(date)}`);
+            const response = await fetch(window.vdDashboardPartialUrl(`logbook-content.php?date=${encodeURIComponent(date)}`));
             if (!response.ok) throw new Error('Unable to load logbook.');
             content.innerHTML = await response.text();
             content.querySelectorAll('script').forEach(oldScript => {
@@ -168,7 +168,7 @@ if ($hasSelectedRecordDate) {
 
             LoadingUI.setButton(button, true, 'Starting…');
             try {
-                const response = await fetch('../../controllers/logbookController.php', { method: 'POST', body });
+                const response = await fetch(window.vdAppUrl('apps/controllers/logbookController.php'), { method: 'POST', body });
                 const result = await response.json();
                 if (!response.ok || !result.success) throw new Error(result.message || 'Unable to update the visit.');
                 window.showToast(result.message || `Visit updated to ${status}.`, true);

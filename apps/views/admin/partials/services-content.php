@@ -356,7 +356,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
 
 <script>
 (function () {
-    const CONTROLLER = '../../../apps/controllers/serviceController.php';
+    const CONTROLLER = window.vdAppUrl('apps/controllers/serviceController.php');
     const CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token']) ?>;
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {

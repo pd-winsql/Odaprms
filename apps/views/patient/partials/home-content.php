@@ -247,11 +247,13 @@ $missingProfileFields = array_keys(array_filter(
     const submitButton = document.getElementById('patientRescheduleSubmit');
     const emptyState = document.getElementById('patientRescheduleEmpty');
     const token = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
-    const controller = '../../controllers/rescheduleController.php';
+    const controller = window.vdAppUrl('apps/controllers/rescheduleController.php');
+    let rescheduleTrigger = null;
 
     modalElement.addEventListener('hidden.bs.modal', () => {
         if (modalHost?.isConnected) modalHost.appendChild(modalElement);
         else modalElement.remove();
+        if (rescheduleTrigger?.isConnected) rescheduleTrigger.focus({ preventScroll: true });
     });
 
     function refreshHome() {
@@ -260,6 +262,7 @@ $missingProfileFields = array_keys(array_filter(
 
     document.querySelectorAll('[data-open-reschedule]').forEach(button => {
         button.addEventListener('click', () => {
+            rescheduleTrigger = button;
             appointmentInput.value = button.dataset.appointmentId;
             currentLabel.textContent = button.dataset.appointmentLabel;
             scheduleInput.value = '';

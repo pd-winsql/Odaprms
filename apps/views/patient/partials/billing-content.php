@@ -137,7 +137,7 @@ function depositStatusClass($status) {
                         </section>
 
                         <form class="depositSubmissionForm vd-deposit-proof-panel" enctype="multipart/form-data" data-deposit-ocr-form
-                                data-ocr-endpoint="../../controllers/depositController.php"
+                                data-ocr-endpoint="<?= htmlspecialchars(vdAppUrl('apps/controllers/depositController.php'), ENT_QUOTES, 'UTF-8') ?>"
                                 data-required-amount="<?= htmlspecialchars(number_format((float) $deposit['amount'], 2, '.', '')) ?>">
                                 <input type="hidden" name="action" value="submit">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -331,7 +331,7 @@ function depositStatusClass($status) {
             errorBox.classList.add('d-none');
             LoadingUI.setButton(button, true, 'Uploading…');
             try {
-                const response = await fetch('../../controllers/depositController.php', {
+                const response = await fetch(window.vdAppUrl('apps/controllers/depositController.php'), {
                     method: 'POST',
                     body: new FormData(form)
                 });

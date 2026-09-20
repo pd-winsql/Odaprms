@@ -51,7 +51,7 @@
             const submitButton = this.querySelector('button[type="submit"]');
             LoadingUI.setButton(submitButton, true, 'Adding…');
 
-            fetch('../../controllers/scheduleController.php', {
+            fetch(window.vdAppUrl('apps/controllers/scheduleController.php'), {
                 method: 'POST',
                 body: formData
             })

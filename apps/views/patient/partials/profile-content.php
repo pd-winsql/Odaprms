@@ -663,7 +663,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
 
         setSaving(true);
         try {
-            const response = await fetch('../../controllers/patientController.php', { method: 'POST', body });
+            const response = await fetch(window.vdAppUrl('apps/controllers/patientController.php'), { method: 'POST', body });
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message || 'Unable to save your profile.');
             isDirty = false;

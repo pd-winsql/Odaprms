@@ -91,7 +91,7 @@ sort($depositStatuses);
                             <td>
                                 <?php if (!empty($record['has_receipt'])): ?>
                                     <button type="button" class="btn vd-btn-outline btn-sm" data-view-receipt
-                                        data-receipt-url="../../controllers/depositController.php?action=receipt&amp;deposit_id=<?= (int)$record['deposit_id'] ?>"
+                                        data-receipt-url="<?= htmlspecialchars(vdAppUrl('apps/controllers/depositController.php?action=receipt&deposit_id=' . (int) $record['deposit_id']), ENT_QUOTES, 'UTF-8') ?>"
                                         data-receipt-label="Receipt for appointment #<?= (int)$record['appointment_id'] ?>">View Receipt</button>
                                 <?php else: ?><span class="vd-appt-meta">No receipt</span><?php endif; ?>
                             </td>

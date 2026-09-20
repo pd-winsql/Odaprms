@@ -218,7 +218,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
 <script>
 (function () {
-    const CONTROLLER = '../../../apps/controllers/staffController.php';
+    const CONTROLLER = window.vdAppUrl('apps/controllers/staffController.php');
 
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(element => {
         const tooltip = bootstrap.Tooltip.getOrCreateInstance(element, { container: 'body' });

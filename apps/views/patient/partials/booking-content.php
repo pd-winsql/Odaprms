@@ -378,6 +378,9 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     confirmationModalElement.addEventListener('hide.bs.modal', event => {
         if (isSubmitting) event.preventDefault();
     });
+    confirmationModalElement.addEventListener('hidden.bs.modal', () => {
+        if (!isSubmitting && submitButton?.isConnected) submitButton.focus({ preventScroll: true });
+    });
 
     function setSelectionSummary(title, detail) {
         const strong = document.createElement('strong');
@@ -560,7 +563,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
 
         try {
             const response = await fetch(
-                '../../controllers/scheduleController.php?action=available&clinic_id=' + encodeURIComponent(clinicId),
+                window.vdAppUrl('apps/controllers/scheduleController.php?action=available&clinic_id=') + encodeURIComponent(clinicId),
                 { cache: 'no-store', headers: { Accept: 'application/json' } }
             );
             if (!response.ok) throw new Error('Schedule request failed.');
@@ -678,7 +681,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         LoadingUI.setButton(confirmRequestButton, true, 'Sending request…');
 
         try {
-            const response = await fetch('../../controllers/appointmentController.php', {
+            const response = await fetch(window.vdAppUrl('apps/controllers/appointmentController.php'), {
                 method: 'POST',
                 body: new FormData(bookingForm)
             });

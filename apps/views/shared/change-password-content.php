@@ -220,7 +220,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         LoadingUI.setButton(submit, true, 'Updating...');
 
         try {
-            const response = await fetch('../../controllers/accountController.php', {
+            const response = await fetch(window.vdAppUrl('apps/controllers/accountController.php'), {
                 method: 'POST',
                 headers: {'X-CSRF-Token': csrfToken},
                 body: data

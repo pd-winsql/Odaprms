@@ -197,7 +197,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="visitRatingForm" data-endpoint="../../../apps/controllers/reviewController.php">
+            <form id="visitRatingForm" data-endpoint="<?= htmlspecialchars(vdAppUrl('apps/controllers/reviewController.php'), ENT_QUOTES, 'UTF-8') ?>">
                 <div class="modal-body vd-rating-modal-body">
                     <input type="hidden" name="action" value="submit">
                     <input type="hidden" name="appointment_id" id="visitRatingAppointmentId">
@@ -243,6 +243,8 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
 (function () {
     const modalElement = document.getElementById('patientHistoryDetailsModal');
     if (!modalElement) return;
+    const detailsModal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    let detailsTrigger = null;
     const money = value => Number(value || 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
     const formatDate = value => {
         if (!value) return 'Not recorded';
@@ -278,7 +280,12 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
         container.appendChild(row);
     };
 
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        if (detailsTrigger?.isConnected) detailsTrigger.focus({ preventScroll: true });
+    });
+
     document.querySelectorAll('[data-history-details]').forEach(button => button.addEventListener('click', () => {
+        detailsTrigger = button;
         const appointment = JSON.parse(button.dataset.historyDetails);
         document.getElementById('patientHistoryDetailsTitle').textContent = `Visit on ${formatDate(appointment.date)}`;
         document.getElementById('patientHistoryDetailsSubtitle').textContent = appointment.clinic || 'Clinic not listed';
@@ -370,7 +377,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
             document.getElementById('patientHistoryReviewDate').textContent = `Submitted ${formatDateTime(review.createdAt)}`;
         }
 
-        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+        detailsModal.show();
     }));
 
     const ratingModalElement = document.getElementById('visitRatingModal');

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/appUrl.php';
 
 function vdRenderOdontogramWorkspace(string $id, bool $readOnly, bool $billingContext = false): void
 {
@@ -18,7 +19,7 @@ function vdRenderOdontogramWorkspace(string $id, bool $readOnly, bool $billingCo
         echo '</div>';
     };
     ?>
-    <section class="vd-odontogram" id="<?= htmlspecialchars($id) ?>" data-odontogram-root data-read-only="<?= $readOnly ? '1' : '0' ?>" data-billing-context="<?= $billingContext ? '1' : '0' ?>" data-controller="../../controllers/odontogramController.php" data-csrf="<?= htmlspecialchars((string) ($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" aria-label="Patient odontogram">
+    <section class="vd-odontogram" id="<?= htmlspecialchars($id) ?>" data-odontogram-root data-read-only="<?= $readOnly ? '1' : '0' ?>" data-billing-context="<?= $billingContext ? '1' : '0' ?>" data-controller="<?= htmlspecialchars(vdAppUrl('apps/controllers/odontogramController.php'), ENT_QUOTES, 'UTF-8') ?>" data-csrf="<?= htmlspecialchars((string) ($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" aria-label="Patient odontogram">
         <header class="vd-odontogram-heading">
             <div>
                 <span class="vd-odontogram-kicker">Clinical dental record</span>

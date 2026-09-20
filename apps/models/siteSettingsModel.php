@@ -181,7 +181,8 @@ class SiteSettingsModel {
                 SET site_logo = :logo, last_updated_by = :updated_by, last_updated_at = NOW()
                 WHERE id = 1
             ");
-            return $stmt->execute([':logo' => $filename, ':updated_by' => $updatedBy]);
+            return $stmt->execute([':logo' => $filename, ':updated_by' => $updatedBy])
+                && $stmt->rowCount() === 1;
         } catch (PDOException $e) {
             error_log("updateLogo error: " . $e->getMessage());
             return false;

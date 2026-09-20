@@ -122,7 +122,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             'hasReceipt' => (bool) ($appointment['has_receipt'] ?? false),
             'receiptMime' => $appointment['receipt_mime'] ?? '',
             'receiptUrl' => !empty($appointment['has_receipt'])
-                ? '../../controllers/depositController.php?action=receipt&deposit_id=' . (int) $appointment['deposit_id']
+                ? vdAppUrl('apps/controllers/depositController.php?action=receipt&deposit_id=' . (int) $appointment['deposit_id'])
                 : '',
         ] : null,
         'appointmentCode' => $appointment['appointment_code'] ?? '',
@@ -670,9 +670,9 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 
 <script>
 (function () {
-    const CONTROLLER = '../../../apps/controllers/appointmentController.php';
-    const DEPOSIT_CONTROLLER = '../../../apps/controllers/depositController.php';
-    const RESCHEDULE_CONTROLLER = '../../../apps/controllers/rescheduleController.php';
+    const CONTROLLER = window.vdAppUrl('apps/controllers/appointmentController.php');
+    const DEPOSIT_CONTROLLER = window.vdAppUrl('apps/controllers/depositController.php');
+    const RESCHEDULE_CONTROLLER = window.vdAppUrl('apps/controllers/rescheduleController.php');
     const CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token']) ?>;
     let activeAppointmentPayload = null;
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../apps/helpers/appUrl.php';
 
 // Load environment-specific settings.
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');

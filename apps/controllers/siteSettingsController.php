@@ -6,6 +6,7 @@ require_once '../models/siteSettingsModel.php';
 require_once '../models/clinicModel.php';
 require_once '../models/scheduleModel.php';
 require_once '../models/auditLogModel.php';
+require_once '../support/SiteLogoUpload.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 
@@ -222,55 +223,31 @@ class SiteSettingsController {
             exit;
         }
 
-        if ($_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(['success' => false, 'message' => 'Upload failed. Please try again.']);
+        $result = SiteLogoUpload::replace(
+            $_FILES['logo'],
+            __DIR__ . '/../../public/assets/',
+            (string) $oldLogo,
+            function (string $filename): bool {
+                return $this->settings->updateLogo($filename, 'Admin');
+            },
+            'is_uploaded_file',
+            'move_uploaded_file'
+        );
+
+        if (!$result['success']) {
+            echo json_encode($result);
             exit;
         }
 
-        if (empty($_FILES['logo']['name']) || !is_uploaded_file($_FILES['logo']['tmp_name'])) {
-            echo json_encode(['success' => false, 'message' => 'No valid upload found.']);
-            exit;
-        }
+        $newFilename = $result['filename'];
+        // Audit only server-generated names. The untrusted client filename is
+        // deliberately neither persisted nor logged.
+        $safeOldLogo = preg_match('/^site_logo_(?:[a-f0-9]{32}\.(?:jpg|png|webp)|[0-9]{10}\.(?:jpe?g|png|webp|svg))$/D', (string) $oldLogo)
+            ? (string) $oldLogo
+            : '';
+        $this->auditLog->recordForUser('site_settings', 1, 'site_logo_updated', 'Updated the system logo.', ['site_logo' => $safeOldLogo], ['site_logo' => $newFilename], (int) $_SESSION['user_id']);
 
-        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
-        $ext     = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
-
-        if (!in_array($ext, $allowed)) {
-            echo json_encode(['success' => false, 'message' => 'Logo must be JPG, PNG, WEBP, or SVG.']);
-            exit;
-        }
-
-        $newFilename = 'site_logo_' . time() . '.' . $ext;
-        $targetDir   = __DIR__ . '/../../public/assets/';
-        $targetFile  = $targetDir . $newFilename;
-
-        if (!is_dir($targetDir)) {
-            echo json_encode(['success' => false, 'message' => 'Logo directory does not exist.']);
-            exit;
-        }
-
-        if (!move_uploaded_file($_FILES['logo']['tmp_name'], $targetFile)) {
-            echo json_encode(['success' => false, 'message' => 'Failed to upload logo.']);
-            exit;
-        }
-
-        // Ensure settings row exists before updating logo field.
-        $this->settings->getSettings();
-        $result = $this->settings->updateLogo($newFilename, 'Admin');
-
-        if (!$result) {
-            if (file_exists($targetFile)) {
-                unlink($targetFile);
-            }
-            echo json_encode(['success' => false, 'message' => 'Failed to save logo.']);
-            exit;
-        }
-
-        $this->auditLog->recordForUser('site_settings', 1, 'site_logo_updated', 'Updated the system logo.', ['site_logo' => $oldLogo], ['site_logo' => $newFilename], (int) $_SESSION['user_id']);
-
-        echo json_encode($result
-            ? ['success' => true, 'message' => 'Logo updated.', 'logo' => $newFilename]
-            : ['success' => false, 'message' => 'Failed to save logo.']);
+        echo json_encode(['success' => true, 'message' => 'Logo updated.', 'logo' => $newFilename]);
         exit;
     }
 

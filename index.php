@@ -134,7 +134,7 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
         <div class="d-flex gap-2">
           <?php if ($isLoggedIn): ?>
             <a href="<?= htmlspecialchars($dashboardUrl) ?>" class="btn vd-btn-gold">Go to Dashboard</a>
-            <a href="apps/controllers/userController.php?action=logout" class="btn vd-btn-outline">Logout</a>
+            <a href="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>" class="btn vd-btn-outline">Logout</a>
           <?php else: ?>
             <a href="apps/views/register.php" class="btn vd-btn-gold">Register</a>
           <?php endif; ?>

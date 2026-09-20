@@ -241,6 +241,8 @@
             if (parents.some(modal => modal.isConnected && modal.classList.contains('show'))) {
                 document.body.classList.add('modal-open');
                 restoreParentFocus(parent, trigger);
+            } else if (trigger?.isConnected && typeof trigger.focus === 'function') {
+                trigger.focus({ preventScroll: true });
             }
             finish(result);
         }, { once: true });
