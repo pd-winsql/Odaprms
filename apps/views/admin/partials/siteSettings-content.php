@@ -139,8 +139,18 @@ function sv($settings, $key)
 
     <?php if ($isAdmin): ?>
 
+    <section class="vd-settings-category vd-dash-card" data-settings-category="landing">
+        <button class="vd-settings-category-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#settingsLandingPage" aria-expanded="true" aria-controls="settingsLandingPage">
+            <span class="vd-settings-category-icon"><i class="ti ti-browser" aria-hidden="true"></i></span>
+            <span class="vd-settings-category-copy"><strong>Landing Page</strong><small>Brand identity and public content patients see before signing in.</small></span>
+            <span class="vd-settings-category-count">4 sections</span>
+            <i class="ti ti-chevron-down vd-settings-category-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="collapse show" id="settingsLandingPage" data-settings-collapse>
+        <div class="vd-settings-category-body">
+
     <!-- ── BRAND & LOGO ── -->
-    <div class="vd-dash-card">
+    <section class="vd-settings-subsection">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">Brand & Logo</span>
         </div>
@@ -189,10 +199,10 @@ function sv($settings, $key)
                 <div class="vd-appt-meta mt-2">PNG or JPG is recommended for the widest email-client compatibility. WEBP and SVG use the text fallback in email.</div>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- ── HERO SECTION ── -->
-    <div class="vd-dash-card">
+    <section class="vd-settings-subsection">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">Hero Section</span>
         </div>
@@ -216,10 +226,10 @@ function sv($settings, $key)
                 <button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="hero">Save Hero Section</button>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- ── ABOUT SECTION ── -->
-    <div class="vd-dash-card">
+    <section class="vd-settings-subsection">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">About Section</span>
         </div>
@@ -248,10 +258,10 @@ function sv($settings, $key)
                 <button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="about">Save About Section</button>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- ── CONTACT INFO ── -->
-    <div class="vd-dash-card">
+    <section class="vd-settings-subsection">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">Contact Information</span>
         </div>
@@ -277,9 +287,21 @@ function sv($settings, $key)
                 <button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="contact">Save Contact Info</button>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="vd-dash-card">
+        </div>
+        </div>
+    </section>
+
+    <section class="vd-settings-category vd-dash-card" data-settings-category="deposits">
+        <button class="vd-settings-category-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#settingsDeposits" aria-expanded="false" aria-controls="settingsDeposits">
+            <span class="vd-settings-category-icon"><i class="ti ti-receipt" aria-hidden="true"></i></span>
+            <span class="vd-settings-category-copy"><strong>Deposits &amp; GCash</strong><small>Payment amount, deadline, recipient account, and QR code.</small></span>
+            <span class="vd-settings-category-count">Payment setup</span>
+            <i class="ti ti-chevron-down vd-settings-category-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="collapse" id="settingsDeposits" data-settings-collapse>
+        <section class="vd-settings-subsection vd-settings-category-single">
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">GCash Deposit Settings</span></div>
         <div class="vd-dash-card-body">
             <div class="alert alert-info small">These values apply when a new deposit deadline is created, including payment resubmissions and extensions. Existing recorded amounts and deadlines are not changed.</div>
@@ -295,9 +317,19 @@ function sv($settings, $key)
             <?php if (!empty($settings['gcash_qr_path'])): ?><div class="mb-3"><img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="Current GCash QR" style="max-height:180px" class="img-thumbnail"></div><?php endif; ?>
             <div class="d-flex flex-wrap gap-2 align-items-center"><input type="file" id="gcashQrInput" class="form-control form-control-sm" style="max-width:280px" accept="image/jpeg,image/png"><button type="button" class="btn vd-btn-outline btn-sm" id="uploadGcashQrBtn">Upload QR Code</button></div>
         </div>
-    </div>
+        </section>
+        </div>
+    </section>
 
-    <div class="vd-dash-card">
+    <section class="vd-settings-category vd-dash-card" data-settings-category="registration">
+        <button class="vd-settings-category-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#settingsRegistration" aria-expanded="false" aria-controls="settingsRegistration">
+            <span class="vd-settings-category-icon"><i class="ti ti-user-heart" aria-hidden="true"></i></span>
+            <span class="vd-settings-category-copy"><strong>Patient Registration</strong><small>Birthday-based eligibility for registration and appointment requests.</small></span>
+            <span class="vd-settings-category-count">Age policy</span>
+            <i class="ti ti-chevron-down vd-settings-category-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="collapse" id="settingsRegistration" data-settings-collapse>
+        <section class="vd-settings-subsection vd-settings-category-single">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">Patient Eligibility</span>
         </div>
@@ -320,16 +352,26 @@ function sv($settings, $key)
                 </div>
             </div>
         </div>
-    </div>
+        </section>
+        </div>
+    </section>
 
-    <div class="vd-dash-card">
+    <section class="vd-settings-category vd-dash-card" data-settings-category="appointments">
+        <button class="vd-settings-category-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#settingsAppointments" aria-expanded="false" aria-controls="settingsAppointments">
+            <span class="vd-settings-category-icon"><i class="ti ti-calendar-cog" aria-hidden="true"></i></span>
+            <span class="vd-settings-category-copy"><strong>Appointment Rules</strong><small>Advance notice required for booking and rescheduling visits.</small></span>
+            <span class="vd-settings-category-count">Lead times</span>
+            <i class="ti ti-chevron-down vd-settings-category-chevron" aria-hidden="true"></i>
+        </button>
+        <div class="collapse" id="settingsAppointments" data-settings-collapse>
+        <section class="vd-settings-subsection vd-settings-category-single">
         <div class="vd-dash-card-header">
             <span class="vd-dash-card-title">Booking Policy</span>
         </div>
         <div class="vd-dash-card-body">
             <p class="vd-appt-meta mb-3">Set the notice required for new bookings and reschedule requests. Existing requests keep the policy captured when submitted.</p>
-            <div class="row g-3 align-items-end">
-                <div class="col-sm-6 col-lg-4">
+            <div class="row g-3 vd-booking-policy-controls">
+                <div class="col-sm-6 col-lg-4 vd-booking-policy-field">
                     <label class="vd-label form-label" for="minimumBookingLeadDays">Minimum booking notice</label>
                     <div class="input-group">
                         <input type="number" class="form-control vd-input vd-field" id="minimumBookingLeadDays"
@@ -340,7 +382,7 @@ function sv($settings, $key)
                     </div>
                     <div class="form-text" id="minimumBookingLeadDaysHint">Use 0 to allow same-day requests when a future clinic window is available.</div>
                 </div>
-                <div class="col-sm-6 col-lg-4">
+                <div class="col-sm-6 col-lg-4 vd-booking-policy-field">
                     <label class="vd-label form-label" for="minimumRescheduleLeadDays">Minimum reschedule notice</label>
                     <div class="input-group">
                         <input type="number" class="form-control vd-input vd-field" id="minimumRescheduleLeadDays"
@@ -351,12 +393,14 @@ function sv($settings, $key)
                     </div>
                     <div class="form-text" id="minimumRescheduleLeadDaysHint">Cannot be greater than the booking notice.</div>
                 </div>
-                <div class="col-lg-4 d-flex justify-content-lg-end">
+                <div class="col-lg-4 d-flex justify-content-lg-end vd-booking-policy-action">
                     <button type="button" class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="booking">Save Booking Policy</button>
                 </div>
             </div>
         </div>
-    </div>
+        </section>
+        </div>
+    </section>
 
     <?php endif; ?>
 
@@ -389,6 +433,32 @@ function sv($settings, $key)
         const clinicTimePickers = new WeakMap();
         const bookingLeadInput = document.getElementById('minimumBookingLeadDays');
         const rescheduleLeadInput = document.getElementById('minimumRescheduleLeadDays');
+        const settingsCollapses = Array.from(document.querySelectorAll('[data-settings-collapse]'));
+
+        function rememberOpenSettingsCategories() {
+            try {
+                const openIds = settingsCollapses.filter(panel => panel.classList.contains('show')).map(panel => panel.id);
+                sessionStorage.setItem('vdOpenSettingsCategories', JSON.stringify(openIds));
+            } catch (error) {}
+        }
+
+        if (settingsCollapses.length) {
+            try {
+                const savedIds = JSON.parse(sessionStorage.getItem('vdOpenSettingsCategories') || 'null');
+                if (Array.isArray(savedIds)) {
+                    settingsCollapses.forEach(panel => {
+                        const collapse = bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false });
+                        savedIds.includes(panel.id) ? collapse.show() : collapse.hide();
+                    });
+                }
+            } catch (error) {
+                // Storage can be unavailable; Landing Page remains open by default.
+            }
+            settingsCollapses.forEach(panel => {
+                panel.addEventListener('shown.bs.collapse', rememberOpenSettingsCategories);
+                panel.addEventListener('hidden.bs.collapse', rememberOpenSettingsCategories);
+            });
+        }
 
         function syncRescheduleLeadMaximum() {
             if (!bookingLeadInput || !rescheduleLeadInput) return;
@@ -649,7 +719,7 @@ function sv($settings, $key)
                 const group = this.dataset.group;
                 const label = groupLabels[group] || group;
                 const saveButton = this;
-                const card = saveButton.closest('.vd-dash-card');
+                const card = saveButton.closest('.vd-settings-subsection, .vd-dash-card');
                 const invalidField = Array.from(card.querySelectorAll('.vd-field')).find(field => !field.checkValidity());
                 if (invalidField) {
                     invalidField.reportValidity();

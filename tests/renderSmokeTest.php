@@ -74,6 +74,13 @@ if ($case === 'dental-settings') {
 if ($case === 'settings'
     && (!str_contains($html, 'Brand & Logo')
         || !str_contains($html, 'minimum_reschedule_lead_days')
+        || !str_contains($html, 'id="settingsLandingPage"')
+        || !str_contains($html, 'id="settingsDeposits"')
+        || !str_contains($html, 'id="settingsRegistration"')
+        || !str_contains($html, 'id="settingsAppointments"')
+        || substr_count($html, 'data-settings-category=') !== 4
+        || substr_count($html, ' data-settings-collapse>') !== 4
+        || !str_contains($html, "closest('.vd-settings-subsection, .vd-dash-card')")
         || str_contains($html, 'Clinic Schedule Defaults'))) {
     fwrite(STDERR, "Admin settings did not render the intended system-only controls.\n");
     exit(1);

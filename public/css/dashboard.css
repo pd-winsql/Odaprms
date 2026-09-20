@@ -3535,6 +3535,116 @@ button.vd-stat-card {
 .vd-schedule-defaults-card {
     overflow: hidden;
 }
+
+.vd-settings-category {
+    overflow: hidden;
+}
+
+.vd-settings-category-toggle {
+    align-items: center;
+    background: #fffdfa;
+    border: 0;
+    color: var(--dark);
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 42px minmax(0, 1fr) auto 20px;
+    padding: 18px 22px;
+    text-align: left;
+    transition: background-color .18s ease;
+    width: 100%;
+}
+
+.vd-settings-category-toggle:hover {
+    background: #fcf8f0;
+}
+
+.vd-settings-category-toggle:focus-visible {
+    outline: 3px solid rgba(166, 124, 36, .24);
+    outline-offset: -3px;
+}
+
+.vd-settings-category-icon {
+    align-items: center;
+    background: var(--gold-pale);
+    border-radius: 10px;
+    color: var(--gold-dark);
+    display: flex;
+    font-size: 20px;
+    height: 42px;
+    justify-content: center;
+    width: 42px;
+}
+
+.vd-settings-category-copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.vd-settings-category-copy strong {
+    font-family: "Cormorant Garamond", serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.vd-settings-category-copy small {
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.vd-settings-category-count {
+    color: var(--gold-dark);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.vd-settings-category-chevron {
+    color: var(--gold-dark);
+    font-size: 18px;
+    transition: transform .2s ease;
+}
+
+.vd-settings-category-toggle[aria-expanded="true"] .vd-settings-category-chevron {
+    transform: rotate(180deg);
+}
+
+.vd-settings-category-toggle[aria-expanded="true"] {
+    border-bottom: 1px solid var(--border);
+}
+
+.vd-settings-category-body {
+    padding: 0 28px;
+}
+
+.vd-settings-subsection + .vd-settings-subsection {
+    border-top: 1px solid rgba(181, 146, 76, .22);
+}
+
+.vd-settings-subsection .vd-dash-card-header {
+    background: transparent;
+    padding: 20px 0 12px;
+}
+
+.vd-settings-subsection .vd-dash-card-body {
+    padding: 0 0 24px;
+}
+
+.vd-settings-category-single {
+    display: block;
+    padding: 0 28px;
+}
+
+.vd-booking-policy-controls {
+    align-items: flex-start;
+}
+
+.vd-booking-policy-action {
+    align-self: flex-end;
+}
 .vd-schedule-defaults-toggle {
     display: flex;
     width: 100%;
@@ -3823,6 +3933,27 @@ button.vd-stat-card {
 }
 
 @media (max-width: 767px) {
+    .vd-settings-category-toggle {
+        gap: 11px;
+        grid-template-columns: 38px minmax(0, 1fr) 18px;
+        padding: 15px 16px;
+    }
+    .vd-settings-category-icon {
+        border-radius: 9px;
+        font-size: 18px;
+        height: 38px;
+        width: 38px;
+    }
+    .vd-settings-category-copy strong {
+        font-size: 20px;
+    }
+    .vd-settings-category-count {
+        display: none;
+    }
+    .vd-settings-category-body,
+    .vd-settings-category-single {
+        padding-inline: 18px;
+    }
     .vd-schedule-defaults-toggle {
         align-items: flex-start;
         padding: 16px 18px;
@@ -3855,6 +3986,15 @@ button.vd-stat-card {
 }
 
 @media (max-width: 575px) {
+    .vd-settings-category-copy small {
+        font-size: 11px;
+    }
+    .vd-settings-subsection .vd-dash-card-header {
+        padding-top: 17px;
+    }
+    .vd-settings-subsection .vd-dash-card-body {
+        padding-bottom: 20px;
+    }
     .vd-schedule-policy-editor {
         grid-template-columns: 1fr;
     }
