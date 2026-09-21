@@ -16,6 +16,10 @@ $conn = $db->connect();
 $settingsModel = new SiteSettingsModel($conn);
 
 $settings = $settingsModel->getSettings();
+$heroImagePreview = basename((string) ($settings['hero_image'] ?? 'landing_hero_default.jpg'));
+if (!preg_match('/^(?:landing_hero_default\.jpg|hero_image_[a-f0-9]{32}\.(?:jpg|png|webp))$/D', $heroImagePreview)) {
+    $heroImagePreview = 'landing_hero_default.jpg';
+}
 $clinics = (new Clinic($conn))->getAllClinics();
 $isAdmin = ($_SESSION['user_role'] ?? '') === 'Admin';
 $minimumPatientAge = max(
@@ -209,6 +213,11 @@ function sv($settings, $key)
         <div class="vd-dash-card-body">
             <p class="vd-appt-meta mb-3">The clinic name is shown automatically above the hero message to keep the homepage clearly branded.</p>
             <div class="mb-3">
+                <label class="vd-label form-label">System description <span class="vd-appt-meta">(shown above the headline)</span></label>
+                <input type="text" class="form-control vd-input vd-field" data-field="hero_system_tag"
+                    maxlength="150" value="<?= sv($settings, 'hero_system_tag') ?>">
+            </div>
+            <div class="mb-3">
                 <label class="vd-label form-label">Eyebrow <span class="vd-appt-meta">(small gold caps line)</span></label>
                 <input type="text" class="form-control vd-input vd-field" data-field="hero_eyebrow"
                     maxlength="150" value="<?= sv($settings, 'hero_eyebrow') ?>">
@@ -224,6 +233,27 @@ function sv($settings, $key)
             </div>
             <div class="d-flex justify-content-end">
                 <button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="hero">Save Hero Section</button>
+            </div>
+
+            <hr style="border-color: var(--border);">
+
+            <div class="mt-3">
+                <label class="vd-label form-label">Hero photograph</label>
+                <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+                    <img
+                        src="../../../public/assets/<?= htmlspecialchars($heroImagePreview) ?>"
+                        alt="Current landing page hero"
+                        style="width: 132px; aspect-ratio: 4 / 3; object-fit: cover; object-position: center; border: 1px solid var(--border);">
+                    <div class="vd-appt-meta">Use a portrait or landscape clinic photograph. The landing page crops it responsively without placing text over the subject.</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <input type="file" id="heroImageInput" class="form-control form-control-sm" style="max-width: 320px;" accept="image/jpeg,image/png,image/webp">
+                    <button type="button" class="btn vd-btn-outline btn-sm" id="uploadHeroImageBtn">Replace Image</button>
+                    <?php if ($heroImagePreview !== 'landing_hero_default.jpg'): ?>
+                        <button type="button" class="btn vd-btn-outline btn-sm" id="resetHeroImageBtn">Restore Default</button>
+                    <?php endif; ?>
+                </div>
+                <div class="vd-appt-meta mt-2">JPG, PNG, or WebP; maximum 5 MB, 4096 × 4096 pixels, and 16 megapixels.</div>
             </div>
         </div>
     </section>
@@ -843,6 +873,57 @@ function sv($settings, $key)
                 });
             });
         }
+
+        const heroImageInput = document.getElementById('heroImageInput');
+        const uploadHeroImageBtn = document.getElementById('uploadHeroImageBtn');
+        uploadHeroImageBtn?.addEventListener('click', function() {
+            if (!heroImageInput?.files[0]) {
+                showToast('Choose a hero image first.', false);
+                return;
+            }
+
+            const button = this;
+            askForSaveConfirmation('Replace the photograph in the public landing page hero?', async function() {
+                const formData = new FormData();
+                formData.append('action', 'updateHeroImage');
+                formData.append('csrf_token', settingsCsrfToken);
+                formData.append('hero_image', heroImageInput.files[0]);
+                LoadingUI.setButton(button, true, 'Uploading…');
+                try {
+                    const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+                    const result = await response.json();
+                    showToast(result.message || 'Unable to update the hero image.', result.success);
+                    return result.success;
+                } catch (error) {
+                    showToast('Unable to upload the hero image.', false);
+                    return false;
+                } finally {
+                    LoadingUI.setButton(button, false);
+                }
+            });
+        });
+
+        const resetHeroImageBtn = document.getElementById('resetHeroImageBtn');
+        resetHeroImageBtn?.addEventListener('click', function() {
+            const button = this;
+            askForSaveConfirmation('Restore the original clinic photograph in the landing page hero?', async function() {
+                const formData = new FormData();
+                formData.append('action', 'resetHeroImage');
+                formData.append('csrf_token', settingsCsrfToken);
+                LoadingUI.setButton(button, true, 'Restoring…');
+                try {
+                    const response = await fetch(CONTROLLER, { method: 'POST', body: formData });
+                    const result = await response.json();
+                    showToast(result.message || 'Unable to restore the default hero image.', result.success);
+                    return result.success;
+                } catch (error) {
+                    showToast('Unable to restore the default hero image.', false);
+                    return false;
+                } finally {
+                    LoadingUI.setButton(button, false);
+                }
+            });
+        });
 
         const uploadGcashQrBtn = document.getElementById('uploadGcashQrBtn');
         const gcashQrInput = document.getElementById('gcashQrInput');

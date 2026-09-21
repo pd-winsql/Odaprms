@@ -64,7 +64,7 @@ foreach ($allCategories as $cat) {
   foreach ($serviceIds as $sid) {
     if (!isset($servicesById[$sid]) || (int)$servicesById[$sid]['is_active'] !== 1) continue;
     $categoryServices[] = [
-      'id' => $serviceId,
+      'id' => (int)$sid,
       'name' => $servicesById[$sid]['service_name'],
       'image' => vdServiceImageUrl($servicesById[$sid]['service_image'] ?? null),
       'desc' => $servicesById[$sid]['service_description'],
@@ -94,6 +94,10 @@ $dashboardUrl = match ($_SESSION['user_role'] ?? '') {
 $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
   ? 'apps/views/patient/dashboard.php#booking-content.php'
   : 'apps/views/login.php?next=booking';
+$heroImage = basename((string)($settings['hero_image'] ?? 'landing_hero_default.jpg'));
+if (!preg_match('/^(?:landing_hero_default\.jpg|hero_image_[a-f0-9]{32}\.(?:jpg|png|webp))$/D', $heroImage)) {
+  $heroImage = 'landing_hero_default.jpg';
+}
 ?>
 
 <!DOCTYPE html>
@@ -103,21 +107,22 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dr. Aprille Ventura Clinica Dental</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="public/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="public/css/styles.css?v=<?= filemtime(__DIR__ . '/public/css/styles.css') ?>">
-  <link rel="stylesheet" href="public/css/index.css?v=<?= filemtime(__DIR__ . '/public/css/index.css') ?>">
+  <link rel="stylesheet" href="public/css/landing.css?v=<?= filemtime(__DIR__ . '/public/css/landing.css') ?>">
   <link rel="stylesheet" href="public/css/loading.css">
   <script src="public/js/loading.js" defer></script>
 </head>
 
-<body>
+<body class="vd-landing-page">
 
-  <!-- NAVBAR -->
-  <nav class="navbar navbar-expand-lg vd-navbar sticky-top">
-    <div class="container-fluid px-4 px-lg-5">
-      <a class="navbar-brand vd-navbar-brand-wrap" href="#hero-section">
+  <a class="vd-landing-skip" href="#main-content">Skip to main content</a>
+
+  <header class="vd-landing-header">
+  <nav class="navbar navbar-expand-lg vd-landing-nav" aria-label="Primary navigation">
+    <div class="container vd-landing-nav-inner">
+      <a class="navbar-brand vd-landing-brand" href="#hero-section" aria-label="Dr. Aprille Ventura Clinica Dental home">
         <?= vdRenderSiteBranding($settings, 'public/assets', 'navbar') ?>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"
@@ -125,54 +130,65 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navMenu">
-        <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-lg-2">
-          <li class="nav-item"><a href="#hero-section" class="nav-link vd-nav-link">Home</a></li>
-          <li class="nav-item"><a href="#services" class="nav-link vd-nav-link">Services</a></li>
-          <li class="nav-item"><a href="#about" class="nav-link vd-nav-link">About Us</a></li>
-          <li class="nav-item"><a href="#contact" class="nav-link vd-nav-link">Contact</a></li>
+        <ul class="navbar-nav ms-auto mb-3 mb-lg-0 vd-landing-links">
+          <li class="nav-item"><a href="#services" class="nav-link">Services</a></li>
+          <li class="nav-item"><a href="#clinics" class="nav-link">Clinics</a></li>
+          <li class="nav-item"><a href="#about" class="nav-link">About</a></li>
+          <li class="nav-item"><a href="#contact" class="nav-link">Contact</a></li>
         </ul>
-        <div class="d-flex gap-2">
+        <div class="vd-landing-nav-actions">
           <?php if ($isLoggedIn): ?>
-            <a href="<?= htmlspecialchars($dashboardUrl) ?>" class="btn vd-btn-gold">Go to Dashboard</a>
-            <a href="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>" class="btn vd-btn-outline">Logout</a>
+            <a href="<?= htmlspecialchars($dashboardUrl) ?>" class="vd-landing-button vd-landing-button--solid">Dashboard</a>
+            <a href="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>" class="vd-landing-text-link">Logout</a>
           <?php else: ?>
-            <a href="apps/views/register.php" class="btn vd-btn-gold">Register</a>
+            <a href="apps/views/login.php" class="vd-landing-text-link">Sign in</a>
+            <a href="apps/views/register.php" class="vd-landing-button vd-landing-button--solid">Create account</a>
           <?php endif; ?>
         </div>
       </div>
     </div>
   </nav>
+  </header>
 
-  <!-- HERO -->
-  <section id="hero-section" class="vd-hero d-flex align-items-center">
-    <div class="container">
-      <div class="row align-items-center gy-5 gx-0 gx-md-5">
-        <div class="d-none d-lg-block col-lg-6"></div>
-        <div class="col-12 col-lg-6">
-          <div class="vd-hero-copy ms-lg-auto">
-            <div class="vd-hero-brand"><?= htmlspecialchars(trim(($settings['brand_name_top'] ?? 'Dr. Aprille') . ' Ventura ' . ($settings['brand_name_sub'] ?? 'Clinica Dental'))) ?></div>
-            <div class="vd-hero-eyebrow"><?= sv($settings, 'hero_eyebrow', 'Two Clinics in Cagayan · Alcala & Tuguegarao') ?></div>
-            <h1 class="vd-hero-title"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
-            <p class="vd-hero-sub"><?= sv($settings, 'hero_subtext', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.') ?></p>
-            <div class="d-flex flex-wrap gap-3">
-              <a href="<?= htmlspecialchars($bookingUrl) ?>" class="btn vd-btn-gold px-4 py-2">Book an Appointment</a>
-              <a href="#services" class="btn vd-btn-outline px-4 py-2">View Services</a>
-            </div>
-          </div>
+  <main id="main-content">
+  <section id="hero-section" class="vd-landing-hero" aria-labelledby="landingHeroTitle">
+    <figure class="vd-landing-hero-media">
+      <img src="public/assets/<?= htmlspecialchars($heroImage) ?>" alt="A young patient receiving attentive dental care" width="2880" height="3600">
+    </figure>
+    <div class="vd-landing-hero-panel">
+      <div class="vd-landing-hero-orbit vd-landing-hero-orbit--one" aria-hidden="true"></div>
+      <div class="vd-landing-hero-orbit vd-landing-hero-orbit--two" aria-hidden="true"></div>
+      <div class="vd-landing-hero-copy">
+        <p class="vd-landing-system-tag"><?= sv($settings, 'hero_system_tag', 'Online Appointment with Records Management System') ?></p>
+        <p class="vd-landing-kicker"><?= sv($settings, 'hero_eyebrow', 'Two Clinics in Cagayan · Alcala & Tuguegarao') ?></p>
+        <h1 id="landingHeroTitle"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
+        <p class="vd-landing-hero-summary"><?= sv($settings, 'hero_subtext', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.') ?></p>
+        <div class="vd-landing-hero-actions">
+          <a href="<?= htmlspecialchars($bookingUrl) ?>" class="vd-landing-button vd-landing-button--dark">Book an appointment</a>
+          <a href="#services" class="vd-landing-button vd-landing-button--line">Explore services</a>
         </div>
+        <p class="vd-landing-hero-note">Request online. Receive confirmation by email. Visit your selected clinic.</p>
       </div>
     </div>
+  </section>
 
-    <!-- Signature smile-curve divider into the next section -->
-    <div class="vd-arc-divider">
-      <svg viewBox="0 0 1440 100" preserveAspectRatio="none">
-        <path class="vd-arc-fill-white" d="M0,100 Q720,-100 1440,100 Z"></path>
-      </svg>
+  <section class="vd-landing-process" aria-labelledby="appointmentProcessTitle" data-landing-reveal>
+    <div class="container">
+      <header class="vd-landing-section-intro">
+        <p class="vd-landing-kicker">Designed around your visit</p>
+        <h2 id="appointmentProcessTitle">From request to dental chair.</h2>
+        <p>A guided online process keeps your appointment details and patient records together.</p>
+      </header>
+      <ol class="vd-landing-steps">
+        <li><span>01</span><div><h3>Choose your care</h3><p>Select a clinic, an available schedule, and the services you may need.</p></div></li>
+        <li><span>02</span><div><h3>Confirm your request</h3><p>Submit the required deposit and wait for the clinic’s email confirmation.</p></div></li>
+        <li><span>03</span><div><h3>Arrive prepared</h3><p>Your profile, health information, appointment, and visit history stay in one account.</p></div></li>
+      </ol>
     </div>
   </section>
 
   <!-- SERVICES -->
-  <section id="services" class="py-5 vd-services-section">
+  <section id="services" class="vd-services-section" data-landing-reveal>
     <div class="container">
       <header class="vd-services-heading">
         <div class="vd-eyebrow">What We Offer</div>
@@ -215,7 +231,7 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
                   </span>
                   <span class="vd-service-summary-meta">
                     <?= count($category['services']) ?> treatment<?= count($category['services']) === 1 ? '' : 's' ?>
-                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    <span class="vd-service-summary-chevron" aria-hidden="true">⌄</span>
                   </span>
                 </summary>
 
@@ -226,7 +242,6 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
                         <img src="<?= htmlspecialchars($category['image']) ?>" alt="" loading="lazy" width="1200" height="900">
                       <?php else: ?>
                         <span class="vd-service-image-placeholder">
-                          <i class="fa-solid fa-tooth" aria-hidden="true"></i>
                           <span>Dental care</span>
                         </span>
                       <?php endif; ?>
@@ -235,7 +250,7 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
                       <span class="vd-service-category-order">Category <?= str_pad((string)($categoryIndex + 1), 2, '0', STR_PAD_LEFT) ?></span>
                       <h3 class="vd-service-category-title"><?= htmlspecialchars($category['title']) ?></h3>
                       <p class="vd-service-category-desc"><?= htmlspecialchars($category['description']) ?></p>
-                      <p class="vd-service-category-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Treatment recommendations are confirmed after a dental examination.</p>
+                      <p class="vd-service-category-note">Treatment recommendations are confirmed after a dental examination.</p>
                     </div>
                   </header>
 
@@ -248,7 +263,7 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
                             <strong class="vd-service-name"><?= htmlspecialchars($service['name']) ?></strong>
                             <span>View treatment details</span>
                           </span>
-                          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                          <span class="vd-service-item-toggle" aria-hidden="true">+</span>
                         </summary>
                         <div class="vd-service-detail">
                           <p><?= htmlspecialchars($service['desc']) ?></p>
@@ -270,138 +285,90 @@ $bookingUrl = $isLoggedIn && ($_SESSION['user_role'] ?? '') === 'Patient'
           <h3>Not sure which treatment you need?</h3>
           <p>Book a visit and let the clinic team help you choose the appropriate care.</p>
         </div>
-        <a href="<?= htmlspecialchars($bookingUrl) ?>" class="btn vd-btn-gold">Book a consultation</a>
+        <a href="<?= htmlspecialchars($bookingUrl) ?>" class="vd-landing-button vd-landing-button--solid">Book a consultation</a>
       </div>
     </div>
   </section>
 
-  <!-- ABOUT -->
-  <section id="about" class="py-5 border-top">
+  <section id="about" class="vd-landing-about" data-landing-reveal>
     <div class="container">
-      <div class="text-center mb-4">
-        <div class="vd-eyebrow">Who We Are</div>
-        <h2 class="vd-section-heading mb-2">About Us</h2>
-        <p class="vd-section-intro"><?= sv($settings, 'about_intro') ?></p>
+      <div class="vd-landing-about-grid">
+        <header class="vd-landing-section-intro">
+          <p class="vd-landing-kicker">The clinic behind your care</p>
+          <h2>Thoughtful dentistry, clearly explained.</h2>
+          <p><?= sv($settings, 'about_intro', 'Patient-centered dental care across Alcala and Tuguegarao, with every step explained clearly.') ?></p>
+        </header>
+        <ol class="vd-landing-principles">
+          <li><span>01</span><div><h3><?= sv($settings, 'pillar1_title', 'Patient-Centered Care') ?></h3><p><?= sv($settings, 'pillar1_desc') ?></p></div></li>
+          <li><span>02</span><div><h3><?= sv($settings, 'pillar2_title', 'Experienced Team') ?></h3><p><?= sv($settings, 'pillar2_desc') ?></p></div></li>
+          <li><span>03</span><div><h3><?= sv($settings, 'pillar3_title', 'Two Convenient Branches') ?></h3><p><?= sv($settings, 'pillar3_desc') ?></p></div></li>
+        </ol>
       </div>
+    </div>
+  </section>
 
-      <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
-        <div class="col">
-          <div class="vd-pillar text-center h-100">
-            <div class="vd-pillar-icon"><i class="fa-solid fa-heart"></i></div>
-            <div class="vd-pillar-title"><?= sv($settings, 'pillar1_title', 'Patient-Centered Care') ?></div>
-            <p class="vd-pillar-desc"><?= sv($settings, 'pillar1_desc') ?></p>
-          </div>
+  <section id="clinics" class="vd-landing-clinics" data-landing-reveal>
+    <div class="container">
+      <header class="vd-landing-section-intro vd-landing-section-intro--wide">
+        <div>
+          <p class="vd-landing-kicker">Visit us</p>
+          <h2>Care close to home.</h2>
         </div>
-        <div class="col">
-          <div class="vd-pillar text-center h-100">
-            <div class="vd-pillar-icon"><i class="fa-solid fa-award"></i></div>
-            <div class="vd-pillar-title"><?= sv($settings, 'pillar2_title', 'Experienced Team') ?></div>
-            <p class="vd-pillar-desc"><?= sv($settings, 'pillar2_desc') ?></p>
-          </div>
-        </div>
-        <div class="col">
-          <div class="vd-pillar text-center h-100">
-            <div class="vd-pillar-icon"><i class="fa-solid fa-location-dot"></i></div>
-            <div class="vd-pillar-title"><?= sv($settings, 'pillar3_title', 'Two Convenient Branches') ?></div>
-            <p class="vd-pillar-desc"><?= sv($settings, 'pillar3_desc') ?></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="text-center mb-4">
-        <div class="vd-eyebrow">Visit Us</div>
-        <h2 class="vd-section-heading mb-2">Our Clinics</h2>
-      </div>
-      <div class="row justify-content-center g-4">
+        <p>Choose the clinic most convenient for your appointment. Available schedules are shown during booking.</p>
+      </header>
+      <div class="vd-landing-clinic-list">
         <?php foreach ($clinics as $clinic): ?>
-          <div class="col-12 col-sm-6 col-md-4">
-            <div class="card vd-clinic-card-index h-100 text-center border">
-              <div class="card-body">
-                <div class="vd-clinic-icon-badge mx-auto">
-                  <i class="fa-solid fa-location-dot"></i>
-                </div>
-                <h5 class="card-title"><?= htmlspecialchars($clinic['clinic_name']) ?></h5>
-                <p class="card-text small text-muted"><?= htmlspecialchars($clinic['clinic_address']) ?></p>
-                <?php if (!empty($clinic['embed_url'])): ?>
-                  <div class="ratio ratio-4x3 mt-3">
-                    <iframe
-                      src="<?= htmlspecialchars($clinic['embed_url']) ?>"
-                      title="Map showing <?= htmlspecialchars($clinic['clinic_name']) ?>"
-                      style="border:0;"
-                      allowfullscreen=""
-                      loading="lazy"
-                      referrerpolicy="strict-origin-when-cross-origin"></iframe>
-                  </div>
-                <?php endif; ?>
-                <a class="btn vd-btn-outline vd-clinic-directions"
-                  href="https://www.google.com/maps/search/?api=1&amp;query=<?= rawurlencode($clinic['clinic_address']) ?>"
-                  target="_blank" rel="noopener noreferrer">
-                  <i class="fa-solid fa-diamond-turn-right" aria-hidden="true"></i>
-                  Get directions
-                </a>
-              </div>
-            </div>
-          </div>
+          <article class="vd-landing-clinic">
+            <div class="vd-landing-clinic-number"><?= str_pad((string)($clinic['clinic_id'] ?? 0), 2, '0', STR_PAD_LEFT) ?></div>
+            <div><h3><?= htmlspecialchars($clinic['clinic_name']) ?></h3><p><?= htmlspecialchars($clinic['clinic_address']) ?></p></div>
+            <a href="https://www.google.com/maps/search/?api=1&amp;query=<?= rawurlencode($clinic['clinic_address']) ?>" target="_blank" rel="noopener noreferrer">Get directions <span aria-hidden="true">↗</span></a>
+          </article>
         <?php endforeach; ?>
       </div>
     </div>
   </section>
 
-  <!-- CONTACT -->
-  <section id="contact" class="py-5 vd-contact-bg border-top">
+  <section id="contact" class="vd-landing-contact" data-landing-reveal>
     <div class="container">
-      <div class="row justify-content-center gy-5 gx-0 gx-md-5 align-items-center">
-        <div class="col-12 col-md-5">
-          <div class="vd-eyebrow mb-2">Get In Touch</div>
-          <h2 class="vd-contact-heading mb-3">We'd Love to Hear From You</h2>
-          <p class="text-muted mb-1">Address: <?= sv($settings, 'contact_address', 'Alcala & Tuguegarao, Cagayan') ?></p>
+      <div class="vd-landing-contact-grid">
+        <div class="vd-landing-contact-copy">
+          <p class="vd-landing-kicker">Contact the clinic</p>
+          <h2>Questions before you book?</h2>
+          <p>Send a message or contact the clinic directly. For emergencies, seek immediate medical or dental assistance.</p>
+          <address>
+          <span><?= sv($settings, 'contact_address', 'Alcala & Tuguegarao, Cagayan') ?></span>
           <?php foreach (contactPhones($settings) as $phone): ?>
-            <p class="text-muted mb-1">Phone: <?= htmlspecialchars($phone) ?></p>
+            <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $phone)) ?>"><?= htmlspecialchars($phone) ?></a>
           <?php endforeach; ?>
-          <p class="text-muted">Email: <a href="mailto:<?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?>" class="vd-link"><?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?></a></p>
+          <a href="mailto:<?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?>"><?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?></a>
+          </address>
         </div>
-        <div class="col-12 col-md-5">
-          <div class="card vd-form-card p-4 border">
-            <form action="mailto:<?= sv($settings, 'contact_email', 'info@draprilleventura.com') ?>" method="POST" enctype="text/plain">
-              <div class="mb-3">
-                <label for="name" class="form-label vd-label">Name</label>
-                <input type="text" id="name" name="name" class="form-control vd-input" required>
-              </div>
-              <div class="mb-3">
-                <label for="index-email" class="form-label vd-label">Your Email</label>
-                <input type="email" id="index-email" name="email" class="form-control vd-input" required>
-              </div>
-              <div class="mb-3">
-                <label for="message" class="form-label vd-label">Message</label>
-                <textarea id="message" name="message" rows="5" class="form-control vd-input" required></textarea>
-              </div>
-              <button type="submit" class="btn vd-btn-gold w-100">Send Message</button>
-            </form>
-          </div>
+        <div class="vd-landing-contact-action">
+          <p>Ready to request a schedule?</p>
+          <a href="<?= htmlspecialchars($bookingUrl) ?>" class="vd-landing-button vd-landing-button--dark">Book an appointment</a>
+          <?php if (!$isLoggedIn): ?><a href="apps/views/login.php" class="vd-landing-button vd-landing-button--line">Sign in to your account</a><?php endif; ?>
         </div>
       </div>
     </div>
   </section>
+  </main>
 
-  <!-- FOOTER -->
-  <footer class="vd-footer py-3">
-    <div class="container text-center">
-      <a
-        href="apps/views/terms.php"
-        class="vd-footer-link"
-        aria-label="Read the system terms and conditions">
-        <span>System Terms and Conditions</span>
-      </a>
-      <p class="mb-0 mt-2 small text-white">
-        &copy; <script>
-          document.write(new Date().getFullYear())
-        </script> Dr. Aprille Ventura Clinica Dental. All rights reserved.
-      </p>
+  <footer class="vd-landing-footer">
+    <div class="container vd-landing-footer-grid">
+      <div class="vd-landing-footer-brand"><?= vdRenderSiteBranding($settings, 'public/assets', 'navbar') ?></div>
+      <p>Online appointments and patient records for the clinic’s Alcala and Tuguegarao branches.</p>
+      <nav aria-label="Footer navigation">
+        <a href="#services">Services</a>
+        <a href="#clinics">Clinics</a>
+        <a href="apps/views/terms.php">System Terms and Conditions</a>
+      </nav>
+      <small>&copy; <span id="landingCopyrightYear"><?= date('Y') ?></span> Dr. Aprille Ventura Clinica Dental.</small>
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="public/js/bootstrap.bundle.min.js"></script>
   <script src="public/js/index-services.js?v=<?= filemtime(__DIR__ . '/public/js/index-services.js') ?>"></script>
+  <script src="public/js/index.js?v=<?= filemtime(__DIR__ . '/public/js/index.js') ?>"></script>
 </body>
 
 </html>

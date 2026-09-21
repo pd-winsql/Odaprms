@@ -8,6 +8,11 @@ require __DIR__ . '/../index.php';
 $html = ob_get_clean();
 
 $expectations = [
+    'the redesigned landing stylesheet is isolated and loaded' => str_contains($html, 'public/css/landing.css') && !str_contains($html, 'public/css/index.css'),
+    'the local Bootstrap bundle is used for core navigation' => str_contains($html, 'public/css/bootstrap.min.css') && str_contains($html, 'public/js/bootstrap.bundle.min.js'),
+    'the system descriptor renders in the hero' => str_contains($html, 'Online Appointment with Records Management System'),
+    'the managed hero image renders outside the copy panel' => str_contains($html, 'class="vd-landing-hero-media"') && str_contains($html, 'landing_hero_default.jpg'),
+    'the appointment process explains the records workflow' => str_contains($html, 'From request to dental chair.') && str_contains($html, 'patient records together'),
     'the patient-oriented services heading renders' => str_contains($html, 'Care for every stage of your smile.'),
     'the service explorer renders' => str_contains($html, 'data-service-explorer'),
     'desktop category tabs render' => str_contains($html, 'role="tablist"') && str_contains($html, 'role="tab"'),

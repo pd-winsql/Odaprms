@@ -203,6 +203,26 @@ class SiteSettingsModel {
         }
     }
 
+    public function updateHeroImage(string $filename, $updatedBy = 'admin'): bool
+    {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE site_settings
+                SET hero_image = :hero_image,
+                    last_updated_by = :updated_by,
+                    last_updated_at = NOW()
+                WHERE id = 1
+            ");
+            return $stmt->execute([
+                ':hero_image' => $filename,
+                ':updated_by' => $updatedBy,
+            ]) && $stmt->rowCount() === 1;
+        } catch (PDOException $e) {
+            error_log('updateHeroImage error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function updateClinicTransitionMinutes(int $minutes, $updatedBy = 'Dental Assistant'): bool
     {
         try {

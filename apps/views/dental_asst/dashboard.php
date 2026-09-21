@@ -271,7 +271,10 @@ $today = date('l, F j Y');
                 if (!silent) dashContent.innerHTML = `<div class="vd-empty-state">Error loading content.</div>`;
                 console.error('Error fetching page:', error);
             } finally {
-                if (!silent) LoadingUI.finishContent(dashContent);
+                if (!silent) {
+                    LoadingUI.finishContent(dashContent);
+                    if (loaded) LoadingUI.revealContent(dashContent);
+                }
             }
             return loaded;
         }

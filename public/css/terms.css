@@ -56,8 +56,10 @@
 }
 
 .vd-terms-modal .modal-header {
+  position: relative;
   align-items: flex-start;
   gap: 1rem;
+  padding-right: 4.25rem;
   border-color: var(--border);
 }
 
@@ -66,16 +68,21 @@
 }
 
 .vd-terms-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-grid;
   min-width: 44px;
   min-height: 44px;
-  flex: 0 0 auto;
-  padding: 0.55rem 0.7rem;
+  padding: 0;
+  place-items: center;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: transparent;
   color: var(--dark);
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 1.5rem;
+  font-weight: 300;
+  line-height: 1;
 }
 
 .vd-terms-close:hover {
@@ -216,14 +223,6 @@
 @media (max-width: 575px) {
   .vd-terms-modal .modal-dialog {
     margin: 0.5rem;
-  }
-
-  .vd-terms-modal .modal-header {
-    flex-wrap: wrap;
-  }
-
-  .vd-terms-close {
-    width: 100%;
   }
 
   .vd-terms-modal .modal-footer {

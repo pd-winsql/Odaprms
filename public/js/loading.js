@@ -165,9 +165,21 @@
         container.removeAttribute('aria-busy');
     }
 
+    function revealContent(container) {
+        if (!container || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        container.classList.remove('vd-content-enter');
+        void container.offsetWidth;
+        container.classList.add('vd-content-enter');
+        container.addEventListener('animationend', () => {
+            container.classList.remove('vd-content-enter');
+        }, { once: true });
+    }
+
     window.LoadingUI = {
         setButton: setButtonLoading,
         showContent: showContentLoading,
-        finishContent: finishContentLoading
+        finishContent: finishContentLoading,
+        revealContent
     };
 })();

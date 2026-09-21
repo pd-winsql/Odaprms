@@ -276,6 +276,101 @@ class SiteSettingsController {
         exit;
     }
 
+    private function removeManagedHeroImage(string $filename): void
+    {
+        if (!preg_match('/^hero_image_[a-f0-9]{32}\.(?:jpg|png|webp)$/D', $filename)) {
+            return;
+        }
+
+        $targetDirectory = realpath(__DIR__ . '/../../public/assets/');
+        if ($targetDirectory === false) {
+            return;
+        }
+
+        $candidate = $targetDirectory . DIRECTORY_SEPARATOR . $filename;
+        $resolved = realpath($candidate);
+        if ($resolved !== false
+            && dirname(str_replace('\\', '/', $resolved)) === rtrim(str_replace('\\', '/', $targetDirectory), '/')
+            && is_file($resolved)
+            && !is_link($candidate)) {
+            @unlink($resolved);
+        }
+    }
+
+    public function updateHeroImage(): void
+    {
+        $this->requireAdmin();
+        if (!isset($_FILES['hero_image'])) {
+            echo json_encode(['success' => false, 'message' => 'Choose a hero image first.']);
+            exit;
+        }
+
+        $validated = SiteLogoUpload::validate($_FILES['hero_image'], 'is_uploaded_file');
+        if (!$validated['success']) {
+            echo json_encode(['success' => false, 'message' => str_replace('Logo', 'Hero', $validated['message'])]);
+            exit;
+        }
+
+        $targetDirectory = realpath(__DIR__ . '/../../public/assets/');
+        if ($targetDirectory === false || !is_writable($targetDirectory)) {
+            echo json_encode(['success' => false, 'message' => 'Hero image storage is unavailable.']);
+            exit;
+        }
+
+        $filename = 'hero_image_' . bin2hex(random_bytes(16)) . '.' . $validated['extension'];
+        $target = $targetDirectory . DIRECTORY_SEPARATOR . $filename;
+        if (!move_uploaded_file($validated['path'], $target)) {
+            echo json_encode(['success' => false, 'message' => 'Unable to upload the hero image.']);
+            exit;
+        }
+
+        $oldSettings = $this->settings->getSettings();
+        $oldFilename = basename((string) ($oldSettings['hero_image'] ?? ''));
+        if (!$this->settings->updateHeroImage($filename, 'Admin')) {
+            @unlink($target);
+            echo json_encode(['success' => false, 'message' => 'Unable to save the hero image.']);
+            exit;
+        }
+
+        $this->removeManagedHeroImage($oldFilename);
+        $this->auditLog->recordForUser(
+            'site_settings',
+            1,
+            'hero_image_updated',
+            'Updated the landing page hero image.',
+            ['hero_image' => $oldFilename],
+            ['hero_image' => $filename],
+            (int) $_SESSION['user_id']
+        );
+        echo json_encode(['success' => true, 'message' => 'Hero image updated.', 'hero_image' => $filename]);
+        exit;
+    }
+
+    public function resetHeroImage(): void
+    {
+        $this->requireAdmin();
+        $oldSettings = $this->settings->getSettings();
+        $oldFilename = basename((string) ($oldSettings['hero_image'] ?? ''));
+        $defaultFilename = 'landing_hero_default.jpg';
+        if (!$this->settings->updateHeroImage($defaultFilename, 'Admin')) {
+            echo json_encode(['success' => false, 'message' => 'Unable to restore the default hero image.']);
+            exit;
+        }
+
+        $this->removeManagedHeroImage($oldFilename);
+        $this->auditLog->recordForUser(
+            'site_settings',
+            1,
+            'hero_image_reset',
+            'Restored the default landing page hero image.',
+            ['hero_image' => $oldFilename],
+            ['hero_image' => $defaultFilename],
+            (int) $_SESSION['user_id']
+        );
+        echo json_encode(['success' => true, 'message' => 'Default hero image restored.']);
+        exit;
+    }
+
     public function updateGcashQr() {
         $this->requireAdmin();
         if (!isset($_FILES['gcash_qr']) || $_FILES['gcash_qr']['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['gcash_qr']['tmp_name'])) {
@@ -327,6 +422,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->updateLogo();
     } elseif ($action === 'removeLogo') {
         $controller->removeLogo();
+    } elseif ($action === 'updateHeroImage') {
+        $controller->updateHeroImage();
+    } elseif ($action === 'resetHeroImage') {
+        $controller->resetHeroImage();
     } elseif ($action === 'updateGcashQr') {
         $controller->updateGcashQr();
     } elseif ($action === 'updateClinicHours') {

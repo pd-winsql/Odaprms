@@ -7,7 +7,9 @@
           <h2 class="modal-title vd-terms-title" id="systemTermsModalLabel" tabindex="-1">System Terms and Conditions</h2>
           <p class="vd-terms-modal-description" id="systemTermsModalDescription">Review the complete terms. The agreement button becomes available when you reach the end.</p>
         </div>
-        <button type="button" class="vd-terms-close" data-bs-dismiss="modal" aria-label="Close Terms and Conditions dialog">Close terms</button>
+        <button type="button" class="vd-terms-close" data-bs-dismiss="modal" aria-label="Close Terms and Conditions dialog">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body vd-terms-body" id="systemTermsScrollRegion" tabindex="0">
         <?php require __DIR__ . '/system-terms-content.php'; ?>
