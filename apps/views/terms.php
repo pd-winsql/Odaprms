@@ -15,14 +15,11 @@ $fromRegistration = ($_GET['from'] ?? '') === 'register';
   <link rel="stylesheet" href="../../public/css/terms.css?v=<?= filemtime(__DIR__ . '/../../public/css/terms.css') ?>">
 </head>
 <body class="vd-terms-page-body">
-  <header class="vd-terms-page-header">
-    <a class="vd-terms-wordmark" href="../../index.php" aria-label="Return to Dr. Aprille Ventura Clinica Dental home page">
-      <?= vdRenderSiteBranding($branding, '../../public/assets') ?>
-    </a>
-  </header>
-
   <main class="vd-terms-page-main">
     <div class="vd-terms-page-heading">
+      <div class="vd-terms-page-brand">
+        <?= vdRenderSiteBranding($branding, '../../public/assets') ?>
+      </div>
       <div class="vd-terms-eyebrow">Online Platform</div>
       <h1 class="vd-terms-title">System Terms and Conditions</h1>
       <p>Please review the terms governing use of the clinic’s online appointment and patient records system.</p>
@@ -30,7 +27,9 @@ $fromRegistration = ($_GET['from'] ?? '') === 'register';
     <article class="vd-terms-body">
       <?php require __DIR__ . '/system-terms-content.php'; ?>
     </article>
-    <a class="vd-terms-back-link" href="<?= $fromRegistration ? 'register.php' : '../../index.php' ?>">← <?= $fromRegistration ? 'Back to sign up' : 'Back to home' ?></a>
+    <?php if (!$fromRegistration): ?>
+      <a class="vd-terms-back-link" href="../../index.php">← Back to home</a>
+    <?php endif; ?>
   </main>
 </body>
 </html>

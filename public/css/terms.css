@@ -154,37 +154,27 @@
   background-color: var(--bg);
 }
 
-.vd-terms-page-header {
-  padding: 1.5rem clamp(1.25rem, 5vw, 4rem);
-  border-bottom: 1px solid rgba(128, 97, 31, 0.18);
-  background: var(--gold);
+.vd-terms-page-brand {
+  width: fit-content;
+  margin-bottom: 1.75rem;
 }
 
-.vd-terms-wordmark {
-  display: inline-block;
-  color: #fff;
-  text-decoration: none;
-}
-
-.vd-terms-wordmark .vd-logo-name,
-.vd-terms-wordmark .vd-logo-sub {
-  color: rgba(255, 255, 255, 0.78);
-}
-
-.vd-terms-wordmark .vd-logo-ventura {
-  color: #fff;
-}
-
-.vd-terms-wordmark .vd-cross {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.vd-terms-wordmark .vd-site-logo-img {
+.vd-terms-page-brand .vd-site-logo-img {
   display: block;
-  width: min(240px, 60vw);
-  max-height: 72px;
+  width: min(180px, 55vw);
+  max-height: 64px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  object-position: left center;
+}
+
+.vd-terms-page-brand .vd-logo-ventura {
+  font-size: 30px;
+}
+
+.vd-terms-page-brand .vd-cross {
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
 }
 
 .vd-terms-page-main {
