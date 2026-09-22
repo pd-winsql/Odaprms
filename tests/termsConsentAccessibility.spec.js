@@ -28,13 +28,26 @@ for (const browser of browserConfigurations) {
     test('has an accessible checkbox and keyboard-contained dialog focus flow', async () => {
       await withBrowserPage(browser, { width: 1280, height: 900 }, async (page) => {
       await page.goto(registrationUrl, { waitUntil: 'domcontentloaded' });
+      expect(await page.evaluate(() => document.documentElement.scrollHeight > document.documentElement.clientHeight)).toBe(false);
+
+      await page.locator('#regFirstName').fill('Accessible');
+      await page.locator('#regLastName').fill('Tester');
+      await page.locator('#regBirthdate').fill('2000-01-01');
+      await page.locator('#regGender').selectOption('Prefer not to say');
+      await page.getByRole('button', { name: 'Continue to account details' }).click();
+      await expect(page.locator('#registerStepCount')).toHaveText('Step 2 of 2');
+      expect(await page.evaluate(() => document.documentElement.scrollHeight > document.documentElement.clientHeight)).toBe(false);
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
+      await expect(page.locator('#regFirstName')).toHaveValue('Accessible');
+      await page.getByRole('button', { name: 'Continue to account details' }).click();
 
       const checkbox = page.getByRole('checkbox', { name: 'I agree to the Terms and Conditions' });
-      const opener = page.getByRole('button', { name: 'Review required Terms and Conditions' });
-      await expect(checkbox).toBeDisabled();
+      const opener = page.getByRole('button', { name: 'Terms and Conditions', exact: true });
+      await expect(checkbox).toBeEnabled();
       await expect(checkbox).not.toBeChecked();
       await expect(opener).toHaveAttribute('aria-expanded', 'false');
 
+      await page.keyboard.press('Tab');
       await opener.focus();
       const focusOutline = await opener.evaluate((element) => getComputedStyle(element).outlineWidth);
       expect(focusOutline).not.toBe('0px');
@@ -46,6 +59,8 @@ for (const browser of browserConfigurations) {
       await page.keyboard.press('Tab');
       await expect(page.getByRole('button', { name: 'Close Terms and Conditions dialog' })).toBeFocused();
       await page.keyboard.press('Shift+Tab');
+      await expect(page.getByRole('button', { name: 'Close terms', exact: true })).toBeFocused();
+      await page.keyboard.press('Shift+Tab');
       await expect(page.getByRole('link', { name: /Open full page/ })).toBeFocused();
 
       await page.keyboard.press('Escape');
@@ -54,17 +69,10 @@ for (const browser of browserConfigurations) {
 
       await page.keyboard.press('Enter');
       await expect(page.locator('#systemTermsModalLabel')).toBeFocused();
-      const scrollRegion = page.locator('#systemTermsScrollRegion');
-      await scrollRegion.focus();
-      await scrollRegion.evaluate((element) => {
-        element.scrollTop = element.scrollHeight;
-        element.dispatchEvent(new Event('scroll'));
-      });
-      await expect(page.getByRole('button', { name: 'Agree to Terms and close' })).toBeEnabled();
-      await expect(scrollRegion).toBeFocused();
-      await page.getByRole('button', { name: 'Agree to Terms and close' }).click();
+      await page.getByRole('button', { name: 'Close terms', exact: true }).click();
       await expect(opener).toBeFocused();
-      await expect(checkbox).toBeEnabled();
+      await expect(checkbox).not.toBeChecked();
+      await checkbox.check();
       await expect(checkbox).toBeChecked();
       });
     });
@@ -81,7 +89,13 @@ for (const browser of browserConfigurations) {
       horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
       expect(horizontalOverflow).toBe(false);
 
-      const opener = page.getByRole('button', { name: 'Review required Terms and Conditions' });
+      await page.locator('#regFirstName').fill('Accessible');
+      await page.locator('#regLastName').fill('Tester');
+      await page.locator('#regBirthdate').fill('2000-01-01');
+      await page.locator('#regGender').selectOption('Prefer not to say');
+      await page.getByRole('button', { name: 'Continue to account details' }).click();
+
+      const opener = page.getByRole('button', { name: 'Terms and Conditions', exact: true });
       await opener.click();
       const dialogTransition = await page.locator('#systemTermsModal .modal-dialog').evaluate(
         (element) => getComputedStyle(element).transitionDuration
@@ -90,17 +104,16 @@ for (const browser of browserConfigurations) {
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog', { name: 'System Terms and Conditions' })).toBeHidden();
 
-      await page.locator('#regFirstName').fill('Accessible');
-      await page.locator('#regLastName').fill('Tester');
-      await page.locator('#regBirthdate').fill('2000-01-01');
-      await page.locator('#regGender').selectOption('Prefer not to say');
       await page.locator('#regPhoneNumber').fill('09123456789');
       await page.locator('#regEmail').fill('accessible@example.invalid');
       await page.locator('#regPassword').fill('Secure123');
       await page.locator('#regConfirmPassword').fill('Secure123');
       await page.getByRole('button', { name: 'Create Account' }).click();
-      await expect(page.getByRole('alert')).toHaveText('Please review and agree to the Terms and Conditions.');
-      await expect(opener).toBeFocused();
+      await expect(page.locator('#termsConsentError')).toHaveText('Please agree to the Terms and Conditions to create your account.');
+      await expect(page.locator('#termsConsentError')).toBeVisible();
+      await expect(page.getByRole('checkbox', { name: 'I agree to the Terms and Conditions' })).toBeFocused();
+      await page.getByRole('checkbox', { name: 'I agree to the Terms and Conditions' }).check();
+      await expect(page.locator('#termsConsentError')).toBeHidden();
       });
     });
   });

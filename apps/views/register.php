@@ -81,10 +81,17 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
           <div class="vd-auth-sub">Fill in your details to get started.</div>
         </div>
 
+        <div class="vd-register-progress" aria-label="Registration progress">
+          <div class="vd-register-progress-text"><span id="registerStepCount">Step 1 of 2</span><span id="registerStepName">Personal information</span></div>
+          <div class="vd-register-progress-track" id="registerProgressBar" role="progressbar" aria-label="Registration progress" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1"><span></span></div>
+        </div>
+
         <div id="registerError" class="vd-auth-error d-none" role="alert" aria-live="assertive" aria-atomic="true"></div>
         <div id="registerSuccess" class="vd-auth-success d-none" role="status" aria-live="polite"></div>
 
         <form id="registerForm" class="vd-auth-form vd-register-grid" novalidate>
+          <section class="vd-register-step" id="registerPersonalStep" aria-labelledby="registerPersonalHeading">
+          <h2 class="vd-register-step-heading vd-register-span-2" id="registerPersonalHeading" tabindex="-1">Personal information</h2>
           <div class="vd-auth-group"><label class="vd-label" for="regFirstName">First Name</label><input type="text" name="firstname" id="regFirstName" class="vd-auth-input" value="<?= $escape($registrationValues['firstname']) ?>" required autocomplete="given-name"></div>
           <div class="vd-auth-group"><label class="vd-label" for="regMiddleName">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" id="regMiddleName" class="vd-auth-input" value="<?= $escape($registrationValues['middlename']) ?>" autocomplete="additional-name"></div>
           <div class="vd-auth-group"><label class="vd-label" for="regLastName">Last Name</label><input type="text" name="lastname" id="regLastName" class="vd-auth-input" value="<?= $escape($registrationValues['lastname']) ?>" required autocomplete="family-name"></div>
@@ -105,6 +112,11 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
               <option value="Prefer not to say" <?= $registrationValues['gender'] === 'Prefer not to say' ? 'selected' : '' ?>>Prefer not to say</option>
             </select>
           </div>
+          <button type="button" class="vd-auth-btn vd-register-span-2" id="registerNextBtn">Continue to account details</button>
+          </section>
+
+          <section class="vd-register-step" id="registerAccountStep" aria-labelledby="registerAccountHeading" hidden>
+          <h2 class="vd-register-step-heading vd-register-span-2" id="registerAccountHeading" tabindex="-1">Contact and account</h2>
           <div class="vd-auth-group"><label class="vd-label" for="regPhoneNumber">Contact Number</label><input type="tel" name="phone_number" id="regPhoneNumber" class="vd-auth-input" value="<?= $escape($registrationValues['phone_number']) ?>" placeholder="09XXXXXXXXX" required maxlength="11" minlength="11" inputmode="numeric" pattern="[0-9]{11}" autocomplete="tel"></div>
           <div class="vd-auth-group">
             <label class="vd-label" for="regEmail">Email Address</label>
@@ -135,19 +147,21 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
 
           <div class="vd-terms-consent vd-register-span-2" id="termsConsentGroup">
             <input type="hidden" name="terms_consent_token" value="<?= $escape($termsConsentToken) ?>">
-            <input type="checkbox" class="vd-terms-checkbox" id="termsAccepted" name="terms_accepted" value="1" required disabled aria-describedby="termsConsentHint termsConsentStatus">
-            <div>
-              <label class="vd-terms-consent-label" for="termsAccepted">I agree to the Terms and Conditions</label>
+            <input type="checkbox" class="vd-terms-checkbox" id="termsAccepted" name="terms_accepted" value="1" required
+              aria-labelledby="termsConsentLabel openSystemTerms" aria-describedby="termsConsentError">
+            <div class="vd-terms-consent-copy">
+              <label class="vd-terms-consent-label" id="termsConsentLabel" for="termsAccepted">I agree to the</label>
               <button type="button" class="vd-terms-trigger" id="openSystemTerms" data-bs-toggle="modal" data-bs-target="#systemTermsModal"
-                aria-haspopup="dialog" aria-controls="systemTermsModal" aria-expanded="false">Review required Terms and Conditions</button>
-              <p class="vd-terms-consent-hint" id="termsConsentHint">Open the terms and scroll to the end to enable agreement.</p>
-              <span class="visually-hidden" id="termsConsentStatus" role="status" aria-live="polite" aria-atomic="true"></span>
+                aria-haspopup="dialog" aria-controls="systemTermsModal" aria-expanded="false">Terms and Conditions</button>
             </div>
+            <p class="vd-terms-consent-error" id="termsConsentError" role="alert" hidden>Please agree to the Terms and Conditions to create your account.</p>
           </div>
 
-          <button type="submit" class="vd-auth-btn vd-register-span-2" id="registerBtn">
-            Create Account
-          </button>
+          <div class="vd-register-actions vd-register-span-2">
+            <button type="button" class="vd-register-back" id="registerBackBtn">Back</button>
+            <button type="submit" class="vd-auth-btn" id="registerBtn">Create Account</button>
+          </div>
+          </section>
         </form>
 
         <div class="vd-auth-footer">
@@ -185,12 +199,8 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     const registerForm = document.getElementById('registerForm');
     const termsAccepted = document.getElementById('termsAccepted');
     const termsConsentGroup = document.getElementById('termsConsentGroup');
-    const termsConsentHint = document.getElementById('termsConsentHint');
-    const termsConsentStatus = document.getElementById('termsConsentStatus');
+    const termsConsentError = document.getElementById('termsConsentError');
     const termsModal = document.getElementById('systemTermsModal');
-    const termsScrollRegion = document.getElementById('systemTermsScrollRegion');
-    const termsScrollStatus = document.getElementById('systemTermsScrollStatus');
-    const termsAgreeButton = document.getElementById('systemTermsAgreeButton');
     const termsHeading = document.getElementById('systemTermsModalLabel');
     const termsTrigger = document.getElementById('openSystemTerms');
     const registrationPasswordKey = 'pendingRegistrationPasswords';
@@ -199,7 +209,6 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     const latestEligibleBirthdate = <?= json_encode($latestEligibleBirthdate) ?>;
     const birthdateInput = document.getElementById('regBirthdate');
     let termsOpener = termsTrigger;
-    let termsEndReached = null;
     let termsModalShown = false;
     let termsEscapePending = false;
 
@@ -210,23 +219,6 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
       termsModal.classList.remove('fade');
     }
 
-    function hasReachedTermsEnd() {
-      return termsScrollRegion.scrollHeight - termsScrollRegion.scrollTop - termsScrollRegion.clientHeight <= 8;
-    }
-
-    function updateTermsAgreementAvailability() {
-      const canAgree = hasReachedTermsEnd();
-      if (canAgree === termsEndReached) {
-        return;
-      }
-      termsEndReached = canAgree;
-      termsAgreeButton.disabled = !canAgree;
-      termsScrollStatus.textContent = canAgree ? 'You have reached the end of the terms.' : 'Scroll to the end to continue.';
-      if (canAgree) {
-        termsConsentStatus.textContent = 'End of terms reached. The Agree to Terms and close button is now available.';
-      }
-    }
-
     termsModal.addEventListener('show.bs.modal', function (event) {
       termsOpener = event.relatedTarget || document.activeElement || termsTrigger;
       termsTrigger.setAttribute('aria-expanded', 'true');
@@ -234,16 +226,6 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
 
     termsModal.addEventListener('shown.bs.modal', function () {
       termsModalShown = true;
-      if (!termsAccepted.checked) {
-        termsScrollRegion.scrollTop = 0;
-        termsAgreeButton.textContent = 'Agree to Terms and close';
-        termsEndReached = null;
-        updateTermsAgreementAvailability();
-      } else {
-        termsAgreeButton.disabled = false;
-        termsAgreeButton.textContent = 'Close terms';
-        termsScrollStatus.textContent = 'Terms accepted for this registration.';
-      }
       termsHeading.focus();
 
       // Bootstrap ignores hide() while its opening transition is still in
@@ -266,8 +248,6 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
         termsOpener.focus();
       }
     });
-
-    termsScrollRegion.addEventListener('scroll', updateTermsAgreementAvailability, { passive: true });
 
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' && termsModal.classList.contains('show')) {
@@ -308,24 +288,12 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
       }
     });
 
-    termsAgreeButton.addEventListener('click', function () {
+    termsAccepted.addEventListener('change', function () {
       if (termsAccepted.checked) {
-        bootstrap.Modal.getOrCreateInstance(termsModal).hide();
-        return;
+        termsAccepted.removeAttribute('aria-invalid');
+        termsConsentGroup.classList.remove('vd-terms-consent-invalid');
+        termsConsentError.hidden = true;
       }
-      if (!hasReachedTermsEnd()) {
-        return;
-      }
-
-      termsAccepted.disabled = false;
-      termsAccepted.checked = true;
-      termsAccepted.removeAttribute('aria-invalid');
-      termsAccepted.removeAttribute('aria-errormessage');
-      termsConsentGroup.classList.remove('vd-terms-consent-invalid');
-      termsConsentGroup.classList.add('vd-terms-consent-complete');
-      termsConsentHint.textContent = 'Review completed. Your agreement is confirmed for this registration.';
-      termsConsentStatus.textContent = 'Terms and Conditions accepted.';
-      bootstrap.Modal.getOrCreateInstance(termsModal).hide();
     });
 
     // Passwords cannot be reconstructed from the secure server-side hash. Keep
@@ -345,6 +313,69 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     function isRequiredFieldMissing(field) {
       return field.required && !String(field.value).trim();
     }
+
+    const personalStep = document.getElementById('registerPersonalStep');
+    const accountStep = document.getElementById('registerAccountStep');
+    const registerStepCount = document.getElementById('registerStepCount');
+    const registerStepName = document.getElementById('registerStepName');
+    const registerProgressBar = document.getElementById('registerProgressBar');
+    const registerError = document.getElementById('registerError');
+
+    function showRegisterStep(stepNumber, focusHeading = true) {
+      const isAccountStep = stepNumber === 2;
+      personalStep.hidden = isAccountStep;
+      accountStep.hidden = !isAccountStep;
+      registerStepCount.textContent = `Step ${stepNumber} of 2`;
+      registerStepName.textContent = isAccountStep ? 'Contact and account' : 'Personal information';
+      registerProgressBar.setAttribute('aria-valuenow', String(stepNumber));
+      if (focusHeading) {
+        document.getElementById(isAccountStep ? 'registerAccountHeading' : 'registerPersonalHeading').focus({ preventScroll: true });
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function validatePersonalStep() {
+      const requiredFields = Array.from(personalStep.querySelectorAll('[required]'));
+      const missingFields = requiredFields.filter(isRequiredFieldMissing);
+      requiredFields.forEach(function (field) {
+        const isMissing = missingFields.includes(field);
+        field.classList.toggle('vd-auth-input-invalid', isMissing);
+        if (isMissing) field.setAttribute('aria-invalid', 'true');
+        else field.removeAttribute('aria-invalid');
+      });
+
+      if (missingFields.length) {
+        showRegisterStep(1, false);
+        registerError.textContent = 'Please fill in all required personal information.';
+        registerError.classList.remove('d-none');
+        missingFields[0].focus();
+        return false;
+      }
+
+      if (birthdateInput.value > latestEligibleBirthdate) {
+        const ageUnit = minimumPatientAge === 1 ? 'year' : 'years';
+        showRegisterStep(1, false);
+        birthdateInput.classList.add('vd-auth-input-invalid');
+        birthdateInput.setAttribute('aria-invalid', 'true');
+        registerError.textContent = minimumPatientAge === 0
+          ? 'Please enter a valid birthdate.'
+          : `Patients must be at least ${minimumPatientAge} ${ageUnit} old to register.`;
+        registerError.classList.remove('d-none');
+        birthdateInput.focus();
+        return false;
+      }
+      return true;
+    }
+
+    document.getElementById('registerNextBtn').addEventListener('click', function () {
+      registerError.classList.add('d-none');
+      if (validatePersonalStep()) showRegisterStep(2);
+    });
+
+    document.getElementById('registerBackBtn').addEventListener('click', function () {
+      registerError.classList.add('d-none');
+      showRegisterStep(1);
+    });
 
     function clearRequiredError(field) {
       if (!isRequiredFieldMissing(field)) {
@@ -383,11 +414,17 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
       errEl.classList.add('d-none');
       sucEl.classList.add('d-none');
 
+      if (!validatePersonalStep()) return;
+      if (accountStep.hidden) {
+        showRegisterStep(2);
+        return;
+      }
+
       const formData = new FormData(this);
       const pw       = formData.get('password');
       const cpw      = formData.get('confirm_password');
 
-      const requiredFields = Array.from(this.querySelectorAll('[required]'));
+      const requiredFields = Array.from(accountStep.querySelectorAll('[required]'));
       const missingFields = requiredFields.filter(isRequiredFieldMissing);
 
       requiredFields.forEach(function (field) {
@@ -404,18 +441,6 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
         errEl.textContent = 'Please fill in all required fields.';
         errEl.classList.remove('d-none');
         missingFields[0].focus();
-        return;
-      }
-
-      if (birthdateInput.value > latestEligibleBirthdate) {
-        const ageUnit = minimumPatientAge === 1 ? 'year' : 'years';
-        birthdateInput.classList.add('vd-auth-input-invalid');
-        birthdateInput.setAttribute('aria-invalid', 'true');
-        errEl.textContent = minimumPatientAge === 0
-          ? 'Please enter a valid birthdate.'
-          : `Patients must be at least ${minimumPatientAge} ${ageUnit} old to register.`;
-        errEl.classList.remove('d-none');
-        birthdateInput.focus();
         return;
       }
 
@@ -444,10 +469,8 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
       if (!termsAccepted.checked) {
         termsConsentGroup.classList.add('vd-terms-consent-invalid');
         termsAccepted.setAttribute('aria-invalid', 'true');
-        termsAccepted.setAttribute('aria-errormessage', 'registerError');
-        errEl.textContent = 'Please review and agree to the Terms and Conditions.';
-        errEl.classList.remove('d-none');
-        termsTrigger.focus();
+        termsConsentError.hidden = false;
+        termsAccepted.focus();
         return;
       }
 

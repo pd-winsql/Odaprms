@@ -134,6 +134,9 @@
 
 .vd-auth-form-wrap.vd-register-wrap { max-width: 720px; }
 .vd-auth-form.vd-register-grid {
+  display: block;
+}
+.vd-register-step:not([hidden]) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 32px;
@@ -141,27 +144,74 @@
 }
 .vd-register-span-2 { grid-column: 1 / -1; }
 
+.vd-register-wrap .vd-auth-sub { margin-bottom: 18px; }
+
+.vd-register-progress { margin-bottom: 24px; }
+.vd-register-progress-text {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.vd-register-progress-track {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.vd-register-progress-track > span {
+  display: block;
+  width: 50%;
+  height: 100%;
+  background: var(--gold);
+  transition: width 180ms ease;
+}
+.vd-register-progress-track[aria-valuenow="2"] > span { width: 100%; }
+
+.vd-register-step-heading {
+  margin: 0 0 20px;
+  color: var(--dark);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+.vd-register-step-heading:focus { outline: none; }
+
+.vd-register-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+.vd-register-actions > .vd-auth-btn { margin-top: 0; }
+.vd-register-back {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--gold);
+  font: 500 13px 'Jost', sans-serif;
+  cursor: pointer;
+}
+.vd-register-back:hover { border-color: var(--gold); }
+.vd-register-back:focus-visible { outline: 3px solid rgba(128, 97, 31, 0.4); outline-offset: 2px; }
+
 .vd-terms-consent {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  gap: 12px;
-  margin: 2px 0 12px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--gold-pale);
-  transition: border-color 0.2s, background-color 0.2s;
+  grid-template-columns: 20px minmax(0, 1fr);
+  column-gap: 12px;
+  margin: 0 0 8px;
 }
 
 .vd-terms-checkbox {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  margin-top: 10px;
   accent-color: var(--gold);
-}
-
-.vd-terms-checkbox:disabled {
-  opacity: 1;
 }
 
 .vd-terms-checkbox:focus-visible {
@@ -169,21 +219,29 @@
   outline-offset: 3px;
 }
 
+.vd-terms-consent-copy {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 4px;
+}
+
 .vd-terms-consent-label {
-  display: block;
   color: var(--dark);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1.5;
 }
 
 .vd-terms-trigger {
-  min-height: 44px;
-  padding: 0 2px;
+  min-height: 40px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--gold);
-  font: inherit;
+  font: 500 14px 'Jost', sans-serif;
+  cursor: pointer;
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -199,26 +257,24 @@
   outline-offset: 2px;
 }
 
-.vd-terms-consent-hint {
+.vd-terms-consent-error {
+  grid-column: 2;
   margin: 0;
-  color: var(--mid);
-  font-size: 11px;
+  color: #a32d2d;
+  font-size: 12px;
   line-height: 1.5;
-  overflow-wrap: anywhere;
 }
 
-.vd-terms-consent-invalid {
-  border-color: #a32d2d;
-  background: #fcebeb;
+.vd-terms-consent-error[hidden] {
+  display: none;
 }
 
-.vd-terms-consent-complete {
-  border-color: var(--gold);
-  background: #faf6ed;
+.vd-terms-consent-invalid .vd-terms-checkbox {
+  outline: 2px solid #a32d2d;
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vd-terms-consent,
   .vd-terms-trigger {
     transition: none !important;
   }
@@ -368,7 +424,7 @@
 
 /* ── Mobile ── */
 @media (max-width: 767px) {
-  .vd-auth-form.vd-register-grid { grid-template-columns: 1fr; }
+  .vd-register-step:not([hidden]) { grid-template-columns: 1fr; }
   .vd-register-span-2 { grid-column: auto; }
   .vd-auth-split { flex-direction: column; }
 
@@ -389,6 +445,17 @@
   }
 
   .vd-auth-form-wrap { max-width: 100%; }
+
+  .vd-register-split .vd-auth-left {
+    min-height: 120px;
+    padding: 18px 24px;
+  }
+  .vd-register-split .vd-auth-logo-img {
+    width: auto;
+    max-width: min(240px, 65vw);
+    max-height: 76px;
+  }
+  .vd-register-split .vd-auth-right { padding: 24px 20px; }
 }
 
 @media (max-width: 480px) {
@@ -686,6 +753,20 @@
   border-radius: 8px;
   background: var(--white-bg);
   font-size: 14px;
+}
+
+/* Align the native date picker and select affordances on registration. */
+.vd-register-wrap #regBirthdate {
+  padding-right: 0;
+}
+
+.vd-register-wrap #regGender {
+  padding-right: 40px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23282019' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
 }
 
 .vd-auth-input::placeholder {

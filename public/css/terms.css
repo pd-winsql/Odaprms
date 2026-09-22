@@ -108,12 +108,6 @@
   border-color: var(--border);
 }
 
-.vd-terms-scroll-status {
-  margin-right: auto;
-  color: var(--mid);
-  font-size: 0.78rem;
-}
-
 .vd-terms-page-link,
 .vd-terms-back-link {
   color: var(--gold);
@@ -131,22 +125,17 @@
 }
 
 .vd-terms-close:focus-visible,
-.vd-terms-agree-btn:focus-visible,
+.vd-terms-footer-close:focus-visible,
 .vd-terms-page-link:focus-visible {
   outline: 3px solid rgba(128, 97, 31, 0.4);
   outline-offset: 2px;
 }
 
-.vd-terms-agree-btn {
+.vd-terms-footer-close {
   min-height: 44px;
   padding: 0.75rem 1.5rem;
   border: 0;
   border-radius: 8px;
-}
-
-.vd-terms-agree-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .vd-terms-page-body {
@@ -220,12 +209,8 @@
     flex-direction: column;
   }
 
-  .vd-terms-scroll-status {
-    margin-right: 0;
-  }
-
   .vd-terms-page-link,
-  .vd-terms-agree-btn {
+  .vd-terms-footer-close {
     width: 100%;
     justify-content: center;
     text-align: center;
@@ -240,7 +225,7 @@
   .vd-terms-modal,
   .vd-terms-modal .modal-dialog,
   .vd-terms-close,
-  .vd-terms-agree-btn {
+  .vd-terms-footer-close {
     scroll-behavior: auto;
     transition: none !important;
   }

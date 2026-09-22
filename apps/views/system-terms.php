@@ -5,7 +5,7 @@
         <div>
           <div class="vd-terms-eyebrow">Online Platform</div>
           <h2 class="modal-title vd-terms-title" id="systemTermsModalLabel" tabindex="-1">System Terms and Conditions</h2>
-          <p class="vd-terms-modal-description" id="systemTermsModalDescription">Review the complete terms. The agreement button becomes available when you reach the end.</p>
+          <p class="vd-terms-modal-description" id="systemTermsModalDescription">Read the terms here, or open the full page in a new tab.</p>
         </div>
         <button type="button" class="vd-terms-close" data-bs-dismiss="modal" aria-label="Close Terms and Conditions dialog">
           <span aria-hidden="true">&times;</span>
@@ -15,9 +15,8 @@
         <?php require __DIR__ . '/system-terms-content.php'; ?>
       </div>
       <div class="modal-footer">
-        <span class="vd-terms-scroll-status" id="systemTermsScrollStatus" role="status" aria-live="polite">Scroll to the end to continue.</span>
         <a class="vd-terms-page-link" href="terms.php?from=register" target="_blank" rel="noopener">Open full page <span class="visually-hidden">(opens in a new tab)</span></a>
-        <button type="button" class="vd-btn-gold vd-terms-agree-btn" id="systemTermsAgreeButton" disabled>Agree to Terms and close</button>
+        <button type="button" class="vd-btn-gold vd-terms-footer-close" id="systemTermsCloseButton" data-bs-dismiss="modal">Close terms</button>
       </div>
     </div>
   </div>
