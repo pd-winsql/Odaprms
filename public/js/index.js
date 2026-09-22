@@ -26,4 +26,29 @@
             bootstrap.Collapse.getOrCreateInstance(navMenu, { toggle: false }).hide();
         });
     });
+
+    const sectionLinks = [...document.querySelectorAll('.vd-landing-links a[href^="#"]')];
+    const observedSections = sectionLinks
+        .map(link => document.querySelector(link.getAttribute('href')))
+        .filter(Boolean);
+    if ('IntersectionObserver' in window && observedSections.length) {
+        const visibleSections = new Map();
+        const updateCurrentSection = () => {
+            const current = [...visibleSections.entries()]
+                .filter(([, ratio]) => ratio > 0)
+                .sort((a, b) => b[1] - a[1])[0]?.[0];
+            sectionLinks.forEach(link => {
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.setAttribute('aria-current', 'true');
+                } else {
+                    link.removeAttribute('aria-current');
+                }
+            });
+        };
+        const sectionObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => visibleSections.set(entry.target.id, entry.intersectionRatio));
+            updateCurrentSection();
+        }, { rootMargin: '-20% 0px -55%', threshold: [0, 0.15, 0.35, 0.6] });
+        observedSections.forEach(section => sectionObserver.observe(section));
+    }
 })();

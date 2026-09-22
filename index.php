@@ -138,11 +138,22 @@ if (!preg_match('/^(?:landing_hero_default\.jpg|hero_image_[a-f0-9]{32}\.(?:jpg|
         </ul>
         <div class="vd-landing-nav-actions">
           <?php if ($isLoggedIn): ?>
-            <a href="<?= htmlspecialchars($dashboardUrl) ?>" class="vd-landing-button vd-landing-button--solid">Dashboard</a>
-            <a href="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>" class="vd-landing-text-link">Logout</a>
+            <div class="dropdown vd-landing-account-menu">
+              <button class="vd-landing-account-trigger dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                <span>My account</span>
+              </button>
+              <div class="dropdown-menu dropdown-menu-end vd-landing-account-dropdown">
+                <span class="vd-landing-account-role"><?= htmlspecialchars((string)($_SESSION['user_role'] ?? 'Account')) ?></span>
+                <a href="<?= htmlspecialchars($dashboardUrl) ?>" class="dropdown-item">
+                  <span>Open dashboard</span><span aria-hidden="true">&rarr;</span>
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>" class="dropdown-item vd-landing-signout">Sign out</a>
+              </div>
+            </div>
           <?php else: ?>
-            <a href="apps/views/login.php" class="vd-landing-text-link">Sign in</a>
-            <a href="apps/views/register.php" class="vd-landing-button vd-landing-button--solid">Create account</a>
+            <a href="apps/views/login.php" class="vd-landing-utility-link">Sign in <span aria-hidden="true">&rarr;</span></a>
+            <a href="apps/views/register.php" class="vd-landing-account-link">Create account</a>
           <?php endif; ?>
         </div>
       </div>
@@ -159,15 +170,16 @@ if (!preg_match('/^(?:landing_hero_default\.jpg|hero_image_[a-f0-9]{32}\.(?:jpg|
       <div class="vd-landing-hero-orbit vd-landing-hero-orbit--one" aria-hidden="true"></div>
       <div class="vd-landing-hero-orbit vd-landing-hero-orbit--two" aria-hidden="true"></div>
       <div class="vd-landing-hero-copy">
-        <p class="vd-landing-system-tag"><?= sv($settings, 'hero_system_tag', 'Online Appointment with Records Management System') ?></p>
-        <p class="vd-landing-kicker"><?= sv($settings, 'hero_eyebrow', 'Two Clinics in Cagayan · Alcala & Tuguegarao') ?></p>
+        <div class="vd-landing-hero-context">
+          <p class="vd-landing-system-tag"><?= sv($settings, 'hero_system_tag', 'Online Appointment with Records Management System') ?></p>
+          <p class="vd-landing-kicker"><?= sv($settings, 'hero_eyebrow', 'Two Clinics in Cagayan · Alcala & Tuguegarao') ?></p>
+        </div>
         <h1 id="landingHeroTitle"><?= sv($settings, 'hero_title', 'Dental care for Alcala and Tuguegarao families.') ?></h1>
         <p class="vd-landing-hero-summary"><?= sv($settings, 'hero_subtext', 'From routine cleanings to root canals, crowns, and wisdom tooth removal — book your visit online in a few minutes.') ?></p>
         <div class="vd-landing-hero-actions">
           <a href="<?= htmlspecialchars($bookingUrl) ?>" class="vd-landing-button vd-landing-button--dark">Book an appointment</a>
-          <a href="#services" class="vd-landing-button vd-landing-button--line">Explore services</a>
+          <a href="#services" class="vd-landing-hero-link">Explore services <span aria-hidden="true">&darr;</span></a>
         </div>
-        <p class="vd-landing-hero-note">Request online. Receive confirmation by email. Visit your selected clinic.</p>
       </div>
     </div>
   </section>
