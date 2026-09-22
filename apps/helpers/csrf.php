@@ -24,6 +24,13 @@ function get_csrf_token(): string {
  *
  * Returns true when the token is present and matches the session token.
  */
+
+/*
+ * CSRF protects your logged-in users from being tricked 
+ * into performing unauthorized actions, while your role 
+ * and permission checks determine whether the user is allowed 
+ * to perform the action in the first place.
+*/
 function validate_csrf(?string $provided = null): bool {
     if (session_status() === PHP_SESSION_NONE) session_start();
 
