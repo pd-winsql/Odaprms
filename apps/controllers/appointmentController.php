@@ -268,7 +268,8 @@ class AppointmentController {
             if ($totalAppointments >= $schedule['max_appointments']) {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'No available slots for this schedule.'
+                    'code' => 'schedule_full',
+                    'message' => 'That schedule was just filled by another patient. Please choose another available schedule.'
                 ]);
                 exit;
             }
@@ -296,6 +297,7 @@ class AppointmentController {
             } else {
                 echo json_encode([
                     'success'=>false,
+                    'code'=>$result['code'] ?? null,
                     'message'=>$result['message'] ?? 'Booking failed. Please try again.'
                 ]);
             }

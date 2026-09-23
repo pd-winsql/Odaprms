@@ -143,7 +143,11 @@ class Appointment
             $holdStmt->execute([':schedule_id' => $schedule_id]);
             if ((int) $capacityStmt->fetchColumn() + (int) $holdStmt->fetchColumn() >= (int) $schedule['max_appointments']) {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'No available slots remain for this schedule.'];
+                return [
+                    'success' => false,
+                    'code' => 'schedule_full',
+                    'message' => 'That schedule was just filled by another patient. Please choose another available schedule.',
+                ];
             }
 
             // -----------------------------------------------------------------

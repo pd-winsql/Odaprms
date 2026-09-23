@@ -372,6 +372,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     let furthestStep = 0;
     let selectedSchedule = null;
     let isSubmitting = false;
+    let hasScheduleConflict = false;
     let scheduleRefreshSequence = 0;
     const emptyScheduleMessage = empty.textContent;
 
@@ -632,6 +633,13 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
             .filter(Boolean);
     }
 
+    function setConfirmationAction(label, iconClass) {
+        const icon = document.createElement('i');
+        icon.className = iconClass;
+        icon.setAttribute('aria-hidden', 'true');
+        confirmRequestButton.replaceChildren(icon, document.createTextNode(label));
+    }
+
     function populateConfirmationPreview() {
         const selectedClinic = clinicButtons.find(button => button.classList.contains('active'));
         const serviceNames = selectedServiceNames();
@@ -652,6 +660,8 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         }));
         confirmationError.classList.add('d-none');
         confirmationError.textContent = '';
+        hasScheduleConflict = false;
+        setConfirmationAction('Confirm request', 'ti ti-calendar-check');
     }
 
     bookingForm.addEventListener('submit', function (event) {
@@ -675,6 +685,14 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
 
     confirmRequestButton.addEventListener('click', async function () {
         if (isSubmitting) return;
+        if (hasScheduleConflict) {
+            hasScheduleConflict = false;
+            confirmationModalElement.addEventListener('hidden.bs.modal', () => {
+                showBookingStep(1, true);
+            }, { once: true });
+            confirmationModal.hide();
+            return;
+        }
         isSubmitting = true;
         confirmationError.classList.add('d-none');
         confirmationDismissButtons.forEach(button => button.disabled = true);
@@ -695,7 +713,11 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
                 console.error('Unexpected booking response:', responseBody, parseError);
                 throw new Error('The server response could not be read. Check Home or History before submitting again.');
             }
-            if (!result.success) throw new Error(result.message || 'Booking failed.');
+            if (!result.success) {
+                const bookingError = new Error(result.message || 'Booking failed.');
+                bookingError.code = result.code || '';
+                throw bookingError;
+            }
             confirmationModalElement.addEventListener('hidden.bs.modal', () => {
                 window.showToast('Appointment request submitted for clinic review.', true);
                 document.querySelector('[data-page="home-content.php"]')?.click();
@@ -703,11 +725,18 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
             isSubmitting = false;
             confirmationModal.hide();
         } catch (error) {
-            confirmationError.textContent = error.message || 'Unable to submit your appointment. Please try again.';
+            const scheduleWasFilled = error.code === 'schedule_full';
+            confirmationError.textContent = scheduleWasFilled
+                ? 'That schedule was just filled by another patient. Please choose another available schedule.'
+                : error.message || 'Unable to submit your appointment. Please try again.';
             confirmationError.classList.remove('d-none');
             isSubmitting = false;
             confirmationDismissButtons.forEach(button => button.disabled = false);
             LoadingUI.setButton(confirmRequestButton, false);
+            if (scheduleWasFilled) {
+                hasScheduleConflict = true;
+                setConfirmationAction('Choose another schedule', 'ti ti-calendar-search');
+            }
             confirmRequestButton.focus();
         }
     });
