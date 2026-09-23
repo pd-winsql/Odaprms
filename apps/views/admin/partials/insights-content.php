@@ -17,7 +17,7 @@ if (!isset($insightTabs[$activeInsightTab])) $activeInsightTab = 'analytics';
 ?>
 
 <section id="insightsPage" class="d-flex flex-column gap-4">
-    <div class="d-flex flex-column gap-3">
+    <div class="vd-insights-navigation d-flex flex-column gap-3">
         <p class="text-muted small mb-0">Review clinic performance, reports, patient feedback, and completed billing records.</p>
         <div class="vd-toggle-bar" role="tablist" aria-label="Clinic insight sections">
             <?php foreach ($insightTabs as $key => $tab): ?>

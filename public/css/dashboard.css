@@ -1813,6 +1813,13 @@ button.vd-stat-card {
         padding: 0 !important;
         display: block !important;
     }
+    #insightsPage,
+    #insightPanel {
+        display: block !important;
+    }
+    .vd-insights-navigation {
+        display: none !important;
+    }
     .vd-report-page {
         display: block;
         color: #1f1d19;
@@ -1918,12 +1925,17 @@ button.vd-stat-card {
         white-space: normal !important;
     }
     .vd-report-print-footer {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
         margin-top: 10px;
         padding-top: 7px;
         border-top: 1px solid #d8d2c6;
         color: #777;
         font-size: 8px;
+    }
+    .vd-report-print-footer span:last-child {
         text-align: right;
     }
 }
