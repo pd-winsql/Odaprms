@@ -1524,17 +1524,10 @@ button.vd-stat-card {
         gap: 10px;
     }
     .vd-dash-content {
-        padding: 14px;
         gap: 14px;
     }
     .vd-stat-value {
         font-size: 28px;
-    }
-    .vd-dash-topbar {
-        padding: 10px 14px;
-    }
-    .vd-dash-title {
-        font-size: 18px;
     }
     .vd-topbar-search {
         display: none;
@@ -7321,6 +7314,14 @@ button.vd-stat-card {
     vertical-align: middle;
 }
 
+.vd-settings-subsection .vd-btn-gold:disabled,
+.vd-settings-subsection .vd-btn-outline:disabled,
+.vd-schedule-defaults-card .vd-btn-gold:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+    transform: none;
+}
+
 .vd-dash-body .modal-footer a.btn {
     text-decoration: none;
 }
@@ -8808,9 +8809,6 @@ button.vd-topbar-bell {
     white-space: nowrap;
 }
 .vd-reschedule-review-services small { margin-top: 2px; color: var(--gold); font-weight: 500; }
-
-.vd-reschedule-review-target strong,
-.vd-reschedule-review-target small { display: block; }
 
 .vd-reschedule-review-actions {
     display: flex;

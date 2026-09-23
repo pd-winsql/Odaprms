@@ -1107,7 +1107,6 @@
     align-items: center;
     justify-content: center;
     gap: 7px;
-    min-height: 54px;
     padding: 11px 14px;
     border: 1px solid var(--border);
     border-radius: 9px;
@@ -1881,10 +1880,6 @@
 
     .vd-next-appt-service {
         font-size: 20px;
-    }
-
-    .vd-dash-content {
-        padding: 16px 14px;
     }
 
     .vd-home-profile-notice {

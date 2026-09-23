@@ -508,6 +508,29 @@ function sv($settings, $key)
             booking: 'Booking Policy',
         };
 
+        function bindDirtyButton(button, fields) {
+            if (!button || !fields.length) return;
+            const snapshot = () => JSON.stringify(fields.map(field => String(field.value || '').trim()));
+            const initialSnapshot = snapshot();
+            const sync = () => {
+                button.disabled = snapshot() === initialSnapshot;
+            };
+            fields.forEach(field => {
+                field.addEventListener('input', sync);
+                field.addEventListener('change', sync);
+            });
+            sync();
+        }
+
+        function bindFileButton(input, button) {
+            if (!input || !button) return;
+            const sync = () => {
+                button.disabled = !input.files?.length;
+            };
+            input.addEventListener('change', sync);
+            sync();
+        }
+
         function showToast(msg, success) {
             if (typeof window.showToast === 'function') {
                 window.showToast(msg, success);
@@ -553,6 +576,10 @@ function sv($settings, $key)
                 end: row.querySelector('[data-default-end-picker]'),
             };
             clinicTimePickers.set(row, pickers);
+            bindDirtyButton(
+                row.querySelector('.vd-save-clinic-hours'),
+                Array.from(row.querySelectorAll('[data-default-start], [data-default-end]'))
+            );
         });
 
         const confirmModalEl = document.getElementById('settingsConfirmModal');
@@ -653,6 +680,7 @@ function sv($settings, $key)
         const transitionInput = document.getElementById('clinicTransitionMinutes');
         const saveTransitionButton = document.getElementById('saveClinicTransition');
         if (transitionInput && saveTransitionButton) {
+            bindDirtyButton(saveTransitionButton, [transitionInput]);
             saveTransitionButton.addEventListener('click', function() {
                 expandScheduleDefaults();
                 const rawMinutes = transitionInput.value.trim();
@@ -701,6 +729,7 @@ function sv($settings, $key)
         const capacityInput = document.getElementById('defaultScheduleCapacity');
         const saveCapacityButton = document.getElementById('saveDefaultScheduleCapacity');
         if (capacityInput && saveCapacityButton) {
+            bindDirtyButton(saveCapacityButton, [capacityInput]);
             saveCapacityButton.addEventListener('click', function() {
                 expandScheduleDefaults();
                 const rawCapacity = capacityInput.value.trim();
@@ -745,6 +774,8 @@ function sv($settings, $key)
 
         // ── Save a text/textarea group ──
         document.querySelectorAll('.vd-save-group-btn').forEach(btn => {
+            const trackedCard = btn.closest('.vd-settings-subsection, .vd-dash-card');
+            bindDirtyButton(btn, Array.from(trackedCard.querySelectorAll('.vd-field')));
             btn.addEventListener('click', async function() {
                 const group = this.dataset.group;
                 const label = groupLabels[group] || group;
@@ -781,9 +812,11 @@ function sv($settings, $key)
                             });
                             const result = await response.json();
                             showToast(result.message || (result.success ? 'Saved.' : 'Failed to save.'), result.success);
+                            return result.success;
                         } catch (err) {
                             showToast('Network error. Please try again.', false);
                             console.error(err);
+                            return false;
                         } finally {
                             LoadingUI.setButton(saveButton, false);
                             saveButton.disabled = false;
@@ -797,6 +830,7 @@ function sv($settings, $key)
         // ── Upload logo ──
         const uploadLogoBtn = document.getElementById('uploadLogoBtn');
         const logoInput = document.getElementById('logoInput');
+        bindFileButton(logoInput, uploadLogoBtn);
 
         if (uploadLogoBtn) {
             uploadLogoBtn.addEventListener('click', async function() {
@@ -876,6 +910,7 @@ function sv($settings, $key)
 
         const heroImageInput = document.getElementById('heroImageInput');
         const uploadHeroImageBtn = document.getElementById('uploadHeroImageBtn');
+        bindFileButton(heroImageInput, uploadHeroImageBtn);
         uploadHeroImageBtn?.addEventListener('click', function() {
             if (!heroImageInput?.files[0]) {
                 showToast('Choose a hero image first.', false);
@@ -927,6 +962,7 @@ function sv($settings, $key)
 
         const uploadGcashQrBtn = document.getElementById('uploadGcashQrBtn');
         const gcashQrInput = document.getElementById('gcashQrInput');
+        bindFileButton(gcashQrInput, uploadGcashQrBtn);
         uploadGcashQrBtn?.addEventListener('click', function() {
             if (!gcashQrInput.files[0]) {
                 showToast('Choose a QR image first.', false);
