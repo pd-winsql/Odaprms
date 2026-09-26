@@ -49,6 +49,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
          data-description="<?= htmlspecialchars($service['service_description'], ENT_QUOTES) ?>"
          data-image="<?= htmlspecialchars(vdServiceImageUrl($service['service_image'] ?? null, '../../../'), ENT_QUOTES) ?>"
          data-order="<?= (int)$service['display_order'] ?>"
+         data-default-price="<?= $service['default_price'] === null ? '' : htmlspecialchars((string)$service['default_price'], ENT_QUOTES) ?>"
+         data-billing-unit="<?= htmlspecialchars($service['billing_unit'] ?? 'service', ENT_QUOTES) ?>"
          data-category-ids="<?= htmlspecialchars($catCsv) ?>"
          data-active="<?= $isActive ? '1' : '0' ?>">
         <div class="vd-service-list-main">
@@ -70,6 +72,11 @@ function renderServiceRow($service, $assignedCategoryIds) {
                 <?= $isActive ? 'Active' : 'Inactive' ?>
             </span>
             <span class="vd-order-badge">Order <?= (int)$service['display_order'] ?></span>
+            <span class="vd-service-price-badge">
+                <?= $service['default_price'] === null
+                    ? 'Price set at billing'
+                    : '&#8369;' . number_format((float)$service['default_price'], 2) . ' / ' . (($service['billing_unit'] ?? 'service') === 'tooth' ? 'tooth' : 'service') ?>
+            </span>
             <div class="vd-service-actions" role="group" aria-label="Actions for <?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>">
                 <button class="btn vd-service-action-btn vd-edit-service-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="Edit service" aria-label="Edit service"><i class="ti ti-pencil" aria-hidden="true"></i></button>
                 <button class="btn vd-service-action-btn vd-delete-service-btn" data-id="<?= $id ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Delete service" aria-label="Delete service"><i class="ti ti-trash" aria-hidden="true"></i></button>
@@ -206,7 +213,7 @@ function renderServiceRow($service, $assignedCategoryIds) {
      a receipt-style confirmation before it actually saves
      ============================================================ -->
 <div class="modal fade" id="serviceModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered vd-service-modal-dialog">
     <div class="modal-content vd-modal-content">
 
       <!-- STEP 1: form -->
@@ -215,48 +222,70 @@ function renderServiceRow($service, $assignedCategoryIds) {
           <h5 class="modal-title vd-modal-title" id="serviceModalTitle">Add New Service</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body d-flex flex-column gap-3">
+        <div class="modal-body">
           <input type="hidden" id="serviceModalId" value="">
           <input type="hidden" id="serviceModalActive" value="1">
 
-          <div class="vd-service-image-editor">
-            <label class="vd-label form-label" for="serviceModalImage">Service Image</label>
-            <div class="vd-service-image-preview" id="serviceImagePreview">
-              <img id="serviceImagePreviewImg" src="" alt="Service image preview" hidden>
-              <span id="serviceImagePreviewEmpty">No image selected</span>
+          <div class="vd-service-editor-layout">
+            <div class="vd-service-image-editor">
+              <label class="vd-label form-label" for="serviceModalImage">Service Image</label>
+              <div class="vd-service-image-preview" id="serviceImagePreview">
+                <img id="serviceImagePreviewImg" src="" alt="Service image preview" hidden>
+                <span id="serviceImagePreviewEmpty">No image selected</span>
+              </div>
+              <input type="file" class="form-control vd-input" id="serviceModalImage" accept="image/jpeg,image/png,image/webp">
+              <div class="vd-service-image-actions">
+                <small class="text-muted">JPG, PNG, or WebP · maximum 5 MB · 4:3 recommended</small>
+                <button type="button" class="btn vd-btn-outline btn-sm" id="serviceImageRemoveBtn">Remove image</button>
+              </div>
             </div>
-            <input type="file" class="form-control vd-input" id="serviceModalImage" accept="image/jpeg,image/png,image/webp">
-            <div class="d-flex align-items-center justify-content-between gap-3 mt-2">
-              <small class="text-muted">JPG, PNG, or WebP · maximum 5 MB · 4:3 recommended</small>
-              <button type="button" class="btn vd-btn-outline btn-sm" id="serviceImageRemoveBtn">Remove image</button>
+
+            <div class="vd-service-editor-fields">
+              <div>
+                <label class="vd-label form-label">Service Name</label>
+                <input type="text" class="form-control vd-input" id="serviceModalName">
+              </div>
+
+              <div>
+                <label class="vd-label form-label">Description</label>
+                <textarea class="form-control vd-input" id="serviceModalDescription" rows="2"></textarea>
+              </div>
+
+              <div>
+                <label class="vd-label form-label">Display Order</label>
+                <input type="number" class="form-control vd-input" id="serviceModalOrder" value="0" min="0">
+              </div>
+
+              <div class="vd-service-pricing-fields">
+                <div>
+                  <label class="vd-label form-label" for="serviceModalPrice">Default price <span class="vd-label-optional">Optional</span></label>
+                  <div class="vd-money-input">
+                    <span aria-hidden="true">&#8369;</span>
+                    <input type="number" class="form-control vd-input" id="serviceModalPrice" min="0" max="99999999.99" step="0.01" inputmode="decimal" placeholder="Set during billing">
+                  </div>
+                </div>
+                <div>
+                  <label class="vd-label form-label" for="serviceModalBillingUnit">Price applies per</label>
+                  <select class="form-select vd-input" id="serviceModalBillingUnit">
+                    <option value="service">Service</option>
+                    <option value="tooth">Tooth</option>
+                  </select>
+                </div>
+                <small class="text-muted vd-service-pricing-help">This is an internal starting rate. Leave it blank when the charge depends on the treatment.</small>
+              </div>
+
+              <div>
+                <label class="vd-label form-label">Categories</label>
+                <div class="vd-chip-group" id="serviceModalCategories">
+                  <?php foreach ($categories as $cat): ?>
+                  <span class="vd-chip" data-category-id="<?= $cat['category_id'] ?>"><?= htmlspecialchars($cat['category_name']) ?></span>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+
+              <div id="serviceModalError" class="text-danger small d-none"></div>
             </div>
           </div>
-
-          <div>
-            <label class="vd-label form-label">Service Name</label>
-            <input type="text" class="form-control vd-input" id="serviceModalName">
-          </div>
-
-          <div>
-            <label class="vd-label form-label">Description</label>
-            <textarea class="form-control vd-input" id="serviceModalDescription" rows="2"></textarea>
-          </div>
-
-          <div>
-            <label class="vd-label form-label">Display Order</label>
-            <input type="number" class="form-control vd-input" id="serviceModalOrder" value="0" min="0">
-          </div>
-
-          <div>
-            <label class="vd-label form-label">Categories</label>
-            <div class="vd-chip-group" id="serviceModalCategories">
-              <?php foreach ($categories as $cat): ?>
-              <span class="vd-chip" data-category-id="<?= $cat['category_id'] ?>"><?= htmlspecialchars($cat['category_name']) ?></span>
-              <?php endforeach; ?>
-            </div>
-          </div>
-
-          <div id="serviceModalError" class="text-danger small d-none"></div>
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="vd-btn-outline btn" data-bs-dismiss="modal">Cancel</button>
@@ -404,6 +433,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
     const nameInput      = document.getElementById('serviceModalName');
     const descInput      = document.getElementById('serviceModalDescription');
     const orderInput     = document.getElementById('serviceModalOrder');
+    const priceInput     = document.getElementById('serviceModalPrice');
+    const billingUnitInput = document.getElementById('serviceModalBillingUnit');
     const activeInput    = document.getElementById('serviceModalActive');
     const idInput        = document.getElementById('serviceModalId');
     const errorBox       = document.getElementById('serviceModalError');
@@ -452,6 +483,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
         nameInput.value = '';
         descInput.value = '';
         orderInput.value = '0';
+        priceInput.value = '';
+        billingUnitInput.value = 'service';
         activeInput.value = '1';
         currentImage = '';
         removeImage = false;
@@ -474,6 +507,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
             nameInput.value = data.name;
             descInput.value = data.description;
             orderInput.value = data.order;
+            priceInput.value = data.defaultPrice || '';
+            billingUnitInput.value = data.billingUnit === 'tooth' ? 'tooth' : 'service';
             activeInput.value = data.active === '1' ? '1' : '0';
             currentImage = data.image || '';
             showImagePreview(currentImage);
@@ -499,6 +534,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
                 description: card.dataset.description,
                 image: card.dataset.image,
                 order: card.dataset.order,
+                defaultPrice: card.dataset.defaultPrice,
+                billingUnit: card.dataset.billingUnit,
                 active: card.dataset.active,
                 categoryIds: card.dataset.categoryIds,
             });
@@ -550,8 +587,14 @@ function renderServiceRow($service, $assignedCategoryIds) {
 
     document.getElementById('serviceModalReviewBtn').addEventListener('click', function () {
         const name = nameInput.value.trim();
+        const price = priceInput.value.trim();
 
         if (!name) { errorBox.textContent = 'Service name is required.'; errorBox.classList.remove('d-none'); return; }
+        if (price !== '' && (!Number.isFinite(Number(price)) || Number(price) < 0 || Number(price) > 99999999.99)) {
+            errorBox.textContent = 'Enter a valid default price or leave it blank.';
+            errorBox.classList.remove('d-none');
+            return;
+        }
         errorBox.classList.add('d-none');
 
         const selectedCats = Array.from(categoriesWrap.querySelectorAll('.vd-chip-selected')).map(c => c.textContent.trim());
@@ -562,6 +605,11 @@ function renderServiceRow($service, $assignedCategoryIds) {
         appendServiceReceiptRow(receiptBody, 'Image', 'No image', previewObjectUrl || currentImage);
         appendServiceReceiptRow(receiptBody, 'Name', name);
         appendServiceReceiptRow(receiptBody, 'Description', descInput.value.trim() || '—');
+        appendServiceReceiptRow(
+            receiptBody,
+            'Internal price',
+            price === '' ? 'Set during billing' : `₱${Number(price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per ${billingUnitInput.value}`
+        );
         appendServiceReceiptRow(receiptBody, 'Categories', selectedCats.length ? selectedCats.join(', ') : '—');
         appendServiceReceiptRow(receiptBody, 'Status', isActive ? 'Active' : 'Inactive');
 
@@ -588,6 +636,8 @@ function renderServiceRow($service, $assignedCategoryIds) {
         if (imageInput.files[0]) formData.append('service_image', imageInput.files[0]);
         if (removeImage) formData.append('remove_image', '1');
         formData.append('order', orderInput.value);
+        formData.append('default_price', priceInput.value.trim());
+        formData.append('billing_unit', billingUnitInput.value);
         if (activeInput.value === '1') formData.append('is_active', '1');
         formData.append('category_id', selectedCategoryId);
 

@@ -1,6 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Admin' && ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Admin') {
     http_response_code(403);
     echo '<div class="vd-empty-state">Billing insights are available to administrators only.</div>';
     exit;

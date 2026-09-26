@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS `appointment_billing_items` (
   `service_name_snapshot` varchar(100) NOT NULL,
   `quantity` decimal(8,2) NOT NULL DEFAULT 1.00,
   `unit_price` decimal(10,2) DEFAULT NULL,
+  `billing_unit` enum('service','tooth') NOT NULL DEFAULT 'service' COMMENT 'Billing unit used for the settled line item.',
   `line_total` decimal(10,2) GENERATED ALWAYS AS (CASE WHEN `unit_price` IS NULL THEN NULL ELSE round(`quantity` * `unit_price`, 2) END) STORED,
   `pricing_source` varchar(32) NOT NULL DEFAULT 'legacy-unknown',
   `sort_order` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
@@ -250,7 +251,8 @@ CREATE TABLE IF NOT EXISTS `appointment_services` (
   `appointment_id` int(11) NOT NULL,
   `service_id` int(11) NOT NULL,
   `quantity` decimal(8,2) NOT NULL DEFAULT 1.00 COMMENT 'Number of units of this service for the appointment.',
-  `unit_price_snapshot` decimal(10,2) DEFAULT NULL COMMENT 'Price captured for this appointment; NULL for legacy/unpriced records.'
+  `unit_price_snapshot` decimal(10,2) DEFAULT NULL COMMENT 'Price captured for this appointment; NULL for legacy/unpriced records.',
+  `billing_unit_snapshot` enum('service','tooth') DEFAULT NULL COMMENT 'Billing unit captured for this appointment.'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -724,6 +726,7 @@ CREATE TABLE IF NOT EXISTS `services` (
   `service_description` varchar(255) DEFAULT NULL,
   `service_image` varchar(255) DEFAULT NULL,
   `default_price` decimal(10,2) DEFAULT NULL COMMENT 'Current catalog price; NULL until service pricing is configured.',
+  `billing_unit` enum('service','tooth') NOT NULL DEFAULT 'service' COMMENT 'How the optional default price is multiplied during final billing.',
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `display_order` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

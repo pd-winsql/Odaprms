@@ -20,8 +20,8 @@ class BillingModel {
 
     private function getAppointmentServicesForUpdate(int $appointmentId): array {
         $stmt = $this->conn->prepare("
-            SELECT aps.service_id, aps.quantity, aps.unit_price_snapshot,
-                   s.service_name, s.is_active, s.display_order
+            SELECT aps.service_id, aps.quantity, aps.unit_price_snapshot, aps.billing_unit_snapshot,
+                   s.service_name, s.is_active, s.display_order, s.default_price, s.billing_unit
             FROM appointment_services aps
             JOIN services s ON s.service_id = aps.service_id
             WHERE aps.appointment_id = :appointment_id
@@ -54,7 +54,7 @@ class BillingModel {
 
         $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
         $stmt = $this->conn->prepare("
-            SELECT service_id, service_name, is_active, display_order
+            SELECT service_id, service_name, is_active, display_order, default_price, billing_unit
             FROM services
             WHERE service_id IN ({$placeholders})
             ORDER BY display_order, service_name
@@ -78,11 +78,16 @@ class BillingModel {
     private function replaceAppointmentServices(
         int $appointmentId,
         array $serviceIds,
-        array $existingServices
+        array $existingServices,
+        array $selectedServices
     ): void {
         $existingById = [];
         foreach ($existingServices as $service) {
             $existingById[(int) $service['service_id']] = $service;
+        }
+        $selectedById = [];
+        foreach ($selectedServices as $service) {
+            $selectedById[(int) $service['service_id']] = $service;
         }
 
         $this->conn->prepare('DELETE FROM appointment_services WHERE appointment_id = :appointment_id')
@@ -91,20 +96,89 @@ class BillingModel {
         $values = [];
         $params = [];
         foreach ($serviceIds as $index => $serviceId) {
-            $values[] = "(:appointment_id_{$index}, :service_id_{$index}, :quantity_{$index}, :price_{$index})";
+            $values[] = "(:appointment_id_{$index}, :service_id_{$index}, :quantity_{$index}, :price_{$index}, :billing_unit_{$index})";
             $existing = $existingById[$serviceId] ?? null;
+            $selected = $selectedById[$serviceId];
             $params[":appointment_id_{$index}"] = $appointmentId;
             $params[":service_id_{$index}"] = $serviceId;
             $params[":quantity_{$index}"] = $existing['quantity'] ?? 1;
-            $params[":price_{$index}"] = $existing['unit_price_snapshot'] ?? null;
+            $params[":price_{$index}"] = $existing['unit_price_snapshot'] ?? $selected['default_price'] ?? null;
+            $params[":billing_unit_{$index}"] = $existing['billing_unit_snapshot'] ?? $selected['billing_unit'] ?? 'service';
         }
 
         $insert = $this->conn->prepare("
             INSERT INTO appointment_services
-                (appointment_id, service_id, quantity, unit_price_snapshot)
+                (appointment_id, service_id, quantity, unit_price_snapshot, billing_unit_snapshot)
             VALUES " . implode(', ', $values)
         );
         $insert->execute($params);
+    }
+
+    private function applyServiceLinePricing(
+        int $appointmentId,
+        array $serviceIds,
+        array $selectedServices,
+        array $existingServices,
+        array $serviceLineItems
+    ): array {
+        $selectedById = [];
+        foreach ($selectedServices as $service) $selectedById[(int) $service['service_id']] = $service;
+        $existingById = [];
+        foreach ($existingServices as $service) $existingById[(int) $service['service_id']] = $service;
+
+        $update = $this->conn->prepare("
+            UPDATE appointment_services
+            SET quantity = :quantity,
+                unit_price_snapshot = :unit_price,
+                billing_unit_snapshot = :billing_unit
+            WHERE appointment_id = :appointment_id AND service_id = :service_id
+        ");
+        $total = 0.0;
+        $normalized = [];
+        foreach ($serviceIds as $serviceId) {
+            if (!array_key_exists($serviceId, $serviceLineItems)) {
+                throw new InvalidArgumentException('Enter a rate and quantity for every selected service.');
+            }
+            $item = (array) $serviceLineItems[$serviceId];
+            $quantityValue = $item['quantity'] ?? null;
+            $priceValue = $item['unit_price'] ?? null;
+            if (filter_var($quantityValue, FILTER_VALIDATE_INT) === false) {
+                throw new InvalidArgumentException('Each service quantity must be a whole number.');
+            }
+            $quantity = (int) $quantityValue;
+            if ($quantity < 1 || $quantity > 99) {
+                throw new InvalidArgumentException('Each service quantity must be between 1 and 99.');
+            }
+            if ($priceValue === '' || !is_numeric($priceValue)) {
+                throw new InvalidArgumentException('Enter a valid rate for every selected service.');
+            }
+            $unitPrice = round((float) $priceValue, 2);
+            if ($unitPrice < 0 || $unitPrice > 99999999.99) {
+                throw new InvalidArgumentException('A service rate is outside the allowed range.');
+            }
+            $selected = $selectedById[$serviceId];
+            $existing = $existingById[$serviceId] ?? null;
+            $billingUnit = $existing['billing_unit_snapshot'] ?? $selected['billing_unit'] ?? 'service';
+            $billingUnit = $billingUnit === 'tooth' ? 'tooth' : 'service';
+            $update->execute([
+                ':quantity' => $quantity,
+                ':unit_price' => $unitPrice,
+                ':billing_unit' => $billingUnit,
+                ':appointment_id' => $appointmentId,
+                ':service_id' => $serviceId,
+            ]);
+            $lineTotal = round($quantity * $unitPrice, 2);
+            $total += $lineTotal;
+            $normalized[] = [
+                'service_id' => $serviceId,
+                'service_name' => $selected['service_name'],
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'billing_unit' => $billingUnit,
+                'line_total' => $lineTotal,
+            ];
+        }
+        return ['total' => round($total, 2), 'items' => $normalized];
     }
 
     /**
@@ -115,7 +189,7 @@ class BillingModel {
     private function syncBillingItems(int $billingId, int $appointmentId, float $serviceAmount): void {
         $items = $this->conn->prepare("
             INSERT INTO appointment_billing_items
-                (billing_id, service_id, service_name_snapshot, quantity, unit_price, pricing_source, sort_order)
+                (billing_id, service_id, service_name_snapshot, quantity, unit_price, billing_unit, pricing_source, sort_order)
             SELECT
                 :billing_id,
                 s.service_id,
@@ -127,6 +201,7 @@ class BillingModel {
                         THEN :service_amount / NULLIF(aps.quantity, 0)
                     ELSE NULL
                 END,
+                COALESCE(aps.billing_unit_snapshot, s.billing_unit, 'service'),
                 CASE
                     WHEN aps.unit_price_snapshot IS NOT NULL THEN 'appointment-snapshot'
                     WHEN service_count.total_services = 1 THEN 'billing-total'
@@ -146,6 +221,7 @@ class BillingModel {
                 service_name_snapshot = VALUES(service_name_snapshot),
                 quantity = VALUES(quantity),
                 unit_price = VALUES(unit_price),
+                billing_unit = VALUES(billing_unit),
                 pricing_source = VALUES(pricing_source),
                 sort_order = VALUES(sort_order)
         ");
@@ -616,7 +692,8 @@ class BillingModel {
         int $userId,
         string $notes = '',
         array $serviceIds = [],
-        string $serviceChangeReason = ''
+        string $serviceChangeReason = '',
+        array $serviceLineItems = []
     ): array {
         if ($serviceAmount < 0 || $cashTendered < 0) {
             return ['success' => false, 'message' => 'Amounts cannot be negative.'];
@@ -667,6 +744,23 @@ class BillingModel {
                 return ['success' => false, 'message' => 'The service change reason cannot exceed 255 characters.'];
             }
 
+            if ($servicesChanged) {
+                $this->replaceAppointmentServices($appointmentId, $serviceIds, $existingServices, $selectedServices);
+            }
+
+            $normalizedBillingItems = [];
+            if ($serviceLineItems) {
+                $pricing = $this->applyServiceLinePricing(
+                    $appointmentId,
+                    $serviceIds,
+                    $selectedServices,
+                    $existingServices,
+                    $serviceLineItems
+                );
+                $serviceAmount = $pricing['total'];
+                $normalizedBillingItems = $pricing['items'];
+            }
+
             $depositApplied = min((float) $row['deposit_amount'], $serviceAmount);
             $amountDue = max(0, $serviceAmount - $depositApplied);
             if ($cashTendered < $amountDue) {
@@ -678,7 +772,6 @@ class BillingModel {
             if (!$actor) throw new RuntimeException('Staff account not found.');
 
             if ($servicesChanged) {
-                $this->replaceAppointmentServices($appointmentId, $serviceIds, $existingServices);
                 $oldServices = array_map(static fn(array $service): array => [
                     'service_id' => (int) $service['service_id'],
                     'service_name' => $service['service_name'],
@@ -727,7 +820,7 @@ class BillingModel {
                 'cash_tendered' => $cashTendered,
                 'change' => $change,
                 'payment_status' => 'Paid',
-                'services' => array_map(static fn(array $service): array => [
+                'services' => $normalizedBillingItems ?: array_map(static fn(array $service): array => [
                     'service_id' => (int) $service['service_id'],
                     'service_name' => $service['service_name'],
                 ], $selectedServices),

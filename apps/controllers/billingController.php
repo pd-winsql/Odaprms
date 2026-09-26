@@ -23,6 +23,18 @@ $serviceIds = array_values(array_unique(array_filter(array_map(
 if (!$serviceIds) {
     echo json_encode(['success' => false, 'message' => 'Select at least one service performed.']); exit;
 }
+$postedQuantities = (array) ($_POST['service_quantities'] ?? []);
+$postedUnitPrices = (array) ($_POST['service_unit_prices'] ?? []);
+$serviceLineItems = [];
+foreach ($serviceIds as $serviceId) {
+    if (!array_key_exists($serviceId, $postedQuantities) || !array_key_exists($serviceId, $postedUnitPrices)) {
+        echo json_encode(['success' => false, 'message' => 'Enter a rate and quantity for every selected service.']); exit;
+    }
+    $serviceLineItems[$serviceId] = [
+        'quantity' => $postedQuantities[$serviceId],
+        'unit_price' => $postedUnitPrices[$serviceId],
+    ];
+}
 $model = new BillingModel((new Database())->connect());
 echo json_encode($model->settleAndCompleteVisit(
     (int) ($_POST['appointment_id'] ?? 0),
@@ -31,5 +43,6 @@ echo json_encode($model->settleAndCompleteVisit(
     (int) $_SESSION['user_id'],
     trim($_POST['notes'] ?? ''),
     $serviceIds,
-    trim($_POST['service_change_reason'] ?? '')
+    trim($_POST['service_change_reason'] ?? ''),
+    $serviceLineItems
 ));

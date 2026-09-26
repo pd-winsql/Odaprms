@@ -193,8 +193,11 @@ class Appointment
             // Attach each requested service to the newly created appointment.
             $appointment_id = (int) $this->conn->lastInsertId();
             $link = $this->conn->prepare("
-                INSERT INTO appointment_services (appointment_id, service_id)
-                VALUES (:appointment_id, :service_id)
+                INSERT INTO appointment_services
+                    (appointment_id, service_id, quantity, unit_price_snapshot, billing_unit_snapshot)
+                SELECT :appointment_id, service_id, 1, default_price, billing_unit
+                FROM services
+                WHERE service_id = :service_id
             ");
             foreach ($service_ids as $service_id) {
                 $link->execute([
@@ -587,6 +590,10 @@ class Appointment
                     s.service_name,
                     s.service_description,
                     s.service_image,
+                    aps.quantity,
+                    aps.unit_price_snapshot,
+                    COALESCE(aps.billing_unit_snapshot, s.billing_unit) AS billing_unit,
+                    s.default_price,
                     c.category_name
                 FROM appointment_services aps
                 JOIN services s ON s.service_id = aps.service_id

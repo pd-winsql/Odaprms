@@ -113,9 +113,6 @@ $today = date('l, F j Y');
             <a href="#" class="vd-nav-item" data-page="payment-review-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-receipt"></i></span> Deposit Records
             </a>
-            <a href="#" class="vd-nav-item" data-page="cash-billing-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-cash"></i></span> Billing Records
-            </a>
             <a href="#" class="vd-nav-item" data-page="logbook-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-book"></i></span> Logbook
             </a>
@@ -406,29 +403,6 @@ $today = date('l, F j Y');
             window.scrollTo({ top: state.scrollY || 0 });
         }
 
-        function billingViewState() {
-            return {
-                clinic: dashContent.querySelector('#billingClinicFilter')?.value || '',
-                status: dashContent.querySelector('#billingStatusFilter')?.value || '',
-                from: dashContent.querySelector('#billingDateFrom')?.value || '',
-                to: dashContent.querySelector('#billingDateTo')?.value || ''
-            };
-        }
-
-        function restoreBillingViewState(state) {
-            const clinic = dashContent.querySelector('#billingClinicFilter');
-            const status = dashContent.querySelector('#billingStatusFilter');
-            const from = dashContent.querySelector('#billingDateFrom');
-            const to = dashContent.querySelector('#billingDateTo');
-            if (clinic) clinic.value = state.clinic;
-            if (status) status.value = state.status;
-            if (from) from.value = state.from;
-            if (to) {
-                to.value = state.to;
-                to.dispatchEvent(new Event('change'));
-            }
-        }
-
         async function checkForNewAppointments() {
             if (document.hidden || appointmentRefreshInFlight) return;
             const currentPage = document.querySelector('.vd-nav-item.active')?.dataset.page;
@@ -466,16 +440,13 @@ $today = date('l, F j Y');
 
                 const refreshablePages = [
                     'dashboard-content.php',
-                    'payment-review-content.php',
-                    'cash-billing-content.php'
+                    'payment-review-content.php'
                 ];
                 const pageHasRelevantChange = currentPage === 'dashboard-content.php'
                     ? hasStaffOperationsChange
                     : currentPage === 'payment-review-content.php'
                         ? hasDepositChange
-                        : currentPage === 'cash-billing-content.php'
-                            ? hasStaffOperationsChange
-                            : false;
+                        : false;
                 if (!refreshablePages.includes(currentPage) || !pageHasRelevantChange) {
                     lastKnownAppointmentId = latestId;
                     lastKnownDepositVersion = depositVersion;
@@ -486,16 +457,13 @@ $today = date('l, F j Y');
 
                 appointmentRefreshInFlight = true;
                 const state = currentPage === 'payment-review-content.php'
-                        ? depositViewState()
-                        : currentPage === 'cash-billing-content.php'
-                            ? billingViewState()
-                            : dashboardViewState();
+                    ? depositViewState()
+                    : dashboardViewState();
                 const refreshed = await loadpage(currentPage, {
                     silent: true
                 });
                 if (!refreshed) return;
                 if (currentPage === 'payment-review-content.php') restoreDepositViewState(state);
-                else if (currentPage === 'cash-billing-content.php') restoreBillingViewState(state);
                 else restoreDashboardViewState(state);
                 lastKnownAppointmentId = latestId;
                 lastKnownDepositVersion = depositVersion;

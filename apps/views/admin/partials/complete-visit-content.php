@@ -34,12 +34,25 @@ if ($isAdminQueueView) {
 }
 
 $serviceDetails = (new Appointment($conn))->getServiceDetailsForAppointments([(int) $id]);
+$originalServiceDetails = $serviceDetails[(int) $id] ?? [];
+$originalServicePricing = [];
+foreach ($originalServiceDetails as $service) {
+    $serviceId = (int) $service['service_id'];
+    $originalServicePricing[(string) $serviceId] = [
+        'quantity' => max(1, (int) ($service['quantity'] ?? 1)),
+        'unitPrice' => $service['unit_price_snapshot'] !== null
+            ? (float) $service['unit_price_snapshot']
+            : ($service['default_price'] !== null ? (float) $service['default_price'] : null),
+        'billingUnit' => ($service['billing_unit'] ?? 'service') === 'tooth' ? 'tooth' : 'service',
+    ];
+}
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 $patientName = trim($visit['firstname'] . ' ' . $visit['lastname']);
 $pageData = [
     'id' => (int) $id, 'patientId' => (int) $visit['patient_id'],
     'patient' => $patientName, 'deposit' => (float) ($visit['verified_deposit'] ?? 0),
-    'originalServiceIds' => array_map('intval', array_column($serviceDetails[(int) $id] ?? [], 'service_id')),
+    'originalServiceIds' => array_map('intval', array_column($originalServiceDetails, 'service_id')),
+    'originalServicePricing' => $originalServicePricing,
     'maxServices' => $maxServicesPerVisit, 'csrfToken' => $_SESSION['csrf_token'],
 ];
 ?>
@@ -71,6 +84,8 @@ $pageData = [
                                                 value="<?= (int) $service['service_id'] ?>"
                                                 data-final-service
                                                 data-service-name="<?= htmlspecialchars($service['service_name'], ENT_QUOTES) ?>"
+                                                data-default-price="<?= $service['default_price'] === null ? '' : htmlspecialchars((string) $service['default_price'], ENT_QUOTES) ?>"
+                                                data-billing-unit="<?= htmlspecialchars(($service['billing_unit'] ?? 'service') === 'tooth' ? 'tooth' : 'service', ENT_QUOTES) ?>"
                                                 data-service-active="<?= (int) $service['is_active'] ?>">
                                             <span>
                                                 <strong><?= htmlspecialchars($service['service_name']) ?></strong>
@@ -93,10 +108,11 @@ $pageData = [
 </div>
         <aside class="vd-complete-visit-panel vd-complete-visit-payment" aria-labelledby="completeVisitPaymentHeading">
             <h2 id="completeVisitPaymentHeading">Payment &amp; settlement</h2>
-            <p>Verified deposit: <?= htmlspecialchars(number_format($pageData['deposit'], 2)) ?> PHP</p>
-                            <div class="row g-3">
-                    <div class="col-md-6"><label class="vd-label form-label" for="finalServiceAmount">Actual treatment charge</label><input type="number" min="0" step="0.01" class="form-control vd-input" id="finalServiceAmount" required></div>
-                    <div class="col-md-6"><label class="vd-label form-label" for="finalCashTendered">Cash tendered</label><input type="number" min="0" step="0.01" class="form-control vd-input" id="finalCashTendered" value="0" required></div>
+            <p>Set the actual rate and quantity for each performed service. Verified deposit: <?= htmlspecialchars(number_format($pageData['deposit'], 2)) ?> PHP.</p>
+                <div class="vd-final-charge-lines" id="finalChargeLines" aria-live="polite"></div>
+                <input type="hidden" id="finalServiceAmount" value="">
+                <div class="row g-3 mt-1">
+                    <div class="col-12"><label class="vd-label form-label" for="finalCashTendered">Cash tendered</label><input type="number" min="0" step="0.01" class="form-control vd-input" id="finalCashTendered" value="0" required></div>
                     <div class="col-12"><label class="vd-label form-label" for="finalBillingNotes">Billing notes (optional)</label><textarea class="form-control vd-input" id="finalBillingNotes" rows="2" maxlength="255"></textarea></div>
                 </div>
                 <div class="vd-final-billing-summary mt-4">
@@ -117,4 +133,3 @@ $pageData = [
     </details>
 </article>
 <script type="application/json" id="completeVisitData"><?= json_encode($pageData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
-

@@ -79,6 +79,25 @@ class serviceController {
         }
     }
 
+    private function servicePricingInput(): array
+    {
+        $rawPrice = trim((string) ($_POST['default_price'] ?? ''));
+        if ($rawPrice === '') {
+            $price = null;
+        } elseif (!is_numeric($rawPrice) || (float) $rawPrice < 0 || (float) $rawPrice > 99999999.99) {
+            return ['success' => false, 'message' => 'Default price must be a valid non-negative amount.'];
+        } else {
+            $price = round((float) $rawPrice, 2);
+        }
+
+        $unit = trim((string) ($_POST['billing_unit'] ?? 'service'));
+        if (!in_array($unit, ['service', 'tooth'], true)) {
+            return ['success' => false, 'message' => 'Select a valid pricing basis.'];
+        }
+
+        return ['success' => true, 'price' => $price, 'unit' => $unit];
+    }
+
     // ---------------------------------------------------------------
     // Categories
     // ---------------------------------------------------------------
@@ -158,6 +177,12 @@ class serviceController {
             exit;
         }
 
+        $pricing = $this->servicePricingInput();
+        if (!$pricing['success']) {
+            echo json_encode($pricing);
+            exit;
+        }
+
         $imageResult = $this->storeServiceImage($_FILES['service_image'] ?? null);
         if (!$imageResult['success']) {
             echo json_encode($imageResult);
@@ -171,7 +196,9 @@ class serviceController {
             $image,
             $category_id,
             $isActive,
-            $order
+            $order,
+            $pricing['price'],
+            $pricing['unit']
         );
 
         if (!$newId) {
@@ -180,7 +207,7 @@ class serviceController {
             exit;
         }
 
-        $this->auditLog->recordForUser('service', (int) $newId, 'service_created', "Created service {$name}.", null, ['name' => $name, 'description' => $description, 'image' => $image, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
+        $this->auditLog->recordForUser('service', (int) $newId, 'service_created', "Created service {$name}.", null, ['name' => $name, 'description' => $description, 'image' => $image, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order, 'default_price' => $pricing['price'], 'billing_unit' => $pricing['unit']], (int) $_SESSION['user_id']);
 
         echo json_encode(['success' => true, 'message' => 'Service added.', 'service_id' => $newId]);
         exit;
@@ -207,6 +234,12 @@ class serviceController {
             exit;
         }
 
+        $pricing = $this->servicePricingInput();
+        if (!$pricing['success']) {
+            echo json_encode($pricing);
+            exit;
+        }
+
         $imageResult = $this->storeServiceImage($_FILES['service_image'] ?? null);
         if (!$imageResult['success']) {
             echo json_encode($imageResult);
@@ -223,13 +256,15 @@ class serviceController {
             $image,
             $category_id,
             $isActive,
-            $order
+            $order,
+            $pricing['price'],
+            $pricing['unit']
         );
         if ($result) {
             if (($old['service_image'] ?? null) !== $image) {
                 $this->deleteUploadedServiceImage($old['service_image'] ?? null);
             }
-            $this->auditLog->recordForUser('service', (int) $id, 'service_updated', "Updated service {$name}.", $old, ['name' => $name, 'description' => $description, 'image' => $image, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order], (int) $_SESSION['user_id']);
+            $this->auditLog->recordForUser('service', (int) $id, 'service_updated', "Updated service {$name}.", $old, ['name' => $name, 'description' => $description, 'image' => $image, 'category_id' => $category_id, 'is_active' => $isActive, 'order' => $order, 'default_price' => $pricing['price'], 'billing_unit' => $pricing['unit']], (int) $_SESSION['user_id']);
         } elseif ($uploadedImage) {
             $this->deleteUploadedServiceImage($uploadedImage);
         }

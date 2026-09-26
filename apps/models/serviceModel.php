@@ -106,7 +106,7 @@ class ServiceModel {
         }
     }
 
-    public function addService($name, $description, $image, $category_id, $isActive, $order)
+    public function addService($name, $description, $image, $category_id, $isActive, $order, $defaultPrice = null, $billingUnit = 'service')
     {
         try {
             $this->conn->beginTransaction();
@@ -137,6 +137,8 @@ class ServiceModel {
                     service_name,
                     service_description,
                     service_image,
+                    default_price,
+                    billing_unit,
                     category_id,
                     is_active,
                     display_order
@@ -146,6 +148,8 @@ class ServiceModel {
                     :name,
                     :description,
                     :image,
+                    :default_price,
+                    :billing_unit,
                     :category_id,
                     :active,
                     :order
@@ -156,6 +160,8 @@ class ServiceModel {
                 ':name' => $name,
                 ':description' => $description,
                 ':image' => $image,
+                ':default_price' => $defaultPrice,
+                ':billing_unit' => $billingUnit,
                 ':category_id' => $category_id,
                 ':active' => $isActive,
                 ':order' => $desiredOrder
@@ -173,7 +179,7 @@ class ServiceModel {
         }
     }
 
-    public function updateService($service_id, $name, $description, $image, $category_id, $is_active, $display_order) {
+    public function updateService($service_id, $name, $description, $image, $category_id, $is_active, $display_order, $defaultPrice = null, $billingUnit = 'service') {
         try {
             $this->conn->beginTransaction();
 
@@ -237,6 +243,8 @@ class ServiceModel {
                     service_name = :name,
                     service_description = :description,
                     service_image = :image,
+                    default_price = :default_price,
+                    billing_unit = :billing_unit,
                     category_id = :category_id,
                     is_active = :active,
                     display_order = :display_order
@@ -247,6 +255,8 @@ class ServiceModel {
                 ':name' => $name,
                 ':description' => $description,
                 ':image' => $image,
+                ':default_price' => $defaultPrice,
+                ':billing_unit' => $billingUnit,
                 ':category_id' => $category_id,
                 ':active' => $is_active,
                 ':display_order' => $desiredOrder,

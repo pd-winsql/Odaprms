@@ -65,10 +65,11 @@ foreach (['dashboard-content.php', 'upcoming-appointments-content.php', 'den-ass
 }
 
 $assistantDashboard = file_get_contents($root . '/apps/views/dental_asst/dashboard.php');
-foreach (['appointment-content.php', 'messages-content.php', 'services-content.php', 'clinic-content.php', 'schedule-content.php', 'patient-content.php', 'payment-review-content.php', 'cash-billing-content.php', 'logbook-content.php'] as $operationalPage) {
+foreach (['appointment-content.php', 'messages-content.php', 'services-content.php', 'clinic-content.php', 'schedule-content.php', 'patient-content.php', 'payment-review-content.php', 'logbook-content.php'] as $operationalPage) {
     policyExpect(str_contains($assistantDashboard, 'data-page="' . $operationalPage . '"'), "Dental Assistant navigation includes {$operationalPage}.");
 }
 policyExpect(!str_contains($assistantDashboard, 'data-page="siteSettings-content.php"'), 'Schedule defaults are merged into Schedules instead of a separate assistant module.');
+policyExpect(!str_contains($assistantDashboard, 'data-page="cash-billing-content.php"'), 'Billing insights remain an Admin-only module.');
 
 $auditCoverage = [
     'clinicController.php' => ['clinic_created', 'clinic_updated'],
