@@ -144,23 +144,17 @@ class UserController {
         }
 
         $exactPatient = $this->patientModel->findExactIdentity($identity);
-        $linkAuthorization = null;
         if ($exactPatient) {
-            $linkAuthorization = $this->patientModel->getActiveLinkAuthorization((int) $exactPatient['patient_id'], $email);
-            if (!$linkAuthorization) {
-                echo json_encode(['success' => false, 'message' => 'An existing patient record may already match your information. Please contact the clinic so your account can be connected securely.']);
-                exit;
-            }
+            echo json_encode(['success' => false, 'message' => 'An account or patient record already matches this information. Please sign in or contact the clinic for assistance.']);
+            exit;
         }
-        $possibleMatches = $exactPatient ? [] : $this->patientModel->findPossibleIdentityMatches($identity);
+        $possibleMatches = $this->patientModel->findPossibleIdentityMatches($identity);
 
         // Store registration data in session temporarily
         $_SESSION['pending_registration'] = [
             'email'    => $email,
             'password' => password_hash($password, PASSWORD_DEFAULT),
             'identity' => $identity,
-            'link_patient_id' => $exactPatient ? (int) $exactPatient['patient_id'] : null,
-            'link_authorization_id' => $linkAuthorization ? (int) $linkAuthorization['authorization_id'] : null,
             'possible_match_ids' => $possibleMatches,
             'terms_consent' => $termsConsent,
         ];
@@ -294,36 +288,8 @@ class UserController {
                 throw new RuntimeException('Unable to create the user account.');
             }
             $user_id = (int) $this->userModel->getLastInsertedId();
-            if (!empty($pending['link_patient_id'])) {
-                $authorization = $this->patientModel->getActiveLinkAuthorization((int) $pending['link_patient_id'], $pending['email']);
-                if (!$authorization || (int) $authorization['authorization_id'] !== (int) $pending['link_authorization_id']) {
-                    throw new RuntimeException('The account-link authorization expired.');
-                }
-                if (!$this->patientModel->linkUser((int) $pending['link_patient_id'], $user_id)) {
-                    throw new RuntimeException('Unable to link the patient record.');
-                }
-                $this->conn->prepare("UPDATE patients SET email = :email WHERE patient_id = :patient_id")
-                    ->execute([':email' => $pending['email'], ':patient_id' => $pending['link_patient_id']]);
-                $birthdate = new DateTimeImmutable($pending['identity']['birthdate']);
-                $age = $birthdate->diff(new DateTimeImmutable('today'))->y;
-                $this->conn->prepare("
-                    UPDATE patients
-                    SET age = :age, gender = COALESCE(NULLIF(gender, ''), :gender)
-                    WHERE patient_id = :patient_id
-                ")->execute([
-                    ':age' => $age,
-                    ':gender' => $pending['identity']['gender'],
-                    ':patient_id' => $pending['link_patient_id'],
-                ]);
-                $this->conn->prepare("
-                    UPDATE patient_account_link_authorizations
-                    SET status = 'Used', used_by_user_id = :user_id, used_at = NOW()
-                    WHERE authorization_id = :authorization_id
-                ")->execute([':user_id' => $user_id, ':authorization_id' => $authorization['authorization_id']]);
-            } else {
-                $patientId = $this->patientModel->createRegisteredPatient($user_id, $pending['identity'], $pending['email']);
-                $this->patientModel->flagPossibleDuplicates($patientId, $pending['possible_match_ids'] ?? []);
-            }
+            $patientId = $this->patientModel->createRegisteredPatient($user_id, $pending['identity'], $pending['email']);
+            $this->patientModel->flagPossibleDuplicates($patientId, $pending['possible_match_ids'] ?? []);
             $this->auditLog->recordForUser(
                 'user',
                 $user_id,

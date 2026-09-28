@@ -6,8 +6,6 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Ad
 	exit;
 }
 
-$isAdminPatientViewer = ($_SESSION['user_role'] ?? '') === 'Admin';
-
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/patientModel.php';
 
@@ -144,7 +142,6 @@ krsort($months); // latest first
 													aria-label="Print dental record for <?= htmlspecialchars($p['lastname'] . ', ' . $p['firstname'], ENT_QUOTES) ?>">
 													<i class="ti ti-printer" aria-hidden="true"></i><span>Print dental record</span>
 												</a>
-								<?php if (!$isAdminPatientViewer && empty($p['user_id'])): ?><button type="button" class="dropdown-item vd-appt-menu-item" data-authorize-link="<?= (int)$p['patient_id'] ?>"><i class="ti ti-user-link" aria-hidden="true"></i><span>Authorize account link</span></button><?php endif; ?>
 											</div>
 										</div>
 									</td>
@@ -348,42 +345,6 @@ krsort($months); // latest first
 				}
 			});
 		});
-
-		document.querySelectorAll('[data-authorize-link]').forEach(btn => btn.addEventListener('click', async function() {
-			const response = await window.showActionModal({
-				title: 'Authorize Patient Account Link',
-				kicker: 'Patient record access',
-				message: 'Enter the verified email that may claim this patient record. The authorization will be logged for staff accountability.',
-				confirmText: 'Authorize Email',
-				icon: 'ti-user-link',
-				tone: 'warning',
-				fields: [{
-					name: 'email',
-					label: 'Verified patient email',
-					placeholder: 'patient@example.com',
-					type: 'email',
-					required: true
-				}]
-			});
-			if (!response.confirmed) return;
-			const email = response.values.email;
-			const body = new FormData();
-			body.append('action', 'authorizeAccountLink');
-			body.append('csrf_token', <?= json_encode($_SESSION['csrf_token']) ?>);
-			body.append('patient_id', this.dataset.authorizeLink);
-			body.append('email', email);
-			try {
-				const response = await fetch(window.vdAppUrl('apps/controllers/patientController.php'), {
-					method: 'POST',
-					body
-				});
-				const result = await response.json();
-				if (!result.success) throw new Error(result.message);
-				window.showToast(result.message, true);
-			} catch (error) {
-				window.showToast(error.message || 'Unable to authorize linking.', false);
-			}
-		}));
 
 	})();
 

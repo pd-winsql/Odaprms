@@ -83,35 +83,6 @@ class Patient {
         return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
-    public function getActiveLinkAuthorization(int $patientId, string $email) {
-        $stmt = $this->conn->prepare("
-            SELECT * FROM patient_account_link_authorizations
-            WHERE patient_id = :patient_id AND LOWER(authorized_email) = LOWER(:email)
-              AND status = 'Active' AND expires_at > NOW()
-            ORDER BY authorization_id DESC LIMIT 1
-        ");
-        $stmt->execute([':patient_id' => $patientId, ':email' => $email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    public function authorizeAccountLink(int $patientId, string $email, int $userId): array {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) return ['success' => false, 'message' => 'Enter a valid email address.'];
-        try {
-            $patient = $this->getPatient($patientId);
-            if (!$patient || !empty($patient['user_id'])) return ['success' => false, 'message' => 'This patient is already linked to an account.'];
-            $this->conn->prepare("UPDATE patient_account_link_authorizations SET status='Revoked' WHERE patient_id=:patient_id AND status='Active'")
-                ->execute([':patient_id' => $patientId]);
-            $this->conn->prepare("
-                INSERT INTO patient_account_link_authorizations
-                    (patient_id, authorized_email, authorized_by_user_id, expires_at)
-                VALUES (:patient_id, :email, :user_id, DATE_ADD(NOW(), INTERVAL 24 HOUR))
-            ")->execute([':patient_id'=>$patientId, ':email'=>strtolower(trim($email)), ':user_id'=>$userId]);
-            $audit = new AuditLog($this->conn); $actor = $audit->getUserActor($userId);
-            $audit->record('patient',$patientId,'account_link_authorized',"Authorized account linking for patient #{$patientId}.",null,['email'=>$email,'expires_in_hours'=>24],$actor);
-            return ['success'=>true,'message'=>'Account linking authorized for 24 hours. Ask the patient to register using this email and their matching information.'];
-        } catch (Throwable $e) { error_log('authorizeAccountLink error: '.$e->getMessage()); return ['success'=>false,'message'=>'Unable to authorize account linking.']; }
-    }
-
     public function createRegisteredPatient(int $userId, array $data, string $email): int {
         $stmt = $this->conn->prepare("
             INSERT INTO patients
@@ -397,23 +368,6 @@ class Patient {
             ]);
         } catch (PDOException $e) {
             error_log("createPatientFromUser error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    public function linkUser($patient_id, $user_id) {
-        try {
-            $stmt = $this->conn->prepare("
-                UPDATE patients
-                SET user_id = :user_id
-                WHERE patient_id = :patient_id
-            ");
-            return $stmt->execute([
-                ':user_id' => $user_id,
-                ':patient_id' => $patient_id
-            ]);
-        } catch (PDOException $e) {
-            error_log("linkUser error: " . $e->getMessage());
             return false;
         }
     }

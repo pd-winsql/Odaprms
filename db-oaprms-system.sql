@@ -472,25 +472,6 @@ INSERT INTO `patients` (`patient_id`, `user_id`, `firstname`, `lastname`, `middl
 -- --------------------------------------------------------
 
 --
--- Table structure for table `patient_account_link_authorizations`
---
-
-CREATE TABLE IF NOT EXISTS `patient_account_link_authorizations` (
-  `authorization_id` bigint(20) UNSIGNED NOT NULL,
-  `patient_id` int(11) NOT NULL,
-  `authorized_email` varchar(255) NOT NULL,
-  `status` enum('Active','Used','Revoked','Expired') NOT NULL DEFAULT 'Active',
-  `authorized_by_user_id` int(11) DEFAULT NULL,
-  `authorized_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `expires_at` datetime NOT NULL,
-  `used_by_user_id` int(11) DEFAULT NULL,
-  `used_at` datetime DEFAULT NULL,
-  `notes` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `patient_conditions`
 --
 
@@ -1093,16 +1074,6 @@ ALTER TABLE `patients`
   ADD KEY `idx_patients_possible_duplicate` (`firstname`,`lastname`,`birthdate`);
 
 --
--- Indexes for table `patient_account_link_authorizations`
---
-ALTER TABLE `patient_account_link_authorizations`
-  ADD PRIMARY KEY (`authorization_id`),
-  ADD KEY `idx_link_authorization_lookup` (`authorized_email`,`status`,`expires_at`),
-  ADD KEY `idx_link_authorization_patient` (`patient_id`),
-  ADD KEY `idx_link_authorization_actor` (`authorized_by_user_id`),
-  ADD KEY `idx_link_authorization_used_user` (`used_by_user_id`);
-
---
 -- Indexes for table `patient_conditions`
 --
 ALTER TABLE `patient_conditions`
@@ -1293,12 +1264,6 @@ ALTER TABLE `patients`
   MODIFY `patient_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
--- AUTO_INCREMENT for table `patient_account_link_authorizations`
---
-ALTER TABLE `patient_account_link_authorizations`
-  MODIFY `authorization_id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `patient_conditions`
 --
 ALTER TABLE `patient_conditions`
@@ -1468,14 +1433,6 @@ ALTER TABLE `audit_logs`
 ALTER TABLE `patients`
   ADD CONSTRAINT `fk_patients_profile_completed_by` FOREIGN KEY (`profile_completed_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `patients_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `patient_account_link_authorizations`
---
-ALTER TABLE `patient_account_link_authorizations`
-  ADD CONSTRAINT `fk_link_authorization_actor` FOREIGN KEY (`authorized_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_link_authorization_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`patient_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_link_authorization_used_user` FOREIGN KEY (`used_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `patient_conditions`

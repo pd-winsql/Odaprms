@@ -436,12 +436,6 @@ class PatientController {
         exit;
     }
 
-    public function authorizeAccountLink() {
-        header('Content-Type: application/json');
-        vdRequireDentalAssistantJson();
-        if (!validate_csrf()) { echo json_encode(['success'=>false,'message'=>'Your session expired. Refresh and try again.']); exit; }
-        echo json_encode($this->patients->authorizeAccountLink((int)($_POST['patient_id'] ?? 0), trim($_POST['email'] ?? ''), (int)$_SESSION['user_id'])); exit;
-    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -466,7 +460,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $controller->saveOwnProfile();
     } elseif ($action === 'completeProfileByStaff') {
         $controller->completeProfileByStaff();
-    } elseif ($action === 'authorizeAccountLink') {
-        $controller->authorizeAccountLink();
     }
 }
