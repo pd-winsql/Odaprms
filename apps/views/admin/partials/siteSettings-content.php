@@ -93,13 +93,13 @@ function sv($settings, $key)
                     </div>
                     <div>
                         <label class="vd-label form-label" for="clinicStart<?= (int) $clinic['clinic_id'] ?>">Opens</label>
-                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="08:00" maximum="17:25" required vibrate="false" data-default-start-picker>
+                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="07:00" maximum="17:25" required vibrate="false" data-default-start-picker>
                             <input type="text" id="clinicStart<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-start value="<?= htmlspecialchars(substr($clinic['default_start_time'] ?? '08:00:00', 0, 5)) ?>" autocomplete="off" inputmode="numeric" required>
                         </clock-timepicker>
                     </div>
                     <div>
                         <label class="vd-label form-label" for="clinicEnd<?= (int) $clinic['clinic_id'] ?>">Closes</label>
-                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="08:05" maximum="17:30" required vibrate="false" data-default-end-picker>
+                        <clock-timepicker class="vd-clock-timepicker" format="HH:mm" precision="00:05" minimum="07:05" maximum="17:30" required vibrate="false" data-default-end-picker>
                             <input type="text" id="clinicEnd<?= (int) $clinic['clinic_id'] ?>" class="form-control vd-input vd-schedule-time-input" data-default-end value="<?= htmlspecialchars(substr($clinic['default_end_time'] ?? '17:00:00', 0, 5)) ?>" autocomplete="off" inputmode="numeric" required>
                         </clock-timepicker>
                     </div>
@@ -135,7 +135,7 @@ function sv($settings, $key)
                 </div>
                 <button type="button" class="btn vd-btn-gold" id="saveDefaultScheduleCapacity"><i class="ti ti-check" aria-hidden="true"></i><span>Save policy</span></button>
             </div>
-            <div class="vd-schedule-policy-note mt-3"><i class="ti ti-info-circle" aria-hidden="true"></i><span>Clinic hours are limited to 8:00 AM–5:30 PM. A larger separation can only be saved when all upcoming clinic windows already meet it.</span></div>
+            <div class="vd-schedule-policy-note mt-3"><i class="ti ti-info-circle" aria-hidden="true"></i><span>Clinic hours are limited to 7:00 AM–5:30 PM. A larger separation can only be saved when all upcoming clinic windows already meet it.</span></div>
         </div>
         </div>
     </div>
@@ -641,9 +641,9 @@ function sv($settings, $key)
                     showToast('Default clinic hours must use five-minute increments.', false);
                     return;
                 }
-                if (startTime < '08:00' || endTime > '17:30') {
+                if (startTime < '07:00' || endTime > '17:30') {
                     expandScheduleDefaults();
-                    showToast('Default clinic hours must stay between 8:00 AM and 5:30 PM.', false);
+                    showToast('Default clinic hours must stay between 7:00 AM and 5:30 PM.', false);
                     return;
                 }
                 const clinicName = row.querySelector('.vd-clinic-hours-name strong').textContent.trim();

@@ -22,10 +22,9 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 $csrfToken = $_SESSION['csrf_token'];
 
 // Keep the newest usable deposit in the working card through the end of its
-// appointment date (including a visit completed today). Every other deposit
-// belongs in the read-only history.
+// appointment date. Completed visits belong in the read-only history immediately.
 $today = date('Y-m-d');
-$inactiveAppointmentStatuses = ['Cancelled', 'No-show', 'Rejected'];
+$inactiveAppointmentStatuses = ['Completed', 'Cancelled', 'No-show', 'Rejected'];
 $terminalDepositStatuses = ['Expired', 'Forfeited', 'Refunded'];
 $currentDeposit = null;
 $previousDeposits = [];

@@ -939,6 +939,133 @@ button.vd-stat-card {
     flex-shrink: 0;
 }
 
+/* Activity log: stable rows with details shown in a modal. */
+.vd-activity-search-field {
+    position: relative;
+}
+
+.vd-activity-search-field > i {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    z-index: 2;
+    color: #948772;
+    font-size: 18px;
+    line-height: 1;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: color 0.16s ease;
+}
+
+.vd-activity-search-field .vd-input {
+    padding-left: 46px !important;
+}
+
+.vd-activity-search-field:focus-within > i {
+    color: var(--gold);
+}
+
+.vd-activity-log-table {
+    table-layout: fixed;
+}
+
+.vd-activity-log-table .vd-activity-col-date { width: 11%; }
+.vd-activity-log-table .vd-activity-col-person { width: 15%; }
+.vd-activity-log-table .vd-activity-col-record { width: 10%; }
+.vd-activity-log-table .vd-activity-col-action { width: 21%; }
+.vd-activity-log-table .vd-activity-col-description { width: 31%; }
+.vd-activity-log-table .vd-activity-col-changes { width: 12%; }
+
+.vd-activity-log-table tbody tr {
+    height: 74px;
+}
+
+.vd-activity-log-table td {
+    vertical-align: middle;
+}
+
+.vd-activity-log-table .vd-status {
+    display: inline-block;
+    max-width: 100%;
+}
+
+.vd-activity-description {
+    display: -webkit-box;
+    overflow: hidden;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.vd-activity-change-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 0;
+    border: 0;
+    background: transparent;
+    color: var(--dark);
+    font: inherit;
+    white-space: nowrap;
+}
+
+.vd-activity-change-trigger:hover,
+.vd-activity-change-trigger:focus-visible {
+    color: var(--gold);
+}
+
+.vd-activity-change-trigger:focus-visible {
+    outline: 2px solid rgba(143, 103, 24, 0.35);
+    outline-offset: 3px;
+}
+
+.vd-activity-change-meta {
+    margin: 0 0 16px;
+    color: var(--mid);
+    font-size: 13px;
+}
+
+.vd-activity-change-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.vd-activity-change-panel {
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--border);
+    background: #faf8f3;
+}
+
+.vd-activity-change-panel.is-after {
+    border-left: 3px solid var(--gold);
+    background: #fffaf0;
+}
+
+.vd-activity-change-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.vd-activity-change-panel p {
+    margin: 0;
+    overflow-wrap: anywhere;
+    color: var(--dark);
+    line-height: 1.55;
+}
+
+@media (max-width: 767.98px) {
+    .vd-activity-change-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ── Clinic location management ── */
 .vd-clinic-management-card {
     overflow: hidden;
@@ -6934,6 +7061,72 @@ button.vd-stat-card {
 .vd-patient-profile-form .form-check-input:focus {
     border-color: var(--gold);
     box-shadow: 0 0 0 3px rgba(128, 97, 31, 0.13);
+}
+
+.vd-minor-care-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    margin-bottom: 18px;
+    padding: 13px 14px;
+    border-left: 3px solid #b9a77f;
+    background: #f7f2e8;
+    color: var(--mid);
+}
+
+.vd-minor-care-notice.is-required {
+    border-left-color: var(--gold);
+    background: #fff5d9;
+    color: #5f4819;
+}
+
+.vd-minor-care-notice i {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: var(--gold);
+    font-size: 19px;
+}
+
+.vd-minor-care-notice div {
+    display: grid;
+    gap: 2px;
+}
+
+.vd-minor-care-notice strong {
+    color: var(--dark);
+    font-size: 12px;
+}
+
+.vd-minor-care-notice span {
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.vd-profile-label [data-minor-required-marker] {
+    margin-left: 5px;
+    color: #8a6417;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.vd-consent-guidance {
+    display: block;
+    margin-top: 7px;
+    color: var(--mid);
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.vd-consent-choice-grid input:disabled + span {
+    border-color: #e6dfd2;
+    background: #f4f1eb;
+    color: #a39a8e;
+    box-shadow: none;
+}
+
+.vd-consent-choice-grid label:has(input:disabled) {
+    cursor: not-allowed;
 }
 
 .vd-health-question-list {

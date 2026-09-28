@@ -1,13 +1,15 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental Assistant') {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
 	echo '<div class="vd-empty-state">Unauthorized.</div>';
 	exit;
 }
 
-require_once '../../../../config/conn.php';
-require_once '../../../models/patientModel.php';
+$isAdminPatientViewer = ($_SESSION['user_role'] ?? '') === 'Admin';
+
+require_once __DIR__ . '/../../../../config/conn.php';
+require_once __DIR__ . '/../../../models/patientModel.php';
 
 $db   = new Database();
 $conn = $db->connect();
@@ -142,7 +144,7 @@ krsort($months); // latest first
 													aria-label="Print dental record for <?= htmlspecialchars($p['lastname'] . ', ' . $p['firstname'], ENT_QUOTES) ?>">
 													<i class="ti ti-printer" aria-hidden="true"></i><span>Print dental record</span>
 												</a>
-												<?php if (empty($p['user_id'])): ?><button type="button" class="dropdown-item vd-appt-menu-item" data-authorize-link="<?= (int)$p['patient_id'] ?>"><i class="ti ti-user-link" aria-hidden="true"></i><span>Authorize account link</span></button><?php endif; ?>
+								<?php if (!$isAdminPatientViewer && empty($p['user_id'])): ?><button type="button" class="dropdown-item vd-appt-menu-item" data-authorize-link="<?= (int)$p['patient_id'] ?>"><i class="ti ti-user-link" aria-hidden="true"></i><span>Authorize account link</span></button><?php endif; ?>
 											</div>
 										</div>
 									</td>

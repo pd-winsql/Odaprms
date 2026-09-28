@@ -23,7 +23,7 @@ $appointmentModel = new Appointment($conn);
 $reviewModel      = new ReviewModel($conn);
 
 $patient  = $patientModel->getPatientByUserId($_SESSION['user_id']);
-$past     = $appointmentModel->getPatientPastAppointments($patient['patient_id']);
+$past     = $past ?? $appointmentModel->getPatientPastAppointments($patient['patient_id']);
 $servicesByAppointment = $appointmentModel->getServiceDetailsForAppointments(array_column($past, 'appointment_id'));
 $reviewsByAppointment = $reviewModel->getForAppointments(array_column($past, 'appointment_id'));
 
@@ -71,7 +71,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
         <div class="vd-dash-card-header">
             <div>
                 <span class="vd-dash-card-title">Past appointments</span>
-                <p class="text-muted small mb-0 mt-1">Review previous dates, clinic locations, services, and final statuses.</p>
+                <p class="text-muted small mb-0 mt-1">Review completed visits, past dates, clinic locations, services, and final statuses.</p>
             </div>
             <span class="vd-topbar-date"><?= count($past) ?> total</span>
         </div>

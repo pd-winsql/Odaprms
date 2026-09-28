@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../support/PatientProfilePolicy.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Admin', 'Dental Assistant'], true)) {
@@ -245,7 +246,7 @@ $healthQuestions = [
             </section>
 
             <section class="vd-print-consent">
-                <p>I, <strong><?= recordEscape($patient['consent_name'] ?? $fullName) ?></strong>, do hereby consent to the performance upon <strong><?= recordEscape($patient['consent_for'] ?? 'myself') ?></strong> of all dental procedures, operations, and/or treatment considered necessary to restore oral and dental health.</p>
+                <p>I, <strong><?= recordEscape($patient['consent_name'] ?? $fullName) ?></strong>, do hereby consent to the performance upon <strong><?= recordEscape(strtolower(PatientProfilePolicy::consentLabel($patient['consent_for'] ?? 'myself', 'myself'))) ?></strong> of all dental procedures, operations, and/or treatment considered necessary to restore oral and dental health.</p>
                 <p>This consent is given voluntarily. Whatever the result of any intervention or treatment may be, I absolve my dentist from liability. I understand that I am responsible for payment for services rendered to me and/or my family.</p>
                 <div class="vd-print-signatures">
                     <span>Patient / representative signature</span><span>Dentist signature</span><span>Date</span>

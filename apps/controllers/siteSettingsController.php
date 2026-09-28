@@ -52,7 +52,7 @@ class SiteSettingsController {
             exit;
         }
         if (!Schedule::isWithinOperatingHours($startTime, $endTime)) {
-            echo json_encode(['success' => false, 'message' => 'Default clinic hours must stay between 8:00 AM and 5:30 PM.']);
+            echo json_encode(['success' => false, 'message' => 'Default clinic hours must stay between 7:00 AM and 5:30 PM.']);
             exit;
         }
         $oldClinic = $this->clinics->getClinicById($clinicId);

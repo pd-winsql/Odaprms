@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'Patient') {
 require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/patientModel.php';
 require_once __DIR__ . '/../../../helpers/csrf.php';
+require_once __DIR__ . '/../../../support/PatientProfilePolicy.php';
 
 $db   = new Database();
 $conn = $db->connect();
@@ -31,6 +32,10 @@ $conditionGroups = require __DIR__ . '/../../../../config/medicalConditions.php'
 $allConditions = array_merge(...array_values($conditionGroups));
 $csrfToken = get_csrf_token();
 $today = date('Y-m-d');
+$profileAge = PatientProfilePolicy::ageFromBirthdate($patient['birthdate'] ?? null);
+$profileIsMinor = $profileAge !== null && $profileAge < PatientProfilePolicy::AGE_OF_MAJORITY;
+$consentOptions = PatientProfilePolicy::consentOptions();
+$storedConsentFor = PatientProfilePolicy::normalizeConsentFor($patient['consent_for'] ?? '');
 $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Conditions', 'Consent'];
 ?>
 
@@ -176,22 +181,34 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         <div class="vd-dash-card-header vd-profile-step-header">
         <div>
         <span class="vd-dash-card-title" id="profileContactsTitle">Care Contacts</span>
-        <p>Add a guardian for a minor and a physician the clinic may contact when needed.</p>
+        <p>If you are under 18, provide a parent or guardian. You may also add a physician the clinic can contact when needed.</p>
         </div>
         <span class="vd-profile-step-number" aria-hidden="true">02</span>
         </div>
         <div class="vd-profile-body">
         <form id="minorsForm" class="vd-patient-profile-form" aria-labelledby="profileContactsTitle">
-            <div class="vd-profile-grid">
-            <div class="vd-profile-field">
-                <label class="vd-profile-label">Parent / Guardian Name</label>
-                <input type="text" name="guardian_name" class="form-control vd-input"
-                value="<?= htmlspecialchars($patient['guardian_name'] ?? '') ?>">
+            <div class="vd-minor-care-notice <?= $profileIsMinor ? 'is-required' : '' ?>" data-minor-care-notice role="status" aria-live="polite">
+                <i class="ti <?= $profileIsMinor ? 'ti-user-shield' : 'ti-info-circle' ?>" aria-hidden="true"></i>
+                <div>
+                    <strong data-minor-care-title><?= $profileIsMinor ? 'Parent or guardian information required' : 'Parent or guardian information' ?></strong>
+                    <span data-minor-care-copy><?= $profileIsMinor
+                        ? 'Please provide the name and contact number of the parent or guardian responsible for your care.'
+                        : 'Only patients under 18 need to complete these fields. You may leave them blank.' ?></span>
+                </div>
             </div>
-            <div class="vd-profile-field">
-                <label class="vd-profile-label">Guardian Contact</label>
-                <input type="tel" name="guardian_contact" class="form-control vd-input" inputmode="tel"
-                value="<?= htmlspecialchars($patient['guardian_contact'] ?? '') ?>">
+            <div class="vd-profile-grid">
+            <div class="vd-profile-field" data-guardian-field>
+                <label class="vd-profile-label">Parent / Guardian Name <span data-minor-required-marker <?= $profileIsMinor ? '' : 'hidden' ?>>Required</span></label>
+                <input type="text" name="guardian_name" class="form-control vd-input"
+                autocomplete="name" value="<?= htmlspecialchars($patient['guardian_name'] ?? '') ?>"
+                <?= $profileIsMinor ? 'required' : '' ?>>
+            </div>
+            <div class="vd-profile-field" data-guardian-field>
+                <label class="vd-profile-label">Parent / Guardian Contact Number <span data-minor-required-marker <?= $profileIsMinor ? '' : 'hidden' ?>>Required</span></label>
+                <input type="tel" name="guardian_contact" class="form-control vd-input" inputmode="numeric"
+                autocomplete="tel" minlength="7" maxlength="15" pattern="[0-9]{7,15}"
+                title="Enter 7 to 15 digits" value="<?= htmlspecialchars($patient['guardian_contact'] ?? '') ?>"
+                <?= $profileIsMinor ? 'required' : '' ?>>
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Physician Name</label>
@@ -413,21 +430,26 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             </div>
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
-                <label class="vd-profile-label">Name of Patient or Representative</label>
+                <label class="vd-profile-label" data-consent-name-label><?= $profileIsMinor ? 'Parent / Guardian Providing Consent' : 'Name of Patient or Representative' ?></label>
                 <input type="text" name="consent_name" class="form-control vd-input"
-                value="<?= htmlspecialchars($patient['consent_name'] ?? '') ?>">
+                value="<?= htmlspecialchars($patient['consent_name'] ?? '') ?>" required>
             </div>
             <fieldset class="vd-profile-field vd-consent-for-field">
                 <legend class="vd-profile-label">Consent Applies To</legend>
                 <div class="vd-health-choice vd-consent-choice-grid">
-                <?php foreach (['myself','spouse','son','daughter','others'] as $cf): ?>
+                <?php foreach ($consentOptions as $cf => $label):
+                    $disabledForMinor = $profileIsMinor && in_array($cf, ['myself', 'spouse'], true); ?>
                     <label>
                         <input type="radio" name="consent_for" value="<?= $cf ?>"
-                            <?= ($patient['consent_for'] ?? '') === $cf ? 'checked' : '' ?>>
-                        <span><?= ucfirst($cf) ?></span>
+                            <?= $storedConsentFor === $cf ? 'checked' : '' ?>
+                            <?= $disabledForMinor ? 'disabled' : '' ?> required>
+                        <span><?= htmlspecialchars($label) ?></span>
                     </label>
                 <?php endforeach; ?>
                 </div>
+                <small class="vd-consent-guidance" data-consent-guidance><?= $profileIsMinor
+                    ? 'Choose how the minor is related to the representative named above.'
+                    : 'Choose the person receiving the dental care.' ?></small>
             </fieldset>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Consent Date</label>
@@ -507,6 +529,14 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
     const age = getField('age');
     const gender = getField('gender');
     const phone = getField('phone_number');
+    const guardianName = getField('guardian_name');
+    const guardianContact = getField('guardian_contact');
+    const consentNameLabel = root.querySelector('[data-consent-name-label]');
+    const consentGuidance = root.querySelector('[data-consent-guidance]');
+    const consentChoices = [...root.querySelectorAll('[name="consent_for"]')];
+    const minorCareNotice = root.querySelector('[data-minor-care-notice]');
+    const minorCareTitle = root.querySelector('[data-minor-care-title]');
+    const minorCareCopy = root.querySelector('[data-minor-care-copy]');
     const noKnownConditions = document.getElementById('patientNoKnownConditions');
     const conditionInputs = [...root.querySelectorAll('[name="conditions[]"]')];
     const otherCondition = getField('cond_others');
@@ -542,6 +572,42 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
        });
     }
 
+    function syncMinorPolicy() {
+        const years = calculateAge();
+        const isMinor = years !== null && years < <?= PatientProfilePolicy::AGE_OF_MAJORITY ?>;
+
+        [guardianName, guardianContact].forEach(control => {
+            if (control) control.required = isMinor;
+        });
+        root.querySelectorAll('[data-minor-required-marker]').forEach(marker => marker.hidden = !isMinor);
+
+        if (minorCareNotice) minorCareNotice.classList.toggle('is-required', isMinor);
+        if (minorCareTitle) minorCareTitle.textContent = isMinor ? 'Parent or guardian information required' : 'Parent or guardian information';
+        if (minorCareCopy) {
+            minorCareCopy.textContent = isMinor
+                ? 'Please provide the name and contact number of the parent or guardian responsible for your care.'
+                : 'Only patients under 18 need to complete these fields. You may leave them blank.';
+        }
+        const noticeIcon = minorCareNotice?.querySelector('i');
+        if (noticeIcon) noticeIcon.className = `ti ${isMinor ? 'ti-user-shield' : 'ti-info-circle'}`;
+
+        consentChoices.forEach(choice => {
+            const unavailableForMinor = isMinor && ['myself', 'spouse'].includes(choice.value);
+            choice.disabled = unavailableForMinor;
+            if (unavailableForMinor && choice.checked) choice.checked = false;
+        });
+        if (consentNameLabel) {
+            consentNameLabel.textContent = isMinor
+                ? 'Parent / Guardian Providing Consent'
+                : 'Name of Patient or Representative';
+        }
+        if (consentGuidance) {
+            consentGuidance.textContent = isMinor
+                ? 'Choose how the minor is related to the representative named above.'
+                : 'Choose the person receiving the dental care.';
+        }
+    }
+
     function syncConditionChoice(source) {
         if (source === noKnownConditions && noKnownConditions.checked) {
             conditionInputs.forEach(input => input.checked = false);
@@ -551,17 +617,20 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         }
     }
 
-    birthdate?.addEventListener('change', calculateAge);
+    birthdate?.addEventListener('change', syncMinorPolicy);
     gender?.addEventListener('change', syncHealthDetails);
     phone?.addEventListener('input', () => {
         phone.value = phone.value.replace(/\D/g, '').slice(0, 11);
+    });
+    guardianContact?.addEventListener('input', () => {
+        guardianContact.value = guardianContact.value.replace(/\D/g, '').slice(0, 15);
     });
     root.querySelectorAll('#healthForm input[type="radio"]').forEach(radio => radio.addEventListener('change', syncHealthDetails));
     noKnownConditions?.addEventListener('change', () => syncConditionChoice(noKnownConditions));
     conditionInputs.forEach(input => input.addEventListener('change', () => syncConditionChoice(input)));
     otherCondition?.addEventListener('input', () => syncConditionChoice(otherCondition));
 
-    calculateAge();
+    syncMinorPolicy();
     syncHealthDetails();
     syncConditionChoice(null);
 
@@ -631,6 +700,16 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         button.addEventListener('click', () => {
             const target = Number(button.dataset.stepTarget);
             if (!Number.isInteger(target) || target > furthestStep) return;
+            if (target > currentStep) {
+                for (let index = currentStep; index < target; index += 1) {
+                    const form = steps[index]?.querySelector('form');
+                    if (form && !form.checkValidity()) {
+                        showStep(index, true);
+                        form.reportValidity();
+                        return;
+                    }
+                }
+            }
             showStep(target, true);
         });
     });

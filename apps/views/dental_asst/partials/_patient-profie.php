@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'Dental A
 
 require_once '../../../../config/conn.php';
 require_once '../../../models/patientModel.php';
+require_once '../../../support/PatientProfilePolicy.php';
 
 $db   = new Database();
 $conn = $db->connect();
@@ -20,6 +21,7 @@ if (!$patient) {
     echo '<div class="vd-empty-state">Patient not found.</div>';
     exit;
 }
+$patientIsMinor = PatientProfilePolicy::isMinor($patient['birthdate'] ?? null);
 
 // Helper: yes/no display
 function yn($val) {
@@ -136,7 +138,7 @@ function val($v, $fallback = '—') {
     </div>
 
     <!-- ── FOR MINORS ── -->
-    <?php if (!empty($patient['guardian_name'])): ?>
+    <?php if ($patientIsMinor || !empty($patient['guardian_name'])): ?>
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Guardian / Physician Information</span>
@@ -145,11 +147,11 @@ function val($v, $fallback = '—') {
         <div class="vd-profile-grid">
             <div class="vd-profile-field">
             <div class="vd-profile-label">Guardian Name</div>
-            <div class="vd-profile-value"><?= val($patient['guardian_name']) ?></div>
+            <div class="vd-profile-value"><?= val($patient['guardian_name'], $patientIsMinor ? 'Required detail missing' : '—') ?></div>
             </div>
             <div class="vd-profile-field">
             <div class="vd-profile-label">Guardian Contact</div>
-            <div class="vd-profile-value"><?= val($patient['guardian_contact']) ?></div>
+            <div class="vd-profile-value"><?= val($patient['guardian_contact'], $patientIsMinor ? 'Required detail missing' : '—') ?></div>
             </div>
             <div class="vd-profile-field">
             <div class="vd-profile-label">Physician Name</div>
@@ -327,7 +329,7 @@ function val($v, $fallback = '—') {
             </div>
             <div class="vd-profile-field">
             <div class="vd-profile-label">Consent For</div>
-            <div class="vd-profile-value"><?= val($patient['consent_for']) ?></div>
+            <div class="vd-profile-value"><?= htmlspecialchars(PatientProfilePolicy::consentLabel($patient['consent_for'])) ?></div>
             </div>
             <div class="vd-profile-field">
             <div class="vd-profile-label">Date</div>

@@ -54,10 +54,10 @@ class AppointmentController {
 
     //Patient: past appointments
     public function pastAppointments() {
-            if (!isset($_SESSION['user_id'])) {
-                header('Location: ../views/login.php');
-                exit;
-            }
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ../views/login.php');
+            exit;
+        }
 
         if ($_SESSION['user_role'] !== 'Patient') {
             header('Location: ../admin/dashboard.php');
@@ -72,7 +72,8 @@ class AppointmentController {
             die("Patient record not found.");
         }
 
-        $data = $this->appointmentModel->getPatientUpcomingAppointments($patient['patient_id']);
+        $past = $this->appointmentModel->getPatientPastAppointments($patient['patient_id']);
+        require_once __DIR__ . '/../views/patient/partials/history-content.php';
     }
 
     //Admin: all upcoming appointments

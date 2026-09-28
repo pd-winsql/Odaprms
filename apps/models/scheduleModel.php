@@ -61,7 +61,7 @@ class Schedule {
         $start = self::normalizeTime($startTime);
         $end = self::normalizeTime($endTime);
         return $start !== null && $end !== null
-            && $start >= '08:00:00' && $end <= '17:30:00' && $start < $end;
+            && $start >= '07:00:00' && $end <= '17:30:00' && $start < $end;
     }
 
     public static function formatTimeRange(?string $startTime, ?string $endTime): string {
@@ -358,7 +358,7 @@ class Schedule {
     public function addSchedules($clinic_id, array $schedules): array {
         foreach ($schedules as $schedule) {
             if (!self::isWithinOperatingHours($schedule['start_time'], $schedule['end_time'])) {
-                return ['success' => false, 'message' => 'Clinic schedules must stay between 8:00 AM and 5:30 PM.'];
+                return ['success' => false, 'message' => 'Clinic schedules must stay between 7:00 AM and 5:30 PM.'];
             }
         }
         try {
@@ -412,7 +412,7 @@ class Schedule {
         int $maxAppointments
     ): array {
         if (!self::isWithinOperatingHours($startTime, $endTime)) {
-            return ['success' => false, 'message' => 'Clinic schedules must stay between 8:00 AM and 5:30 PM.'];
+            return ['success' => false, 'message' => 'Clinic schedules must stay between 7:00 AM and 5:30 PM.'];
         }
         try {
             $this->conn->beginTransaction();

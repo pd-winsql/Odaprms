@@ -5,6 +5,7 @@ require_once '../models/userModel.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 require_once '../support/MedicalQuestionnaire.php';
+require_once '../support/PatientProfilePolicy.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -75,7 +76,7 @@ class PatientController {
             'occupation' => trim($_POST['occupation'] ?? ''),
             'office_contact' => trim($_POST['officeContact'] ?? ''),
             'guardian_name' => trim($_POST['guardianName'] ?? ''),
-            'guardian_contact' => trim($_POST['guardianContact'] ?? ''),
+            'guardian_contact' => PatientProfilePolicy::normalizeContact($_POST['guardianContact'] ?? ''),
             'physician_name' => trim($_POST['physicianName'] ?? ''),
             'physician_contact' => trim($_POST['physicianContact'] ?? ''),
             'physician_address' => trim($_POST['physicianAddress'] ?? ''),
@@ -104,9 +105,23 @@ class PatientController {
             'cond_others' => trim($_POST['condOthers'] ?? ''),
             'conditions' => isset($_POST['cond']) ? (array)$_POST['cond'] : [],
             'consent_name' => trim($_POST['consentName'] ?? ''),
-            'consent_for' => trim($_POST['consentFor'] ?? ''),
+            'consent_for' => PatientProfilePolicy::normalizeConsentFor($_POST['consentFor'] ?? ''),
             'consent_date' => date('Y-m-d')
         ];
+
+        if (!PatientProfilePolicy::isAllowedConsentFor($data['consent_for'])) {
+            echo json_encode(['success' => false, 'message' => 'Select a valid consent option.']);
+            exit;
+        }
+        if ($data['guardian_contact'] !== '' && !PatientProfilePolicy::isValidGuardianContact($data['guardian_contact'])) {
+            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain 7 to 15 digits.']);
+            exit;
+        }
+        $minorErrors = PatientProfilePolicy::minorRequirementErrors($data);
+        if ($minorErrors) {
+            echo json_encode(['success' => false, 'message' => $minorErrors[0]]);
+            exit;
+        }
 
         $patient_id = $this->patients->savePatientForm($data);
 
@@ -224,8 +239,8 @@ class PatientController {
             echo json_encode(['success' => false, 'message' => 'Select a valid civil status.']);
             exit;
         }
-        $consentFor = trim($_POST['consent_for'] ?? '');
-        if ($consentFor !== '' && !in_array($consentFor, ['myself', 'spouse', 'son', 'daughter', 'others'], true)) {
+        $consentFor = PatientProfilePolicy::normalizeConsentFor($_POST['consent_for'] ?? '');
+        if ($consentFor !== '' && !PatientProfilePolicy::isAllowedConsentFor($consentFor)) {
             echo json_encode(['success' => false, 'message' => 'Select a valid consent option.']);
             exit;
         }
@@ -250,6 +265,7 @@ class PatientController {
             'cond_others','consent_name'
         ];
         foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        $data['guardian_contact'] = PatientProfilePolicy::normalizeContact($data['guardian_contact']);
         foreach (MedicalQuestionnaire::groups() as $group) {
             foreach ($group['questions'] as $field => $question) {
                 $detailField = $question['detail_field'] ?? null;
@@ -276,6 +292,16 @@ class PatientController {
         if ($data['no_known_conditions']) {
             $data['conditions'] = [];
             $data['cond_others'] = '';
+        }
+
+        if ($data['guardian_contact'] !== '' && !PatientProfilePolicy::isValidGuardianContact($data['guardian_contact'])) {
+            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain 7 to 15 digits.']);
+            exit;
+        }
+        $minorErrors = PatientProfilePolicy::minorRequirementErrors($data);
+        if ($minorErrors) {
+            echo json_encode(['success' => false, 'message' => $minorErrors[0]]);
+            exit;
         }
 
         echo json_encode($this->patients->saveProfileByPatient($patientId, $data, (int) $_SESSION['user_id']));
@@ -363,6 +389,8 @@ class PatientController {
             'blood_type','blood_pressure','cond_others','consent_name','consent_for'
         ];
         foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        $data['guardian_contact'] = PatientProfilePolicy::normalizeContact($data['guardian_contact']);
+        $data['consent_for'] = PatientProfilePolicy::normalizeConsentFor($data['consent_for']);
         foreach (MedicalQuestionnaire::groups() as $group) {
             foreach ($group['questions'] as $field => $question) {
                 $detailField = $question['detail_field'] ?? null;
@@ -387,6 +415,21 @@ class PatientController {
         if (!$isDraft && !$conditionsReviewed) {
             echo json_encode(['success' => false, 'message' => 'Select the patient’s medical conditions or confirm that there are no known conditions.']);
             exit;
+        }
+        if (!$isDraft && !PatientProfilePolicy::isAllowedConsentFor($data['consent_for'])) {
+            echo json_encode(['success' => false, 'message' => 'Select a valid consent option.']);
+            exit;
+        }
+        if (!$isDraft && $data['guardian_contact'] !== '' && !PatientProfilePolicy::isValidGuardianContact($data['guardian_contact'])) {
+            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain 7 to 15 digits.']);
+            exit;
+        }
+        if (!$isDraft) {
+            $minorErrors = PatientProfilePolicy::minorRequirementErrors($data);
+            if ($minorErrors) {
+                echo json_encode(['success' => false, 'message' => $minorErrors[0]]);
+                exit;
+            }
         }
 
         echo json_encode($this->patients->completeProfileByStaff($patientId, $data, (int) $_SESSION['user_id'], !$isDraft));

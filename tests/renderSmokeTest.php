@@ -23,6 +23,10 @@ $files = [
     'historical-logbook' => __DIR__ . '/../apps/views/admin/partials/logbook-content.php',
     'analytics' => __DIR__ . '/../apps/views/admin/partials/analytics-content.php',
     'reviews' => __DIR__ . '/../apps/views/admin/partials/reviews-content.php',
+    'patients' => __DIR__ . '/../apps/views/admin/partials/patient-content.php',
+    'admin-patient-profile' => __DIR__ . '/../apps/views/admin/partials/_patient-profie.php',
+    'admin-patient-transactions' => __DIR__ . '/../apps/views/admin/partials/_patient-transactions.php',
+    'admin-patient-chart' => __DIR__ . '/../apps/views/admin/partials/_patient-odontogram.php',
     'patient-billing' => __DIR__ . '/../apps/views/patient/partials/billing-content.php',
     'patient-booking' => __DIR__ . '/../apps/views/patient/partials/booking-content.php',
     'patient-home' => __DIR__ . '/../apps/views/patient/partials/home-content.php',
@@ -47,6 +51,7 @@ if (!isset($files[$case])) {
 }
 if ($case === 'historical-logbook') $_GET['date'] = date('Y-m-d');
 if (in_array($case, ['staff-patient-form', 'staff-checkin-form', 'dental-patient-transactions'], true)) $_GET['id'] = 14;
+if (in_array($case, ['admin-patient-profile', 'admin-patient-transactions', 'admin-patient-chart'], true)) $_GET['id'] = 505;
 
 ob_start();
 include $files[$case];
@@ -59,6 +64,37 @@ if ($case === 'dental-schedules') {
         fwrite(STDERR, "Schedule management defaults, clock picker, or availability feedback did not render.\n");
         exit(1);
     }
+}
+if ($case === 'patients') {
+    if (!str_contains($html, 'id="patientsTable"')
+        || !str_contains($html, 'View profile')
+        || !str_contains($html, 'Dental chart')
+        || !str_contains($html, 'Transaction history')
+        || !str_contains($html, 'Print dental record')
+        || str_contains($html, 'Authorize account link')) {
+        fwrite(STDERR, "Admin patient list or its read/clinical actions did not render as expected.\n");
+        exit(1);
+    }
+}
+if ($case === 'admin-patient-profile'
+    && (!str_contains($html, 'Patient Profile') || !str_contains($html, 'Back to Patients'))) {
+    fwrite(STDERR, "Admin patient profile did not render with the Patients return path.\n");
+    exit(1);
+}
+if ($case === 'admin-patient-transactions' && !str_contains($html, 'Transaction History')) {
+    fwrite(STDERR, "Admin patient transaction history did not render.\n");
+    exit(1);
+}
+if ($case === 'admin-patient-chart' && !str_contains($html, 'patientOdontogramWorkspace')) {
+    fwrite(STDERR, "Admin patient dental chart did not render.\n");
+    exit(1);
+}
+if ($case === 'activity-logs'
+    && (!str_contains($html, 'id="activityChangesModal"')
+        || !str_contains($html, 'data-activity-changes=')
+        || str_contains($html, '<details>'))) {
+    fwrite(STDERR, "Activity log changes must use the stable-row modal instead of inline expansion.\n");
+    exit(1);
 }
 if ($case === 'dental-settings') {
     if (substr_count($html, '<clock-timepicker') < 2

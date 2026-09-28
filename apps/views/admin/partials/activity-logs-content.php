@@ -42,7 +42,10 @@ function activityValueSummary(?string $json): string
         <div class="vd-filter-bar">
             <div class="vd-filter-group flex-grow-1">
                 <label class="vd-label form-label" for="activitySearch">Search</label>
-                <input type="search" id="activitySearch" class="form-control vd-input" placeholder="Person, action, description, or record number">
+                <div class="vd-activity-search-field">
+                    <i class="ti ti-search" aria-hidden="true"></i>
+                    <input type="search" id="activitySearch" class="form-control vd-input" placeholder="Person, action, description, or record number">
+                </div>
             </div>
             <div class="vd-filter-group">
                 <label class="vd-label form-label" for="activityEntity">Record type</label>
@@ -59,25 +62,66 @@ function activityValueSummary(?string $json): string
             <?php if (!$activityRows): ?>
                 <div class="vd-empty-state">No activity has been recorded yet.</div>
             <?php else: ?>
-                <div class="vd-appt-table-wrap"><table class="vd-appt-table w-100" id="activityTable" data-page-size="20">
+                <div class="vd-appt-table-wrap"><table class="vd-appt-table vd-activity-log-table w-100" id="activityTable" data-page-size="20">
+                    <colgroup><col class="vd-activity-col-date"><col class="vd-activity-col-person"><col class="vd-activity-col-record"><col class="vd-activity-col-action"><col class="vd-activity-col-description"><col class="vd-activity-col-changes"></colgroup>
                     <thead><tr><th>Date and time</th><th>Performed by</th><th>Record</th><th>Action</th><th>Description</th><th>Changes</th></tr></thead>
                     <tbody><?php foreach ($activityRows as $row):
                         $searchText = strtolower(implode(' ', [$row['performed_by_name'], $row['performed_by_role'], $row['entity_type'], $row['entity_id'], $row['action'], $row['description']]));
                         $oldSummary = activityValueSummary($row['old_values']);
                         $newSummary = activityValueSummary($row['new_values']);
+                        $recordLabel = ucwords(str_replace('_', ' ', $row['entity_type'])) . ($row['entity_id'] === null ? ' · System-wide' : ' #' . (int) $row['entity_id']);
+                        $changePayload = json_encode([
+                            'action' => ucwords(str_replace('_', ' ', $row['action'])),
+                            'record' => $recordLabel,
+                            'performedBy' => $row['performed_by_name'],
+                            'performedAt' => date('M d, Y · g:i A', strtotime($row['performed_at'])),
+                            'before' => $oldSummary,
+                            'after' => $newSummary,
+                        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     ?>
                         <tr data-search="<?= htmlspecialchars($searchText, ENT_QUOTES) ?>" data-entity="<?= htmlspecialchars(strtolower($row['entity_type'])) ?>" data-role="<?= htmlspecialchars(strtolower($row['performed_by_role'])) ?>" data-date="<?= htmlspecialchars(substr($row['performed_at'], 0, 10)) ?>">
                             <td><div class="vd-appt-name"><?= date('M d, Y', strtotime($row['performed_at'])) ?></div><div class="vd-appt-meta"><?= date('g:i A', strtotime($row['performed_at'])) ?></div></td>
                             <td><div class="vd-appt-name"><?= htmlspecialchars($row['performed_by_name']) ?></div><div class="vd-appt-meta"><?= htmlspecialchars($row['performed_by_role'] === 'Admin' ? 'Admin / Dentist' : $row['performed_by_role']) ?></div></td>
                             <td><div class="vd-appt-name"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $row['entity_type']))) ?></div><div class="vd-appt-meta"><?= $row['entity_id'] === null ? 'System-wide' : '#' . (int) $row['entity_id'] ?></div></td>
                             <td><span class="vd-status vd-status-confirmed"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $row['action']))) ?></span></td>
-                            <td><?= htmlspecialchars($row['description']) ?></td>
-                            <td><?php if ($oldSummary || $newSummary): ?><details><summary>View changes</summary><?php if ($oldSummary): ?><div class="vd-appt-meta mt-2"><strong>Before:</strong> <?= htmlspecialchars($oldSummary) ?></div><?php endif; ?><?php if ($newSummary): ?><div class="vd-appt-meta mt-1"><strong>After:</strong> <?= htmlspecialchars($newSummary) ?></div><?php endif; ?></details><?php else: ?><span class="text-muted">—</span><?php endif; ?></td>
+                            <td><div class="vd-activity-description" title="<?= htmlspecialchars($row['description'], ENT_QUOTES) ?>"><?= htmlspecialchars($row['description']) ?></div></td>
+                            <td><?php if ($oldSummary || $newSummary): ?><button type="button" class="vd-activity-change-trigger" data-activity-changes="<?= htmlspecialchars($changePayload, ENT_QUOTES) ?>"><i class="ti ti-eye" aria-hidden="true"></i><span>View changes</span></button><?php else: ?><span class="text-muted">—</span><?php endif; ?></td>
                         </tr>
                     <?php endforeach; ?></tbody>
                 </table></div>
                 <div class="vd-empty-state d-none" id="activityEmpty">No activity matches the selected filters.</div>
             <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="activityChangesModal" tabindex="-1" aria-labelledby="activityChangesTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="vd-appointment-details-kicker">Activity log</div>
+                    <h5 class="modal-title vd-modal-title" id="activityChangesTitle">Recorded changes</h5>
+                    <p class="vd-appointment-details-subtitle mb-0" id="activityChangesContext"></p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="vd-activity-change-meta" id="activityChangesMeta"></p>
+                <div class="vd-activity-change-grid">
+                    <section class="vd-activity-change-panel" id="activityBeforePanel">
+                        <span class="vd-activity-change-label">Before</span>
+                        <p id="activityBeforeValue"></p>
+                    </section>
+                    <section class="vd-activity-change-panel is-after" id="activityAfterPanel">
+                        <span class="vd-activity-change-label">After</span>
+                        <p id="activityAfterValue"></p>
+                    </section>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -109,5 +153,23 @@ function activityValueSummary(?string $json): string
     });
     [entity, role, date].forEach(control => control.addEventListener('change', apply));
     document.getElementById('clearActivityFilters').addEventListener('click', () => { search.value = ''; entity.value = ''; role.value = ''; date.value = ''; apply(); });
+
+    const changesModalElement = document.getElementById('activityChangesModal');
+    const changesModal = bootstrap.Modal.getOrCreateInstance(changesModalElement);
+    const beforePanel = document.getElementById('activityBeforePanel');
+    const afterPanel = document.getElementById('activityAfterPanel');
+    document.querySelectorAll('[data-activity-changes]').forEach(button => {
+        button.addEventListener('click', () => {
+            const details = JSON.parse(button.dataset.activityChanges);
+            document.getElementById('activityChangesTitle').textContent = details.action || 'Recorded changes';
+            document.getElementById('activityChangesContext').textContent = details.record || '';
+            document.getElementById('activityChangesMeta').textContent = `${details.performedBy || 'System'} · ${details.performedAt || ''}`;
+            document.getElementById('activityBeforeValue').textContent = details.before || '';
+            document.getElementById('activityAfterValue').textContent = details.after || '';
+            beforePanel.hidden = !details.before;
+            afterPanel.hidden = !details.after;
+            changesModal.show();
+        });
+    });
 })();
 </script>
