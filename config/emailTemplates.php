@@ -96,7 +96,7 @@ return [
         'subject' => 'Appointment Accepted - Deposit Required',
         'heading' => 'Deposit Required',
         'intro' => 'The clinic has tentatively accepted your appointment request.',
-        'instruction' => 'Schedule: {schedule_summary} {arrival_instruction} Please open Billing in your patient dashboard and submit the {deposit_amount} GCash deposit within {payment_deadline}. Your slot remains reserved during this period.',
+        'instruction' => 'Schedule: {schedule_summary} {arrival_instruction} Please open Deposit in your patient dashboard and submit the {deposit_amount} GCash deposit within {payment_deadline}. Your slot remains reserved during this period.',
         'label' => 'Appointment Status',
         'footer' => 'Your appointment becomes fully confirmed after the clinic verifies your payment.'
     ],

@@ -260,16 +260,21 @@ function depositStatusClass($status) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close QR preview"></button>
             </div>
             <div class="modal-body vd-qr-preview-body">
-                <img src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="Enlarged GCash payment QR code for <?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'the clinic') ?>">
+                <div class="vd-qr-preview-tools" role="group" aria-label="QR image zoom controls">
+                    <button type="button" data-qr-zoom-out aria-label="Zoom out" disabled><i class="ti ti-minus" aria-hidden="true"></i></button>
+                    <output data-qr-zoom-level aria-live="polite">100%</output>
+                    <button type="button" data-qr-zoom-in aria-label="Zoom in"><i class="ti ti-plus" aria-hidden="true"></i></button>
+                    <button type="button" class="vd-qr-preview-reset" data-qr-zoom-reset disabled>Reset</button>
+                </div>
+                <div class="vd-qr-preview-stage" data-qr-preview-stage tabindex="0" aria-label="GCash QR image; scroll to explore when zoomed">
+                    <img data-qr-preview-image src="../../../public/assets/<?= htmlspecialchars($settings['gcash_qr_path']) ?>" alt="Enlarged GCash payment QR code for <?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'the clinic') ?>">
+                </div>
                 <div class="vd-qr-preview-account">
                     <span>Confirm recipient</span>
                     <strong><?= htmlspecialchars(($settings['gcash_account_name'] ?? '') ?: 'Account name unavailable') ?></strong>
                     <small><?= htmlspecialchars(($settings['gcash_account_number'] ?? '') ?: 'Account number unavailable') ?></small>
                 </div>
                 <p>On this phone? Take a screenshot, then import the QR image in GCash.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn vd-btn-outline" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -300,6 +305,49 @@ function depositStatusClass($status) {
 <script>
 (function () {
     window.DepositOcr?.initAll(document);
+
+    const qrModal = document.getElementById('gcashQrPreviewModal');
+    if (qrModal) {
+        const stage = qrModal.querySelector('[data-qr-preview-stage]');
+        const image = qrModal.querySelector('[data-qr-preview-image]');
+        const zoomOut = qrModal.querySelector('[data-qr-zoom-out]');
+        const zoomIn = qrModal.querySelector('[data-qr-zoom-in]');
+        const reset = qrModal.querySelector('[data-qr-zoom-reset]');
+        const level = qrModal.querySelector('[data-qr-zoom-level]');
+        let zoom = 1;
+        const resizeObserver = new ResizeObserver(() => renderZoom());
+
+        function renderZoom() {
+            const baseWidth = Math.min(Math.max(stage.clientWidth - 24, 1), 560);
+            image.style.width = `${Math.round(baseWidth * zoom)}px`;
+            level.value = `${Math.round(zoom * 100)}%`;
+            zoomOut.disabled = zoom <= 1;
+            zoomIn.disabled = zoom >= 3;
+            reset.disabled = zoom === 1;
+        }
+
+        function setZoom(nextZoom) {
+            zoom = Math.min(3, Math.max(1, nextZoom));
+            renderZoom();
+            if (zoomOut.disabled && document.activeElement === zoomOut) zoomIn.focus();
+            if (zoomIn.disabled && document.activeElement === zoomIn) zoomOut.focus();
+        }
+
+        zoomOut.addEventListener('click', () => setZoom(zoom - 0.25));
+        zoomIn.addEventListener('click', () => setZoom(zoom + 0.25));
+        reset.addEventListener('click', () => {
+            setZoom(1);
+            stage.scrollTo(0, 0);
+            stage.focus({ preventScroll: true });
+        });
+        qrModal.addEventListener('shown.bs.modal', () => {
+            zoom = 1;
+            renderZoom();
+            stage.scrollTo(0, 0);
+            resizeObserver.observe(stage);
+        });
+        qrModal.addEventListener('hidden.bs.modal', () => resizeObserver.disconnect());
+    }
 
     document.querySelectorAll('[data-payment-deadline]').forEach(box => {
         const output = box.querySelector('[data-countdown]');

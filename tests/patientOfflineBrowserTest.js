@@ -129,6 +129,23 @@ async function main() {
         await nav('billing-content.php', '.depositSubmissionForm');
         const qrTrigger = '.vd-deposit-qr-trigger';
         await page.locator(qrTrigger).first().click();
+        await page.locator('#gcashQrPreviewModal.show').waitFor({ state: 'visible' });
+        const qrImage = page.locator('[data-qr-preview-image]');
+        const initialQrWidth = await qrImage.evaluate(image => image.getBoundingClientRect().width);
+        await page.locator('[data-qr-zoom-in]').click();
+        check(await page.locator('[data-qr-zoom-level]').textContent() === '125%'
+            && await qrImage.evaluate(image => image.getBoundingClientRect().width) > initialQrWidth,
+            'Payment QR zoom control enlarges the image');
+        await page.locator('[data-qr-zoom-reset]').click();
+        check(await page.locator('[data-qr-zoom-level]').textContent() === '100%'
+            && await qrImage.evaluate((image, width) => Math.abs(image.getBoundingClientRect().width - width) < 2, initialQrWidth),
+            'Payment QR reset restores its original size');
+        await page.setViewportSize({ width: 390, height: 844 });
+        check(await page.locator('#gcashQrPreviewModal .modal-dialog').evaluate(dialog => {
+            const bounds = dialog.getBoundingClientRect();
+            return bounds.left >= 0 && bounds.right <= window.innerWidth;
+        }), 'Payment QR dialog fits a phone viewport');
+        await page.setViewportSize({ width: 1365, height: 900 });
         await dismissWithEscape('#gcashQrPreviewModal', qrTrigger, 'Payment QR dialog');
         await page.locator('.depositSubmissionForm input[type="file"]').first().setInputFiles(path.resolve(uploadPath));
         const receiptTrigger = '[data-receipt-view]';
