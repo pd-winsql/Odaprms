@@ -127,7 +127,7 @@
 .vd-odontogram-inspector-title span { color: var(--mid, #716355); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
 .vd-odontogram-inspector-title strong { color: var(--gold, #926d1d); font: 600 30px/1 "Cormorant Garamond", serif; }
 .vd-odontogram-findings { display: grid; gap: 8px; margin: 16px 0; }
-.vd-odontogram-finding { align-items: center; border-left: 3px solid var(--gold, #926d1d); display: grid; gap: 10px; grid-template-columns: 32px 1fr auto; padding: 8px 0 8px 10px; }
+.vd-odontogram-finding { align-items: center; border-left: 3px solid var(--gold, #926d1d); display: grid; gap: 10px; grid-template-columns: 32px minmax(0, 1fr) auto; padding: 8px 0 8px 10px; }
 .vd-odontogram-finding.is-condition { border-left-color: var(--odontogram-condition); }
 .vd-odontogram-finding.is-restoration { border-left-color: var(--odontogram-restoration); }
 .vd-odontogram-finding.is-surgery { border-left-color: var(--odontogram-surgery); }
@@ -136,7 +136,9 @@
 .vd-odontogram-finding small { display: block; }
 .vd-odontogram-finding strong { font-size: 12px; }
 .vd-odontogram-finding small { color: var(--mid, #716355); font-size: 10px; margin-top: 2px; }
-.vd-odontogram-finding button { background: none; border: 0; color: var(--mid, #716355); padding: 5px; }
+.vd-odontogram-finding [data-remove-finding] { align-items: center; background: #fff2ef; border: 1px solid #d7a399; border-radius: 8px; color: #943c30; cursor: pointer; display: inline-flex; font-size: 18px; height: 38px; justify-content: center; padding: 0; transition: background-color .18s ease, border-color .18s ease, color .18s ease; width: 38px; }
+.vd-odontogram-finding [data-remove-finding]:hover { background: #943c30; border-color: #943c30; color: #fff; }
+.vd-odontogram-finding [data-remove-finding]:focus-visible { outline: 2px solid var(--gold, #926d1d); outline-offset: 2px; }
 .vd-odontogram-no-findings { color: var(--mid, #716355); font-size: 12px; }
 .vd-odontogram-finding-form { border-top: 1px solid var(--border, #dfcda8); display: grid; gap: 14px; padding-top: 16px; }
 .vd-odontogram-finding-form label,
@@ -174,6 +176,7 @@
 .vd-odontogram-savebar span { display: block; }
 .vd-odontogram-savebar strong { font-size: 13px; }
 .vd-odontogram-savebar span { color: var(--mid, #716355); font-size: 11px; margin-top: 3px; }
+.vd-odontogram-savebar [data-save-odontogram]:disabled { background: #8b7752; border-color: #8b7752; color: #fff; cursor: not-allowed; opacity: 1; box-shadow: none; }
 [data-reviewed="1"] .vd-odontogram-savebar { background: #eff6e8; border-color: #b7ce9f; }
 
 .vd-odontogram-ledger header p { color: var(--mid, #716355); font-size: 12px; margin: 5px 0 0; }

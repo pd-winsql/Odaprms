@@ -8,6 +8,16 @@
 .vd-complete-visit-payment { position: sticky; top: 24px; }
 .vd-complete-visit-payment h2 { font-family: 'Cormorant Garamond', serif; font-size: 27px; margin: 0 0 8px; }
 .vd-complete-visit-payment > p { font-size: 13px; color: var(--mid, #716355); margin-bottom: 24px; }
+.vd-complete-visit-payment #recordPaymentAndComplete:disabled,
+.vd-complete-visit-payment #recordPaymentAndComplete:disabled:hover {
+    background: #8b7752;
+    border-color: #8b7752;
+    color: #fff;
+    opacity: 1;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
 .vd-final-charge-lines { display: grid; gap: 10px; }
 .vd-final-charge-line { border: 1px solid var(--border, #dfcda8); border-radius: 12px; padding: 13px; background: #fffdf9; }
 .vd-final-charge-line.is-invalid { border-color: #c98953; }

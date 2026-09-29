@@ -206,8 +206,8 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             <div class="vd-profile-field" data-guardian-field>
                 <label class="vd-profile-label">Parent / Guardian Contact Number <span data-minor-required-marker <?= $profileIsMinor ? '' : 'hidden' ?>>Required</span></label>
                 <input type="tel" name="guardian_contact" class="form-control vd-input" inputmode="numeric"
-                autocomplete="tel" minlength="7" maxlength="15" pattern="[0-9]{7,15}"
-                title="Enter 7 to 15 digits" value="<?= htmlspecialchars($patient['guardian_contact'] ?? '') ?>"
+                autocomplete="tel" minlength="11" maxlength="11" pattern="[0-9]{11}"
+                title="Enter an 11-digit contact number" value="<?= htmlspecialchars($patient['guardian_contact'] ?? '') ?>"
                 <?= $profileIsMinor ? 'required' : '' ?>>
             </div>
             <div class="vd-profile-field">
@@ -623,7 +623,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         phone.value = phone.value.replace(/\D/g, '').slice(0, 11);
     });
     guardianContact?.addEventListener('input', () => {
-        guardianContact.value = guardianContact.value.replace(/\D/g, '').slice(0, 15);
+        guardianContact.value = guardianContact.value.replace(/\D/g, '').slice(0, 11);
     });
     root.querySelectorAll('#healthForm input[type="radio"]').forEach(radio => radio.addEventListener('change', syncHealthDetails));
     noKnownConditions?.addEventListener('change', () => syncConditionChoice(noKnownConditions));

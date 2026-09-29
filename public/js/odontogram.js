@@ -34,6 +34,7 @@
             this.appointmentId = 0;
             this.selectedTooth = '';
             this.entries = [];
+            this.savedSnapshot = null;
             this.loaded = false;
             this.bind();
             this.renderLegend();
@@ -75,6 +76,7 @@
                 const result = await response.json();
                 if (!response.ok || !result.success) throw new Error(result.message || 'Unable to load the dental chart.');
                 this.hydrate(result.data);
+                this.savedSnapshot = JSON.stringify(this.serialize());
                 this.root.classList.remove('is-dirty');
                 if (!this.billingContext) {
                     const title = this.root.querySelector('[data-savebar-title]');
@@ -111,6 +113,13 @@
         setBusy(busy) {
             this.root.classList.toggle('is-loading', busy);
             this.root.setAttribute('aria-busy', String(busy));
+            this.updateSaveButton();
+        }
+
+        updateSaveButton() {
+            const button = this.root.querySelector('[data-save-odontogram]');
+            if (button) button.disabled = this.root.classList.contains('is-loading')
+                || (!this.billingContext && !this.root.classList.contains('is-dirty'));
         }
 
         showDentition(dentition) {
@@ -251,13 +260,17 @@
 
         markDirty() {
             if (this.readOnly) return;
-            this.root.classList.add('is-dirty');
-            if (this.billingContext) {
+            const hasChanges = this.savedSnapshot !== JSON.stringify(this.serialize());
+            this.root.classList.toggle('is-dirty', hasChanges);
+            this.updateSaveButton();
+            if (this.billingContext && hasChanges) {
                 this.setReviewState(false);
                 this.root.dispatchEvent(new CustomEvent('odontogram:dirty', { bubbles: true, detail: { appointmentId: this.appointmentId } }));
             }
             const title = this.root.querySelector('[data-savebar-title]');
-            if (title) title.textContent = this.billingContext ? 'Dental chart needs review' : 'Unsaved dental chart';
+            if (title) title.textContent = this.billingContext
+                ? (hasChanges ? 'Dental chart needs review' : 'Review required for settlement')
+                : (hasChanges ? 'Unsaved dental chart' : 'Dental chart · no unsaved changes');
         }
 
         setReviewState(reviewed, review = null) {
@@ -273,7 +286,7 @@
         }
 
         async save() {
-            if (this.readOnly || !this.patientId) return;
+            if (this.readOnly || !this.patientId || (!this.billingContext && !this.root.classList.contains('is-dirty'))) return;
             const button = this.root.querySelector('[data-save-odontogram]');
             const originalLabel = button.textContent;
             this.setBusy(true);
@@ -297,7 +310,6 @@
                 window.showToast?.(error.message || 'Unable to save the dental chart.', false);
             } finally {
                 this.setBusy(false);
-                button.disabled = false;
                 button.textContent = originalLabel;
             }
         }

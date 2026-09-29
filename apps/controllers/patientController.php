@@ -294,8 +294,10 @@ class PatientController {
             $data['cond_others'] = '';
         }
 
-        if ($data['guardian_contact'] !== '' && !PatientProfilePolicy::isValidGuardianContact($data['guardian_contact'])) {
-            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain 7 to 15 digits.']);
+        $submittedGuardianContact = trim($_POST['guardian_contact'] ?? '');
+        if (($submittedGuardianContact !== '' || PatientProfilePolicy::isMinor($birthdate))
+            && !preg_match('/^\d{11}$/', $submittedGuardianContact)) {
+            echo json_encode(['success' => false, 'message' => 'Parent or guardian contact number must contain exactly 11 digits.']);
             exit;
         }
         $minorErrors = PatientProfilePolicy::minorRequirementErrors($data);
