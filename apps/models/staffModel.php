@@ -36,6 +36,58 @@ class Staff {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
+    public function getMyAccount(int $userId): ?array {
+        $stmt = $this->conn->prepare("
+            SELECT u.id AS user_id, u.email AS login_email, u.password, u.user_role,
+                   s.staff_id, s.firstname, s.middlename, s.lastname, s.phone_number
+            FROM users u
+            LEFT JOIN staffs s ON s.user_id = u.id
+            WHERE u.id = :user_id AND u.user_role IN ('Admin', 'Dental Assistant')
+            LIMIT 1
+        ");
+        $stmt->execute([':user_id' => $userId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    public function updateMyAccount(int $userId, array $fields): array {
+        try {
+            $this->conn->beginTransaction();
+            $stmt = $this->conn->prepare("SELECT u.email, u.user_role, s.staff_id FROM users u LEFT JOIN staffs s ON s.user_id = u.id WHERE u.id = :user_id AND u.user_role IN ('Admin', 'Dental Assistant') FOR UPDATE");
+            $stmt->execute([':user_id' => $userId]);
+            $account = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$account) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'Account not found.'];
+            }
+
+            $stmt = $this->conn->prepare('UPDATE users SET email = :email WHERE id = :user_id');
+            $stmt->execute([':email' => $fields['email'], ':user_id' => $userId]);
+            if ($account['staff_id'] !== null) {
+                $stmt = $this->conn->prepare('UPDATE staffs SET firstname = :firstname, middlename = :middlename, lastname = :lastname, phone_number = :phone, email = :email WHERE staff_id = :staff_id');
+                $stmt->execute([
+                    ':firstname' => $fields['firstname'], ':middlename' => $fields['middlename'] ?: null,
+                    ':lastname' => $fields['lastname'], ':phone' => $fields['phone_number'],
+                    ':email' => $fields['email'], ':staff_id' => $account['staff_id'],
+                ]);
+                $staffId = (int) $account['staff_id'];
+            } else {
+                $stmt = $this->conn->prepare('INSERT INTO staffs (user_id, firstname, middlename, lastname, phone_number, email) VALUES (:user_id, :firstname, :middlename, :lastname, :phone, :email)');
+                $stmt->execute([
+                    ':user_id' => $userId, ':firstname' => $fields['firstname'],
+                    ':middlename' => $fields['middlename'] ?: null, ':lastname' => $fields['lastname'],
+                    ':phone' => $fields['phone_number'], ':email' => $fields['email'],
+                ]);
+                $staffId = (int) $this->conn->lastInsertId();
+            }
+            $this->conn->commit();
+            return ['success' => true, 'staff_id' => $staffId];
+        } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('updateMyAccount error: ' . $e->getMessage());
+            return ['success' => false, 'message' => $e->getCode() === '23000' ? 'This email is already in use.' : 'Unable to save your account. Please try again.'];
+        }
+    }
+
     public function createStaff($firstname, $lastname, $middlename, $gender, $phone, $email, $password) {
         try {
             $this->conn->beginTransaction();

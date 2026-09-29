@@ -43,8 +43,9 @@ for (const browser of browserConfigurations) {
 
       const checkbox = page.getByRole('checkbox', { name: 'I agree to the Terms and Conditions' });
       const opener = page.getByRole('button', { name: 'Terms and Conditions', exact: true });
-      await expect(checkbox).toBeEnabled();
+      await expect(checkbox).toBeDisabled();
       await expect(checkbox).not.toBeChecked();
+      await expect(page.locator('#termsConsentHint')).toBeVisible();
       await expect(opener).toHaveAttribute('aria-expanded', 'false');
 
       await page.keyboard.press('Tab');
@@ -66,6 +67,8 @@ for (const browser of browserConfigurations) {
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog', { name: 'System Terms and Conditions' })).toBeHidden();
       await expect(opener).toBeFocused();
+      await expect(checkbox).toBeEnabled();
+      await expect(page.locator('#termsConsentHint')).toBeHidden();
 
       await page.keyboard.press('Enter');
       await expect(page.locator('#systemTermsModalLabel')).toBeFocused();
@@ -96,6 +99,14 @@ for (const browser of browserConfigurations) {
       await page.getByRole('button', { name: 'Continue to account details' }).click();
 
       const opener = page.getByRole('button', { name: 'Terms and Conditions', exact: true });
+      await page.locator('#regPhoneNumber').fill('09123456789');
+      await page.locator('#regEmail').fill('accessible@example.invalid');
+      await page.locator('#regPassword').fill('Secure123');
+      await page.locator('#regConfirmPassword').fill('Secure123');
+      await page.getByRole('button', { name: 'Create Account' }).click();
+      await expect(page.locator('#termsConsentError')).toHaveText('Open and review the Terms and Conditions before creating your account.');
+      await expect(opener).toBeFocused();
+
       await opener.click();
       const dialogTransition = await page.locator('#systemTermsModal .modal-dialog').evaluate(
         (element) => getComputedStyle(element).transitionDuration
@@ -104,10 +115,6 @@ for (const browser of browserConfigurations) {
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog', { name: 'System Terms and Conditions' })).toBeHidden();
 
-      await page.locator('#regPhoneNumber').fill('09123456789');
-      await page.locator('#regEmail').fill('accessible@example.invalid');
-      await page.locator('#regPassword').fill('Secure123');
-      await page.locator('#regConfirmPassword').fill('Secure123');
       await page.getByRole('button', { name: 'Create Account' }).click();
       await expect(page.locator('#termsConsentError')).toHaveText('Please agree to the Terms and Conditions to create your account.');
       await expect(page.locator('#termsConsentError')).toBeVisible();

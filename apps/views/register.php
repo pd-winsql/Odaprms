@@ -147,13 +147,14 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
 
           <div class="vd-terms-consent vd-register-span-2" id="termsConsentGroup">
             <input type="hidden" name="terms_consent_token" value="<?= $escape($termsConsentToken) ?>">
-            <input type="checkbox" class="vd-terms-checkbox" id="termsAccepted" name="terms_accepted" value="1" required
-              aria-labelledby="termsConsentLabel openSystemTerms" aria-describedby="termsConsentError">
+            <input type="checkbox" class="vd-terms-checkbox" id="termsAccepted" name="terms_accepted" value="1" required disabled
+              aria-labelledby="termsConsentLabel openSystemTerms" aria-describedby="termsConsentHint termsConsentError">
             <div class="vd-terms-consent-copy">
               <label class="vd-terms-consent-label" id="termsConsentLabel" for="termsAccepted">I agree to the</label>
               <button type="button" class="vd-terms-trigger" id="openSystemTerms" data-bs-toggle="modal" data-bs-target="#systemTermsModal"
                 aria-haspopup="dialog" aria-controls="systemTermsModal" aria-expanded="false">Terms and Conditions</button>
             </div>
+            <p class="vd-terms-consent-hint" id="termsConsentHint">Open and review the Terms and Conditions before agreeing.</p>
             <p class="vd-terms-consent-error" id="termsConsentError" role="alert" hidden>Please agree to the Terms and Conditions to create your account.</p>
           </div>
 
@@ -199,6 +200,7 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     const registerForm = document.getElementById('registerForm');
     const termsAccepted = document.getElementById('termsAccepted');
     const termsConsentGroup = document.getElementById('termsConsentGroup');
+    const termsConsentHint = document.getElementById('termsConsentHint');
     const termsConsentError = document.getElementById('termsConsentError');
     const termsModal = document.getElementById('systemTermsModal');
     const termsHeading = document.getElementById('systemTermsModalLabel');
@@ -226,6 +228,11 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
 
     termsModal.addEventListener('shown.bs.modal', function () {
       termsModalShown = true;
+      termsAccepted.disabled = false;
+      termsConsentHint.hidden = true;
+      termsConsentGroup.classList.remove('vd-terms-consent-invalid');
+      termsConsentError.hidden = true;
+      termsAccepted.removeAttribute('aria-invalid');
       termsHeading.focus();
 
       // Bootstrap ignores hide() while its opening transition is still in
@@ -469,8 +476,11 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
       if (!termsAccepted.checked) {
         termsConsentGroup.classList.add('vd-terms-consent-invalid');
         termsAccepted.setAttribute('aria-invalid', 'true');
+        termsConsentError.textContent = termsAccepted.disabled
+          ? 'Open and review the Terms and Conditions before creating your account.'
+          : 'Please agree to the Terms and Conditions to create your account.';
         termsConsentError.hidden = false;
-        termsAccepted.focus();
+        (termsAccepted.disabled ? termsTrigger : termsAccepted).focus();
         return;
       }
 

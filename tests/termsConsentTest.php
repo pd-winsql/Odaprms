@@ -7,12 +7,13 @@ $modal = file_get_contents($root . '/apps/views/system-terms.php');
 $page = file_get_contents($root . '/apps/views/terms.php');
 
 $checks = [
-    'registration has an unchecked required agreement checkbox' => str_contains($register, 'id="termsAccepted" name="terms_accepted" value="1" required')
-        && !str_contains($register, 'name="terms_accepted" value="1" required disabled'),
+    'registration requires opening terms before the agreement checkbox is enabled' => str_contains($register, 'id="termsAccepted" name="terms_accepted" value="1" required disabled')
+        && str_contains($register, 'termsAccepted.disabled = false;')
+        && str_contains($register, 'id="termsConsentHint"'),
     'checkbox sentence names the agreement and links the terms' => str_contains($register, 'aria-labelledby="termsConsentLabel openSystemTerms"')
         && str_contains($register, 'for="termsAccepted">I agree to the</label>')
         && str_contains($register, '>Terms and Conditions</button>'),
-    'checkbox has an associated inline error' => str_contains($register, 'aria-describedby="termsConsentError"')
+    'checkbox has an associated hint and inline error' => str_contains($register, 'aria-describedby="termsConsentHint termsConsentError"')
         && str_contains($register, 'id="termsConsentError" role="alert" hidden'),
     'registration opens the terms modal' => str_contains($register, 'data-bs-target="#systemTermsModal"'),
     'terms opener exposes dialog name and state' => str_contains($register, 'aria-haspopup="dialog" aria-controls="systemTermsModal" aria-expanded="false"'),

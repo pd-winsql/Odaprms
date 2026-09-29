@@ -219,6 +219,11 @@
   outline-offset: 3px;
 }
 
+.vd-terms-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .vd-terms-consent-copy {
   display: flex;
   min-height: 40px;
@@ -257,14 +262,23 @@
   outline-offset: 2px;
 }
 
+.vd-terms-consent-hint,
 .vd-terms-consent-error {
   grid-column: 2;
   margin: 0;
-  color: #a32d2d;
   font-size: 12px;
   line-height: 1.5;
 }
 
+.vd-terms-consent-hint {
+  color: var(--mid);
+}
+
+.vd-terms-consent-error {
+  color: #a32d2d;
+}
+
+.vd-terms-consent-hint[hidden],
 .vd-terms-consent-error[hidden] {
   display: none;
 }

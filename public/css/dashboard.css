@@ -5363,6 +5363,105 @@ button.vd-stat-card {
     width: 100%;
 }
 
+.vd-my-account {
+    display: grid;
+    gap: 24px;
+    max-width: 960px;
+    width: 100%;
+}
+
+.vd-my-account-panel-body {
+    padding: 30px;
+}
+
+.vd-my-account-form {
+    display: grid;
+    gap: 24px;
+}
+
+.vd-my-account-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+}
+
+.vd-my-account-field {
+    display: grid;
+    gap: 8px;
+}
+
+.vd-my-account-field .form-label,
+.vd-my-account-email-check .form-label {
+    margin-bottom: 0;
+}
+
+.vd-my-account-field .vd-input,
+.vd-my-account-email-check .vd-input {
+    min-height: 52px;
+}
+
+.vd-my-account-field .vd-input[readonly] {
+    background: #f4efe7;
+    color: #645b4d;
+}
+
+.vd-my-account-email-check {
+    border-top: 1px solid #eee3d1;
+    display: grid;
+    gap: 8px;
+    padding-top: 20px;
+    max-width: 460px;
+}
+
+.vd-my-account-email-check[hidden] {
+    display: none;
+}
+
+.vd-my-account-email-check p {
+    color: #74695c;
+    font-size: 13px;
+    margin: 0;
+}
+
+.vd-my-account-message {
+    color: #426522;
+    margin: 0;
+}
+
+.vd-my-account-message:empty {
+    display: none;
+}
+
+.vd-my-account-message.is-error {
+    color: #9d3f36;
+}
+
+.vd-my-account-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.vd-my-account-actions span {
+    color: #74695c;
+    font-size: 13px;
+}
+
+.vd-dash-body .vd-my-account-actions .vd-btn-gold:disabled {
+    background-color: #e8dfcd;
+    border: 1px solid #d1c19f;
+    color: #6b5834 !important;
+    cursor: not-allowed;
+    opacity: 1;
+    transform: none;
+}
+
+@media (max-width: 575px) {
+    .vd-my-account-panel-body { padding: 22px 20px; }
+    .vd-my-account-grid { grid-template-columns: 1fr; }
+}
+
 .vd-sched-patients-button {
     width: 100%;
     display: flex;

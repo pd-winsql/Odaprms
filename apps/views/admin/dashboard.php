@@ -106,6 +106,9 @@ $today = date('l, F j Y');
             </a>
 
             <div class="vd-nav-section">Account</div>
+            <a href="#" class="vd-nav-item" data-page="my-account-content.php">
+                <span class="vd-nav-icon"><i class="ti ti-user"></i></span> My Account
+            </a>
             <a href="#" class="vd-nav-item" data-page="change-password-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
             </a>

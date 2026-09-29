@@ -320,9 +320,9 @@ class Appointment
         }
     }
 
-    // ===== ADMIN FUNCTIONS =====
+    // ===== ADMIN/DA FUNCTIONS =====
 
-    // Admin: view all past appointments
+    // Admin/DA: view all past appointments
     public function getAdminPastAppointments()
     {
         try {
@@ -360,7 +360,7 @@ class Appointment
         }
     }
 
-    // Admin: view past appointments per clinic
+    // Admin/DA: view past appointments per clinic
     public function getAdminPastAppointmentsByClinic($clinic)
     {
         try {
@@ -387,7 +387,7 @@ class Appointment
         }
     }
 
-    // Admin: view all upcoming appointments with status
+    // Admin/DA: view all upcoming appointments with status
     public function getAllUpcomingWithStatus()
     {
         try {
@@ -412,7 +412,18 @@ class Appointment
                     ON status_change.appointment_id = a.appointment_id
                 WHERE a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
                     AND a.date >= CURDATE()
-                ORDER BY a.date ASC, a.status ASC, a.created_at ASC
+                ORDER BY 
+                    CASE a.status
+                    WHEN 'Pending Review' THEN 1
+                    WHEN 'Awaiting Deposit' THEN 2
+                    WHEN 'Payment Under Review' THEN 3
+                    WHEN 'Confirmed' THEN 4
+                    WHEN 'Checked In' THEN 5
+                    WHEN 'In Progress' THEN 6
+                    ELSE 7
+                END,
+                    a.date ASC, 
+                    a.created_at ASC
             ");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -422,7 +433,7 @@ class Appointment
         }
     }
 
-    // Admin: update appointment status
+    // Admin/DA: update appointment status
     public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '')
     {
         $allowedTransitions = $this->getAllowedStatusTransitions();
