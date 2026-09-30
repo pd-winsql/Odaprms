@@ -67,7 +67,7 @@ $findingCount = array_sum(array_map('count', $findingsByTooth));
     <header class="vd-patient-chart-intro">
         <span class="vd-patient-chart-eyebrow">Your dental record</span>
         <h2 id="patientChartTitle">Dental chart</h2>
-        <p>Explore the findings from your most recent completed visit. Tap a tooth to see what the clinic recorded.</p>
+        <p>Explore your latest dentist-reviewed chart from a completed visit. Tap a tooth to see what the clinic recorded.</p>
     </header>
 
     <?php if (!$snapshot): ?>

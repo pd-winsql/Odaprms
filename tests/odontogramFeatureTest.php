@@ -23,7 +23,7 @@ odontogramExpect(substr_count($editable, 'data-dentition=') === 3 && str_contain
 odontogramExpect(substr_count($editable, 'aria-pressed="true"') === 1 && substr_count($editable, 'aria-pressed="false"') === 2, 'Dentition options expose their selected state to assistive technology.');
 odontogramExpect(str_contains($editable, 'data-finding-form') && str_contains($editable, 'data-save-odontogram'), 'Admin chart renders finding and save controls.');
 odontogramExpect(str_contains($editable, 'ti-dental') && !str_contains($editable, 'ti-tooth'), 'Dental chart uses the supported Tabler dental icon.');
-odontogramExpect(str_contains($editable, 'Procedure and settlement ledger'), 'The clinic treatment ledger is included.');
+odontogramExpect(str_contains($editable, 'Procedure and settlement ledger') && str_contains($editable, 'Charted teeth'), 'The clinic treatment ledger distinguishes charted teeth from treated teeth.');
 
 $model = new OdontogramModel(new PDO('sqlite::memory:'));
 $normalize = new ReflectionMethod($model, 'normalizePayload');
@@ -56,7 +56,9 @@ odontogramExpect(!str_contains($billing, 'snap.reviewed_at >= chart.updated_at')
 $dashboard = file_get_contents($root . '/apps/views/admin/partials/dashboard-content.php');
 odontogramExpect(str_contains($dashboard, 'dashboard.php?complete_visit='), 'Queue opens a dedicated Complete Visit page.');
 $page = file_get_contents($root . '/apps/views/admin/partials/complete-visit-content.php');
-odontogramExpect(str_contains($page, "vdRenderOdontogramWorkspace('completeVisitOdontogram', false)") && !str_contains($page, 'id="completeVisitChart" open'), 'Dental chart is optional and collapsed on the settlement page.');
+odontogramExpect(str_contains($page, "vdRenderOdontogramWorkspace('completeVisitOdontogram', false, true)") && !str_contains($page, 'id="completeVisitChart" open'), 'Complete Visit uses the appointment review chart while keeping it collapsed.');
+$completeVisitJs = file_get_contents($root . '/public/js/complete-visit.js');
+odontogramExpect(substr_count($completeVisitJs, 'load(activeBillingAppointment.patientId, activeBillingAppointment.id)') === 2, 'Complete Visit loads and restores the chart in the current appointment context.');
 
 $migration = file_get_contents($root . '/database/migrations/20260915_add_patient_odontograms.sql');
 foreach (['patient_odontograms', 'patient_odontogram_teeth', 'patient_odontogram_snapshots'] as $table) {

@@ -106,8 +106,8 @@ function vdRenderOdontogramWorkspace(string $id, bool $readOnly, bool $billingCo
         <?php endif; ?>
 
         <section class="vd-odontogram-ledger" aria-labelledby="<?= htmlspecialchars($id) ?>LedgerTitle">
-            <header><span>Treatment history</span><h3 id="<?= htmlspecialchars($id) ?>LedgerTitle">Procedure and settlement ledger</h3><p>Financial values come from finalized billing records.</p></header>
-            <div class="vd-odontogram-ledger-wrap"><table><thead><tr><th>Date</th><th>Tooth no/s</th><th>Procedure</th><th>Dentist</th><th>Charge</th><th>Paid</th><th>Balance</th><th>Remarks</th></tr></thead><tbody data-odontogram-ledger></tbody></table></div>
+            <header><span>Treatment history</span><h3 id="<?= htmlspecialchars($id) ?>LedgerTitle">Procedure and settlement ledger</h3><p>Financial values come from finalized billing records. Charted teeth are teeth with findings in that visit’s reviewed chart, not necessarily the teeth treated.</p></header>
+            <div class="vd-odontogram-ledger-wrap"><table><thead><tr><th>Date</th><th>Charted teeth</th><th>Procedure</th><th>Dentist</th><th>Charge</th><th>Paid</th><th>Balance</th><th>Remarks</th></tr></thead><tbody data-odontogram-ledger></tbody></table></div>
         </section>
     </section>
     <?php

@@ -10,6 +10,10 @@ require_once __DIR__ . '/../../../models/appointmentModel.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
 require_once __DIR__ . '/../../../helpers/odontogramView.php';
 $conn = (new Database())->connect();
+$qrSettingsStmt = $conn->query('SELECT gcash_qr_path, gcash_account_name, gcash_account_number FROM site_settings WHERE id = 1');
+$qrSettings = $qrSettingsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+$qrFilename = basename((string) ($qrSettings['gcash_qr_path'] ?? ''));
+$hasGcashQr = $qrFilename !== '' && is_file(__DIR__ . '/../../../../public/assets/' . $qrFilename);
 $id = filter_var($_GET['complete_visit'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 $stmt = $conn->prepare('SELECT a.*, p.verified_deposit FROM vw_appointment_overview a LEFT JOIN vw_appointment_payment_summary p ON p.appointment_id = a.appointment_id WHERE a.appointment_id = :id');
 $stmt->execute([':id' => $id ?: 0]);
@@ -109,6 +113,13 @@ $pageData = [
         <aside class="vd-complete-visit-panel vd-complete-visit-payment" aria-labelledby="completeVisitPaymentHeading">
             <h2 id="completeVisitPaymentHeading">Payment &amp; settlement</h2>
             <p>Set the actual rate and quantity for each performed service. Verified deposit: <?= htmlspecialchars(number_format($pageData['deposit'], 2)) ?> PHP.</p>
+            <?php if ($hasGcashQr): ?>
+                <button type="button" class="btn vd-btn-outline vd-complete-visit-gcash-trigger" data-bs-toggle="modal" data-bs-target="#completeVisitGcashModal">
+                    <i class="ti ti-qrcode" aria-hidden="true"></i> Show GCash QR
+                </button>
+            <?php else: ?>
+                <p class="vd-complete-visit-gcash-unavailable">GCash QR is not configured in System Settings.</p>
+            <?php endif; ?>
                 <div class="vd-final-charge-lines" id="finalChargeLines" aria-live="polite"></div>
                 <input type="hidden" id="finalServiceAmount" value="">
                 <div class="row g-3 mt-1">
@@ -128,8 +139,108 @@ $pageData = [
         </aside>
     </div>
     <details class="vd-complete-visit-chart" id="completeVisitChart">
-        <summary><span><strong>Dental chart</strong><small>Optional · open to view or update findings</small></span><i class="ti ti-chevron-down" aria-hidden="true"></i></summary>
-        <?php vdRenderOdontogramWorkspace('completeVisitOdontogram', false); ?>
+        <summary><span><strong>Dental chart</strong><small>Review and save for this visit to share the chart with the patient after completion</small></span><i class="ti ti-chevron-down" aria-hidden="true"></i></summary>
+        <?php vdRenderOdontogramWorkspace('completeVisitOdontogram', false, true); ?>
     </details>
 </article>
+<?php if ($hasGcashQr): ?>
+<div class="modal fade" id="completeVisitGcashModal" tabindex="-1" aria-labelledby="completeVisitGcashTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered vd-complete-visit-gcash-dialog">
+        <div class="modal-content vd-modal-content">
+            <div class="modal-header">
+                <div>
+                    <span class="vd-action-modal-kicker">GCash payment</span>
+                    <h2 class="modal-title vd-modal-title mb-0" id="completeVisitGcashTitle">Scan clinic QR</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close GCash QR"></button>
+            </div>
+            <div class="modal-body vd-complete-visit-gcash-body">
+                <div class="vd-complete-visit-gcash-tools" role="group" aria-label="GCash QR image zoom controls">
+                    <button type="button" data-gcash-zoom-out aria-label="Zoom out"><i class="ti ti-minus" aria-hidden="true"></i></button>
+                    <output data-gcash-zoom-level aria-live="polite">100%</output>
+                    <button type="button" data-gcash-zoom-in aria-label="Zoom in"><i class="ti ti-plus" aria-hidden="true"></i></button>
+                    <button type="button" class="vd-complete-visit-gcash-reset" data-gcash-zoom-reset disabled>Reset</button>
+                </div>
+                <div class="vd-complete-visit-gcash-stage" data-gcash-zoom-stage tabindex="0" aria-label="GCash QR image. Use plus or minus to zoom and scroll to explore the enlarged image.">
+                    <img data-gcash-zoom-image src="../../../public/assets/<?= htmlspecialchars(rawurlencode($qrFilename), ENT_QUOTES, 'UTF-8') ?>" alt="GCash payment QR for <?= htmlspecialchars(($qrSettings['gcash_account_name'] ?? '') ?: 'the clinic', ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+                <div class="vd-complete-visit-gcash-recipient">
+                    <span>Confirm recipient before sending</span>
+                    <strong><?= htmlspecialchars(($qrSettings['gcash_account_name'] ?? '') ?: 'Clinic GCash account', ENT_QUOTES, 'UTF-8') ?></strong>
+                    <?php if (!empty($qrSettings['gcash_account_number'])): ?><small><?= htmlspecialchars($qrSettings['gcash_account_number'], ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
+                </div>
+                <p>This QR lets the patient pay in GCash, but this screen still records cash-only final settlement. Do not enter a GCash transfer as cash; the QR preview does not verify or record payment.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <script type="application/json" id="completeVisitData"><?= json_encode($pageData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<?php if ($hasGcashQr): ?>
+<script>
+(function () {
+    const modal = document.getElementById('completeVisitGcashModal');
+    if (!modal || modal.dataset.zoomReady === 'true') return;
+    modal.dataset.zoomReady = 'true';
+
+    const stage = modal.querySelector('[data-gcash-zoom-stage]');
+    const image = modal.querySelector('[data-gcash-zoom-image]');
+    const zoomOut = modal.querySelector('[data-gcash-zoom-out]');
+    const zoomIn = modal.querySelector('[data-gcash-zoom-in]');
+    const reset = modal.querySelector('[data-gcash-zoom-reset]');
+    const level = modal.querySelector('[data-gcash-zoom-level]');
+    const minimumZoom = 0.5;
+    const maximumZoom = 3;
+    const zoomStep = 0.25;
+    let zoom = 1;
+
+    function renderZoom() {
+        const baseWidth = Math.min(Math.max(stage.clientWidth - 24, 1), 560);
+        image.style.width = `${Math.round(baseWidth * zoom)}px`;
+        level.textContent = `${Math.round(zoom * 100)}%`;
+        zoomOut.disabled = zoom <= minimumZoom;
+        zoomIn.disabled = zoom >= maximumZoom;
+        reset.disabled = zoom === 1;
+    }
+
+    function setZoom(nextZoom) {
+        zoom = Math.min(maximumZoom, Math.max(minimumZoom, nextZoom));
+        renderZoom();
+    }
+
+    function resetZoom(focusStage = false) {
+        setZoom(1);
+        stage.scrollTo(0, 0);
+        if (focusStage) stage.focus({ preventScroll: true });
+    }
+
+    zoomOut.addEventListener('click', () => setZoom(zoom - zoomStep));
+    zoomIn.addEventListener('click', () => setZoom(zoom + zoomStep));
+    reset.addEventListener('click', () => resetZoom(true));
+    stage.addEventListener('keydown', event => {
+        if (event.key === '+' || event.key === '=') {
+            event.preventDefault();
+            setZoom(zoom + zoomStep);
+        } else if (event.key === '-') {
+            event.preventDefault();
+            setZoom(zoom - zoomStep);
+        } else if (event.key === '0') {
+            event.preventDefault();
+            resetZoom(true);
+        }
+    });
+
+    const resizeObserver = typeof ResizeObserver === 'function'
+        ? new ResizeObserver(renderZoom)
+        : null;
+    modal.addEventListener('shown.bs.modal', () => {
+        resetZoom();
+        resizeObserver?.observe(stage);
+    });
+    modal.addEventListener('hidden.bs.modal', () => {
+        resizeObserver?.disconnect();
+        resetZoom();
+    });
+})();
+</script>
+<?php endif; ?>

@@ -220,7 +220,7 @@ const csrfToken = activeBillingAppointment.csrfToken;
         const chartDetails = document.getElementById('completeVisitChart');
         chartDetails.addEventListener('toggle', async () => {
             if (!chartDetails.open || finalOdontogramWorkspace?.loaded) return;
-            try { await ensureFinalOdontogramWorkspace().load(activeBillingAppointment.patientId); }
+            try { await ensureFinalOdontogramWorkspace().load(activeBillingAppointment.patientId, activeBillingAppointment.id); }
             catch (error) { window.showToast(error.message, false); }
         });
         let settled = false;
@@ -250,7 +250,7 @@ const csrfToken = activeBillingAppointment.csrfToken;
                 });
                 if (!discard.confirmed) return;
                 try {
-                    await finalOdontogramWorkspace.load(activeBillingAppointment.patientId);
+                    await finalOdontogramWorkspace.load(activeBillingAppointment.patientId, activeBillingAppointment.id);
                     finalOdontogramRoot.classList.remove('is-dirty');
                 } catch (error) { window.showToast(error.message, false); return; }
             }
