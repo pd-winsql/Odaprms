@@ -2589,3 +2589,145 @@
         padding: 8px;
     }
 }
+
+/* Patient profile: saved record and edit form are separate views. */
+#patientProfileOverview[hidden],
+#patientProfileEditor[hidden],
+.vd-profile-action-buttons button[hidden] {
+    display: none !important;
+}
+
+.vd-profile-overview {
+    max-width: 1060px;
+    margin: 0 auto;
+    scroll-margin-top: 90px;
+}
+
+.vd-profile-overview-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.vd-profile-overview-header h2 {
+    margin: 3px 0 4px;
+    color: var(--dark);
+    font: 500 34px/1.1 "Cormorant Garamond", serif;
+}
+
+.vd-profile-overview-header p {
+    margin: 0;
+    color: var(--mid);
+    font-size: 13px;
+}
+
+.vd-profile-overview-header .btn {
+    min-height: 46px;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.vd-profile-overview-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin: 0 0 18px;
+    padding: 12px 16px;
+    border-left: 3px solid var(--gold);
+    background: var(--gold-pale);
+    color: var(--mid);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.vd-profile-overview-note i {
+    color: var(--gold);
+    font-size: 18px;
+}
+
+.vd-profile-overview-sections { display: grid; gap: 16px; }
+
+.vd-profile-overview-section {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--white-bg);
+}
+
+.vd-profile-overview-section-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    padding: 17px 22px;
+    border-bottom: 1px solid var(--border);
+}
+
+.vd-profile-overview-section-heading span {
+    color: var(--gold);
+    font: 500 24px/1 "Cormorant Garamond", serif;
+}
+
+.vd-profile-overview-section-heading h3 {
+    margin: 0;
+    color: var(--dark);
+    font: 500 25px/1.15 "Cormorant Garamond", serif;
+}
+
+.vd-profile-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 28px;
+    margin: 0;
+    padding: 6px 22px 14px;
+}
+
+.vd-profile-overview-item {
+    min-width: 0;
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(186, 157, 92, 0.25);
+}
+
+.vd-profile-overview-item dt {
+    margin-bottom: 4px;
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+}
+
+.vd-profile-overview-item dd {
+    margin: 0;
+    color: var(--dark);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.vd-profile-overview-item dd.is-empty { min-height: 1.5em; }
+.vd-profile-overview :focus-visible,
+#patientProfileEditor .vd-profile-cancel-button:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 3px;
+}
+
+@media (max-width: 575px) {
+    .vd-profile-overview-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .vd-profile-overview-header h2 { font-size: 30px; }
+    .vd-profile-overview-header .btn { align-self: flex-start; }
+    .vd-profile-overview-section-heading { padding: 14px 16px; }
+    .vd-profile-overview-grid {
+        grid-template-columns: 1fr;
+        padding: 4px 16px 12px;
+    }
+
+    .vd-profile-action-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .vd-profile-cancel-button { grid-column: 1 / -1; }
+}

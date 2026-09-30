@@ -45,6 +45,19 @@ class ChatModel {
         return (int) $stmt->fetchColumn();
     }
 
+    public function unreadSnapshot(): array {
+        $sql = 'SELECT COUNT(*) AS unread, COALESCE(MAX(m.message_id), 0) AS latest_unread_message_id
+            FROM clinic_messages m JOIN clinic_conversations c USING (conversation_id)
+            WHERE m.read_at IS NULL AND ' . $this->incoming();
+        $stmt = $this->db->prepare($sql . ($this->isPatient() ? ' AND c.patient_user_id = ?' : ''));
+        $stmt->execute($this->isPatient() ? [$this->userId] : []);
+        $snapshot = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        return [
+            'unread' => (int) ($snapshot['unread'] ?? 0),
+            'latestUnreadMessageId' => (int) ($snapshot['latest_unread_message_id'] ?? 0),
+        ];
+    }
+
     public function inbox(string $search, int $offset): array {
         if ($this->isPatient()) throw new DomainException('Staff access required.');
         $offset = max(0, $offset);

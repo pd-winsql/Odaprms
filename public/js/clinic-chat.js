@@ -43,6 +43,76 @@
             el.setAttribute("aria-label", `${unread} unread messages`);
         });
     }
+    let latestUnreadMessageId = null;
+    let messageAlert = null;
+    let messageAlertTimer = null;
+    function dismissMessageAlert() {
+        clearTimeout(messageAlertTimer);
+        if (messageAlert) messageAlert.hidden = true;
+    }
+    function messageViewOpen() {
+        return patient
+            ? document.getElementById("clinicChatModal")?.classList.contains("show")
+            : document.querySelector('.vd-nav-item.active')?.dataset.page ===
+                  "messages-content.php";
+    }
+    function showMessageAlert(unread) {
+        if (messageViewOpen()) return;
+        if (!messageAlert) {
+            messageAlert = node("div", "vd-chat-alert");
+            messageAlert.setAttribute("role", "status");
+            messageAlert.setAttribute("aria-live", "polite");
+            const open = node("button", "vd-chat-alert-open");
+            open.type = "button";
+            const icon = node("i", "ti ti-message-circle");
+            icon.setAttribute("aria-hidden", "true");
+            const copy = node("span", "vd-chat-alert-copy");
+            copy.append(
+                node("strong", "", "New message"),
+                node("span", "vd-chat-alert-detail"),
+            );
+            open.append(icon, copy);
+            open.addEventListener("click", () => {
+                dismissMessageAlert();
+                if (patient) {
+                    document.querySelector(".vd-chat-launch")?.click();
+                } else {
+                    document.querySelector(
+                        '.vd-nav-item[data-page="messages-content.php"]',
+                    )?.click();
+                }
+            });
+            const close = node("button", "vd-chat-alert-close", "×");
+            close.type = "button";
+            close.setAttribute("aria-label", "Dismiss new message alert");
+            close.addEventListener("click", dismissMessageAlert);
+            messageAlert.append(open, close);
+            messageAlert.addEventListener("mouseenter", () =>
+                clearTimeout(messageAlertTimer),
+            );
+            messageAlert.addEventListener("mouseleave", scheduleMessageAlertDismissal);
+            messageAlert.addEventListener("focusin", () =>
+                clearTimeout(messageAlertTimer),
+            );
+            messageAlert.addEventListener("focusout", () => {
+                if (!messageAlert.contains(document.activeElement))
+                    scheduleMessageAlertDismissal();
+            });
+            document.body.append(messageAlert);
+        }
+        messageAlert.querySelector(".vd-chat-alert-detail").textContent =
+            unread > 1
+                ? `${unread} unread messages · Open messages`
+                : patient
+                  ? "The clinic sent you a message · Open chat"
+                  : "A patient sent a message · Open inbox";
+        messageAlert.hidden = false;
+        scheduleMessageAlertDismissal();
+    }
+    function scheduleMessageAlertDismissal() {
+        clearTimeout(messageAlertTimer);
+        messageAlertTimer = setTimeout(dismissMessageAlert, 8000);
+    }
     let badgeBusy = false;
     async function badge() {
         if (document.hidden || badgeBusy || Date.now() < syncCoverageUntil)
@@ -50,7 +120,12 @@
         badgeBusy = true;
         try {
             const data = await api("unread");
-            showUnread(Number(data.unread) || 0);
+            const unread = Number(data.unread) || 0;
+            const latest = Number(data.latestUnreadMessageId) || 0;
+            showUnread(unread);
+            if (latestUnreadMessageId !== null && latest > latestUnreadMessageId)
+                showMessageAlert(unread);
+            latestUnreadMessageId = Math.max(latestUnreadMessageId || 0, latest);
         } catch (_) {
             /* The conversation panel provides actionable errors. */
         } finally {

@@ -39,11 +39,27 @@ $storedConsentFor = PatientProfilePolicy::normalizeConsentFor($patient['consent_
 $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Conditions', 'Consent'];
 ?>
 
-<section class="vd-profile-wizard" aria-labelledby="profileWizardTitle">
+<section class="vd-profile-overview" id="patientProfileOverview" aria-labelledby="profileOverviewTitle">
+    <header class="vd-profile-overview-header">
+        <div>
+            <span class="vd-profile-wizard-eyebrow">Your patient record</span>
+            <h2 id="profileOverviewTitle" tabindex="-1">My profile</h2>
+            <p>Review the information saved with the clinic.</p>
+        </div>
+        <button type="button" class="btn vd-btn-gold" id="editPatientProfile">
+            <i class="ti ti-pencil" aria-hidden="true"></i>
+            Edit profile
+        </button>
+    </header>
+    <p class="vd-profile-overview-note"><i class="ti ti-clock-check" aria-hidden="true"></i> Clinic staff will review and confirm your information during check-in.</p>
+    <div class="vd-profile-overview-sections" id="patientProfileSummary"></div>
+</section>
+
+<section class="vd-profile-wizard" id="patientProfileEditor" aria-labelledby="profileWizardTitle" hidden>
     <header class="vd-profile-wizard-header">
         <div>
             <span class="vd-profile-wizard-eyebrow">Your patient record</span>
-            <h2 id="profileWizardTitle">Review your health profile</h2>
+            <h2 id="profileWizardTitle" tabindex="-1">Edit your health profile</h2>
             <p>Complete one short section at a time. Your entries stay in place as you move between steps.</p>
         </div>
         <span class="vd-profile-review-badge">
@@ -473,6 +489,9 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         <span>No unsaved changes</span>
     </p>
     <div class="vd-profile-action-buttons">
+        <button type="button" class="btn vd-profile-back-button vd-profile-cancel-button" id="cancelPatientProfileEdit">
+            Cancel editing
+        </button>
         <button type="button" class="btn vd-profile-back-button" id="profileBack" disabled>
             <i class="ti ti-arrow-left" aria-hidden="true"></i>
             Back
@@ -506,6 +525,11 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
     const saveButton = document.getElementById('savePatientProfile');
     const saveState = document.getElementById('profileSaveState');
     const alertBox = document.getElementById('patientProfileSaveAlert');
+    const overview = document.getElementById('patientProfileOverview');
+    const editor = document.getElementById('patientProfileEditor');
+    const summary = document.getElementById('patientProfileSummary');
+    const editButton = document.getElementById('editPatientProfile');
+    const cancelButton = document.getElementById('cancelPatientProfileEdit');
     let currentStep = 0;
     let furthestStep = 0;
     let isDirty = false;
@@ -641,6 +665,108 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         text.textContent = message;
     }
 
+    function displayValue(control) {
+        if (!control) return '';
+        if (control.tagName === 'SELECT') {
+            return control.value ? control.selectedOptions[0]?.textContent.trim() || control.value : '';
+        }
+        const value = control.value.trim();
+        if (!value) return '';
+        if (control.type === 'date') {
+            const date = new Date(`${value}T00:00:00`);
+            if (!Number.isNaN(date.getTime())) {
+                return date.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+            }
+        }
+        return value;
+    }
+
+    function addSummaryItem(list, label, value) {
+        const item = document.createElement('div');
+        item.className = 'vd-profile-overview-item';
+        const term = document.createElement('dt');
+        term.textContent = label;
+        const detail = document.createElement('dd');
+        detail.textContent = value;
+        if (!value) detail.classList.add('is-empty');
+        item.append(term, detail);
+        list.append(item);
+    }
+
+    function renderProfileSummary() {
+        summary.replaceChildren();
+        steps.forEach((step, index) => {
+            const section = document.createElement('section');
+            section.className = 'vd-profile-overview-section';
+            const heading = document.createElement('div');
+            heading.className = 'vd-profile-overview-section-heading';
+            const number = document.createElement('span');
+            number.textContent = String(index + 1).padStart(2, '0');
+            number.setAttribute('aria-hidden', 'true');
+            const title = document.createElement('h3');
+            title.textContent = step.querySelector('.vd-dash-card-title')?.textContent.trim() || step.dataset.stepTitle;
+            heading.append(number, title);
+            const values = document.createElement('dl');
+            values.className = 'vd-profile-overview-grid';
+
+            if (index === 3) {
+                step.querySelectorAll('.vd-health-question').forEach(question => {
+                    if (question.hidden) return;
+                    const selected = question.querySelector('input[type="radio"]:checked');
+                    const answer = selected?.value === '1' ? 'Yes' : selected?.value === '0' ? 'No' : '';
+                    const detail = question.querySelector('[data-health-detail] input');
+                    const value = answer === 'Yes' && detail?.value.trim()
+                        ? `Yes — ${detail.value.trim()}` : answer;
+                    addSummaryItem(values, question.querySelector('legend')?.textContent.trim() || 'Health question', value);
+                });
+            }
+
+            if (index === 4) {
+                const selected = [...step.querySelectorAll('[name="conditions[]"]:checked')]
+                    .map(input => input.closest('label')?.textContent.trim() || input.value);
+                const noKnown = step.querySelector('[name="no_known_conditions"]')?.checked;
+                addSummaryItem(values, 'Known conditions', noKnown
+                    ? 'No known medical conditions'
+                    : selected.length ? selected.join(', ') : '');
+            }
+
+            step.querySelectorAll('.vd-profile-field').forEach(field => {
+                const label = field.querySelector(':scope > .vd-profile-label');
+                if (!label) return;
+                const name = label.textContent.trim().replace(/\s+Required$/, '');
+                const control = field.querySelector(':scope > input, :scope > select, :scope > textarea');
+                if (control) {
+                    addSummaryItem(values, name, displayValue(control));
+                    return;
+                }
+                const selected = field.querySelector('input[type="radio"]:checked');
+                addSummaryItem(values, name, selected?.closest('label')?.textContent.trim() || '');
+            });
+
+            section.append(heading, values);
+            summary.append(section);
+        });
+    }
+
+    function showOverview() {
+        editor.hidden = true;
+        overview.hidden = false;
+        overview.scrollIntoView({ block: 'start' });
+        document.getElementById('profileOverviewTitle').focus({ preventScroll: true });
+    }
+
+    function rememberSavedValues() {
+        forms.forEach(form => form.querySelectorAll('input, select, textarea').forEach(control => {
+            if (control instanceof HTMLInputElement && ['checkbox', 'radio'].includes(control.type)) {
+                control.defaultChecked = control.checked;
+            } else if (control instanceof HTMLSelectElement) {
+                [...control.options].forEach(option => option.defaultSelected = option.selected);
+            } else {
+                control.defaultValue = control.value;
+            }
+        }));
+    }
+
     function markDirty() {
         if (isSaving) return;
         isDirty = true;
@@ -690,6 +816,27 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
 
     root.addEventListener('input', markDirty);
     root.addEventListener('change', markDirty);
+    editButton.addEventListener('click', () => {
+        overview.hidden = true;
+        editor.hidden = false;
+        showStep(0);
+        editor.scrollIntoView({ block: 'start' });
+        document.getElementById('profileWizardTitle').focus({ preventScroll: true });
+    });
+    cancelButton.addEventListener('click', () => {
+        if (isDirty && !window.confirm('Discard your unsaved profile changes?')) return;
+        forms.forEach(form => form.reset());
+        syncMinorPolicy();
+        syncHealthDetails();
+        syncConditionChoice(null);
+        isDirty = false;
+        furthestStep = 0;
+        saveButton.disabled = true;
+        alertBox.classList.add('d-none');
+        updateSaveState('No unsaved changes', 'ti-circle-check');
+        showStep(0);
+        showOverview();
+    });
     backButton.addEventListener('click', () => showStep(currentStep - 1, true));
     nextButton.addEventListener('click', () => {
         if (!validateStep(currentStep)) return;
@@ -716,6 +863,8 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
 
     function setSaving(saving) {
         isSaving = saving;
+        editor.inert = saving;
+        editor.setAttribute('aria-busy', String(saving));
         saveButton.disabled = saving || !isDirty;
         saveButton.innerHTML = saving
             ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Saving…'
@@ -745,12 +894,14 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             const response = await fetch(window.vdAppUrl('apps/controllers/patientController.php'), { method: 'POST', body });
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message || 'Unable to save your profile.');
+            rememberSavedValues();
             isDirty = false;
-            alertBox.className = 'alert alert-success vd-profile-save-alert';
-            alertBox.innerHTML = '<i class="ti ti-circle-check" aria-hidden="true"></i><span></span>';
-            alertBox.querySelector('span').textContent = result.message;
+            furthestStep = 0;
+            renderProfileSummary();
             updateSaveState('All changes saved', 'ti-circle-check');
             window.showToast?.(result.message, true);
+            showStep(0);
+            showOverview();
         } catch (error) {
             alertBox.className = 'alert alert-danger vd-profile-save-alert';
             alertBox.innerHTML = '<i class="ti ti-alert-circle" aria-hidden="true"></i><span></span>';
@@ -762,6 +913,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         }
     });
 
+    renderProfileSummary();
     showStep(0);
 })();
 </script>

@@ -20,7 +20,7 @@ try {
     $action = (string) ($input['action'] ?? '');
     $id = max(0, (int) ($input['conversation_id'] ?? 0));
     $result = [];
-    if ($method === 'GET' && $action === 'unread') $result = ['unread' => $chat->unread()];
+    if ($method === 'GET' && $action === 'unread') $result = $chat->unreadSnapshot();
     elseif ($method === 'GET' && $action === 'inbox') {
         $unread = $chat->unread();
         $inboxSignature = $chat->isPatient() ? '' : $chat->inboxSignature($unread);
