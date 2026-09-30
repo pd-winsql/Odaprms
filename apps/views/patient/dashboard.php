@@ -55,6 +55,7 @@ $today    = date('l, F j Y');
     <link rel="stylesheet" href="../../../public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../../public/css/styles.css') ?>">
     <link rel="stylesheet" href="../../../public/css/dashboard.css?v=<?= filemtime(__DIR__ . '/../../../public/css/dashboard.css') ?>">
     <link rel="stylesheet" href="../../../public/css/patient-dashboard.css?v=<?= filemtime(__DIR__ . '/../../../public/css/patient-dashboard.css') ?>">
+    <link rel="stylesheet" href="../../../public/css/patient-dental-chart.css?v=<?= filemtime(__DIR__ . '/../../../public/css/patient-dental-chart.css') ?>">
     <link rel="stylesheet" href="../../../public/css/ui-refinements.css?v=<?= filemtime(__DIR__ . '/../../../public/css/ui-refinements.css') ?>">
     <link rel="stylesheet" href="../../../public/css/deposit-ocr.css?v=<?= filemtime(__DIR__ . '/../../../public/css/deposit-ocr.css') ?>">
     <link rel="stylesheet" href="../../../public/css/loading.css?v=20260822-dashboard-skeletons-1">
@@ -86,6 +87,9 @@ $today    = date('l, F j Y');
         </a>
         <a href="#" class="vd-nav-item" data-page="history-content.php">
             <span class="vd-nav-icon"><i class="ti ti-calendar"></i></span> History
+        </a>
+        <a href="#" class="vd-nav-item" data-page="dental-chart-content.php">
+            <span class="vd-nav-icon"><i class="ti ti-dental"></i></span> Dental Chart
         </a>
 
         <div class="vd-nav-section">Account</div>

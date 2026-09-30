@@ -1,0 +1,123 @@
+.vd-patient-chart {
+    --chart-ink: #332719;
+    --chart-gold: #826222;
+    --chart-line: #ddc9a5;
+    color: var(--chart-ink);
+    max-width: 1320px;
+    width: 100%;
+}
+
+.vd-patient-chart-intro { margin-bottom: 24px; }
+.vd-patient-chart-eyebrow,
+.vd-patient-chart-detail-kicker {
+    color: var(--chart-gold);
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+}
+.vd-patient-chart-intro h2 {
+    font: 400 clamp(38px, 5vw, 58px)/1.05 "Cormorant Garamond", serif;
+    margin: 5px 0 10px;
+}
+.vd-patient-chart-intro p,
+.vd-patient-chart-guidance,
+.vd-patient-chart-footnote { color: #675a4a; line-height: 1.6; margin: 0; }
+.vd-patient-chart-intro p { max-width: 660px; }
+.vd-patient-chart-meta {
+    border-block: 1px solid var(--chart-line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    padding: 13px 0;
+}
+.vd-patient-chart-meta span { align-items: center; display: inline-flex; gap: 8px; font-size: 13px; }
+.vd-patient-chart-meta i { color: var(--chart-gold); font-size: 18px; }
+.vd-patient-chart-guidance { font-size: 13px; margin: 18px 0 22px; max-width: 850px; }
+.vd-patient-chart-layout {
+    background: #fffdfa;
+    border: 1px solid var(--chart-line);
+    border-radius: 18px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 290px);
+    overflow: hidden;
+}
+.vd-patient-chart-map {
+    background: linear-gradient(155deg, #fffdfa, #f8f2e7);
+    min-width: 0;
+    padding: clamp(18px, 3vw, 34px);
+}
+.vd-patient-chart-set-title { font: 600 25px/1.1 "Cormorant Garamond", serif; margin: 0 0 16px; }
+.vd-patient-chart-set-title:not(:first-child) { border-top: 1px solid var(--chart-line); margin-top: 28px; padding-top: 22px; }
+.vd-patient-chart-quadrants { display: grid; gap: 24px 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vd-patient-chart-quadrant h3 {
+    color: #6c5d49;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .09em;
+    margin: 0 0 10px;
+    text-transform: uppercase;
+}
+.vd-patient-chart-teeth { display: grid; gap: 4px; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+.vd-patient-chart-quadrant.is-primary .vd-patient-chart-teeth { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.vd-patient-chart-tooth {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #796c5e;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 72px;
+    min-width: 0;
+    padding: 3px 1px;
+    transition: background-color .18s, border-color .18s, transform .18s;
+}
+.vd-patient-chart-tooth:hover { background: #fff; border-color: var(--chart-line); transform: translateY(-2px); }
+.vd-patient-chart-tooth:focus-visible { outline: 2px solid var(--chart-gold); outline-offset: 2px; }
+.vd-patient-chart-tooth[aria-pressed="true"] { background: #fff; border-color: var(--chart-gold); }
+.vd-patient-chart-tooth.has-finding { color: #9d4437; }
+.vd-patient-chart-tooth-number { font-size: 12px; font-weight: 600; }
+.vd-patient-chart-tooth svg { fill: none; height: 37px; stroke: currentColor; stroke-width: 1.6; width: 37px; }
+.vd-patient-chart-tooth svg path:nth-child(2) { fill: transparent; }
+.vd-patient-chart-tooth.has-finding svg path:nth-child(2) { fill: #f5dcd4; }
+.vd-patient-chart-dot { background: transparent; border-radius: 50%; height: 5px; margin-top: 2px; width: 5px; }
+.vd-patient-chart-tooth.has-finding .vd-patient-chart-dot { background: #a44c3e; }
+.vd-patient-chart-detail { border-left: 1px solid var(--chart-line); min-height: 270px; padding: 28px 22px; scroll-margin-top: 100px; }
+.vd-patient-chart-detail h3,
+.vd-patient-chart-empty h3 { font: 600 30px/1.1 "Cormorant Garamond", serif; margin: 9px 0; }
+.vd-patient-chart-detail p { color: #675a4a; font-size: 13px; line-height: 1.6; }
+.vd-patient-chart-detail-placeholder { padding-top: 40px; text-align: center; }
+.vd-patient-chart-detail-placeholder i { color: var(--chart-gold); font-size: 30px; }
+.vd-patient-chart-detail ul { list-style: none; margin: 18px 0 0; padding: 0; }
+.vd-patient-chart-detail li { border-top: 1px solid #eadfc9; padding: 12px 0; }
+.vd-patient-chart-detail li strong,
+.vd-patient-chart-detail li span { display: block; }
+.vd-patient-chart-detail li strong { font-size: 14px; }
+.vd-patient-chart-detail li span { color: #6c5d49; font-size: 12px; margin-top: 3px; }
+.vd-patient-chart-footnote { font-size: 13px; margin-top: 16px; }
+.vd-patient-chart-empty { background: #fffdfa; border: 1px solid var(--chart-line); border-radius: 18px; max-width: 620px; padding: 38px; }
+.vd-patient-chart-empty i { color: var(--chart-gold); font-size: 38px; }
+.vd-patient-chart-empty p { color: #675a4a; line-height: 1.6; margin-bottom: 0; }
+
+@media (max-width: 1050px) {
+    .vd-patient-chart-layout { grid-template-columns: 1fr; }
+    .vd-patient-chart-detail { border-left: 0; border-top: 1px solid var(--chart-line); min-height: 170px; }
+    .vd-patient-chart-detail-placeholder { padding-top: 8px; }
+}
+@media (max-width: 650px) {
+    .vd-patient-chart-intro { margin-bottom: 18px; }
+    .vd-patient-chart-intro p { font-size: 14px; }
+    .vd-patient-chart-quadrants { gap: 20px; grid-template-columns: 1fr; }
+    .vd-patient-chart-teeth { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .vd-patient-chart-tooth { min-height: 66px; }
+    .vd-patient-chart-map { padding: 18px 14px; }
+    .vd-patient-chart-detail { padding: 20px 18px; }
+    .vd-patient-chart-empty { padding: 26px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .vd-patient-chart-tooth { transition: none; }
+}

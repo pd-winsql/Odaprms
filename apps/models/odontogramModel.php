@@ -90,6 +90,30 @@ class OdontogramModel
         return (int) $stmt->fetchColumn() > 0;
     }
 
+    /** Return only the most recent dentist-reviewed chart from a completed visit. */
+    public function getLatestCompletedSnapshot(int $patientId): ?array
+    {
+        $stmt = $this->conn->prepare("
+            SELECT snap.chart_payload, snap.reviewed_at, a.date AS visit_date
+            FROM patient_odontogram_snapshots snap
+            JOIN appointments a ON a.appointment_id = snap.appointment_id
+                AND a.patient_id = snap.patient_id
+            WHERE snap.patient_id = :patient_id AND a.status = 'Completed'
+            ORDER BY a.date DESC, snap.reviewed_at DESC, snap.odontogram_snapshot_id DESC
+            LIMIT 1
+        ");
+        $stmt->execute([':patient_id' => $patientId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return null;
+        $chart = json_decode((string) $row['chart_payload'], true);
+        if (!is_array($chart)) return null;
+        return [
+            'chart' => $chart,
+            'reviewed_at' => $row['reviewed_at'],
+            'visit_date' => $row['visit_date'],
+        ];
+    }
+
     private function normalizedText(mixed $value, int $maxLength): ?string
     {
         $value = trim((string) $value);
