@@ -233,7 +233,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     <?php endif; ?>
 
     <!-- VIEW TOGGLE (Upcoming / Past) -->
-    <div class="vd-view-toggle mb-2">
+    <div class="vd-view-toggle vd-appointment-tabs mb-2" aria-label="Appointment views">
         <button type="button" class="vd-toggle-btn active" data-view="upcoming">Upcoming</button>
         <button type="button" class="vd-toggle-btn" data-view="past">Past<?= $overduePaymentCount ? ' · ' . $overduePaymentCount . ' payments to review' : '' ?></button>
     </div>

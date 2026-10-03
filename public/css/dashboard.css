@@ -8371,6 +8371,12 @@ button.vd-stat-card {
 }
 
 /* Appointment list: compact controls and a patient-first responsive table. */
+.vd-view-toggle.vd-appointment-tabs { padding:5px; border-radius:10px; background:#f4eee3; }
+.vd-dash-body .vd-appointment-tabs .vd-toggle-btn { display:inline-flex; align-items:center; justify-content:center; padding:10px 16px; min-height:44px; border-radius:7px; color:#615443; font-size:14px; font-weight:600; letter-spacing:0; }
+.vd-dash-body .vd-appointment-tabs .vd-toggle-btn.active { background:#85631b; color:#fffdf9; }
+@media(max-width:767px) {
+    .vd-dash-body .vd-appointment-tabs .vd-toggle-btn { flex:1; padding:10px; font-size:13px; }
+}
 .vd-appointment-list .vd-filter-bar { display:flex; flex-direction:row; justify-content:flex-start; align-items:flex-end; flex-wrap:wrap; gap:14px; padding:16px 22px; }
 .vd-appointment-list .vd-filter-group { width:auto; flex:0 1 180px; min-width:0; }
 .vd-appointment-list .vd-filter-clear { flex:0 0 auto; }
