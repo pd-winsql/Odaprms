@@ -65,7 +65,7 @@ final class PatientProfilePolicy
 
     public static function isValidGuardianContact(mixed $value): bool
     {
-        return preg_match('/^\d{7,15}$/', self::normalizeContact($value)) === 1;
+        return preg_match('/^[0-9]{11}$/', trim((string) $value)) === 1;
     }
 
     public static function minorRequirementErrors(array $data): array
@@ -77,7 +77,7 @@ final class PatientProfilePolicy
             $errors[] = 'Parent or guardian name is required for patients under 18.';
         }
         if (!self::isValidGuardianContact($data['guardian_contact'] ?? '')) {
-            $errors[] = 'Enter a valid parent or guardian contact number containing 7 to 15 digits.';
+            $errors[] = 'Enter a parent or guardian contact number containing exactly 11 digits.';
         }
         if (trim((string) ($data['consent_name'] ?? '')) === '') {
             $errors[] = 'The parent or guardian providing consent must be named.';

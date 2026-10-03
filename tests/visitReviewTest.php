@@ -31,10 +31,10 @@ try {
     $userId = (int) $conn->lastInsertId();
 
     $createPatient = $conn->prepare("
-        INSERT INTO patients (user_id, firstname, lastname, email, profile_status)
-        VALUES (:user_id, 'Review', 'Patient', :email, 'Complete')
+        INSERT INTO patients (user_id, firstname, lastname, profile_status)
+        VALUES (:user_id, 'Review', 'Patient', 'Complete')
     ");
-    $createPatient->execute([':user_id' => $userId, ':email' => $email]);
+    $createPatient->execute([':user_id' => $userId]);
     $patientId = (int) $conn->lastInsertId();
 
     $schedule = $conn->query("

@@ -5,6 +5,7 @@ require_once '../../config/conn.php';
 require_once '../../config/mailer.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
+require_once __DIR__ . '/../support/IdentityInput.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -38,8 +39,20 @@ class StaffController {
             exit;
         }
 
-        if (!preg_match('/^[0-9]{11}$/', $phone)) {
-            echo json_encode(['success' => false, 'message' => 'Phone number must contain exactly 11 digits.']);
+        $identityErrors = IdentityInput::errors([
+            'firstname' => $firstname, 'middlename' => $middlename,
+            'lastname' => $lastname, 'phone_number' => $phone,
+        ]);
+        if ($identityErrors) {
+            echo json_encode(['success' => false, 'message' => reset($identityErrors)]);
+            exit;
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid email address.']);
+            exit;
+        }
+        if (!in_array($gender, ['Male', 'Female', 'Prefer not to say'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Select a valid gender.']);
             exit;
         }
 
@@ -87,6 +100,11 @@ class StaffController {
 
         if (!preg_match('/^[0-9]{11}$/', $phone)) {
             echo json_encode(['success' => false, 'message' => 'Phone number must contain exactly 11 digits.']);
+            exit;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid email address.']);
             exit;
         }
 

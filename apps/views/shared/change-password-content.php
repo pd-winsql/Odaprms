@@ -7,12 +7,14 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', $all
 $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 ?>
 
-<section class="vd-password-page" aria-labelledby="accountPasswordTitle">
+<section class="vd-password-page" <?= empty($embeddedAccountPassword) ? 'aria-labelledby="accountPasswordTitle"' : 'aria-label="Change password"' ?>>
+    <?php if (empty($embeddedAccountPassword)): ?>
     <header class="vd-password-heading">
         <span class="vd-welcome-greet">Account security</span>
         <h1 class="vd-welcome-name" id="accountPasswordTitle">Change your password</h1>
         <p>Use a unique password you do not use elsewhere.</p>
     </header>
+    <?php endif; ?>
 
     <div class="vd-dash-card vd-password-panel">
         <div class="vd-password-panel-body">
@@ -25,7 +27,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             aria-describedby="accountCurrentPwFeedback">
                         <button type="button" class="vd-pw-toggle" data-toggle-account-password="accountCurrentPw"
                             aria-label="Show current password">
-                            <i class="ti ti-eye" aria-hidden="true"></i><span>Show</span>
+                            <i class="ti ti-eye" aria-hidden="true"></i><span hidden>Show current password</span>
                         </button>
                     </div>
                     <p class="vd-field-feedback" id="accountCurrentPwFeedback" aria-live="polite"></p>
@@ -41,7 +43,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             aria-describedby="accountPasswordRequirements accountNewPwFeedback">
                         <button type="button" class="vd-pw-toggle" data-toggle-account-password="accountNewPw"
                             aria-label="Show new password">
-                            <i class="ti ti-eye" aria-hidden="true"></i><span>Show</span>
+                            <i class="ti ti-eye" aria-hidden="true"></i><span hidden>Show new password</span>
                         </button>
                     </div>
                     <ul class="vd-password-requirements" id="accountPasswordRequirements" aria-label="Password requirements" aria-live="polite">
@@ -61,7 +63,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                             aria-describedby="accountConfirmPwFeedback">
                         <button type="button" class="vd-pw-toggle" data-toggle-account-password="accountConfirmPw"
                             aria-label="Show confirmation password">
-                            <i class="ti ti-eye" aria-hidden="true"></i><span>Show</span>
+                            <i class="ti ti-eye" aria-hidden="true"></i><span hidden>Show confirmation password</span>
                         </button>
                     </div>
                     <p class="vd-field-feedback" id="accountConfirmPwFeedback" aria-live="polite"></p>
@@ -70,7 +72,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                 <div id="accountPasswordMessage" class="alert d-none mb-0" role="status" aria-live="polite"></div>
 
                 <div class="vd-password-actions">
-                    <button type="submit" class="btn vd-btn-gold">Update password</button>
+                    <button type="submit" class="btn vd-btn-gold" disabled>Update password</button>
                     <button type="button" class="btn vd-btn-outline" id="accountPasswordCancel">Cancel</button>
                 </div>
             </form>
@@ -115,6 +117,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
 
     function updateRequirements() {
         const state = passwordState();
+        form.querySelector('button[type="submit"]').disabled = !currentInput.value || !Object.values(state).every(Boolean) || currentInput.value === newInput.value;
         Object.entries(state).forEach(([rule, isMet]) => {
             ruleElements[rule]?.classList.toggle('is-met', isMet);
         });
@@ -145,7 +148,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             input.type = showing ? 'password' : 'text';
             button.setAttribute('aria-label', `${showing ? 'Show' : 'Hide'} ${fieldName} password`);
             button.querySelector('i').className = showing ? 'ti ti-eye' : 'ti ti-eye-off';
-            button.querySelector('span').textContent = showing ? 'Show' : 'Hide';
+            button.querySelector('span').textContent = `${showing ? 'Show' : 'Hide'} ${fieldName} password`;
         });
     });
 
@@ -154,7 +157,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         updateRequirements();
     });
     confirmInput.addEventListener('input', updateRequirements);
-    currentInput.addEventListener('input', () => setFieldFeedback(currentInput, feedback.current));
+    currentInput.addEventListener('input', () => { setFieldFeedback(currentInput, feedback.current); updateRequirements(); });
 
     [currentInput, newInput, confirmInput].forEach(input => {
         input.addEventListener('blur', () => {
@@ -242,6 +245,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             showMessage('Network error. Please try again.', false);
         } finally {
             LoadingUI.setButton(submit, false);
+            updateRequirements();
         }
     });
 

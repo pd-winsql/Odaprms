@@ -23,10 +23,9 @@ try {
 
     $patientIds = [];
     foreach (['Settlement', 'Refund'] as $name) {
-        $patient = $conn->prepare("INSERT INTO patients (firstname, lastname, email, created_at) VALUES (:first, 'BillingFixture', :email, :created)");
+        $patient = $conn->prepare("INSERT INTO patients (firstname, lastname, created_at) VALUES (:first, 'BillingFixture', :created)");
         $patient->execute([
             ':first' => $name,
-            ':email' => strtolower($name) . '-billing-fixture@example.invalid',
             ':created' => $testDate . ' 08:00:00',
         ]);
         $patientIds[] = (int) $conn->lastInsertId();

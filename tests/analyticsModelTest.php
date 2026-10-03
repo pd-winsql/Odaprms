@@ -23,10 +23,9 @@ try {
 
     $patientIds = [];
     for ($i = 1; $i <= 4; $i++) {
-        $patient = $conn->prepare("INSERT INTO patients (firstname, lastname, email, created_at) VALUES (:first, 'Analytics', :email, :created)");
+        $patient = $conn->prepare("INSERT INTO patients (firstname, lastname, created_at) VALUES (:first, 'Analytics', :created)");
         $patient->execute([
             ':first' => 'Fixture' . $i,
-            ':email' => "analytics-fixture-{$i}@example.invalid",
             ':created' => $testDate . ' 08:00:00',
         ]);
         $patientIds[] = (int) $conn->lastInsertId();

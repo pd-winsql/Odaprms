@@ -339,7 +339,7 @@ function sv($settings, $key)
                 <div class="col-md-3"><label class="vd-label form-label">Deposit Amount (₱)</label><input type="number" class="form-control vd-input vd-field" data-field="deposit_amount" value="<?= sv($settings, 'deposit_amount') ?>" min="0.01" max="99999999.99" step="0.01" required></div>
                 <div class="col-md-3"><label class="vd-label form-label">Deadline (minutes)</label><input type="number" class="form-control vd-input vd-field" data-field="payment_deadline_minutes" value="<?= sv($settings, 'payment_deadline_minutes') ?>" min="1" max="65535" step="1" required></div>
                 <div class="col-md-3"><label class="vd-label form-label">GCash Account Name</label><input class="form-control vd-input vd-field" data-field="gcash_account_name" value="<?= sv($settings, 'gcash_account_name') ?>" maxlength="100"></div>
-                <div class="col-md-3"><label class="vd-label form-label">GCash Number</label><input class="form-control vd-input vd-field" data-field="gcash_account_number" value="<?= sv($settings, 'gcash_account_number') ?>" maxlength="30"></div>
+                <div class="col-md-3"><label class="vd-label form-label">GCash Number</label><input type="tel" inputmode="numeric" pattern="[0-9]{11}" title="Enter exactly 11 digits." class="form-control vd-input vd-field" data-field="gcash_account_number" value="<?= sv($settings, 'gcash_account_number') ?>" maxlength="11" required></div>
             </div>
             <div class="d-flex justify-content-end mb-4"><button class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="payment">Save Deposit Settings</button></div>
             <hr style="border-color: var(--border);">

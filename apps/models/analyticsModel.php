@@ -507,8 +507,9 @@ class AnalyticsModel
 
         $stmt = $this->conn->prepare("
             SELECT p.patient_id, CONCAT_WS(' ', p.firstname, NULLIF(p.middlename, ''), p.lastname) AS patient_name,
-                   p.email, p.phone_number, p.created_at
+                   u.email, p.phone_number, p.created_at
             FROM patients p
+            LEFT JOIN users u ON u.id = p.user_id
             WHERE {$where}
             ORDER BY p.created_at DESC, p.patient_id DESC
             LIMIT {$pagination['per_page']} OFFSET {$offset}

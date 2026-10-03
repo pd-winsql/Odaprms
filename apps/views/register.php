@@ -92,9 +92,9 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
         <form id="registerForm" class="vd-auth-form vd-register-grid" novalidate>
           <section class="vd-register-step" id="registerPersonalStep" aria-labelledby="registerPersonalHeading">
           <h2 class="vd-register-step-heading vd-register-span-2" id="registerPersonalHeading" tabindex="-1">Personal information</h2>
-          <div class="vd-auth-group"><label class="vd-label" for="regFirstName">First Name</label><input type="text" name="firstname" id="regFirstName" class="vd-auth-input" value="<?= $escape($registrationValues['firstname']) ?>" required autocomplete="given-name"></div>
-          <div class="vd-auth-group"><label class="vd-label" for="regMiddleName">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" id="regMiddleName" class="vd-auth-input" value="<?= $escape($registrationValues['middlename']) ?>" autocomplete="additional-name"></div>
-          <div class="vd-auth-group"><label class="vd-label" for="regLastName">Last Name</label><input type="text" name="lastname" id="regLastName" class="vd-auth-input" value="<?= $escape($registrationValues['lastname']) ?>" required autocomplete="family-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regFirstName">First Name</label><input type="text" name="firstname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." id="regFirstName" class="vd-auth-input" value="<?= $escape($registrationValues['firstname']) ?>" required autocomplete="given-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regMiddleName">Middle Name <span class="text-muted">(optional)</span></label><input type="text" name="middlename" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." id="regMiddleName" class="vd-auth-input" value="<?= $escape($registrationValues['middlename']) ?>" autocomplete="additional-name"></div>
+          <div class="vd-auth-group"><label class="vd-label" for="regLastName">Last Name</label><input type="text" name="lastname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." id="regLastName" class="vd-auth-input" value="<?= $escape($registrationValues['lastname']) ?>" required autocomplete="family-name"></div>
           <div class="vd-auth-group"><label class="vd-label" for="regSuffix">Suffix <span class="text-muted">(optional)</span></label><input type="text" name="suffix" id="regSuffix" class="vd-auth-input" value="<?= $escape($registrationValues['suffix']) ?>" placeholder="Jr., Sr., III"></div>
           <div class="vd-auth-group">
             <label class="vd-label" for="regBirthdate">Birthdate</label>
@@ -180,6 +180,7 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
 
   <?php require __DIR__ . '/system-terms.php'; ?>
 
+  <script src="../../public/js/identity-input.js?v=<?= filemtime(__DIR__ . '/../../public/js/identity-input.js') ?>"></script>
   <script src="../../public/js/bootstrap.bundle.min.js"></script>
   <script>
     function togglePassword(inputId, iconId) {

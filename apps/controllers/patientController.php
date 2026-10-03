@@ -6,6 +6,7 @@ require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 require_once '../support/MedicalQuestionnaire.php';
 require_once '../support/PatientProfilePolicy.php';
+require_once __DIR__ . '/../support/IdentityInput.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -76,7 +77,7 @@ class PatientController {
             'occupation' => trim($_POST['occupation'] ?? ''),
             'office_contact' => trim($_POST['officeContact'] ?? ''),
             'guardian_name' => trim($_POST['guardianName'] ?? ''),
-            'guardian_contact' => PatientProfilePolicy::normalizeContact($_POST['guardianContact'] ?? ''),
+            'guardian_contact' => trim($_POST['guardianContact'] ?? ''),
             'physician_name' => trim($_POST['physicianName'] ?? ''),
             'physician_contact' => trim($_POST['physicianContact'] ?? ''),
             'physician_address' => trim($_POST['physicianAddress'] ?? ''),
@@ -109,12 +110,9 @@ class PatientController {
             'consent_date' => date('Y-m-d')
         ];
 
+        $this->validateIdentity($data);
         if (!PatientProfilePolicy::isAllowedConsentFor($data['consent_for'])) {
             echo json_encode(['success' => false, 'message' => 'Select a valid consent option.']);
-            exit;
-        }
-        if ($data['guardian_contact'] !== '' && !PatientProfilePolicy::isValidGuardianContact($data['guardian_contact'])) {
-            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain 7 to 15 digits.']);
             exit;
         }
         $minorErrors = PatientProfilePolicy::minorRequirementErrors($data);
@@ -196,26 +194,27 @@ class PatientController {
     public function saveOwnProfile() {
         header('Content-Type: application/json');
         $patientId = $this->requirePatient();
+        $account = $this->patients->getPatient($patientId);
 
         if (!validate_csrf()) {
             echo json_encode(['success' => false, 'message' => 'Your session expired. Refresh and try again.']);
             exit;
         }
 
-        $firstname = trim($_POST['firstname'] ?? '');
-        $lastname = trim($_POST['lastname'] ?? '');
+        $firstname = trim((string) ($account['firstname'] ?? ''));
+        $lastname = trim((string) ($account['lastname'] ?? ''));
         if ($firstname === '' || $lastname === '') {
             echo json_encode(['success' => false, 'message' => 'First name and last name are required.']);
             exit;
         }
 
-        $submittedPhone = trim($_POST['phone_number'] ?? '');
-        if ($submittedPhone !== '' && !preg_match('/^\d{1,11}$/', $submittedPhone)) {
-            echo json_encode(['success' => false, 'message' => 'Phone number must contain numbers only and cannot exceed 11 digits.']);
+        $submittedPhone = trim((string) ($account['phone_number'] ?? ''));
+        if ($submittedPhone !== '' && !IdentityInput::isContact($submittedPhone)) {
+            echo json_encode(['success' => false, 'message' => 'Phone number must contain exactly 11 digits.']);
             exit;
         }
 
-        $email = trim($_POST['email'] ?? '');
+        $email = trim((string) ($account['email'] ?? ''));
         if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             echo json_encode(['success' => false, 'message' => 'Enter a valid email address or leave the field blank.']);
             exit;
@@ -265,6 +264,10 @@ class PatientController {
             'cond_others','consent_name'
         ];
         foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        $data['firstname'] = $firstname;
+        $data['middlename'] = trim((string) ($account['middlename'] ?? ''));
+        $data['lastname'] = $lastname;
+        $this->validateIdentity($data);
         $data['guardian_contact'] = PatientProfilePolicy::normalizeContact($data['guardian_contact']);
         foreach (MedicalQuestionnaire::groups() as $group) {
             foreach ($group['questions'] as $field => $question) {
@@ -310,6 +313,14 @@ class PatientController {
         exit;
     }
 
+    private function validateIdentity(array $data, bool $draft = false): void {
+        $errors = IdentityInput::errors($data, $draft);
+        if ($errors) {
+            echo json_encode(['success' => false, 'message' => reset($errors)]);
+            exit;
+        }
+    }
+
     private function toBool($value) {
         if ($value === 'yes' || $value === '1' || $value === 1 || $value === true) {
             return 1;
@@ -353,13 +364,14 @@ class PatientController {
             echo json_encode(['success' => false, 'message' => 'Enter a valid 11-digit Philippine mobile number.']);
             exit;
         }
-        if (!$isDraft && trim($_POST['email'] ?? '') !== '' && !filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL)) {
+        if (trim($_POST['email'] ?? '') !== '' && !filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL)) {
             echo json_encode(['success' => false, 'message' => 'Enter a valid email address or leave the email field blank.']);
             exit;
         }
-        $birth = DateTime::createFromFormat('Y-m-d', $_POST['birthdate']);
+        $birthdate = trim($_POST['birthdate'] ?? '');
+        $birth = $birthdate !== '' ? DateTime::createFromFormat('!Y-m-d', $birthdate) : false;
         $today = new DateTime('today');
-        if (!$isDraft && (!$birth || $birth > $today)) {
+        if (($birthdate !== '' || !$isDraft) && (!$birth || $birth->format('Y-m-d') !== $birthdate || $birth > $today)) {
             echo json_encode(['success' => false, 'message' => 'Enter a valid birthdate.']);
             exit;
         }
@@ -391,6 +403,7 @@ class PatientController {
             'blood_type','blood_pressure','cond_others','consent_name','consent_for'
         ];
         foreach ($textFields as $field) $data[$field] = trim($_POST[$field] ?? '');
+        $this->validateIdentity($data, $isDraft);
         $data['guardian_contact'] = PatientProfilePolicy::normalizeContact($data['guardian_contact']);
         $data['consent_for'] = PatientProfilePolicy::normalizeConsentFor($data['consent_for']);
         foreach (MedicalQuestionnaire::groups() as $group) {
@@ -400,7 +413,7 @@ class PatientController {
             }
         }
         $data['phone_number'] = $normalizedPhone;
-        $data['birthdate'] = $_POST['birthdate'];
+        $data['birthdate'] = $birthdate;
         $data['age'] = $birth ? $birth->diff($today)->y : null;
         $submittedConditions = (array) ($_POST['conditions'] ?? []);
         $conditionGroups = require __DIR__ . '/../../config/medicalConditions.php';
@@ -420,15 +433,6 @@ class PatientController {
         }
         if (!$isDraft && !PatientProfilePolicy::isAllowedConsentFor($data['consent_for'])) {
             echo json_encode(['success' => false, 'message' => 'Select a valid consent option.']);
-            exit;
-        }
-        $submittedGuardianContact = trim($_POST['guardian_contact'] ?? '');
-        if ($submittedGuardianContact !== '' && !preg_match('/^\d{1,11}$/', $submittedGuardianContact)) {
-            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain numbers only and cannot exceed 11 digits.']);
-            exit;
-        }
-        if (!$isDraft && $submittedGuardianContact !== '' && !preg_match('/^\d{11}$/', $submittedGuardianContact)) {
-            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain exactly 11 digits.']);
             exit;
         }
         if (!$isDraft) {

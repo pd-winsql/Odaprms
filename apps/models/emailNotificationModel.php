@@ -23,10 +23,11 @@ class EmailNotificationModel {
         array $templateVariables = []
     ): ?array {
         $recipientStmt = $this->conn->prepare("
-            SELECT p.user_id, p.email, p.firstname, p.lastname,
+            SELECT p.user_id, u.email, p.firstname, p.lastname,
                    a.date, s.start_time, s.end_time, c.clinic_name
             FROM appointments a
             JOIN patients p ON p.patient_id = a.patient_id
+            LEFT JOIN users u ON u.id = p.user_id
             JOIN schedules s ON s.schedule_id = a.schedule_id
             JOIN clinics c ON c.clinic_id = a.clinic_id
             WHERE a.appointment_id = :appointment_id

@@ -102,7 +102,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         <div class="vd-dash-card-header vd-profile-step-header">
         <div>
         <span class="vd-dash-card-title" id="profilePersonalTitle">Personal Information</span>
-        <p>Confirm the details the clinic uses to identify and contact you.</p>
+        <p>Health and care information for your clinic visits. Change your name, phone number, or email in My Account.</p>
         </div>
         <span class="vd-profile-step-number" aria-hidden="true">01</span>
         </div>
@@ -111,18 +111,18 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">First Name</label>
-                <input type="text" name="firstname" class="form-control vd-input" autocomplete="given-name"
-                value="<?= htmlspecialchars($patient['firstname'] ?? '') ?>" required>
+                <input type="text" name="firstname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input" autocomplete="given-name"
+                value="<?= htmlspecialchars($patient['firstname'] ?? '') ?>" readonly required>
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Middle Name</label>
-                <input type="text" name="middlename" class="form-control vd-input" autocomplete="additional-name"
-                value="<?= htmlspecialchars($patient['middlename'] ?? '') ?>">
+                <input type="text" name="middlename" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input" autocomplete="additional-name"
+                value="<?= htmlspecialchars($patient['middlename'] ?? '') ?>" readonly>
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Last Name</label>
-                <input type="text" name="lastname" class="form-control vd-input" autocomplete="family-name"
-                value="<?= htmlspecialchars($patient['lastname'] ?? '') ?>" required>
+                <input type="text" name="lastname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input" autocomplete="family-name"
+                value="<?= htmlspecialchars($patient['lastname'] ?? '') ?>" readonly required>
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Birthdate</label>
@@ -155,11 +155,11 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Phone Number</label>
                 <input type="tel" name="phone_number" class="form-control vd-input" id="phoneNumber" inputmode="numeric"
-                autocomplete="tel" maxlength="11" value="<?= htmlspecialchars($patient['phone_number'] ?? '') ?>">
+                autocomplete="tel" maxlength="11" pattern="[0-9]{11}" title="Enter exactly 11 digits." value="<?= htmlspecialchars($patient['phone_number'] ?? '') ?>" readonly>
             </div>
             <div class="vd-profile-field">
-                <label class="vd-profile-label">Email Address</label>
-                <input type="email" name="email" class="form-control vd-input" autocomplete="email"
+                <label class="vd-profile-label">Email</label>
+                <input type="email" name="email" class="form-control vd-input" autocomplete="email" readonly
                 value="<?= htmlspecialchars($patient['email'] ?? '') ?>">
             </div>
             <div class="vd-profile-field vd-profile-field-full">
@@ -179,7 +179,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Office Contact</label>
-                <input type="tel" name="office_contact" class="form-control vd-input"
+                <input type="tel" name="office_contact" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" title="Enter exactly 11 digits." class="form-control vd-input"
                 value="<?= htmlspecialchars($patient['office_contact'] ?? '') ?>">
             </div>
             <div class="vd-profile-field">
@@ -215,7 +215,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             <div class="vd-profile-grid">
             <div class="vd-profile-field" data-guardian-field>
                 <label class="vd-profile-label">Parent / Guardian Name <span data-minor-required-marker <?= $profileIsMinor ? '' : 'hidden' ?>>Required</span></label>
-                <input type="text" name="guardian_name" class="form-control vd-input"
+                <input type="text" name="guardian_name" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input"
                 autocomplete="name" value="<?= htmlspecialchars($patient['guardian_name'] ?? '') ?>"
                 <?= $profileIsMinor ? 'required' : '' ?>>
             </div>
@@ -228,12 +228,12 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Physician Name</label>
-                <input type="text" name="physician_name" class="form-control vd-input"
+                <input type="text" name="physician_name" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input"
                 value="<?= htmlspecialchars($patient['physician_name'] ?? '') ?>">
             </div>
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Physician Contact</label>
-                <input type="tel" name="physician_contact" class="form-control vd-input" inputmode="tel"
+                <input type="tel" name="physician_contact" class="form-control vd-input" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" title="Enter exactly 11 digits."
                 value="<?= htmlspecialchars($patient['physician_contact'] ?? '') ?>">
             </div>
             <div class="vd-profile-field vd-profile-field-full">
@@ -260,7 +260,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label">Previous Dentist</label>
-                <input type="text" name="previous_dentist" class="form-control vd-input"
+                <input type="text" name="previous_dentist" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input"
                 value="<?= htmlspecialchars($patient['previous_dentist'] ?? '') ?>">
             </div>
             <div class="vd-profile-field">
@@ -447,7 +447,7 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             <div class="vd-profile-grid">
             <div class="vd-profile-field">
                 <label class="vd-profile-label" data-consent-name-label><?= $profileIsMinor ? 'Parent / Guardian Providing Consent' : 'Name of Patient or Representative' ?></label>
-                <input type="text" name="consent_name" class="form-control vd-input"
+                <input type="text" name="consent_name" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input"
                 value="<?= htmlspecialchars($patient['consent_name'] ?? '') ?>" required>
             </div>
             <fieldset class="vd-profile-field vd-consent-for-field">

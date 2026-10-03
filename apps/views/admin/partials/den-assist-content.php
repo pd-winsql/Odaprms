@@ -137,15 +137,15 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             <div class="row g-3">
             <div class="col-12 col-sm-4">
                 <label class="vd-label form-label">First Name <span class="text-danger">*</span></label>
-                <input type="text" name="firstname" class="form-control vd-input" required>
+                <input type="text" name="firstname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input" required>
             </div>
             <div class="col-12 col-sm-4">
                 <label class="vd-label form-label">Middle Name</label>
-                <input type="text" name="middlename" class="form-control vd-input">
+                <input type="text" name="middlename" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input">
             </div>
             <div class="col-12 col-sm-4">
                 <label class="vd-label form-label">Last Name <span class="text-danger">*</span></label>
-                <input type="text" name="lastname" class="form-control vd-input" required>
+                <input type="text" name="lastname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." class="form-control vd-input" required>
             </div>
             
             <div class="col-12 col-sm-6">

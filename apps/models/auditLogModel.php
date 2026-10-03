@@ -13,11 +13,12 @@ class AuditLog {
                 u.id,
                 u.email,
                 u.user_role,
-                s.firstname,
-                s.middlename,
-                s.lastname
+                COALESCE(s.firstname, p.firstname) AS firstname,
+                COALESCE(s.middlename, p.middlename) AS middlename,
+                COALESCE(s.lastname, p.lastname) AS lastname
             FROM users u
             LEFT JOIN staffs s ON s.user_id = u.id
+            LEFT JOIN patients p ON p.user_id = u.id
             WHERE u.id = :user_id
             LIMIT 1
         ");

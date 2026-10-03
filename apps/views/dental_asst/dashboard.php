@@ -121,9 +121,6 @@ $today = date('l, F j Y');
             <a href="#" class="vd-nav-item" data-page="my-account-content.php">
                 <span class="vd-nav-icon"><i class="ti ti-user"></i></span> My Account
             </a>
-            <a href="#" class="vd-nav-item" data-page="change-password-content.php">
-                <span class="vd-nav-icon"><i class="ti ti-lock"></i></span> Change Password
-            </a>
             <a href="#" class="vd-nav-item" data-logout-confirm="<?= htmlspecialchars(vdAppUrl('apps/controllers/userController.php?action=logout'), ENT_QUOTES, 'UTF-8') ?>">
                 <span class="vd-nav-icon"><i class="ti ti-logout"></i></span> Logout
             </a>
@@ -178,6 +175,7 @@ $today = date('l, F j Y');
 
     <?php include __DIR__ . '/../shared/staff-action-modal.php'; ?>
 
+    <script src="../../../public/js/identity-input.js?v=<?= filemtime(__DIR__ . '/../../../public/js/identity-input.js') ?>"></script>
     <script src="../../../public/js/bootstrap.bundle.min.js"></script>
     <script src="../../../public/js/action-modal.js?v=<?= filemtime(__DIR__ . '/../../../public/js/action-modal.js') ?>"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
@@ -506,7 +504,12 @@ $today = date('l, F j Y');
         });
 
         window.addEventListener('DOMContentLoaded', async () => {
-            const hash = window.location.hash.replace('#', '');
+            let hash = window.location.hash.replace('#', '');
+            if (hash === 'change-password-content.php') {
+                window.vdAccountOpenPassword = true;
+                hash = 'my-account-content.php';
+                history.replaceState(null, '', location.pathname + location.search + '#' + hash);
+            }
             if (hash) {
                 const matchingNav = document.querySelector(`[data-page="${hash}"]`);
                 if (matchingNav) {

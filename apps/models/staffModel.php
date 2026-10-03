@@ -60,8 +60,9 @@ class Staff {
                 return ['success' => false, 'message' => 'Account not found.'];
             }
 
-            $stmt = $this->conn->prepare('UPDATE users SET email = :email WHERE id = :user_id');
-            $stmt->execute([':email' => $fields['email'], ':user_id' => $userId]);
+            // Basic-detail saves never change login email, even if a client
+            // submits one. Verified email changes use AccountEmailChange.
+            $fields['email'] = $account['email'];
             if ($account['staff_id'] !== null) {
                 $stmt = $this->conn->prepare('UPDATE staffs SET firstname = :firstname, middlename = :middlename, lastname = :lastname, phone_number = :phone, email = :email WHERE staff_id = :staff_id');
                 $stmt->execute([

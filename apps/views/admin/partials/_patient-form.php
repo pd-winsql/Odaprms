@@ -43,25 +43,25 @@ function staffRadio($name, $value, $current)
             <div class="vd-dash-card-header"><span class="vd-dash-card-title">Personal Information</span></div>
             <div class="vd-dash-card-body">
                 <div class="row g-3">
-                    <div class="col-md-4"><label class="vd-label form-label">First Name *</label><input class="form-control vd-input" name="firstname" value="<?= staffVal($patient['firstname']) ?>" required></div>
-                    <div class="col-md-4"><label class="vd-label form-label">Middle Name</label><input class="form-control vd-input" name="middlename" value="<?= staffVal($patient['middlename']) ?>"></div>
-                    <div class="col-md-4"><label class="vd-label form-label">Last Name *</label><input class="form-control vd-input" name="lastname" value="<?= staffVal($patient['lastname']) ?>" required></div>
+                    <div class="col-md-4"><label class="vd-label form-label">First Name *</label><input class="form-control vd-input" name="firstname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." value="<?= staffVal($patient['firstname']) ?>" required></div>
+                    <div class="col-md-4"><label class="vd-label form-label">Middle Name</label><input class="form-control vd-input" name="middlename" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." value="<?= staffVal($patient['middlename']) ?>"></div>
+                    <div class="col-md-4"><label class="vd-label form-label">Last Name *</label><input class="form-control vd-input" name="lastname" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." value="<?= staffVal($patient['lastname']) ?>" required></div>
                     <div class="col-md-4"><label class="vd-label form-label">Birthdate *</label><input type="date" class="form-control vd-input" name="birthdate" max="<?= date('Y-m-d') ?>" value="<?= staffVal($patient['birthdate']) ?>" required></div>
                     <div class="col-md-4"><label class="vd-label form-label">Gender *</label><select class="form-select vd-input" name="gender" required>
                             <option value="">Select</option><?php foreach (['Male', 'Female', 'Prefer not to say'] as $option): ?><option <?= $patient['gender'] === $option ? 'selected' : '' ?>><?= $option ?></option><?php endforeach; ?>
                         </select></div>
                     <div class="col-md-4"><label class="vd-label form-label">Civil Status</label><input class="form-control vd-input" name="civil_status" value="<?= staffVal($patient['civil_status']) ?>"></div>
-                    <div class="col-md-6"><label class="vd-label form-label">Phone Number *</label><input class="form-control vd-input" name="phone_number" value="<?= staffVal($patient['phone_number']) ?>" required></div>
-                    <div class="col-md-6"><label class="vd-label form-label">Email</label><input type="email" class="form-control vd-input" name="email" value="<?= staffVal($patient['email']) ?>"></div>
+                    <div class="col-md-6"><label class="vd-label form-label">Phone Number *</label><input type="tel" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" title="Enter exactly 11 digits." class="form-control vd-input" name="phone_number" value="<?= staffVal($patient['phone_number']) ?>" required></div>
+                    <div class="col-md-6"><label class="vd-label form-label">Account email (read-only)</label><input type="email" class="form-control vd-input" name="email" readonly value="<?= staffVal($patient['email']) ?>"></div>
                     <div class="col-12"><label class="vd-label form-label">Home Address</label><input class="form-control vd-input" name="home_address" value="<?= staffVal($patient['home_address']) ?>"></div>
                     <div class="col-md-6"><label class="vd-label form-label">Work Address</label><input class="form-control vd-input" name="work_address" value="<?= staffVal($patient['work_address']) ?>"></div>
                     <div class="col-md-3"><label class="vd-label form-label">Occupation</label><input class="form-control vd-input" name="occupation" value="<?= staffVal($patient['occupation']) ?>"></div>
-                    <div class="col-md-3"><label class="vd-label form-label">Office Contact</label><input class="form-control vd-input" name="office_contact" value="<?= staffVal($patient['office_contact']) ?>"></div>
+                    <div class="col-md-3"><label class="vd-label form-label">Office Contact</label><input type="tel" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" title="Enter exactly 11 digits." class="form-control vd-input" name="office_contact" value="<?= staffVal($patient['office_contact']) ?>"></div>
                     <div class="col-md-6"><label class="vd-label form-label">Facebook Account</label><input class="form-control vd-input" name="fb_account" value="<?= staffVal($patient['fb_account']) ?>"></div>
-                    <div class="col-md-3"><label class="vd-label form-label">Guardian Name</label><input class="form-control vd-input" name="guardian_name" value="<?= staffVal($patient['guardian_name']) ?>"></div>
-                    <div class="col-md-3"><label class="vd-label form-label">Guardian Contact</label><input class="form-control vd-input" name="guardian_contact" value="<?= staffVal($patient['guardian_contact']) ?>"></div>
-                    <div class="col-md-4"><label class="vd-label form-label">Physician Name</label><input class="form-control vd-input" name="physician_name" value="<?= staffVal($patient['physician_name']) ?>"></div>
-                    <div class="col-md-4"><label class="vd-label form-label">Physician Contact</label><input class="form-control vd-input" name="physician_contact" value="<?= staffVal($patient['physician_contact']) ?>"></div>
+                    <div class="col-md-3"><label class="vd-label form-label">Guardian Name</label><input class="form-control vd-input" name="guardian_name" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." value="<?= staffVal($patient['guardian_name']) ?>"></div>
+                    <div class="col-md-3"><label class="vd-label form-label">Guardian Contact</label><input type="tel" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" title="Enter exactly 11 digits." class="form-control vd-input" name="guardian_contact" value="<?= staffVal($patient['guardian_contact']) ?>"></div>
+                    <div class="col-md-4"><label class="vd-label form-label">Physician Name</label><input class="form-control vd-input" name="physician_name" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." value="<?= staffVal($patient['physician_name']) ?>"></div>
+                    <div class="col-md-4"><label class="vd-label form-label">Physician Contact</label><input type="tel" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" title="Enter exactly 11 digits." class="form-control vd-input" name="physician_contact" value="<?= staffVal($patient['physician_contact']) ?>"></div>
                     <div class="col-md-4"><label class="vd-label form-label">Physician Address</label><input class="form-control vd-input" name="physician_address" value="<?= staffVal($patient['physician_address']) ?>"></div>
                 </div>
             </div>
@@ -71,7 +71,7 @@ function staffRadio($name, $value, $current)
             <div class="vd-dash-card-header"><span class="vd-dash-card-title">Dental History</span></div>
             <div class="vd-dash-card-body">
                 <div class="row g-3">
-                    <div class="col-md-4"><label class="vd-label form-label">Previous Dentist</label><input class="form-control vd-input" name="previous_dentist" value="<?= staffVal($patient['previous_dentist']) ?>"></div>
+                    <div class="col-md-4"><label class="vd-label form-label">Previous Dentist</label><input class="form-control vd-input" name="previous_dentist" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." value="<?= staffVal($patient['previous_dentist']) ?>"></div>
                     <div class="col-md-4"><label class="vd-label form-label">Last Dental Visit</label><input type="date" class="form-control vd-input" name="last_dental_visit" value="<?= staffVal($patient['last_dental_visit']) ?>"></div>
                     <div class="col-md-4"><label class="vd-label form-label">Referred By</label><input class="form-control vd-input" name="referred_by" value="<?= staffVal($patient['referred_by']) ?>"></div>
                     <div class="col-md-6"><label class="vd-label form-label">Treatment Done</label><textarea class="form-control vd-input" name="treatment_done" rows="2"><?= staffVal($patient['treatment_done']) ?></textarea></div>
@@ -120,7 +120,7 @@ function staffRadio($name, $value, $current)
             <div class="vd-dash-card-header"><span class="vd-dash-card-title">Consent</span></div>
             <div class="vd-dash-card-body">
                 <div class="row g-3">
-                    <div class="col-md-6"><label class="vd-label form-label">Consent Name *</label><input class="form-control vd-input" name="consent_name" value="<?= staffVal($patient['consent_name']) ?>" required></div>
+                    <div class="col-md-6"><label class="vd-label form-label">Consent Name *</label><input class="form-control vd-input" name="consent_name" pattern=" *\p{L}[\p{L}\p{M}]*(?: +\p{L}[\p{L}\p{M}]*)* *" title="Use letters and spaces only." value="<?= staffVal($patient['consent_name']) ?>" required></div>
                     <div class="col-md-6"><label class="vd-label form-label">Consent For *</label><select class="form-select vd-input" name="consent_for" required>
                             <option value="">Select</option><?php foreach (['myself' => 'Myself', 'spouse' => 'Spouse', 'son' => 'Son', 'daughter' => 'Daughter', 'others' => 'Others'] as $value => $label): ?><option value="<?= $value ?>" <?= $patient['consent_for'] === $value ? 'selected' : '' ?>><?= $label ?></option><?php endforeach; ?>
                         </select></div>

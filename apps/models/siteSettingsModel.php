@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../support/IdentityInput.php';
 
 class SiteSettingsModel {
     public const DEFAULT_MINIMUM_PATIENT_AGE = 1;
@@ -51,6 +52,9 @@ class SiteSettingsModel {
         }
         if ($accountName === '' || $accountNumber === '') {
             return ['success' => false, 'message' => 'GCash account name and number are required.'];
+        }
+        if (!IdentityInput::isContact($accountNumber)) {
+            return ['success' => false, 'message' => 'GCash number must contain exactly 11 digits.'];
         }
 
         return [

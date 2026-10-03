@@ -5402,6 +5402,25 @@ button.vd-stat-card {
     gap: 8px;
 }
 
+.vd-account-section-title { font-family: inherit; font-size: 21px; margin: 0 0 8px; }
+.vd-account-help { color: #74695c; margin: 0 0 20px; font-size: 14px; overflow-wrap: anywhere; }
+.vd-account-verification { display: grid; gap: 12px; border-top: 1px solid #eee3d1; padding-top: 24px; }
+.vd-account-verification[hidden] { display: none; }
+.vd-account-verification .vd-input { max-width: 240px; letter-spacing: .2em; }
+.vd-account-verification .btn { justify-self: start; }
+.vd-account-password { scroll-margin-top: 110px; }
+.vd-account-password > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; padding: 24px 30px; border: 1px solid #dcc9a4; border-radius: 16px; background: #fffdf9; font-size: 21px; }
+.vd-account-password > summary::-webkit-details-marker { display: none; }
+.vd-account-password[open] > summary i { transform: rotate(180deg); }
+.vd-account-password .vd-password-page { width: 100%; max-width: none; padding-top: 24px; }
+.vd-account-password .vd-password-panel { max-width: none; }
+.vd-my-account .vd-btn-gold:disabled { opacity: 1 !important; background: #e8dfcd !important; color: #6b5834 !important; border-color: #d1c19f; cursor: not-allowed; }
+.vd-my-account .vd-my-account-field .vd-field-feedback:empty { display: none; }
+@media (max-width: 575px) {
+    .vd-my-account .vd-my-account-actions .btn, .vd-account-verification .btn { width: 100%; white-space: normal; }
+    .vd-account-password > summary { padding: 22px 20px; }
+}
+
 .vd-my-account-field .form-label,
 .vd-my-account-email-check .form-label {
     margin-bottom: 0;
@@ -6061,19 +6080,19 @@ button.vd-stat-card {
     display: block;
     height: 52px;
     min-height: 52px;
-    padding-right: 92px !important;
+    padding-right: 60px !important;
     width: 100%;
 }
 
-.vd-password-section .vd-auth-input[type="password"] {
+.vd-auth-input-wrap .vd-auth-input[type="password"] {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 24px;
-    font-weight: 600;
+    font-size: 20px !important;
+    font-weight: 500;
     letter-spacing: 0.04em;
     line-height: 1;
 }
 
-.vd-password-section .vd-auth-input[type="password"]::placeholder {
+.vd-auth-input-wrap .vd-auth-input[type="password"]::placeholder {
     font-size: 14px;
     font-weight: 300;
     letter-spacing: normal;
@@ -6088,20 +6107,20 @@ button.vd-stat-card {
     color: var(--mid);
     cursor: pointer;
     display: inline-flex;
-    gap: 6px;
-    height: 44px;
+    border-radius: 8px;
+    height: 48px;
     justify-content: center;
-    padding: 0 10px;
+    padding: 0;
     position: absolute;
     right: 3px;
     top: 50%;
     transform: translateY(-50%);
-    width: 82px;
+    width: 48px;
 }
 
-.vd-auth-input-wrap .vd-pw-toggle span {
-    font-size: 12px;
-    font-weight: 500;
+.vd-auth-input-wrap .vd-pw-toggle i {
+    font-size: 20px;
+    line-height: 1;
 }
 
 .vd-auth-input-wrap .vd-pw-toggle:hover {

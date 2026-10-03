@@ -31,7 +31,7 @@ try {
         $scheduleIds[$date] = (int) $conn->lastInsertId();
     }
 
-    $insertPatient = $conn->prepare("INSERT INTO patients (firstname, lastname, email) VALUES (:firstname, 'NoShowTest', :email)");
+    $insertPatient = $conn->prepare("INSERT INTO patients (firstname, lastname) VALUES (:firstname, 'NoShowTest')");
     $insertAppointment = $conn->prepare("
         INSERT INTO appointments (patient_id, schedule_id, clinic_id, date, status, deposit_required, appointment_code, confirmed_at)
         VALUES (:patient, :schedule, :clinic, :date, 'Confirmed', 0, :code, NOW())
@@ -48,7 +48,6 @@ try {
     ): int {
         $insertPatient->execute([
             ':firstname' => $label,
-            ':email' => strtolower($label) . '-' . $token . '@example.invalid',
         ]);
         $patientId = (int) $conn->lastInsertId();
         $patientIds[] = $patientId;

@@ -1,1 +1,1 @@
-<?php require __DIR__ . '/../../shared/change-password-content.php';
+<?php $openAccountPassword = true; require __DIR__ . '/../../shared/my-account-content.php';

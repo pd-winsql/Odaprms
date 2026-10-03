@@ -6,6 +6,7 @@ require_once '../../config/mailer.php';
 require_once '../helpers/patientEligibility.php';
 require_once '../models/auditLogModel.php';
 require_once '../support/RegistrationTermsConsent.php';
+require_once __DIR__ . '/../support/IdentityInput.php';
 
 session_start();
 
@@ -131,8 +132,9 @@ class UserController {
             echo json_encode(['success' => false, 'message' => $eligibility['message']]);
             exit;
         }
-        if (!preg_match('/^\d{11}$/', $identity['phone_number'])) {
-            echo json_encode(['success' => false, 'message' => 'Contact number must contain exactly 11 digits.']);
+        $identityErrors = IdentityInput::errors($identity);
+        if ($identityErrors) {
+            echo json_encode(['success' => false, 'message' => reset($identityErrors)]);
             exit;
         }
 

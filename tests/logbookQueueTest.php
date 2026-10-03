@@ -36,8 +36,8 @@ try {
     queueExpect($clinicId > 0 && $serviceId > 0 && $staffId > 0 && $adminId > 0, 'Queue test fixtures for the dental assistant and admin are available.');
 
     $insertPatient = $conn->prepare("
-        INSERT INTO patients (firstname, lastname, email, profile_status, profile_completed_at)
-        VALUES (:firstname, 'QueueTest', :email, 'Complete', NOW())
+        INSERT INTO patients (firstname, lastname, profile_status, profile_completed_at)
+        VALUES (:firstname, 'QueueTest', 'Complete', NOW())
     ");
     $insertAppointment = $conn->prepare("
         INSERT INTO appointments (patient_id, schedule_id, clinic_id, date, status, deposit_required, appointment_code, confirmed_at)
@@ -61,7 +61,7 @@ try {
         ['Third', '2000-01-01 08:02:00'],
     ] as $index => [$firstname, $entered]) {
         $email = 'queue-' . bin2hex(random_bytes(5)) . '@example.invalid';
-        $insertPatient->execute([':firstname' => $firstname, ':email' => $email]);
+        $insertPatient->execute([':firstname' => $firstname]);
         $patientId = (int) $conn->lastInsertId();
         $patientIds[] = $patientId;
 

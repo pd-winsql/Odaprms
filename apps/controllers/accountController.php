@@ -3,6 +3,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once '../../config/conn.php';
 require_once '../models/userModel.php';
+require_once '../models/auditLogModel.php';
 require_once '../helpers/csrf.php';
 
 header('Content-Type: application/json');
@@ -45,14 +46,31 @@ if (hash_equals($currentPassword, $newPassword)) {
     exit;
 }
 
-$userModel = new User((new Database())->connect());
-$user = $userModel->getUserById((int) $_SESSION['user_id']);
-if (!$user || !password_verify($currentPassword, $user['password'])) {
-    echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
-    exit;
+$db = (new Database())->connect();
+if (!$db) { http_response_code(503); echo json_encode(['success'=>false,'message'=>'Account service is unavailable.']); exit; }
+$changed = false;
+try {
+    $db->beginTransaction();
+    $stmt = $db->prepare('SELECT password FROM users WHERE id=? FOR UPDATE');
+    $stmt->execute([(int) $_SESSION['user_id']]);
+    $hash = $stmt->fetchColumn();
+    if (!$hash || !password_verify($currentPassword, $hash)) {
+        $db->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Current password is incorrect.']);
+        exit;
+    }
+    $changed = (new User($db))->changePassword((int) $_SESSION['user_id'], password_hash($newPassword, PASSWORD_DEFAULT));
+    if (!$changed) throw new RuntimeException('Password update failed.');
+    if (in_array($_SESSION['user_role'], ['Admin', 'Dental Assistant'], true)) {
+        (new AuditLog($db))->recordForUser('user', (int) $_SESSION['user_id'], 'account_password_changed', 'Changed own account password.', null, null, (int) $_SESSION['user_id']);
+    }
+    $db->commit();
+    session_regenerate_id(true);
+} catch (Throwable $e) {
+    if ($db->inTransaction()) $db->rollBack();
+    $changed = false;
+    error_log('Account password update failed: ' . $e->getMessage());
 }
-
-$changed = $userModel->changePassword((int) $_SESSION['user_id'], password_hash($newPassword, PASSWORD_DEFAULT));
 echo json_encode($changed
     ? ['success' => true, 'message' => 'Password changed successfully.']
     : ['success' => false, 'message' => 'Unable to change password. Please try again.']);

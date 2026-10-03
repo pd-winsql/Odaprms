@@ -10,7 +10,7 @@ class Patient {
     }
 
     public function getPatient($patient_id) {
-        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE patient_id = :patient_id");
+        $stmt = $this->conn->prepare("SELECT p.*, u.email AS email FROM patients p LEFT JOIN users u ON u.id = p.user_id WHERE p.patient_id = :patient_id");
         $stmt->execute([
             ':patient_id' => $patient_id
         ]);
@@ -18,7 +18,7 @@ class Patient {
     }
 
     public function getPatientByEmail($email) {
-        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE email = :email");
+        $stmt = $this->conn->prepare("SELECT p.*, u.email AS email FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = :email");
         $stmt->execute([
             ':email' => $email
         ]);
@@ -28,7 +28,7 @@ class Patient {
     public function getPatientByUserId($user_id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT * FROM patients WHERE user_id = :user_id
+                SELECT p.*, u.email AS email FROM patients p LEFT JOIN users u ON u.id = p.user_id WHERE p.user_id = :user_id
             ");
             $stmt->execute([':user_id' => $user_id]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -61,7 +61,7 @@ class Patient {
     }
 
     public function findExactIdentity(array $data) {
-        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE identity_match_key = :identity_match_key LIMIT 1");
+        $stmt = $this->conn->prepare("SELECT p.*, u.email AS email FROM patients p LEFT JOIN users u ON u.id = p.user_id WHERE p.identity_match_key = :identity_match_key LIMIT 1");
         $stmt->execute([':identity_match_key' => self::identityMatchKey($data)]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -83,14 +83,15 @@ class Patient {
         return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
+    // Email is read from the linked user; legacy email arguments are not persisted.
     public function createRegisteredPatient(int $userId, array $data, string $email): int {
         $stmt = $this->conn->prepare("
             INSERT INTO patients
                 (user_id, firstname, middlename, lastname, suffix, birthdate, age, gender,
-                 phone_number, email, profile_status, identity_match_key)
+                 phone_number, profile_status, identity_match_key)
             VALUES
                 (:user_id, :firstname, :middlename, :lastname, :suffix, :birthdate, :age, :gender,
-                 :phone_number, :email, 'Incomplete', :identity_match_key)
+                 :phone_number, 'Incomplete', :identity_match_key)
         ");
         $birthdate = new DateTimeImmutable($data['birthdate']);
         $stmt->execute([
@@ -103,7 +104,6 @@ class Patient {
             ':age' => $birthdate->diff(new DateTimeImmutable('today'))->y,
             ':gender' => $data['gender'],
             ':phone_number' => self::normalizePhone($data['phone_number']),
-            ':email' => $email,
             ':identity_match_key' => self::identityMatchKey($data),
         ]);
         return (int) $this->conn->lastInsertId();
@@ -146,6 +146,9 @@ class Patient {
     }
 
     public function updatePatient($patient_id, $data) {
+        // Login email is account-owned and cannot be changed by profile writes.
+        unset($data['email']);
+        if (!$data) return true;
         $fields = [];
         foreach ($data as $key => $value) {
             $fields[] = "$key = ?";
@@ -163,12 +166,55 @@ class Patient {
     }
 
     public function getAllPatients() {
-        $stmt = $this->conn->query("SELECT * FROM patients ORDER BY created_at DESC, patient_id DESC");
+        $stmt = $this->conn->query("SELECT p.*, u.email AS email FROM patients p LEFT JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC, p.patient_id DESC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function updateMyAccount(int $userId, array $fields): array {
+        try {
+            $this->conn->beginTransaction();
+            $stmt = $this->conn->prepare("SELECT p.* FROM patients p JOIN users u ON u.id=p.user_id WHERE p.user_id=:user_id AND u.user_role='Patient' FOR UPDATE");
+            $stmt->execute([':user_id' => $userId]);
+            $patient = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$patient) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'Account not found.'];
+            }
+
+            $identity = array_merge($patient, $fields);
+            $stmt = $this->conn->prepare("UPDATE patients SET firstname=:firstname,middlename=:middlename,lastname=:lastname,phone_number=:phone,identity_match_key=:identity_key,profile_status='Draft',profile_completed_at=NULL,profile_completed_by_user_id=NULL WHERE patient_id=:patient_id");
+            $stmt->execute([
+                ':firstname' => $fields['firstname'],
+                ':middlename' => $fields['middlename'] ?: null,
+                ':lastname' => $fields['lastname'],
+                ':phone' => $fields['phone_number'],
+                ':identity_key' => self::identityMatchKey($identity),
+                ':patient_id' => $patient['patient_id'],
+            ]);
+            $this->conn->prepare("UPDATE appointment_checkins ci JOIN appointments a ON a.appointment_id=ci.appointment_id SET ci.checkin_status='Profile Required',ci.ready_at=NULL WHERE a.patient_id=:patient_id AND a.date=CURDATE() AND ci.checkin_status='Ready'")
+                ->execute([':patient_id' => $patient['patient_id']]);
+
+            (new AuditLog($this->conn))->recordForUser(
+                'patient', (int) $patient['patient_id'], 'patient_account_updated',
+                'Updated own account details.',
+                [
+                    'firstname' => $patient['firstname'], 'middlename' => $patient['middlename'],
+                    'lastname' => $patient['lastname'], 'phone_number' => $patient['phone_number'],
+                ],
+                $fields,
+                $userId
+            );
+            $this->conn->commit();
+            return ['success' => true, 'patient_id' => (int) $patient['patient_id']];
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('updatePatientMyAccount error: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Unable to save your account. Please try again.'];
+        }
+    }
+
     public function filterPatients($from = null, $to = null, $clinic_id = null, $query = null) {
-        $sql = "SELECT DISTINCT p.* FROM patients p LEFT JOIN appointments a ON p.patient_id = a.patient_id WHERE 1=1";
+        $sql = "SELECT DISTINCT p.*, u.email AS email FROM patients p LEFT JOIN users u ON u.id = p.user_id LEFT JOIN appointments a ON p.patient_id = a.patient_id WHERE 1=1";
         $params = [];
 
         if (!empty($from)) {
@@ -196,21 +242,23 @@ class Patient {
     }
 
     public function searchPatients($query) {
-        $stmt = $this->conn->prepare("SELECT * FROM patients WHERE lastname LIKE ? OR firstname LIKE ?");
+        $stmt = $this->conn->prepare("SELECT p.*, u.email AS email FROM patients p LEFT JOIN users u ON u.id = p.user_id WHERE p.lastname LIKE ? OR p.firstname LIKE ?");
         $likeQuery = '%' . $query . '%';
         $stmt->execute([$likeQuery, $likeQuery]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Retain the legacy argument position for callers; account email is never
+    // written through patient creation. Walk-in records have no account email.
     public function createPatient($user_id, $firstname, $lastname, $middlename, $age, $gender, $phone_number, $email, $birthdate = null) {
 
         try {
 
             $stmt = $this->conn->prepare("
                 INSERT INTO patients
-                (user_id, firstname, lastname, middlename, age, gender, phone_number, email, birthdate)
+                (user_id, firstname, lastname, middlename, age, gender, phone_number, birthdate)
                 VALUES
-                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :email, :birthdate)
+                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :birthdate)
             ");
 
             $stmt->execute([
@@ -221,7 +269,6 @@ class Patient {
                 ':age' => $age,
                 ':gender' => $gender,
                 ':phone_number' => $phone_number,
-                ':email' => $email,
                 ':birthdate' => $birthdate ?: null
             ]);
             return $this->conn->lastInsertId();
@@ -264,7 +311,7 @@ class Patient {
         try {
             $this->conn->beginTransaction();
 
-            $stmt = $this->conn->prepare("\n                INSERT INTO patients\n                (user_id, firstname, lastname, middlename, age, gender, phone_number, email, birthdate, civil_status, home_address, work_address, fb_account, occupation, office_contact, guardian_name, guardian_contact, physician_name, physician_contact, physician_address)\n                VALUES\n                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :email, :birthdate, :civil_status, :home_address, :work_address, :fb_account, :occupation, :office_contact, :guardian_name, :guardian_contact, :physician_name, :physician_contact, :physician_address)\n            ");
+            $stmt = $this->conn->prepare("\n                INSERT INTO patients\n                (user_id, firstname, lastname, middlename, age, gender, phone_number, birthdate, civil_status, home_address, work_address, fb_account, occupation, office_contact, guardian_name, guardian_contact, physician_name, physician_contact, physician_address)\n                VALUES\n                (:user_id, :firstname, :lastname, :middlename, :age, :gender, :phone_number, :birthdate, :civil_status, :home_address, :work_address, :fb_account, :occupation, :office_contact, :guardian_name, :guardian_contact, :physician_name, :physician_contact, :physician_address)\n            ");
 
             $stmt->execute([
                 ':user_id' => null,
@@ -274,7 +321,6 @@ class Patient {
                 ':age' => $data['age'],
                 ':gender' => $data['gender'],
                 ':phone_number' => $data['phone_number'],
-                ':email' => $data['email'],
                 ':birthdate' => $data['birthdate'],
                 ':civil_status' => $data['civil_status'],
                 ':home_address' => $data['home_address'],
@@ -359,12 +405,11 @@ class Patient {
     public function createPatientFromUser($user_id, $email) {
         try {
             $stmt = $this->conn->prepare("
-                INSERT INTO patients (user_id, firstname, lastname, email)
-                VALUES (:user_id, 'Patient', '', :email)
+                INSERT INTO patients (user_id, firstname, lastname)
+                VALUES (:user_id, 'Patient', '')
             ");
             return $stmt->execute([
                 ':user_id'   => $user_id,
-                ':email'     => $email,
             ]);
         } catch (PDOException $e) {
             error_log("createPatientFromUser error: " . $e->getMessage());
@@ -374,9 +419,9 @@ class Patient {
 
     public function isLinked($email) {
         $stmt = $this->conn->prepare("
-            SELECT user_id
-            FROM patients
-            WHERE email = :email
+            SELECT p.user_id
+            FROM patients p JOIN users u ON u.id = p.user_id
+            WHERE u.email = :email
         ");
 
         $stmt->execute([
@@ -398,7 +443,6 @@ class Patient {
                     gender         = :gender,
                     civil_status   = :civil_status,
                     phone_number   = :phone_number,
-                    email          = :email,
                     home_address   = :home_address,
                     work_address   = :work_address,
                     occupation     = :occupation,
@@ -415,7 +459,6 @@ class Patient {
                 ':gender'         => $data['gender'] ?: null,
                 ':civil_status'   => $data['civil_status'] ?: null,
                 ':phone_number'   => $data['phone_number'] ?: null,
-                ':email'          => $data['email'],
                 ':home_address'   => $data['home_address'] ?: null,
                 ':work_address'   => $data['work_address'] ?: null,
                 ':occupation'     => $data['occupation'] ?: null,
@@ -615,7 +658,7 @@ class Patient {
                 UPDATE patients SET
                     firstname = :firstname, lastname = :lastname, middlename = :middlename,
                     birthdate = :birthdate, age = :age, gender = :gender,
-                    civil_status = :civil_status, phone_number = :phone_number, email = :email,
+                    civil_status = :civil_status, phone_number = :phone_number,
                     home_address = :home_address, work_address = :work_address,
                     occupation = :occupation, office_contact = :office_contact, fb_account = :fb_account,
                     guardian_name = :guardian_name, guardian_contact = :guardian_contact,
@@ -628,7 +671,7 @@ class Patient {
                 ':middlename' => $data['middlename'] ?: null, ':birthdate' => $data['birthdate'],
                 ':age' => $data['age'], ':gender' => $data['gender'],
                 ':civil_status' => $data['civil_status'] ?: null, ':phone_number' => $data['phone_number'],
-                ':email' => $data['email'] ?: null, ':home_address' => $data['home_address'] ?: null,
+                ':home_address' => $data['home_address'] ?: null,
                 ':work_address' => $data['work_address'] ?: null, ':occupation' => $data['occupation'] ?: null,
                 ':office_contact' => $data['office_contact'] ?: null, ':fb_account' => $data['fb_account'] ?: null,
                 ':guardian_name' => $data['guardian_name'] ?: null, ':guardian_contact' => $data['guardian_contact'] ?: null,

@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'account_email_change' => [
+        'subject' => 'Verify Your New Email Address',
+        'heading' => 'Account Email Change',
+        'intro' => 'You requested a new email address for your clinic account.',
+        'instruction' => 'Enter this code in My Account within 10 minutes. Your current email remains active until you verify this address.',
+        'label' => 'Verification Code',
+        'footer' => 'If you did not request this change, ignore this email. Your account email has not been changed.'
+    ],
 
     'register' => [
 

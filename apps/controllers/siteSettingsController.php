@@ -180,6 +180,17 @@ class SiteSettingsController {
             $data[$field] = trim($_POST[$field] ?? '');
         }
 
+        $identityErrors = IdentityInput::errors($data);
+        if ($identityErrors) {
+            echo json_encode(['success' => false, 'message' => reset($identityErrors)]);
+            exit;
+        }
+        if ($group === 'contact' && $data['contact_email'] !== ''
+            && !filter_var($data['contact_email'], FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Enter a valid clinic email address.']);
+            exit;
+        }
+
         if ($group === 'payment') {
             $validation = SiteSettingsModel::validatePaymentSettings($data);
             if (!$validation['success']) {
