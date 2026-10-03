@@ -24,7 +24,7 @@ $csrfToken = $_SESSION['csrf_token'];
 // Keep the newest usable deposit in the working card through the end of its
 // appointment date. Completed visits belong in the read-only history immediately.
 $today = date('Y-m-d');
-$inactiveAppointmentStatuses = ['Completed', 'Cancelled', 'No-show', 'Rejected'];
+$inactiveAppointmentStatuses = ['Completed', 'Cancelled', 'No-show', 'Rejected', 'Treatment Postponed'];
 $terminalDepositStatuses = ['Expired', 'Forfeited', 'Refunded'];
 $currentDeposit = null;
 $previousDeposits = [];
@@ -97,6 +97,7 @@ function depositStatusClass($status) {
                         <?php endif; ?>
                     </div>
                 <?php elseif ($deposit['deposit_status'] === 'Verified'): ?>
+                    <?php if (!empty($deposit['transferred_from_appointment_id'])): ?><div class="alert alert-info small">Deposit transferred from appointment #<?= (int) $deposit['transferred_from_appointment_id'] ?>. The original receipt remains on record.</div><?php endif; ?>
                     <div class="alert alert-success small mb-0 vd-deposit-state-note">Deposit verified. Your appointment is confirmed.</div>
                 <?php elseif ($deposit['deposit_status'] === 'Expired'): ?>
                     <div class="alert alert-secondary small mb-0 vd-deposit-state-note">The payment deadline expired and this booking was cancelled.</div>
@@ -169,11 +170,13 @@ function depositStatusClass($status) {
                                         <div class="vd-receipt-fields">
                                             <div>
                                                 <label class="form-label" for="depositAmount<?= (int) $deposit['deposit_id'] ?>">Amount on receipt</label>
-                                                <input id="depositAmount<?= (int) $deposit['deposit_id'] ?>" type="number" name="receipt_amount" class="form-control vd-input" min="0.01" step="0.01" inputmode="decimal" data-ocr-field required>
+                                                <input id="depositAmount<?= (int) $deposit['deposit_id'] ?>" type="number" name="receipt_amount" class="form-control vd-input" min="0.01" step="0.01" inputmode="decimal" data-ocr-field required aria-describedby="depositAmountError<?= (int) $deposit['deposit_id'] ?>">
+                                                <div id="depositAmountError<?= (int) $deposit['deposit_id'] ?>" class="text-danger small mt-1" data-amount-error aria-live="polite" hidden></div>
                                             </div>
                                             <div>
                                                 <label class="form-label" for="depositReference<?= (int) $deposit['deposit_id'] ?>">Reference number</label>
-                                                <input id="depositReference<?= (int) $deposit['deposit_id'] ?>" type="text" name="gcash_reference" class="form-control vd-input" maxlength="25" inputmode="numeric" data-ocr-field required>
+                                                <input id="depositReference<?= (int) $deposit['deposit_id'] ?>" type="text" name="gcash_reference" class="form-control vd-input" maxlength="20" inputmode="numeric" pattern="[0-9]{10,20}" data-ocr-field required aria-describedby="depositReferenceError<?= (int) $deposit['deposit_id'] ?>">
+                                                <div id="depositReferenceError<?= (int) $deposit['deposit_id'] ?>" class="text-danger small mt-1" data-reference-error aria-live="polite" hidden></div>
                                             </div>
                                             <div class="vd-receipt-field-wide">
                                                 <label class="form-label" for="depositTransaction<?= (int) $deposit['deposit_id'] ?>">Transaction date and time</label>
@@ -225,6 +228,7 @@ function depositStatusClass($status) {
                                     <td>
                                         <span class="<?= depositStatusClass($deposit['deposit_status']) ?>"><?= htmlspecialchars($deposit['deposit_status']) ?></span>
                                         <div class="vd-appt-meta mt-1">Appointment: <?= htmlspecialchars($deposit['appointment_status']) ?></div>
+                                        <?php if ($deposit['deposit_status'] === 'Retained for Rebooking'): ?><div class="vd-appt-meta mt-1">Deposit retained for rebooking. Contact the clinic to apply it to an accepted replacement appointment.</div><?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if ($deposit['verified_at']): ?>
@@ -366,8 +370,76 @@ function depositStatusClass($status) {
     });
 
     document.querySelectorAll('.depositSubmissionForm').forEach(form => {
+        const button = form.querySelector('button[type="submit"]');
+        const amount = form.elements.namedItem('receipt_amount');
+        const reference = form.elements.namedItem('gcash_reference');
+        const amountError = form.querySelector('[data-amount-error]');
+        const referenceError = form.querySelector('[data-reference-error]');
+        let checkedReference = '', referenceTimer, referenceVersion = 0, uploading = false;
+
+        function fieldError(field, output, message) {
+            output.textContent = message;
+            output.hidden = !message;
+            field.setCustomValidity(message);
+            field.classList.toggle('is-invalid', Boolean(message));
+            field.setAttribute('aria-invalid', String(Boolean(message)));
+        }
+        function updateSubmit() {
+            button.disabled = uploading || form.dataset.receiptScanning === 'true'
+                || checkedReference !== reference.value || !checkedReference || !form.checkValidity();
+        }
+        function validateAmount() {
+            const expected = Number(form.dataset.requiredAmount);
+            const mismatch = amount.value !== '' && Math.abs(Number(amount.value) - expected) > 0.009;
+            fieldError(amount, amountError, mismatch ? `Enter the required deposit amount of ₱${expected.toFixed(2)}.` : '');
+            updateSubmit();
+        }
+        async function checkReference(version) {
+            const value = reference.value;
+            if (version !== referenceVersion || !/^[0-9]{10,20}$/.test(value)) return;
+            const payload = new FormData();
+            ['csrf_token', 'appointment_id'].forEach(name => payload.append(name, form.elements.namedItem(name).value));
+            payload.append('action', 'checkReference');
+            payload.append('gcash_reference', value);
+            try {
+                const response = await fetch(form.dataset.ocrEndpoint, { method: 'POST', body: payload });
+                const result = await response.json();
+                if (version !== referenceVersion) return;
+                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to check the reference number. Try again.');
+                checkedReference = result.exists ? '' : value;
+                fieldError(reference, referenceError, result.exists ? 'This reference number has already been used.' : '');
+            } catch (error) {
+                if (version !== referenceVersion) return;
+                fieldError(reference, referenceError, error.message || 'Unable to check the reference number. Try again.');
+            }
+            updateSubmit();
+        }
+        function referenceChanged() {
+            clearTimeout(referenceTimer);
+            checkedReference = '';
+            const version = ++referenceVersion;
+            fieldError(reference, referenceError, reference.value && !/^[0-9]{10,20}$/.test(reference.value)
+                ? 'Enter the 10–20 digit GCash reference number shown on the receipt.' : '');
+            updateSubmit();
+            referenceTimer = setTimeout(() => checkReference(version), 400);
+        }
+        amount.addEventListener('input', validateAmount);
+        reference.addEventListener('input', referenceChanged);
+        reference.addEventListener('blur', () => {
+            if (checkedReference === reference.value && checkedReference) return;
+            clearTimeout(referenceTimer);
+            checkReference(++referenceVersion);
+        });
+        form.addEventListener('input', updateSubmit);
+        form.addEventListener('change', updateSubmit);
+        form.addEventListener('deposit:receipt-updated', () => { validateAmount(); referenceChanged(); });
+        validateAmount();
+        referenceChanged();
         form.addEventListener('submit', async event => {
             event.preventDefault();
+            validateAmount();
+            updateSubmit();
+            if (button.disabled) return;
             const button = form.querySelector('button[type="submit"]');
             const errorBox = form.querySelector('.depositError');
             form.querySelectorAll('.is-invalid').forEach(field => {
@@ -376,6 +448,7 @@ function depositStatusClass($status) {
             });
             errorBox.textContent = '';
             errorBox.classList.add('d-none');
+            uploading = true;
             LoadingUI.setButton(button, true, 'Uploading…');
             try {
                 const response = await fetch(window.vdAppUrl('apps/controllers/depositController.php'), {
@@ -401,12 +474,20 @@ function depositStatusClass($status) {
                 window.showToast?.(message, false, 7000);
 
                 if (invalidField instanceof HTMLElement) {
+                    if (invalidField === reference) {
+                        checkedReference = '';
+                        fieldError(reference, referenceError, message);
+                    } else if (invalidField === amount) {
+                        fieldError(amount, amountError, message);
+                    }
                     invalidField.classList.add('is-invalid');
                     invalidField.setAttribute('aria-invalid', 'true');
                     invalidField.focus({ preventScroll: true });
                     invalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 LoadingUI.setButton(button, false);
+                uploading = false;
+                updateSubmit();
             }
         });
     });

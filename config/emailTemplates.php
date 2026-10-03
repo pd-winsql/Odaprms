@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'treatment_postponed' => [
+        'subject' => 'Your Treatment Was Postponed',
+        'heading' => 'Treatment Postponed',
+        'intro' => 'The clinic postponed your treatment following your pre-treatment assessment.',
+        'instruction' => 'Visit: {schedule_summary} Any verified deposit is retained for rebooking. Contact the clinic before arranging your next visit.',
+        'label' => 'Visit outcome',
+        'footer' => 'Your original receipt remains on record. The clinic can apply your retained deposit to an accepted replacement appointment.'
+    ],
     'account_email_change' => [
         'subject' => 'Verify Your New Email Address',
         'heading' => 'Account Email Change',

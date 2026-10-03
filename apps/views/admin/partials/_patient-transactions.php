@@ -52,6 +52,7 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
         'patientName' => trim(($patient['firstname'] ?? '') . ' ' . ($patient['lastname'] ?? '')),
         'email' => $patient['email'] ?? '',
         'clinic' => $transaction['clinic_name'] ?? 'Not recorded',
+        'postponementReason' => $transaction['postponement_reason'] ?? '',
         'date' => date('F j, Y', strtotime($transaction['date'])),
         'time' => date('g:i A', strtotime($transaction['start_time'])) . '–' . date('g:i A', strtotime($transaction['end_time'])),
         'status' => $transaction['status'] ?? 'Not recorded',
@@ -84,7 +85,7 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
             <span class="vd-topbar-date"><?= count($transactions) ?> total</span>
         </div>
 
-        <div class="vd-dash-card-body">
+        <div class="vd-dash-card-body vd-flush-table-body">
             
 
             <?php if (empty($transactions)): ?>
@@ -111,6 +112,7 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
                                         <span class="<?= txStatusClass($t['status']) ?>">
                                             <?= htmlspecialchars($t['status']) ?>
                                         </span>
+                                        <?php if ($t['status'] === 'Treatment Postponed'): ?><div class="vd-appt-meta mt-1"><?= htmlspecialchars($t['postponement_reason'] ?? '') ?><br>No treatment performed</div><?php endif; ?>
                                     </td>
                                     <td class="vd-table-actions-column vd-patient-transaction-action-cell">
                                         <button type="button" class="btn vd-btn-outline vd-patient-transaction-details"
@@ -200,6 +202,7 @@ function patientTransactionDetailsPayload(array $transaction, array $services, a
                 grid.replaceChildren();
                 appendDetail(grid, 'Appointment number', `#${details.appointmentId}`);
                 appendDetail(grid, 'Status', details.status, 'vd-appointment-detail-status');
+                if (details.status === 'Treatment Postponed') appendDetail(grid, 'Reason for postponement', details.postponementReason || 'Not recorded');
                 appendDetail(grid, 'Clinic', details.clinic);
                 appendDetail(grid, 'Date', details.date);
                 appendDetail(grid, 'Clinic window', details.time);

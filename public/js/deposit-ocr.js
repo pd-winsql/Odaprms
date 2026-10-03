@@ -76,6 +76,7 @@
         payload.append('receipt', file);
 
         setStatus(form, 'scanning', 'Reading amount, reference number, and transaction date…');
+        form.dataset.receiptScanning = 'true';
         if (submit) submit.disabled = true;
 
         try {
@@ -99,6 +100,8 @@
             setStatus(form, 'manual', error.message || 'Automatic reading failed. Enter the receipt details manually.');
         } finally {
             if (submit) submit.disabled = false;
+            form.dataset.receiptScanning = 'false';
+            form.dispatchEvent(new Event('deposit:receipt-updated'));
         }
     }
 
@@ -123,6 +126,7 @@
         input.addEventListener('change', () => {
             const file = input.files?.[0];
             resetFields(form);
+            form.dispatchEvent(new Event('deposit:receipt-updated'));
             if (!file) {
                 clearPreview(form);
                 setStatus(form, 'idle', 'Choose a receipt screenshot to fill the details automatically.');

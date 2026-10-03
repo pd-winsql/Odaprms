@@ -1758,6 +1758,71 @@ button.vd-stat-card {
     isolation: auto;
 }
 
+/* The containing card supplies the outline; nested tables stay flat. */
+.vd-dash-card .vd-appt-table-wrap,
+.vd-dash-card .vd-table-frame,
+.vd-dash-card .vd-odontogram-ledger-wrap {
+    border: 0;
+    border-radius: 0;
+}
+
+.vd-dash-card .vd-appt-table thead th:first-child,
+.vd-dash-card .vd-appt-table thead th:last-child,
+.vd-dash-card .vd-appt-table tbody tr:last-child td:first-child,
+.vd-dash-card .vd-appt-table tbody tr:last-child td:last-child {
+    border-radius: 0;
+}
+
+/* Reports and data export */
+.vd-profile-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; }
+.vd-print-request-widget { margin: 0 0 22px; }
+.vd-print-request-widget:has(#profileRequestStatus:empty):not(:has([data-request-error]:not([hidden]))) { margin-bottom: 0; }
+.vd-print-request-fields { display: grid; gap: 18px; }
+.vd-print-request-status { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; border: 1px solid var(--border, #dfccaa); border-radius: 12px; background: var(--white-bg, #fffdf9); }
+.vd-request-status-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.vd-request-status-info p { margin: 6px 0 0; font-size: 13px; color: var(--mid, #706657); }
+.vd-dash-body .btn.vd-request-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--border, #dfccaa); background: var(--white-bg, #fffdf9); color: var(--ink, #40362a); border-radius: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; white-space: nowrap; }
+.vd-dash-body .btn.vd-request-secondary:hover:not(:disabled) { background: var(--cream, #f4eee3); border-color: var(--gold, #85631b); }
+.vd-dash-body .btn.vd-request-secondary:disabled { opacity: 1; background: #eee9df; color: #746b5e; cursor: not-allowed; }
+.vd-print-request-dialog { width: min(540px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--border, #dfccaa); border-radius: 16px; background: #fffdf9; color: var(--ink, #40362a); box-shadow: 0 24px 70px #30271930; }
+.vd-print-request-dialog::backdrop { background: #30271966; }
+.vd-request-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--border, #dfccaa); }
+.vd-request-dialog-header h2 { margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 28px; }
+.vd-request-close { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: 22px; }
+.vd-request-close:hover { background: #f4eee3; }
+.vd-print-request-dialog form { padding: 24px; }
+.vd-request-billing { display: flex; align-items: flex-start; gap: 10px; margin: 20px 0 24px; font-size: 14px; }
+.vd-request-billing input { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: #85631b; }
+.vd-request-dialog-footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding-top: 20px; border-top: 1px solid var(--border, #dfccaa); }
+.vd-request-badge { display: inline-block; padding: 4px 9px; border-radius: 5px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #f5ecd6; color: #74551b; }
+.vd-request-badge[data-status='Ready for pickup'], .vd-request-badge[data-status='Collected'] { background: #eaf1e2; color: #48602c; }
+.vd-request-badge[data-status='Cancelled'] { background: #eeeae5; color: #706657; }
+.vd-patient-record-tabs { display: inline-flex; gap: 4px; padding: 5px; margin-bottom: 24px; border: 1px solid var(--border, #dfccaa); border-radius: 10px; background: #f4eee3; }
+.vd-patient-tab { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; min-height: 44px; border: 0; border-radius: 7px; background: transparent; color: #615443; font: inherit; font-size: 14px; font-weight: 600; }
+.vd-patient-tab[aria-selected='true'] { background: #85631b; color: #fffdf9; }
+.vd-request-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 50%; background: #e5d7b9; color: #614819; font-size: 12px; }
+.vd-patient-tab[aria-selected='true'] .vd-request-count { background: #ffffff26; color: white; }
+.vd-request-row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#profileRequestsPanel .vd-report-table { min-width: 1000px; }
+#profileRequestsPanel .vd-report-table td { font-size: 14px; vertical-align: middle; }
+#profileRequestsPanel .vd-request-row-actions .btn { font-size: 11px; padding: 10px 12px; min-height: 44px; white-space: nowrap; }
+.vd-request-reason { font-size: 12px; margin-top: 5px; color: var(--mid, #706657); }
+.vd-request-list-header { flex-wrap: wrap; gap: 16px; }
+.vd-request-list-header label { font-size: 13px; margin: 0; }
+#profileRequestFilter { width: auto; }
+#patientRecordsPanel[hidden] { display: none !important; }
+@media(max-width:767px) {
+    .vd-profile-overview-header { flex-wrap: wrap; }
+    .vd-profile-actions { width: 100%; justify-content: flex-start; }
+    .vd-profile-actions .btn { flex: 1 1 auto; }
+    .vd-print-request-status { align-items: flex-start; flex-wrap: wrap; padding: 16px; }
+    .vd-request-dialog-header { padding: 16px 18px; }
+    .vd-print-request-dialog form { padding: 18px; }
+    .vd-request-dialog-header h2 { font-size: 25px; }
+    .vd-patient-record-tabs { display: flex; }
+    .vd-patient-tab { flex: 1; padding: 10px; font-size: 13px; }
+}
+
 /* Reports and data export */
 .vd-report-page {
     display: flex;
@@ -1765,7 +1830,8 @@ button.vd-stat-card {
     gap: 18px;
 }
 .vd-report-print-header,
-.vd-report-print-footer {
+.vd-report-print-footer,
+.vd-report-print-only {
     display: none;
 }
 .vd-report-help {
@@ -1908,8 +1974,8 @@ button.vd-stat-card {
 
 @media print {
     @page {
-        size: A4 landscape;
-        margin: 9mm;
+        size: A4 portrait;
+        margin: 14mm;
     }
     body.vd-dash-body {
         display: block !important;
@@ -1942,18 +2008,27 @@ button.vd-stat-card {
     }
     .vd-report-page {
         display: block;
-        color: #1f1d19;
+        color: #222;
+        font-family: Georgia, serif;
+        font-size: 10pt;
     }
     .vd-report-print-header {
         display: block;
-        border-bottom: 2px solid #b5924c;
-        padding-bottom: 7px;
-        margin-bottom: 9px;
+        border-bottom: 1px solid #888;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
         break-inside: avoid;
     }
     .vd-report-logo-img {
-        max-width: 145px;
-        max-height: 38px;
+        width: 24mm;
+        max-height: 22mm;
+        object-fit: contain;
+    }
+    .vd-report-print-heading {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 12px;
     }
     .vd-report-print-header h1 {
         margin: 3px 0 2px;
@@ -1961,25 +2036,23 @@ button.vd-stat-card {
         font-size: 21px;
         font-weight: 400;
     }
-    .vd-report-print-header > div:last-child {
-        font-size: 10px;
-        color: #5f5e5a;
+    .vd-report-print-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px 16px;
+        font-size: 9pt;
+        color: #333;
     }
     .vd-report-brand {
-        color: #8d6f32;
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
+        color: #222;
+        font-size: 12pt;
+        font-weight: 400;
     }
     .vd-report-meta {
         display: none;
     }
     .vd-report-summary {
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 6px;
-        margin-bottom: 8px;
-        break-inside: avoid;
+        display: none !important;
     }
     .vd-stat-card,
     .vd-dash-card {
@@ -2002,15 +2075,15 @@ button.vd-stat-card {
         color: #8d6f32 !important;
     }
     .vd-report-results {
-        border-radius: 4px;
+        border: 0 !important;
+        border-radius: 0;
+        background: transparent;
         overflow: visible;
         break-inside: auto !important;
         page-break-inside: auto !important;
     }
     .vd-report-results .vd-dash-card-header {
-        padding: 7px 10px;
-        break-after: avoid;
-        page-break-after: avoid;
+        display: none;
     }
     .vd-report-results .vd-dash-card-body {
         padding: 0;
@@ -2027,6 +2100,8 @@ button.vd-stat-card {
         width: 100%;
         min-width: 0 !important;
         border-collapse: collapse;
+        table-layout: fixed;
+        color: #222;
     }
     .vd-report-table thead {
         display: table-header-group;
@@ -2041,9 +2116,46 @@ button.vd-stat-card {
     .vd-report-table th,
     .vd-report-table td {
         padding: 6px 7px !important;
-        font-size: 9px !important;
+        font-size: 9pt !important;
         white-space: normal !important;
+        overflow-wrap: anywhere;
+        border: 1px solid #aaa !important;
+        background: #fff !important;
+        color: #222 !important;
+        letter-spacing: normal !important;
+        text-transform: none !important;
+        vertical-align: top;
     }
+    .vd-report-table th { background: #f2f2f2 !important; font-weight: 600; }
+    .vd-report-table .vd-appt-name,
+    .vd-report-table .vd-appt-meta,
+    .vd-report-table .vd-status {
+        font: inherit !important;
+        color: inherit !important;
+        letter-spacing: normal;
+        text-transform: none;
+    }
+    .vd-report-table .vd-status {
+        display: inline;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent !important;
+    }
+    .vd-report-print-only { display: block; }
+    .vd-report-table .vd-report-print-only { display: table-cell; width: 10%; }
+    .vd-report-screen-only { display: none !important; }
+    .vd-report-print-summary { margin-top: 16px; break-inside: avoid; }
+    .vd-report-print-summary h2 { margin: 0 0 6px; font: 600 10pt Georgia, serif; }
+    .vd-report-totals { width: 100%; border-collapse: collapse; }
+    .vd-report-totals th,
+    .vd-report-totals td {
+        border: 1px solid #aaa;
+        padding: 6px;
+        text-align: center;
+        font-size: 9pt;
+    }
+    .vd-report-totals th { background: #f2f2f2; }
     .vd-report-print-footer {
         display: flex;
         align-items: center;
@@ -2053,7 +2165,7 @@ button.vd-stat-card {
         padding-top: 7px;
         border-top: 1px solid #d8d2c6;
         color: #777;
-        font-size: 8px;
+        font-size: 9pt;
     }
     .vd-report-print-footer span:last-child {
         text-align: right;
@@ -2599,6 +2711,21 @@ button.vd-stat-card {
     justify-content: space-between;
     gap: 16px;
     padding: 14px 4px 0;
+}
+
+/* Appointment tables share the card edges; spacing belongs inside cells. */
+.vd-dash-card :is(.vd-appointment-table-body, .vd-flush-table-body) { padding: 0; }
+:is(.vd-appointment-table-body, .vd-flush-table-body) .vd-appt-table th,
+:is(.vd-appointment-table-body, .vd-flush-table-body) .vd-appt-table td { padding-inline: 22px; }
+:is(.vd-appointment-table-body, .vd-flush-table-body) .vd-table-pagination {
+    padding: 18px 22px;
+    border-top: 1px solid var(--border);
+}
+:is(.vd-appointment-table-body, .vd-flush-table-body) > .vd-empty-state { padding: 24px 22px; }
+@media (max-width: 767px) {
+    :is(.vd-appointment-table-body, .vd-flush-table-body) .vd-appt-table th,
+    :is(.vd-appointment-table-body, .vd-flush-table-body) .vd-appt-table td { padding-inline: 14px; }
+    :is(.vd-appointment-table-body, .vd-flush-table-body) .vd-table-pagination { padding: 16px 14px; }
 }
 .vd-table-pagination-summary,
 .vd-table-page-label {
@@ -5408,12 +5535,13 @@ button.vd-stat-card {
 .vd-account-verification[hidden] { display: none; }
 .vd-account-verification .vd-input { max-width: 240px; letter-spacing: .2em; }
 .vd-account-verification .btn { justify-self: start; }
-.vd-account-password { scroll-margin-top: 110px; }
-.vd-account-password > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; padding: 24px 30px; border: 1px solid #dcc9a4; border-radius: 16px; background: #fffdf9; font-size: 21px; }
+.vd-account-password { scroll-margin-top: 110px; border: 1px solid #dcc9a4; border-radius: 16px; background: #fffdf9; }
+.vd-account-password > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; padding: 24px 30px; border-radius: 16px; font-size: 21px; }
 .vd-account-password > summary::-webkit-details-marker { display: none; }
+.vd-account-password[open] > summary { border-bottom: 1px solid #eee3d1; border-radius: 16px 16px 0 0; }
 .vd-account-password[open] > summary i { transform: rotate(180deg); }
-.vd-account-password .vd-password-page { width: 100%; max-width: none; padding-top: 24px; }
-.vd-account-password .vd-password-panel { max-width: none; }
+.vd-account-password .vd-password-page { width: 100%; max-width: none; padding-top: 0; }
+.vd-account-password .vd-password-panel { max-width: none; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .vd-my-account .vd-btn-gold:disabled { opacity: 1 !important; background: #e8dfcd !important; color: #6b5834 !important; border-color: #d1c19f; cursor: not-allowed; }
 .vd-my-account .vd-my-account-field .vd-field-feedback:empty { display: none; }
 @media (max-width: 575px) {
@@ -7968,6 +8096,8 @@ button.vd-stat-card {
     color: #55468b;
 }
 
+.vd-dash-body .vd-status-treatment-postponed,
+.vd-dash-body .vd-status-retained-for-rebooking,
 .vd-status-warning {
     background: #fff0d5;
     color: #84500d;
@@ -8238,6 +8368,65 @@ button.vd-stat-card {
     .vd-today-logbook-table {
         min-width: 920px;
     }
+}
+
+/* Appointment list: compact controls and a patient-first responsive table. */
+.vd-appointment-list .vd-filter-bar { display:flex; flex-direction:row; justify-content:flex-start; align-items:flex-end; flex-wrap:wrap; gap:14px; padding:16px 22px; }
+.vd-appointment-list .vd-filter-group { width:auto; flex:0 1 180px; min-width:0; }
+.vd-appointment-list .vd-filter-clear { flex:0 0 auto; }
+.vd-appointment-list .vd-filter-clear .btn { min-height:44px; padding-inline:12px; box-shadow:none; }
+.vd-appointment-list .vd-appt-table { min-width:0 !important; width:100%; }
+.vd-appointment-list .vd-appt-table th { font-size:12px; text-transform:none; letter-spacing:0; }
+.vd-appointment-list .vd-appt-table td { vertical-align:middle; }
+.vd-appointment-list .vd-appt-table .vd-appt-name { white-space:normal; }
+.vd-appointment-list .vd-appt-table td:first-child > .vd-appt-meta { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vd-appointment-list .vd-appt-table .vd-status { text-transform:none; letter-spacing:0; font-size:13px; font-weight:500; padding:5px 9px; border-radius:5px; }
+.vd-appointment-list .vd-status-pending-review,
+.vd-appointment-list .vd-status-awaiting-deposit,
+.vd-appointment-list .vd-status-payment-under-review { background:#f6edd5; color:#795817; }
+.vd-appointment-list .vd-appt-table .vd-activity-cell { min-width:0; max-width:210px; }
+.vd-appointment-list .vd-activity-avatar,
+.vd-appointment-list .vd-role-chip { display:none; }
+.vd-appointment-list .vd-activity-name { font-weight:500; }
+.vd-appointment-list .vd-appt-table.vd-responsive-table th.vd-table-actions-column { background:#f8f3e9; border-left:0; }
+.vd-appointment-list .vd-appt-table.vd-responsive-table td.vd-table-actions-column,
+.vd-appointment-list .vd-appt-table.vd-responsive-table tr:hover td.vd-table-actions-column { background:transparent; border-left:0; }
+.vd-appointment-list .vd-appt-action-toggle { text-transform:none; letter-spacing:0; font-size:12px; min-height:40px; padding:9px 12px; background:var(--white-bg); }
+.vd-compact-row-details { display:none; margin-top:8px; }
+.vd-compact-schedule { display:none; margin-top:5px; font-size:12px; color:var(--mid); }
+.vd-compact-row-details summary { color:var(--gold); font-size:12px; padding-block:6px; }
+.vd-compact-row-details p { margin:8px 0 0; color:var(--mid); font-size:12px; }
+@media(max-width:1199px) {
+    .vd-appointment-list .vd-appt-table th,
+    .vd-appointment-list .vd-appt-table td { padding-inline:14px; }
+    .vd-appointment-list .vd-appt-table tr > :nth-child(1),
+    .vd-appointment-list .vd-appt-table tr > :nth-child(3),
+    .vd-appointment-list .vd-appt-table tr > :nth-child(4),
+    .vd-appointment-list .vd-appt-table tr > :nth-child(6) { display:table-cell !important; }
+    .vd-appointment-list :is(#upcomingApptTable, #pastApptTable) tr > :nth-child(2),
+    .vd-appointment-list :is(#upcomingApptTable, #pastApptTable) tr > :nth-child(5) { display:none !important; }
+    .vd-compact-row-details { display:block; }
+}
+@media(max-width:575px) {
+    .vd-appointment-list .vd-filter-bar { padding:14px; gap:10px; }
+    .vd-appointment-list .vd-filter-group { flex:1 1 40%; min-width:0; width:auto; }
+    .vd-appointment-list .vd-filter-group[id$='StatusToggles'] { flex-basis:100%; }
+    .vd-appointment-list .vd-filter-clear { flex:0 0 auto; }
+    .vd-appointment-list .vd-appt-table { table-layout:fixed; }
+    .vd-appointment-list :is(#upcomingApptTable, #pastApptTable) tr > :nth-child(3) { display:none !important; }
+    .vd-appointment-list .vd-appt-table tr > :nth-child(1) { width:43% !important; }
+    .vd-appointment-list .vd-appt-table tr > :nth-child(4) { width:30% !important; }
+    .vd-appointment-list .vd-appt-table tr > :nth-child(6) { width:27% !important; }
+    .vd-appointment-list .vd-appt-table th,
+    .vd-appointment-list .vd-appt-table td { padding:12px 8px; min-width:0; overflow-wrap:anywhere; }
+    .vd-appointment-list .vd-appt-table td:first-child > .vd-appt-meta { display:none; }
+    .vd-compact-schedule { display:block; }
+    .vd-appointment-list .vd-appt-action-toggle { padding:8px 4px; min-width:0; width:100%; }
+}
+
+@media(max-width:360px) {
+    .vd-appointment-list .vd-filter-group { flex-basis:100%; }
+    .vd-appointment-list .vd-filter-clear { flex-basis:auto; }
 }
 
 /* Staff appointment notification center */

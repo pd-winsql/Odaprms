@@ -114,6 +114,19 @@ class DepositController {
         ]);
     }
 
+    public function checkReference(): void {
+        $this->requireCsrf();
+        $context = $this->paymentContextFromRequest();
+        if (!$context) {
+            $this->json(['success' => false, 'message' => 'Payment request not found or access denied.']);
+        }
+        $reference = preg_replace('/\D+/', '', trim($_POST['gcash_reference'] ?? ''));
+        if (!preg_match('/^\d{10,20}$/', $reference)) {
+            $this->json(['success' => false, 'message' => 'Enter the 10–20 digit GCash reference number shown on the receipt.']);
+        }
+        $this->json(['success' => true, 'exists' => $this->deposits->referenceExists($reference, (int) $context['deposit_id'])]);
+    }
+
     public function submit(): void {
         $this->requireCsrf();
         $this->deposits->expireUnpaidAppointments();
@@ -238,6 +251,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'extract') {
     $controller->extract();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'submit') {
     $controller->submit();
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'checkReference') {
+    $controller->checkReference();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'verify') {
     $controller->verify();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'reject') {

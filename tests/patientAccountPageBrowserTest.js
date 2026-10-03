@@ -68,6 +68,9 @@ async function main() {
             await page.locator('#accountCurrentPw').fill('TestPassword123');
             await page.locator('#accountNewPw').fill('UpdatedPassword123');
             await page.locator('#accountConfirmPw').fill('UpdatedPassword123');
+            assert.equal(await page.locator('#accountChangePasswordForm button[type=submit]').isDisabled(), true, 'Special character is required');
+            await page.locator('#accountNewPw').fill('UpdatedPassword123!');
+            await page.locator('#accountConfirmPw').fill('UpdatedPassword123!');
             await page.locator('#accountChangePasswordForm button[type=submit]').click();
             await page.waitForFunction(() => document.querySelector('#accountCurrentPw').value === '');
             assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'No horizontal overflow');

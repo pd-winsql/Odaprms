@@ -4,6 +4,11 @@
     const STORAGE_PREFIX = 'vdStaffAppointmentNotifications:v1:';
     const MAX_NOTIFICATIONS = 12;
     const NOTIFICATION_TYPES = {
+        profile_print_requested: {
+            message: 'A patient requested a printed profile.',
+            destination: 'patient-content.php',
+            icon: 'ti-printer'
+        },
         appointment_created: {
             message: 'A new appointment request was received.',
             destination: 'appointment-content.php',

@@ -170,9 +170,11 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
             <div class="col-12">
                 <label class="vd-label form-label">Password <span class="text-danger">*</span></label>
                 <input type="text" name="password" class="form-control vd-input"
-                placeholder="Set a temporary password" required>
+                placeholder="Set a temporary password" minlength="8"
+                pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e]).{8,}"
+                title="Use at least 8 characters with uppercase and lowercase letters, a number, and a special character." required>
                 <div class="mt-1" style="font-size:10px; color: var(--mid);">
-                The dental assistant can change this after logging in.
+                Use at least 8 characters with uppercase and lowercase letters, a number, and a special character. The dental assistant can change this after logging in.
                 </div>
             </div>
             </div>

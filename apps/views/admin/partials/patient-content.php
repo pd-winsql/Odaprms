@@ -26,7 +26,11 @@ foreach ($patients as $p) {
 krsort($months); // latest first
 ?>
 
-<div class="d-flex flex-column gap-4">
+<div class="vd-patient-record-tabs" role="tablist" aria-label="Patients">
+    <button type="button" class="vd-patient-tab" role="tab" aria-selected="true" aria-controls="patientRecordsPanel" data-patient-tab="records">Patient records</button>
+    <button type="button" class="vd-patient-tab" role="tab" aria-selected="false" aria-controls="profileRequestsPanel" data-patient-tab="requests">Profile requests <span id="profileRequestPendingCount" class="vd-request-count">0</span></button>
+</div>
+<div class="d-flex flex-column gap-4" id="patientRecordsPanel">
 
 	<div class="vd-dash-card">
 		<div class="vd-dash-card-header">
@@ -67,7 +71,7 @@ krsort($months); // latest first
 		</div>
 
 		<!-- Table -->
-		<div class="vd-dash-card-body">
+		<div class="vd-dash-card-body vd-flush-table-body">
 			<?php if (empty($patients)): ?>
 				<div class="vd-empty-state">No patients found.</div>
 			<?php else: ?>
@@ -160,6 +164,7 @@ krsort($months); // latest first
 
 </div>
 
+<?php require __DIR__ . '/../../shared/profile-print-request-staff.php'; ?>
 <script>
 	(function() {
 		const searchInput = document.getElementById('searchInput');

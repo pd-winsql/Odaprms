@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? '', ['Ad
 
 require_once __DIR__ . '/../../../config/conn.php';
 require_once __DIR__ . '/../../models/patientPrintModel.php';
+require_once __DIR__ . '/../../models/profilePrintRequestModel.php';
 require_once __DIR__ . '/../../helpers/siteBranding.php';
 require_once __DIR__ . '/../../helpers/csrf.php';
 
@@ -71,6 +72,13 @@ $patientId = (int) ($_GET['patient_id'] ?? 0);
 try {
     $conn = (new Database())->connect();
     if (!$conn) throw new RuntimeException('Database connection unavailable.');
+
+    $includeBilling = true;
+    if (isset($_GET['request_id'])) {
+        $printRequest = (new ProfilePrintRequestModel($conn))->getRequest((int) $_GET['request_id']);
+        if (!$printRequest || (int) $printRequest['patient_id'] !== $patientId) throw new InvalidArgumentException('Print request not found.');
+        $includeBilling = (bool) $printRequest['include_billing'];
+    }
 
     $record = (new PatientPrintModel($conn))->getRecord($patientId);
     $branding = vdLoadSiteBranding($conn);
@@ -292,10 +300,11 @@ $healthQuestions = [
                 </aside>
             </section>
 
+            <?php if ($includeBilling): ?>
             <section class="vd-print-ledger-section">
                 <div class="vd-print-ledger-heading">
-                    <div><span>Completed visits</span><h2>Procedure and Settlement Ledger</h2></div>
-                    <p><?= count($allLedgerRows) ?> finalized record<?= count($allLedgerRows) === 1 ? '' : 's' ?></p>
+                    <div><span>Completed and postponed visits</span><h2>Procedure and Settlement Ledger</h2></div>
+                    <p><?= count($allLedgerRows) ?> visit record<?= count($allLedgerRows) === 1 ? '' : 's' ?></p>
                 </div>
                 <table class="vd-print-ledger">
                     <thead><tr><th>Date</th><th>Tooth no/s</th><th>Procedure</th><th>Dentist/s</th><th>Amount charge</th><th>Amount paid</th><th>Balance</th><th>Remarks</th></tr></thead>
@@ -318,9 +327,10 @@ $healthQuestions = [
                     </tbody>
                 </table>
                 <?php if (count($allLedgerRows) > count($ledgerRows)): ?>
-                    <p class="vd-print-continuation-note">Showing the latest <?= count($ledgerRows) ?> finalized visits. The complete treatment history remains available in the clinic system.</p>
+                    <p class="vd-print-continuation-note">Showing the latest <?= count($ledgerRows) ?> completed or postponed visits. The complete treatment history remains available in the clinic system.</p>
                 <?php endif; ?>
             </section>
+            <?php endif; ?>
             <footer class="vd-print-page-footer"><span>Generated from the clinic’s current patient record</span><span>Page 2 of 2</span></footer>
         </section>
     </main>

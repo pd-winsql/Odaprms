@@ -47,7 +47,7 @@ sort($depositStatuses);
                 <button type="button" class="btn vd-btn-outline" id="clearDepositFilters">Clear</button>
             </div>
         </div>
-        <div class="vd-dash-card-body">
+        <div class="vd-dash-card-body vd-flush-table-body">
         <?php if (!$records): ?>
             <div class="vd-empty-state">No deposit records found.</div>
         <?php else: ?>

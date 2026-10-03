@@ -46,12 +46,16 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
             <h2 id="profileOverviewTitle" tabindex="-1">My profile</h2>
             <p>Review the information saved with the clinic.</p>
         </div>
+        <div class="vd-profile-actions">
+        <button type="button" class="btn vd-request-secondary" id="openProfileRequest" aria-haspopup="dialog" aria-controls="profileRequestDialog" disabled><i class="ti ti-printer" aria-hidden="true"></i> Request printed profile</button>
         <button type="button" class="btn vd-btn-gold" id="editPatientProfile">
             <i class="ti ti-pencil" aria-hidden="true"></i>
             Edit profile
         </button>
+        </div>
     </header>
     <p class="vd-profile-overview-note"><i class="ti ti-clock-check" aria-hidden="true"></i> Clinic staff will review and confirm your information during check-in.</p>
+    <?php require __DIR__ . '/../../shared/profile-print-request-patient.php'; ?>
     <div class="vd-profile-overview-sections" id="patientProfileSummary"></div>
 </section>
 
@@ -823,8 +827,25 @@ $profileSteps = ['Personal', 'Care contacts', 'Dental history', 'Health', 'Condi
         editor.scrollIntoView({ block: 'start' });
         document.getElementById('profileWizardTitle').focus({ preventScroll: true });
     });
-    cancelButton.addEventListener('click', () => {
-        if (isDirty && !window.confirm('Discard your unsaved profile changes?')) return;
+    let confirmingDiscard = false;
+    cancelButton.addEventListener('click', async () => {
+        if (confirmingDiscard) return;
+        if (isDirty) {
+            confirmingDiscard = true;
+            let decision;
+            try {
+                decision = await window.showActionModal({
+                    title: 'Discard profile changes?',
+                    kicker: 'Unsaved changes',
+                    message: 'Your unsaved changes will be lost.',
+                    confirmText: 'Discard changes',
+                    cancelText: 'Keep editing',
+                    icon: 'ti-pencil-off',
+                    tone: 'warning'
+                });
+            } finally { confirmingDiscard = false; }
+            if (!decision.confirmed || !root.isConnected) return;
+        }
         forms.forEach(form => form.reset());
         syncMinorPolicy();
         syncHealthDetails();

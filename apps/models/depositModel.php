@@ -180,6 +180,12 @@ class DepositModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function referenceExists(string $reference, int $depositId): bool {
+        $stmt = $this->conn->prepare('SELECT deposit_id FROM appointment_deposits WHERE gcash_reference = ? AND deposit_id <> ? LIMIT 1');
+        $stmt->execute([$reference, $depositId]);
+        return (bool) $stmt->fetchColumn();
+    }
+
     public function submitReceipt($appointmentId, $reference, $receiptPath, $receiptMime, $receiptAmount = null, $gcashTransactionAt = null): array {
         try {
             $this->conn->beginTransaction();
@@ -208,18 +214,7 @@ class DepositModel {
                 return ['success' => false, 'message' => 'The payment deadline has expired.'];
             }
 
-            $duplicate = $this->conn->prepare("
-                SELECT deposit_id
-                FROM appointment_deposits
-                WHERE gcash_reference = :reference
-                  AND deposit_id <> :deposit_id
-                LIMIT 1
-            ");
-            $duplicate->execute([
-                ':reference' => $reference,
-                ':deposit_id' => $deposit['deposit_id'],
-            ]);
-            if ($duplicate->fetchColumn()) {
+            if ($this->referenceExists($reference, (int) $deposit['deposit_id'])) {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'This GCash reference number has already been submitted.'];
             }
@@ -266,6 +261,7 @@ class DepositModel {
             SELECT
                 payment.deposit_id,
                 a.appointment_id,
+                (SELECT d.transferred_from_appointment_id FROM appointment_deposits d WHERE d.appointment_id = a.appointment_id) AS transferred_from_appointment_id,
                 payment.deposit_amount AS amount,
                 payment.receipt_amount,
                 payment.gcash_reference,
@@ -585,9 +581,11 @@ class DepositModel {
                 $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Deposits can only be transferred between appointments for the same patient.'];
             }
-            if ($source['appointment_status'] !== 'Cancelled' || $source['deposit_status'] !== 'For Refund') {
+            $eligibleSource = ($source['appointment_status'] === 'Cancelled' && $source['deposit_status'] === 'For Refund')
+                || ($source['appointment_status'] === 'Treatment Postponed' && $source['deposit_status'] === 'Retained for Rebooking');
+            if (!$eligibleSource) {
                 $this->conn->rollBack();
-                return ['success' => false, 'message' => 'Cancel the original confirmed appointment before transferring its deposit.'];
+                return ['success' => false, 'message' => 'The original appointment must have a refundable cancellation deposit or a deposit retained after treatment postponement.'];
             }
             if ($target['appointment_status'] !== 'Awaiting Deposit' || !in_array($target['deposit_status'], ['Awaiting Submission', 'Rejected'], true)) {
                 $this->conn->rollBack();
@@ -596,6 +594,13 @@ class DepositModel {
 
             $actor = $this->auditLog->getUserActor($userId);
             if (!$actor) throw new RuntimeException('Staff account not found.');
+            $applied = $this->conn->prepare('SELECT billing_id FROM appointment_billings WHERE appointment_id = ?');
+            $applied->execute([$sourceAppointmentId]);
+            if ($applied->fetchColumn()) throw new RuntimeException('The original deposit has already been used in billing.');
+            if ((float) $source['amount'] < (float) $target['amount']) {
+                $this->conn->rollBack();
+                return ['success' => false, 'message' => 'The retained deposit does not cover the replacement deposit. Contact the Admin / Dentist to arrange the difference.'];
+            }
             $code = $this->generateAppointmentCode();
 
             $this->conn->prepare("
@@ -628,13 +633,13 @@ class DepositModel {
             $this->auditLog->record(
                 'appointment', $sourceAppointmentId, 'deposit_transferred_out',
                 "Transferred the deposit to replacement appointment #{$targetAppointmentId}.",
-                ['deposit_status' => 'For Refund'],
+                ['deposit_status' => $source['deposit_status']],
                 ['deposit_status' => 'Transferred', 'target_appointment_id' => $targetAppointmentId, 'reason' => $reason],
                 $actor
             );
             $audit = $this->auditLog->record(
                 'appointment', $targetAppointmentId, 'deposit_transferred',
-                "Transferred the deposit from cancelled appointment #{$sourceAppointmentId}.",
+                "Transferred the deposit from appointment #{$sourceAppointmentId}.",
                 ['status' => 'Awaiting Deposit', 'deposit_status' => $target['deposit_status']],
                 ['status' => 'Confirmed', 'deposit_status' => 'Verified', 'source_appointment_id' => $sourceAppointmentId, 'appointment_code' => $code, 'reason' => $reason],
                 $actor

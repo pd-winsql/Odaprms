@@ -57,12 +57,11 @@ $statusFilterOrder = [
     'Checked In',
     'In Progress',
     'Completed',
+    'Treatment Postponed',
     'Cancelled',
     'No-show',
     'Rejected',
 ];
-$primaryStatusFilters = array_slice($statusFilterOrder, 0, 4);
-$secondaryStatusFilters = array_slice($statusFilterOrder, 4);
 
 $upcomingFilters = buildFilterOptions($upcoming);
 $pastFilters     = buildFilterOptions($past);
@@ -247,31 +246,21 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     <?php endif; ?>
 
     <!-- ── UPCOMING APPOINTMENTS ── -->
-    <div id="upcomingView">
+    <div id="upcomingView" class="vd-appointment-list">
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Upcoming Appointments</span>
         <span class="vd-topbar-date" id="upcomingCountLabel"><?= count($upcoming) ?> of <?= count($upcoming) ?> total</span>
         </div>
 
-        <div class="vd-status-filter-wrap">
-            <div class="vd-status-filter-toggle" id="upcomingStatusToggles" role="group" aria-label="Filter upcoming appointments by status">
-                <button type="button" class="vd-status-toggle-btn active" data-status="">All Status</button>
-                <?php foreach ($primaryStatusFilters as $status): ?>
-                    <button type="button" class="vd-status-toggle-btn" data-status="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></button>
-                <?php endforeach; ?>
-                <label class="visually-hidden" for="upcomingMoreStatus">More appointment statuses</label>
-                <select class="vd-status-more-select" id="upcomingMoreStatus" data-status-select aria-label="More appointment statuses">
-                    <option value="">More statuses</option>
-                    <?php foreach ($secondaryStatusFilters as $status): ?>
-                        <option value="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-        </div>
-
-        <!-- Date filter bar -->
         <div class="vd-filter-bar">
+        <div class="vd-filter-group" id="upcomingStatusToggles">
+            <label class="vd-label form-label" for="upcomingMoreStatus">Status</label>
+            <select class="form-select vd-input vd-filter-select" id="upcomingMoreStatus" data-status-select>
+                <option value="">All statuses</option>
+                <?php foreach ($statusFilterOrder as $status): ?><option value="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars(ucfirst(strtolower($status))) ?></option><?php endforeach; ?>
+            </select>
+        </div>
         <div class="vd-filter-group">
             <label class="vd-label form-label" for="filterDateFromUpcoming">Start Date</label>
             <input type="date" id="filterDateFromUpcoming" class="form-control vd-input vd-filter-select"
@@ -289,7 +278,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         </div>
         </div>
 
-        <div class="vd-dash-card-body">
+        <div class="vd-dash-card-body vd-appointment-table-body">
         <?php if (empty($upcoming)): ?>
             <div class="vd-empty-state">No upcoming appointments found.</div>
         <?php else: ?>
@@ -318,7 +307,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?><small class="d-block"><?= date('g:i A', strtotime($appt['start_time'])) ?>–<?= date('g:i A', strtotime($appt['end_time'])) ?></small></td>
                     <td>
                         <span class="<?= statusClass($appt['status']) ?>" id="pill-<?= $appt['appointment_id'] ?>">
-                        <?= htmlspecialchars($appt['status']) ?>
+                        <?= htmlspecialchars(ucfirst(strtolower($appt['status']))) ?>
                         </span>
                     </td>
                     <td id="audit-<?= $appt['appointment_id'] ?>" class="vd-activity-cell">
@@ -331,7 +320,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                                         <span class="vd-role-chip"><?= htmlspecialchars($appt['status_changed_by_role']) ?></span>
                                     </span>
                                     <span class="vd-activity-meta">
-                                        <?= htmlspecialchars($appt['status']) ?> ·
                                         <?= date('M d, Y g:i A', strtotime($appt['status_changed_at'])) ?>
                                     </span>
                                 </span>
@@ -340,8 +328,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             <div class="vd-activity-card vd-activity-empty">
                                 <span class="vd-activity-avatar">—</span>
                                 <span class="vd-activity-copy">
-                                    <span class="vd-activity-name">No audit history</span>
-                                    <span class="vd-activity-meta">No status change recorded</span>
+                                    <span class="vd-activity-name">No activity yet</span>
                                 </span>
                             </div>
                         <?php endif; ?>
@@ -407,31 +394,21 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     </div>
 
     <!-- ── PAST APPOINTMENTS ── -->
-    <div id="pastView" class="d-none">
+    <div id="pastView" class="vd-appointment-list d-none">
     <div class="vd-dash-card">
         <div class="vd-dash-card-header">
         <span class="vd-dash-card-title">Past Appointments</span>
         <span class="vd-topbar-date" id="pastCountLabel"><?= count($past) ?> of <?= count($past) ?> total</span>
         </div>
 
-        <div class="vd-status-filter-wrap">
-            <div class="vd-status-filter-toggle" id="pastStatusToggles" role="group" aria-label="Filter past appointments by status">
-                <button type="button" class="vd-status-toggle-btn active" data-status="">All Status</button>
-                <?php foreach ($primaryStatusFilters as $status): ?>
-                    <button type="button" class="vd-status-toggle-btn" data-status="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></button>
-                <?php endforeach; ?>
-                <label class="visually-hidden" for="pastMoreStatus">More appointment statuses</label>
-                <select class="vd-status-more-select" id="pastMoreStatus" data-status-select aria-label="More appointment statuses">
-                    <option value="">More statuses</option>
-                    <?php foreach ($secondaryStatusFilters as $status): ?>
-                        <option value="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars($status) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-        </div>
-
-        <!-- Date filter bar -->
         <div class="vd-filter-bar">
+        <div class="vd-filter-group" id="pastStatusToggles">
+            <label class="vd-label form-label" for="pastMoreStatus">Status</label>
+            <select class="form-select vd-input vd-filter-select" id="pastMoreStatus" data-status-select>
+                <option value="">All statuses</option>
+                <?php foreach ($statusFilterOrder as $status): ?><option value="<?= htmlspecialchars($status) ?>"><?= htmlspecialchars(ucfirst(strtolower($status))) ?></option><?php endforeach; ?>
+            </select>
+        </div>
         <div class="vd-filter-group">
             <label class="vd-label form-label" for="filterDateFromPast">Start Date</label>
             <input type="date" id="filterDateFromPast" class="form-control vd-input vd-filter-select"
@@ -449,7 +426,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         </div>
         </div>
 
-        <div class="vd-dash-card-body">
+        <div class="vd-dash-card-body vd-appointment-table-body">
         <?php if (empty($past)): ?>
             <div class="vd-empty-state">No past appointments found.</div>
         <?php else: ?>
@@ -478,7 +455,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     <td class="vd-appt-meta"><?= date('M d, Y', strtotime($appt['date'])) ?><small class="d-block"><?= date('g:i A', strtotime($appt['start_time'])) ?>–<?= date('g:i A', strtotime($appt['end_time'])) ?></small></td>
                     <td>
                         <span class="<?= statusClass($appt['status']) ?>">
-                        <?= htmlspecialchars($appt['status']) ?>
+                        <?= htmlspecialchars(ucfirst(strtolower($appt['status']))) ?>
                         </span>
                         <?php if ($appt['date'] < date('Y-m-d') && $appt['status'] === 'Payment Under Review'): ?>
                             <small class="d-block text-warning">Past appointment date · review payment</small>
@@ -495,7 +472,6 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                                         <span class="vd-role-chip"><?= htmlspecialchars($appt['status_changed_by_role']) ?></span>
                                     </span>
                                     <span class="vd-activity-meta">
-                                        <?= htmlspecialchars($appt['status']) ?> ·
                                         <?= date('M d, Y g:i A', strtotime($appt['status_changed_at'])) ?>
                                     </span>
                                 </span>
@@ -504,8 +480,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             <div class="vd-activity-card vd-activity-empty">
                                 <span class="vd-activity-avatar">—</span>
                                 <span class="vd-activity-copy">
-                                    <span class="vd-activity-name">No audit history</span>
-                                    <span class="vd-activity-meta">No status change recorded</span>
+                                    <span class="vd-activity-name">No activity yet</span>
                                 </span>
                             </div>
                         <?php endif; ?>
@@ -676,6 +651,35 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
     const CSRF_TOKEN = <?= json_encode($_SESSION['csrf_token']) ?>;
     let activeAppointmentPayload = null;
 
+    function addCompactRowDetails(row) {
+        const cell = row.cells[0];
+        if (!cell.querySelector('.vd-compact-schedule')) {
+            const schedule = document.createElement('div');
+            schedule.className = 'vd-compact-schedule';
+            schedule.textContent = row.cells[2].firstChild.textContent.trim();
+            cell.appendChild(schedule);
+        }
+        let details = cell.querySelector('.vd-compact-row-details');
+        if (!details) {
+            details = document.createElement('details');
+            details.className = 'vd-compact-row-details';
+            const summary = document.createElement('summary');
+            summary.textContent = 'Details';
+            details.appendChild(summary);
+            cell.appendChild(details);
+        }
+        let copy = details.querySelector('div');
+        if (!copy) { copy = document.createElement('div'); details.appendChild(copy); }
+        copy.replaceChildren();
+        [['Clinic', row.cells[1].textContent.trim()], ['Schedule', row.cells[2].firstChild.textContent.trim() + ' · ' + row.cells[2].querySelector('small').textContent], ['Latest activity', row.cells[4].querySelector('.vd-activity-name')?.textContent.trim() || 'No activity yet'], ['Updated', row.cells[4].querySelector('.vd-activity-meta')?.textContent.trim()]].forEach(([label,value])=>{
+            if (!value) return;
+            const line = document.createElement('p');
+            const heading = document.createElement('strong');heading.textContent = label + ': ';
+            line.append(heading, document.createTextNode(value));copy.appendChild(line);
+        });
+    }
+    document.querySelectorAll('.vd-appointment-list tbody tr[data-id]').forEach(addCompactRowDetails);
+
     function showToast(msg, success) {
         // Prefer the global showToast provided by the dashboard shell.
         if (typeof window.showToast === 'function') { window.showToast(msg, success); return; }
@@ -791,13 +795,14 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const pill = document.getElementById('pill-' + id);
         if (!pill) return;
         pill.className = 'vd-status vd-status-' + newStatus.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        pill.textContent = newStatus;
+        pill.textContent = newStatus.charAt(0) + newStatus.slice(1).toLowerCase();
     }
 
     function updateStatusAudit(id, audit) {
         const cell = document.getElementById('audit-' + id);
         if (!cell || !audit) return;
         renderActivityCard(cell, audit, document.getElementById('pill-' + id)?.textContent.trim() || 'Updated');
+        addCompactRowDetails(cell.closest('tr'));
     }
 
     function applyAppointmentResult(id, newStatus, audit, updates = {}) {
@@ -854,7 +859,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         // disappears when it no longer matches, without a server reload.
         const table = row.closest('table');
         const toggleId = table?.id === 'upcomingApptTable' ? 'upcomingStatusToggles' : 'pastStatusToggles';
-        document.querySelector(`#${toggleId} .vd-status-toggle-btn.active`)?.click();
+        document.querySelector(`#${toggleId} [data-status-select]`)?.dispatchEvent(new Event('change'));
     }
 
     function renderRowActions(actionGroup, details) {
@@ -939,7 +944,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         role.textContent = audit.performed_by_role;
         const meta = document.createElement('span');
         meta.className = 'vd-activity-meta';
-        meta.textContent = status + ' · ' + formatDateTime(audit.performed_at);
+        meta.textContent = cell.tagName === 'TD' ? formatDateTime(audit.performed_at) : status + ' · ' + formatDateTime(audit.performed_at);
         heading.append(name, role);
         copy.append(heading, meta);
 
@@ -1194,7 +1199,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const totalCount       = rows.length;
 
         function applyFilter() {
-            const status = statusSelect?.value || statusToggle.querySelector('.vd-status-toggle-btn.active')?.dataset.status || '';
+            const status = statusSelect.value;
             const from   = dateFrom.value;
             const to     = dateTo.value;
             let visible  = 0;
@@ -1220,28 +1225,13 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             table.dispatchEvent(new CustomEvent('ventura:table-filtered'));
         }
 
-        statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.remove('active'));
-                button.classList.add('active');
-                if (statusSelect) statusSelect.value = '';
-                applyFilter();
-            });
-        });
-        statusSelect?.addEventListener('change', () => {
-            statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.remove('active'));
-            if (!statusSelect.value) {
-                statusToggle.querySelector('.vd-status-toggle-btn[data-status=""]')?.classList.add('active');
-            }
-            applyFilter();
-        });
+        statusSelect.addEventListener('change', applyFilter);
         dateFrom.addEventListener('change', applyFilter);
         dateTo.addEventListener('change', applyFilter);
 
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                statusToggle.querySelectorAll('.vd-status-toggle-btn').forEach(item => item.classList.toggle('active', item.dataset.status === ''));
-                if (statusSelect) statusSelect.value = '';
+                statusSelect.value = '';
                 dateFrom.value    = '';
                 dateTo.value      = '';
                 applyFilter();
@@ -1511,13 +1501,13 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
         const response = await window.showActionModal({
             title: 'Apply Deposit to Replacement Booking',
             kicker: 'Deposit adjustment',
-            message: 'Use this only after cancelling the original appointment and accepting a separate replacement booking for the same patient. Applying its refundable deposit will confirm the replacement booking. Both appointments retain an audit record.',
+            message: 'Apply a refundable or retained deposit from an original appointment to this accepted replacement booking for the same patient. This confirms the replacement. Both appointments retain the transfer history.',
             confirmText: 'Apply Deposit',
             icon: 'ti-transfer',
             tone: 'warning',
             details: [{ label: 'New booking', value: `Appointment #${button.dataset.transferDeposit}` }],
             fields: [
-                { name: 'source', label: 'Cancelled appointment number', placeholder: 'Enter the appointment number with the refundable deposit.', type: 'number', required: true },
+                { name: 'source', label: 'Original appointment number', placeholder: 'Appointment with a refundable or retained deposit.', type: 'number', required: true },
                 { name: 'reason', label: 'Reason for applying deposit', placeholder: 'Explain why the deposit is being moved to this booking.', multiline: true, rows: 2, required: true, minlength: 3, maxlength: 255 }
             ]
         });

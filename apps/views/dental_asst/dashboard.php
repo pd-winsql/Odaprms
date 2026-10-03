@@ -296,6 +296,7 @@ $today = date('l, F j Y');
             markAllId: 'staffNotificationMarkAll',
             dotId: 'staffNotificationDot',
             onNavigate(notification) {
+                if (notification.type === 'profile_print_requested') sessionStorage.setItem('venturaOpenProfileRequests', '1');
                 if (notification.type === 'appointment_created') {
                     sessionStorage.setItem('venturaAppointmentStatusFilter', 'Pending Review');
                 } else if (notification.type === 'deposit_submitted') {

@@ -129,6 +129,12 @@ $today    = date('l, F j Y');
         </div>
         <div class="vd-topbar-right">
             <span class="vd-topbar-date"><?= $today ?></span>
+            <button type="button" class="vd-topbar-bell vd-chat-launch" data-bs-toggle="modal"
+                data-bs-target="#clinicChatModal" aria-label="Message clinic" aria-haspopup="dialog"
+                aria-controls="clinicChatModal" title="Message clinic">
+                <i class="ti ti-message-circle" aria-hidden="true"></i>
+                <span data-chat-unread hidden></span>
+            </button>
             <?php include __DIR__ . '/../shared/patient-notification-center.php'; ?>
             <span class="vd-role-badge">Patient</span>
         </div>

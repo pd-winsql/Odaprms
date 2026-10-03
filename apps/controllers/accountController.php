@@ -5,6 +5,7 @@ require_once '../../config/conn.php';
 require_once '../models/userModel.php';
 require_once '../models/auditLogModel.php';
 require_once '../helpers/csrf.php';
+require_once __DIR__ . '/../support/PasswordPolicy.php';
 
 header('Content-Type: application/json');
 
@@ -37,8 +38,8 @@ if ($newPassword !== $confirmPassword) {
     echo json_encode(['success' => false, 'message' => 'New passwords do not match.']);
     exit;
 }
-if (!preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $newPassword)) {
-    echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include both letters and numbers.']);
+if (!PasswordPolicy::isValid($newPassword)) {
+    echo json_encode(['success' => false, 'message' => PasswordPolicy::MESSAGE]);
     exit;
 }
 if (hash_equals($currentPassword, $newPassword)) {

@@ -24,6 +24,7 @@ class LogbookModel
                 a.patient_id,
                 a.date, a.start_time, a.end_time,
                 a.status AS appointment_status,
+                (SELECT original.postponement_reason FROM appointments original WHERE original.appointment_id = a.appointment_id) AS postponement_reason,
                 a.firstname,
                 a.lastname,
                 a.email,
@@ -74,9 +75,9 @@ class LogbookModel
             WHERE a.date = :date
               AND (
                 a.deposit_required = 0
-                OR payment.deposit_status IN ('Verified', 'Transferred')
+                OR payment.deposit_status IN ('Verified', 'Transferred', 'Retained for Rebooking')
               )
-              AND a.status IN ('Confirmed', 'Checked In', 'In Progress', 'Completed', 'No-show', 'Cancelled')
+              AND a.status IN ('Confirmed', 'Checked In', 'In Progress', 'Completed', 'No-show', 'Cancelled', 'Treatment Postponed')
             ORDER BY
                 CASE
                     WHEN a.status = 'In Progress' THEN 0
@@ -108,9 +109,9 @@ class LogbookModel
             WHERE a.date <= CURDATE()
               AND (
                 a.deposit_required = 0
-                OR payment.deposit_status IN ('Verified', 'Transferred')
+                OR payment.deposit_status IN ('Verified', 'Transferred', 'Retained for Rebooking')
               )
-              AND a.status IN ('Confirmed', 'Checked In', 'In Progress', 'Completed', 'No-show', 'Cancelled')
+              AND a.status IN ('Confirmed', 'Checked In', 'In Progress', 'Completed', 'No-show', 'Cancelled', 'Treatment Postponed')
             ORDER BY a.date ASC
         ");
 

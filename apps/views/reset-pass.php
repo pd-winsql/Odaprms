@@ -74,8 +74,10 @@ if (!$token) {
                 <ul class="vd-auth-password-requirements" id="resetPasswordRequirements"
                     aria-label="Password requirements" aria-live="polite">
                     <li data-reset-password-rule="length">At least 8 characters</li>
-                    <li data-reset-password-rule="letter">Contains a letter</li>
+                    <li data-reset-password-rule="uppercase">Contains an uppercase letter</li>
+                    <li data-reset-password-rule="lowercase">Contains a lowercase letter</li>
                     <li data-reset-password-rule="number">Contains a number</li>
+                    <li data-reset-password-rule="special">Contains a special character</li>
                     <li data-reset-password-rule="match">Passwords match</li>
                 </ul>
             </div>
@@ -125,8 +127,10 @@ if (!$token) {
             const confirmation = confirmPasswordInput.value;
             return {
                 length: password.length >= 8,
-                letter: /[A-Za-z]/.test(password),
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
                 number: /\d/.test(password),
+                special: /[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e]/.test(password),
                 match: password.length > 0 && confirmation.length > 0 && password === confirmation
             };
         }
@@ -153,8 +157,8 @@ if (!$token) {
 
         const passwordState = updatePasswordRequirements();
 
-        if (!passwordState.length || !passwordState.letter || !passwordState.number) {
-            errEl.textContent = 'Password must be at least 8 characters and include both letters and numbers.';
+        if (!passwordState.length || !passwordState.uppercase || !passwordState.lowercase || !passwordState.number || !passwordState.special) {
+            errEl.textContent = 'Complete all password requirements.';
             errEl.classList.remove('d-none');
             newPasswordInput.focus();
             return;

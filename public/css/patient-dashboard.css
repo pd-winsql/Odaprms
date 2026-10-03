@@ -1210,6 +1210,68 @@
     padding: 20px;
 }
 
+/* Month calendar and clinic-window selection share the existing booking surface. */
+.vd-booking-calendar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(230px, .48fr);
+    gap: 28px;
+    padding: 24px;
+}
+.vd-booking-calendar-main { min-width: 0; }
+.vd-booking-calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.vd-booking-calendar-toolbar h3 { margin: 0; font: 500 19px Jost, sans-serif; color: var(--dark); }
+.vd-booking-calendar-toolbar > div { display: flex; gap: 6px; }
+.vd-booking-calendar .vd-booking-calendar-nav {
+    display: grid; place-items: center;
+    width: 44px; height: 44px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--white-bg); color: var(--dark); font-size: 18px;
+}
+.vd-booking-calendar-nav:hover:not(:disabled) { background: var(--gold-pale); }
+.vd-booking-calendar .vd-booking-calendar-nav:disabled { opacity: 1; color: #a69b8b; cursor: default; }
+.vd-booking-calendar-weekdays, .vd-booking-calendar-days {
+    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px;
+}
+.vd-booking-calendar-weekdays { text-align: center; font-size: 12px; color: var(--mid); margin-bottom: 6px; }
+.vd-booking-calendar .vd-booking-calendar-day {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; min-width: 0; min-height: 64px; padding: 6px 0;
+    border: 1px solid transparent; border-radius: 10px;
+    background: transparent; color: #8e8578; font-size: 16px;
+    transition: background-color .15s ease, border-color .15s ease;
+}
+.vd-booking-calendar .vd-booking-calendar-day:disabled { opacity: 1; cursor: default; }
+.vd-booking-calendar-day[data-state="available"] { background: var(--gold-pale); border-color: var(--border); color: var(--gold); font-weight: 500; }
+.vd-booking-calendar-day[data-state="booked"] { color: var(--gold); }
+.vd-booking-calendar-day[data-state="full"] { color: #9b5140; }
+.vd-booking-calendar-day:hover:not(:disabled) { border-color: var(--gold); }
+.vd-booking-calendar-day[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: #fffdf9; }
+.vd-booking-calendar-mark { height: 12px; font-size: 11px; line-height: 12px; }
+.vd-booking-calendar-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 16px; color: var(--mid); font-size: 12px; }
+.vd-booking-calendar-legend > span { display: flex; align-items: center; gap: 5px; }
+.vd-calendar-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+.vd-booking-calendar-detail { min-width: 0; padding-left: 24px; border-left: 1px solid var(--border); }
+.vd-booking-calendar-detail h3 { font: 500 26px 'Cormorant Garamond', serif; margin: 4px 0 16px; color: var(--dark); }
+.vd-booking-calendar-detail > p { color: var(--mid); font-size: 14px; line-height: 1.6; }
+.vd-booking-calendar .vd-booking-calendar-window { width: 100%; grid-template-columns: minmax(0, 1fr) 28px; min-height: 112px; margin-bottom: 10px; background: var(--white-bg); }
+.vd-booking-calendar .vd-booking-calendar-window .vd-booking-schedule-window { white-space: normal; font-size: 16px; }
+.vd-booking-calendar .vd-booking-calendar-window .vd-booking-slots { font-size: 13px; }
+.vd-booking-calendar-day:focus-visible, .vd-booking-calendar-nav:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 700px) {
+    .vd-booking-calendar { grid-template-columns: 1fr; padding: 16px; gap: 20px; }
+    .vd-booking-calendar-detail { padding: 18px 0 0; border-left: 0; border-top: 1px solid var(--border); }
+    .vd-booking-calendar-weekdays, .vd-booking-calendar-days { gap: 3px; }
+    .vd-booking-calendar .vd-booking-calendar-day { min-height: 50px; border-radius: 8px; }
+    .vd-booking-calendar-legend { gap: 8px 12px; font-size: 11px; }
+    .vd-booking-calendar-toolbar h3 { font-size: 17px; }
+}
+
 .vd-booking-schedule-card {
     display: grid;
     grid-template-columns: 76px minmax(0, 1fr) 28px;
@@ -2708,6 +2770,26 @@
 }
 
 .vd-profile-overview-item dd.is-empty { min-height: 1.5em; }
+
+#patientProfileEditor .vd-profile-field .vd-input[readonly] {
+    background: #eee9e1 !important;
+    border-color: #d7d0c4 !important;
+    color: #625a4e;
+    cursor: default;
+    box-shadow: none;
+}
+
+#patientProfileEditor .vd-profile-field:has(.vd-input[readonly]) > .vd-profile-label::after {
+    content: 'Read only';
+    display: inline-block;
+    margin-left: 8px;
+    color: #70665b;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
 .vd-profile-overview :focus-visible,
 #patientProfileEditor .vd-profile-cancel-button:focus-visible {
     outline: 3px solid var(--gold);
@@ -2731,3 +2813,5 @@
     .vd-profile-action-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .vd-profile-cancel-button { grid-column: 1 / -1; }
 }
+.vd-dash-body .vd-status-treatment-postponed,
+.vd-dash-body .vd-status-retained-for-rebooking { background: #fff3d3; color: #765310; }

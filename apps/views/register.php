@@ -132,7 +132,14 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
                 <i class="ti ti-eye" id="regEyeIcon"></i>
               </button>
             </div>
-            <div class="vd-auth-hint" id="regPasswordHint">Use at least 8 characters with both letters and numbers.</div>
+            <ul class="vd-auth-password-requirements" id="regPasswordHint" aria-label="Password requirements" aria-live="polite">
+              <li data-register-password-rule="length">At least 8 characters</li>
+              <li data-register-password-rule="uppercase">Contains an uppercase letter</li>
+              <li data-register-password-rule="lowercase">Contains a lowercase letter</li>
+              <li data-register-password-rule="number">Contains a number</li>
+              <li data-register-password-rule="special">Contains a special character</li>
+              <li data-register-password-rule="match">Passwords match</li>
+            </ul>
           </div>
           <div class="vd-auth-group">
             <label class="vd-label" for="regConfirmPassword">Confirm Password</label>
@@ -199,6 +206,26 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
     });
 
     const registerForm = document.getElementById('registerForm');
+    function updateRegistrationPasswordRequirements() {
+      const password = document.getElementById('regPassword').value;
+      const confirmation = document.getElementById('regConfirmPassword').value;
+      const state = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e]/.test(password),
+        match: password.length > 0 && password === confirmation
+      };
+      document.querySelectorAll('[data-register-password-rule]').forEach(item => {
+        item.classList.toggle('is-met', state[item.dataset.registerPasswordRule]);
+      });
+      return state;
+    }
+    ['regPassword', 'regConfirmPassword'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateRegistrationPasswordRequirements);
+    });
+    updateRegistrationPasswordRequirements();
     const termsAccepted = document.getElementById('termsAccepted');
     const termsConsentGroup = document.getElementById('termsConsentGroup');
     const termsConsentHint = document.getElementById('termsConsentHint');
@@ -317,6 +344,7 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
         // The other registration details are still restored by the server.
       }
     }
+    updateRegistrationPasswordRequirements();
 
     function isRequiredFieldMissing(field) {
       return field.required && !String(field.value).trim();
@@ -467,9 +495,9 @@ $termsConsentToken = RegistrationTermsConsent::issue($_SESSION);
         return;
       }
 
-      const strongPassword = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
-      if (!strongPassword.test(pw)) {
-        errEl.textContent = 'Password must be at least 8 characters and include both letters and numbers.';
+      const passwordState = updateRegistrationPasswordRequirements();
+      if (!passwordState.length || !passwordState.uppercase || !passwordState.lowercase || !passwordState.number || !passwordState.special) {
+        errEl.textContent = 'Complete all password requirements.';
         errEl.classList.remove('d-none');
         return;
       }

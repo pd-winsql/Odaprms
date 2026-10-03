@@ -169,8 +169,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         </header>
         <div class="vd-booking-arrival-policy"><i class="ti ti-user-clock" aria-hidden="true"></i><span><strong>Arrive by the opening time or earlier.</strong> Patients are served first come, first served during the clinic window.</span></div>
         <div class="alert alert-warning d-none mb-3" id="bookingScheduleStatus" role="status" aria-live="polite"></div>
-        <div class="alert alert-warning d-none mx-3 mt-3 mb-0" id="bookingDateConflictStatus" role="status" aria-live="polite"></div>
-        <div class="vd-booking-schedule-grid" id="bookingScheduleGrid"></div>
+        <div class="vd-booking-calendar" id="bookingScheduleGrid"></div>
         <div class="vd-empty-state d-none" id="bookingScheduleEmpty" role="status" aria-live="polite">No schedules are available for this clinic on or after <?= htmlspecialchars($earliestBookableLabel) ?>.</div>
     </section>
 
@@ -351,7 +350,6 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     const grid = document.getElementById('bookingScheduleGrid');
     const empty = document.getElementById('bookingScheduleEmpty');
     const scheduleStatus = document.getElementById('bookingScheduleStatus');
-    const dateConflictStatus = document.getElementById('bookingDateConflictStatus');
     const clinicInput = document.getElementById('dashboardClinicInput');
     const scheduleInput = document.getElementById('dashboardScheduleInput');
     const clinicLabel = document.getElementById('bookingClinicLabel');
@@ -384,6 +382,8 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     let isSubmitting = false;
     let hasScheduleConflict = false;
     let scheduleRefreshSequence = 0;
+    const earliestCalendarDate = <?= json_encode($earliestBookableDate) ?>;
+    let calendarMonth = '', calendarClinicId = '';
     const emptyScheduleMessage = empty.textContent;
 
     confirmationModalElement.addEventListener('hide.bs.modal', event => {
@@ -509,6 +509,113 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         updateActionSummary();
     }
 
+    function renderCalendar(schedules, clinicId, preferredScheduleId) {
+        const byDate = new Map();
+        schedules.forEach(schedule => {
+            if (!byDate.has(schedule.sched_date)) byDate.set(schedule.sched_date, []);
+            byDate.get(schedule.sched_date).push(schedule);
+        });
+        const preferred = schedules.find(item => String(item.schedule_id) === String(preferredScheduleId)
+            && !item.has_booking_conflict && Number(item.available_slots) > 0);
+        const firstMonth = earliestCalendarDate.slice(0, 7);
+        const lastMonth = schedules.reduce((last, item) => item.sched_date.slice(0, 7) > last ? item.sched_date.slice(0, 7) : last, firstMonth);
+        if (calendarClinicId !== clinicId || !calendarMonth) {
+            calendarMonth = (schedules.find(item => !item.has_booking_conflict && Number(item.available_slots) > 0)?.sched_date || earliestCalendarDate).slice(0, 7);
+        }
+        calendarClinicId = clinicId;
+        if (preferred) calendarMonth = preferred.sched_date.slice(0, 7);
+        calendarMonth = calendarMonth < firstMonth ? firstMonth : calendarMonth > lastMonth ? lastMonth : calendarMonth;
+        let activeDate = preferred?.sched_date || '';
+        grid.innerHTML = `<div class="vd-booking-calendar-main">
+            <div class="vd-booking-calendar-toolbar"><h3 id="bookingCalendarMonth"></h3><div>
+                <button type="button" class="vd-booking-calendar-nav" data-calendar-prev aria-label="Previous month"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+                <button type="button" class="vd-booking-calendar-nav" data-calendar-next aria-label="Next month"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+            </div></div>
+            <div class="vd-booking-calendar-weekdays" aria-hidden="true">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => `<span>${day}</span>`).join('')}</div>
+            <div class="vd-booking-calendar-days" aria-labelledby="bookingCalendarMonth"></div>
+            <div class="vd-booking-calendar-legend"><span><b class="vd-calendar-dot"></b>Available</span><span>✓ Already booked</span><span>× Full</span><span>— Unavailable</span></div>
+        </div><aside class="vd-booking-calendar-detail" aria-live="polite"></aside>`;
+        const days = grid.querySelector('.vd-booking-calendar-days');
+        const detail = grid.querySelector('.vd-booking-calendar-detail');
+        const prev = grid.querySelector('[data-calendar-prev]');
+        const next = grid.querySelector('[data-calendar-next]');
+        function clearSelection() {
+            scheduleInput.value = '';
+            selectedSchedule = null;
+            selectedDate.textContent = '';
+            furthestStep = Math.min(furthestStep, 1);
+            nextButton.disabled = true;
+            updateActionSummary();
+        }
+        function renderDayDetail(dateKey, preferredId = '') {
+            detail.replaceChildren();
+            const title = document.createElement('h3');
+            title.textContent = dateKey ? parseLocalDate(dateKey).toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' }) : 'Select an available date';
+            detail.appendChild(title);
+            if (!dateKey) {
+                const note = document.createElement('p');
+                note.textContent = [...byDate.keys()].some(date => date.startsWith(calendarMonth))
+                    ? 'Choose an available date to view its clinic window.' : 'No schedules are available this month.';
+                detail.appendChild(note);
+                return;
+            }
+            const windows = byDate.get(dateKey) || [];
+            windows.forEach(schedule => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'vd-booking-schedule-card vd-booking-calendar-window';
+                card.disabled = Boolean(schedule.has_booking_conflict) || Number(schedule.available_slots) <= 0;
+                card.setAttribute('aria-pressed', 'false');
+                card.innerHTML = `<span class="vd-booking-schedule-info"><span class="vd-booking-schedule-window">${formatWindow(schedule)}</span>
+                    <small class="vd-booking-arrive-by">Arrive by ${formatTime(schedule.start_time)} or earlier</small>
+                    <small class="vd-booking-slots">${card.disabled ? 'Fully booked' : Number(schedule.available_slots) + ' slots left'}</small></span>
+                    <span class="vd-booking-schedule-check" aria-hidden="true"><i class="ti ti-check"></i></span>`;
+                card.addEventListener('click', () => chooseSchedule(card, clinicId, schedule));
+                detail.appendChild(card);
+                if (!card.disabled && (String(schedule.schedule_id) === String(preferredId) || windows.length === 1)) chooseSchedule(card, clinicId, schedule);
+            });
+        }
+        function drawMonth() {
+            const monthDate = parseLocalDate(calendarMonth + '-01');
+            grid.querySelector('#bookingCalendarMonth').textContent = monthDate.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+            prev.disabled = calendarMonth <= firstMonth;
+            next.disabled = calendarMonth >= lastMonth;
+            days.replaceChildren();
+            for (let blank = 0; blank < (monthDate.getDay() + 6) % 7; blank++) days.appendChild(document.createElement('span'));
+            const count = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+            for (let day = 1; day <= count; day++) {
+                const dateKey = calendarMonth + '-' + String(day).padStart(2, '0');
+                const windows = byDate.get(dateKey) || [];
+                const state = windows.some(item => item.has_booking_conflict) ? 'booked'
+                    : windows.some(item => Number(item.available_slots) > 0) && dateKey >= earliestCalendarDate ? 'available'
+                    : windows.length && dateKey >= earliestCalendarDate ? 'full' : 'unavailable';
+                const cell = document.createElement('button');
+                cell.type = 'button'; cell.className = 'vd-booking-calendar-day'; cell.dataset.state = state;
+                cell.disabled = state !== 'available';
+                cell.setAttribute('aria-pressed', String(dateKey === activeDate));
+                cell.setAttribute('aria-label', parseLocalDate(dateKey).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })
+                    + ', ' + ({ booked: 'already booked on this date', full: 'fully booked', available: 'available', unavailable: 'unavailable' })[state]);
+                cell.innerHTML = `<span>${day}</span><span class="vd-booking-calendar-mark" aria-hidden="true">${{ booked: '✓', full: '×', available: '●', unavailable: '' }[state]}</span>`;
+                cell.addEventListener('click', () => {
+                    activeDate = dateKey; clearSelection();
+                    days.querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item === cell)));
+                    renderDayDetail(dateKey);
+                });
+                days.appendChild(cell);
+            }
+            renderDayDetail(activeDate, preferredScheduleId);
+        }
+        function changeMonth(offset) {
+            const date = parseLocalDate(calendarMonth + '-01');
+            date.setMonth(date.getMonth() + offset);
+            calendarMonth = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+            activeDate = ''; clearSelection(); drawMonth();
+        }
+        prev.addEventListener('click', () => changeMonth(-1));
+        next.addEventListener('click', () => changeMonth(1));
+        drawMonth();
+    }
+
     function renderSchedules(button, preferredScheduleId = '') {
         const clinicId = button.dataset.clinicId;
         const schedules = schedulesByClinic[clinicId] || [];
@@ -526,40 +633,8 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         furthestStep = Math.min(furthestStep, 1);
         empty.classList.toggle('d-none', schedules.length > 0);
         grid.classList.toggle('d-none', schedules.length === 0);
-        const conflictingDates = [...new Set(schedules.filter(schedule => schedule.has_booking_conflict).map(schedule => schedule.sched_date))];
-        dateConflictStatus.classList.toggle('d-none', conflictingDates.length === 0);
-        dateConflictStatus.textContent = conflictingDates.length
-            ? 'You already have an appointment on ' + conflictingDates.map(date => parseLocalDate(date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ') + '. Choose a different date.'
-            : '';
 
-        schedules.forEach(schedule => {
-            const remaining = Number(schedule.available_slots);
-            const isFull = remaining <= 0;
-            const hasConflict = Boolean(schedule.has_booking_conflict);
-            const date = parseLocalDate(schedule.sched_date);
-            const card = document.createElement('button');
-            card.type = 'button';
-            card.className = 'vd-booking-schedule-card' + (hasConflict ? ' has-conflict' : isFull ? ' full' : '');
-            card.disabled = isFull || hasConflict;
-            card.setAttribute('aria-pressed', 'false');
-            card.innerHTML = `
-                <span class="vd-booking-schedule-date">
-                    <span class="vd-booking-schedule-weekday">${date.toLocaleDateString('en-PH', { weekday: 'short' })}</span>
-                    <strong>${String(date.getDate()).padStart(2, '0')}</strong>
-                    <span class="vd-booking-schedule-month">${date.toLocaleDateString('en-PH', { month: 'short', year: 'numeric' })}</span>
-                </span>
-                <span class="vd-booking-schedule-info">
-                    <span class="vd-booking-schedule-window"><i class="ti ti-clock" aria-hidden="true"></i>${formatWindow(schedule)}</span>
-                    <small class="vd-booking-arrive-by">Arrive by ${formatTime(schedule.start_time)} or earlier</small>
-                    <small class="vd-booking-slots">${hasConflict ? 'Already booked on this date' : isFull ? 'Fully booked' : remaining + ' slot' + (remaining === 1 ? '' : 's') + ' left'}</small>
-                </span>
-                <span class="vd-booking-schedule-check" aria-hidden="true"><i class="ti ti-check"></i></span>`;
-            if (!card.disabled) card.addEventListener('click', () => chooseSchedule(card, clinicId, schedule));
-            grid.appendChild(card);
-            if (!card.disabled && String(schedule.schedule_id) === String(preferredScheduleId)) {
-                chooseSchedule(card, clinicId, schedule);
-            }
-        });
+        renderCalendar(schedules, clinicId, preferredScheduleId);
         updateActionSummary();
     }
 

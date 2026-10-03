@@ -46,7 +46,7 @@ if ($hasSelectedRecordDate) {
     <?php else: ?>
         <div class="vd-dash-card">
             <div class="vd-dash-card-header"><span class="vd-dash-card-title"><?= date('F j, Y', strtotime($selectedDate)) ?></span><span class="vd-topbar-date"><?= count($entries) ?> record<?= count($entries) === 1 ? '' : 's' ?></span></div>
-            <div class="vd-dash-card-body">
+            <div class="vd-dash-card-body vd-flush-table-body">
             <?php if (!$entries): ?>
                 <div class="vd-empty-state">No logbook records found for this date.</div>
             <?php else: ?>
@@ -79,6 +79,8 @@ if ($hasSelectedRecordDate) {
                                         <button type="button" class="btn vd-btn-outline btn-sm" data-open-today-queue>Manage Queue</button>
                                     <?php elseif ($isToday && $entry['appointment_status'] === 'In Progress'): ?>
                                         <span class="vd-appt-meta">Awaiting admin settlement</span>
+                                    <?php elseif ($entry['appointment_status'] === 'Treatment Postponed'): ?>
+                                        <span class="vd-appt-meta"><?= htmlspecialchars($entry['postponement_reason'] ?? '') ?><br>No treatment performed</span>
                                     <?php elseif ($entry['appointment_status'] === 'Completed'): ?>
                                         <span class="vd-appt-meta">Visit completed</span>
                                     <?php else: ?>

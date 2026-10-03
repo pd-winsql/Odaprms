@@ -9,11 +9,13 @@
         'history-content.php'
     ];
     const NOTIFICATION_TYPES = {
+        profile_print_ready: { destination: 'profile-content.php', icon: 'ti-printer' },
         deposit_required: { destination: 'billing-content.php', icon: 'ti-receipt' },
         payment_rejected: { destination: 'billing-content.php', icon: 'ti-alert-triangle' },
         appointment_confirmed: { destination: 'home-content.php', icon: 'ti-circle-check' },
         appointment_rejected: { destination: 'history-content.php', icon: 'ti-calendar-x' },
         appointment_cancelled: { destination: 'history-content.php', icon: 'ti-calendar-cancel' },
+        treatment_postponed: { destination: 'history-content.php', icon: 'ti-calendar-time' },
         reschedule_requested: { destination: 'home-content.php', icon: 'ti-calendar-time' },
         reschedule_approved: { destination: 'home-content.php', icon: 'ti-calendar-check' },
         reschedule_rejected: { destination: 'home-content.php', icon: 'ti-calendar-x' },
@@ -84,10 +86,13 @@
         if (current.status === 'Confirmed') return 'appointment_confirmed';
         if (current.status === 'Rejected') return 'appointment_rejected';
         if (current.status === 'Cancelled') return 'appointment_cancelled';
+        if (current.status === 'Treatment Postponed') return 'treatment_postponed';
         return null;
     }
 
     function notificationMessage(type, appointment) {
+        if (type === 'profile_print_ready') return appointment.requestMessage;
+        if (type === 'treatment_postponed') return 'Your treatment was postponed. Any verified deposit is retained for rebooking. Contact the clinic before arranging your next visit.';
         const date = appointmentDate(appointment.date);
         const clinic = appointment.clinicName ? ` at ${appointment.clinicName}` : '';
         const reason = appointment.reason ? ` Reason: ${appointment.reason}` : '';
@@ -331,6 +336,13 @@
                 if (!response.ok) return;
                 const result = await response.json();
                 if (result?.success) {
+                    (result.profile_requests || []).filter(request => request.status === 'Ready for pickup').forEach(request => {
+                        addNotification('profile_print_ready', {
+                            appointmentId: 'profile-' + request.request_id,
+                            stateChangedAt: request.updated_at,
+                            requestMessage: 'Your printed profile is ready for pickup at ' + request.clinic_name + '.'
+                        });
+                    });
                     const changedDestinations = observe(result.appointments, result.reschedules);
                     if (changedDestinations.length && typeof config.onStatusChange === 'function') {
                         config.onStatusChange(changedDestinations);

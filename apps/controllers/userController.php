@@ -7,6 +7,7 @@ require_once '../helpers/patientEligibility.php';
 require_once '../models/auditLogModel.php';
 require_once '../support/RegistrationTermsConsent.php';
 require_once __DIR__ . '/../support/IdentityInput.php';
+require_once __DIR__ . '/../support/PasswordPolicy.php';
 
 session_start();
 
@@ -76,7 +77,7 @@ class UserController {
     }
 
     private function isStrongPassword($password) {
-        return preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $password) === 1;
+        return PasswordPolicy::isValid($password);
     }
 
     // ── Send Register OTP ──────────────────────────────────────
@@ -117,7 +118,7 @@ class UserController {
         }
 
         if (!$this->isStrongPassword($password)) {
-            echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include both letters and numbers.']);
+            echo json_encode(['success' => false, 'message' => PasswordPolicy::MESSAGE]);
             exit;
         }
 

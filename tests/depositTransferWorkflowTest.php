@@ -17,6 +17,7 @@ $patients = new Patient($conn);
 $appointmentIds = [];
 $patientIds = [];
 $scheduleIds = [];
+$qaUserId = 0;
 
 try {
     $clinicId = (int) $conn->query('SELECT clinic_id FROM clinics ORDER BY clinic_id LIMIT 1')->fetchColumn();
@@ -39,7 +40,10 @@ try {
         $scheduleIds[] = (int) $conn->lastInsertId();
     }
 
-    $patientIds[] = (int) $patients->createPatient(null, 'Transfer', 'Patient', '', 30, 'Prefer not to say', '09123456781', 'transfer-' . bin2hex(random_bytes(4)) . '@example.invalid', '1996-01-01');
+    $email = 'transfer-' . bin2hex(random_bytes(4)) . '@example.invalid';
+    $conn->prepare("INSERT INTO users (email,password,user_role) VALUES (?,?,'Patient')")->execute([$email,password_hash(bin2hex(random_bytes(16)),PASSWORD_DEFAULT)]);
+    $qaUserId = (int) $conn->lastInsertId();
+    $patientIds[] = (int) $patients->createPatient($qaUserId, 'Transfer', 'Patient', '', 30, 'Prefer not to say', '09123456781', $email, '1996-01-01');
     $patientIds[] = (int) $patients->createPatient(null, 'Different', 'Patient', '', 31, 'Prefer not to say', '09123456782', 'different-' . bin2hex(random_bytes(4)) . '@example.invalid', '1995-01-01');
     transferExpect(min($patientIds) > 0, 'Temporary patients were created.');
 
@@ -99,6 +103,7 @@ try {
     foreach ($scheduleIds as $scheduleId) {
         $conn->prepare('DELETE FROM schedules WHERE schedule_id=:id')->execute([':id' => $scheduleId]);
     }
+    if ($qaUserId) $conn->prepare('DELETE FROM users WHERE id=?')->execute([$qaUserId]);
 }
 
 echo "Deposit transfer workflow test completed.\n";

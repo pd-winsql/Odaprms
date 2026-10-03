@@ -4,6 +4,7 @@ require_once '../models/depositModel.php';
 require_once '../../config/conn.php';
 require_once '../models/patientModel.php';
 require_once '../models/rescheduleModel.php';
+require_once '../models/profilePrintRequestModel.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 require_once '../helpers/patientEligibility.php';
@@ -17,6 +18,7 @@ class AppointmentController {
     private $depositModel;
     private $patientModel;
     private $rescheduleModel;
+    private $profilePrintRequests;
 
     public function __construct() {
         $db = new Database();
@@ -26,6 +28,7 @@ class AppointmentController {
         $this->appointmentModel = new Appointment($conn);
         $this->patientModel = new Patient($conn);
         $this->rescheduleModel = new RescheduleModel($conn);
+        $this->profilePrintRequests = new ProfilePrintRequestModel($conn);
     }
 
     //Patient: upcoming appointments
@@ -359,7 +362,7 @@ class AppointmentController {
             'deposit_feed_version' => $this->appointmentModel->getDepositFeedVersion(),
             'latest_deposit_submission' => $this->depositModel->getLatestSubmissionEvent(),
             'staff_operations_feed_version' => $this->appointmentModel->getStaffOperationsFeedVersion(),
-            'reschedule_events' => $this->rescheduleModel->getStaffNotificationEvents(),
+            'reschedule_events' => array_merge($this->rescheduleModel->getStaffNotificationEvents(), $this->profilePrintRequests->staffEvents()),
         ]);
         exit;
     }
@@ -384,6 +387,7 @@ class AppointmentController {
             'success' => true,
             'appointments' => $this->appointmentModel->getPatientNotificationSnapshot((int) $_SESSION['user_id']),
             'reschedules' => $this->rescheduleModel->getPatientNotificationSnapshot((int) $_SESSION['user_id']),
+            'profile_requests' => $this->profilePrintRequests->listRequests((int) $_SESSION['user_id']),
         ]);
         exit;
     }

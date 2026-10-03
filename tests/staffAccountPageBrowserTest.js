@@ -61,6 +61,15 @@ async function main() {
                 await page.locator('#accountCurrentPw').fill('TestPassword123');
                 await page.locator('#accountNewPw').fill('UpdatedPassword123');
                 await page.locator('#accountConfirmPw').fill('UpdatedPassword123');
+                assert.equal(await pw.isDisabled(), true, 'Special character is required');
+                await page.locator('#accountNewPw').fill('updatedpassword123!');
+                await page.locator('#accountConfirmPw').fill('updatedpassword123!');
+                assert.equal(await pw.isDisabled(), true, 'Uppercase letter is required');
+                await page.locator('#accountNewPw').fill('UPDATEDPASSWORD123!');
+                await page.locator('#accountConfirmPw').fill('UPDATEDPASSWORD123!');
+                assert.equal(await pw.isDisabled(), true, 'Lowercase letter is required');
+                await page.locator('#accountNewPw').fill('UpdatedPassword123!');
+                await page.locator('#accountConfirmPw').fill('UpdatedPassword123!');
                 assert.equal(await pw.isDisabled(), false);
                 await pw.click();
                 await page.waitForFunction(() => document.querySelector('#accountCurrentPw').value === '');

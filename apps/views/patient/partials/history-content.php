@@ -40,6 +40,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
         'endTime' => $appointment['end_time'] ?? '',
         'clinic' => $appointment['clinic_name'] ?? '',
         'status' => $appointment['status'] ?? '',
+        'postponementReason' => $appointment['postponement_reason'] ?? '',
         'services' => array_map(static fn(array $service): array => [
             'name' => $service['service_name'] ?? '',
             'description' => $service['service_description'] ?? '',
@@ -98,6 +99,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
                 </div>
             </div>
             <div class="vd-history-status">
+                <?php if ($appt['status'] === 'Treatment Postponed'): ?><small class="d-block">No treatment performed. Contact the clinic before rebooking.</small><?php endif; ?>
                 <span class="<?= statusClass($appt['status']) ?>">
                     <?= htmlspecialchars($appt['status']) ?>
                 </span>
@@ -297,6 +299,8 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
         addDetail(visitGrid, 'Visit date', formatDate(appointment.date));
         addDetail(visitGrid, 'Clinic window', `${formatTime(appointment.startTime)}–${formatTime(appointment.endTime)}`);
         addDetail(visitGrid, 'Final status', appointment.status);
+        if (appointment.status === 'Treatment Postponed') addDetail(visitGrid, 'Reason for postponement', appointment.postponementReason || 'Contact the clinic for details.');
+        document.getElementById('patientHistoryServicesHeading').textContent = appointment.status === 'Treatment Postponed' ? 'Originally booked services (not performed)' : 'Services received';
 
         const serviceList = document.getElementById('patientHistoryServiceList');
         serviceList.replaceChildren();
@@ -327,7 +331,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
             copy.append(category, name, description);
             const included = document.createElement('span');
             included.className = 'vd-appointment-service-included';
-            included.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i><span>Availed</span>';
+            included.innerHTML = appointment.status === 'Treatment Postponed' ? '<span>Not performed</span>' : '<i class="ti ti-check" aria-hidden="true"></i><span>Availed</span>';
             card.append(media, copy, included);
             serviceList.appendChild(card);
         });

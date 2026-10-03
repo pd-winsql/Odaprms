@@ -6,6 +6,7 @@ require_once '../../config/mailer.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 require_once __DIR__ . '/../support/IdentityInput.php';
+require_once __DIR__ . '/../support/PasswordPolicy.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -56,6 +57,10 @@ class StaffController {
             exit;
         }
 
+        if (!PasswordPolicy::isValid($password)) {
+            echo json_encode(['success' => false, 'message' => PasswordPolicy::MESSAGE]);
+            exit;
+        }
         $result = $this->staffModel->createStaff($firstname, $lastname, $middlename, $gender, $phone, $email, $password);
 
         if ($result['success']) {

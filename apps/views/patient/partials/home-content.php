@@ -316,9 +316,10 @@ $missingProfileFields = array_keys(array_filter(
 
     document.querySelectorAll('[data-withdraw-reschedule]').forEach(button => {
         button.addEventListener('click', async () => {
+            if (button.disabled) return;
+            button.disabled = true;
             const requestedSchedule = button.dataset.withdrawLabel || 'Requested replacement schedule';
-            const decision = typeof window.showActionModal === 'function'
-                ? await window.showActionModal({
+            const decision = await window.showActionModal({
                     title: 'Withdraw Reschedule Request',
                     kicker: 'Pending schedule change',
                     message: 'This cancels only the requested schedule change. Your original appointment remains confirmed.',
@@ -330,9 +331,8 @@ $missingProfileFields = array_keys(array_filter(
                         { label: 'Requested schedule', value: requestedSchedule },
                         { label: 'Original appointment', value: 'Remains confirmed' }
                     ]
-                })
-                : { confirmed: window.confirm('Withdraw this pending reschedule request? Your original appointment will remain confirmed.') };
-            if (!decision.confirmed) return;
+                });
+            if (!decision.confirmed) { button.disabled = false; return; }
             const data = new FormData();
             data.append('action', 'withdraw');
             data.append('request_id', button.dataset.withdrawReschedule);
@@ -345,6 +345,7 @@ $missingProfileFields = array_keys(array_filter(
                 if (result.success) refreshHome();
             } catch (error) {
                 window.showToast('Network error. Please try again.', false);
+            } finally {
                 LoadingUI.setButton(button, false);
             }
         });

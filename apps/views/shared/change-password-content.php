@@ -48,8 +48,10 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
                     </div>
                     <ul class="vd-password-requirements" id="accountPasswordRequirements" aria-label="Password requirements" aria-live="polite">
                         <li data-password-rule="length">At least 8 characters</li>
-                        <li data-password-rule="letter">Contains a letter</li>
+                        <li data-password-rule="uppercase">Contains an uppercase letter</li>
+                        <li data-password-rule="lowercase">Contains a lowercase letter</li>
                         <li data-password-rule="number">Contains a number</li>
+                        <li data-password-rule="special">Contains a special character</li>
                         <li data-password-rule="match">Passwords match</li>
                     </ul>
                     <p class="vd-field-feedback" id="accountNewPwFeedback" aria-live="polite"></p>
@@ -109,8 +111,10 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         const confirmation = confirmInput.value;
         return {
             length: next.length >= 8,
-            letter: /[A-Za-z]/.test(next),
+            uppercase: /[A-Z]/.test(next),
+            lowercase: /[a-z]/.test(next),
             number: /\d/.test(next),
+            special: /[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e]/.test(next),
             match: next.length > 0 && confirmation.length > 0 && next === confirmation
         };
     }
@@ -197,7 +201,7 @@ $_SESSION['csrf_token'] ??= bin2hex(random_bytes(32));
         if (!next) {
             setFieldFeedback(newInput, feedback.next, 'Enter a new password.');
             firstInvalid ??= newInput;
-        } else if (!state.length || !state.letter || !state.number) {
+        } else if (!state.length || !state.uppercase || !state.lowercase || !state.number || !state.special) {
             setFieldFeedback(newInput, feedback.next, 'Complete all password requirements.');
             firstInvalid ??= newInput;
         } else if (current === next) {

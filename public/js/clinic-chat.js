@@ -37,6 +37,10 @@
         return data;
     }
     function showUnread(unread) {
+        document.querySelector(".vd-chat-launch")?.setAttribute(
+            "aria-label",
+            unread ? `Message clinic, ${unread} unread messages` : "Message clinic",
+        );
         document.querySelectorAll("[data-chat-unread]").forEach((el) => {
             el.hidden = !unread;
             el.textContent = unread > 99 ? "99+" : String(unread);
@@ -810,6 +814,13 @@
     if (patient) {
         const modal = document.getElementById("clinicChatModal");
         const instance = mount(modal.querySelector("[data-clinic-chat]"));
+        modal.addEventListener("show.bs.modal", () => {
+            const notificationButton = document.getElementById("patientNotificationButton");
+            if (notificationButton?.getAttribute("aria-expanded") === "true") {
+                notificationButton.click();
+            }
+            dismissMessageAlert();
+        });
         modal.addEventListener("shown.bs.modal", () => instance.open());
         modal.addEventListener("hidden.bs.modal", () => instance.close());
     }

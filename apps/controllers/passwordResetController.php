@@ -2,6 +2,7 @@
 require_once '../../config/conn.php';
 require_once '../models/userModel.php';
 require_once '../../config/mailer.php';
+require_once __DIR__ . '/../support/PasswordPolicy.php';
 
 header('Content-Type: application/json');
 session_start();
@@ -190,8 +191,8 @@ if ($action === 'resetPassword') {
         exit;
     }
 
-    if (!preg_match('/^(?=.*[A-Za-z])(?=.*\d).{8,}$/', $newPassword)) {
-        echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters and include both letters and numbers.']);
+    if (!PasswordPolicy::isValid($newPassword)) {
+        echo json_encode(['success' => false, 'message' => PasswordPolicy::MESSAGE]);
         exit;
     }
 

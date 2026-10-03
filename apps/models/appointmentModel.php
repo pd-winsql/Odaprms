@@ -256,7 +256,7 @@ class Appointment
                 FROM vw_appointment_overview a
                 WHERE a.patient_id = :patient_id
                 AND a.date >= CURDATE()
-                AND a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                AND a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected', 'Treatment Postponed')
 
                 ORDER BY a.date ASC
             ");
@@ -274,6 +274,7 @@ class Appointment
         try {
             $stmt = $this->conn->prepare("
                 SELECT a.*,
+                    (SELECT original.postponement_reason FROM appointments original WHERE original.appointment_id = a.appointment_id) AS postponement_reason,
                     payment.billing_id,
                     payment.actual_service_amount,
                     payment.deposit_applied,
@@ -288,7 +289,7 @@ class Appointment
                 WHERE a.patient_id = :patient_id
                 AND (
                     a.date < CURDATE()
-                    OR a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                    OR a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected', 'Treatment Postponed')
                 )
 
                 ORDER BY a.date DESC
@@ -317,7 +318,7 @@ class Appointment
                 FROM vw_appointment_overview a
                 WHERE a.email = :email
                 AND a.date >= CURDATE()
-                AND a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                AND a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected', 'Treatment Postponed')
                 ORDER BY a.date ASC
             ");
             $stmt->execute([':email' => $email]);
@@ -354,7 +355,7 @@ class Appointment
                     ON payment.appointment_id = a.appointment_id
                 LEFT JOIN vw_appointment_latest_status_change status_change
                     ON status_change.appointment_id = a.appointment_id
-                WHERE a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                WHERE a.status IN ('Completed', 'Cancelled', 'No-show', 'Rejected', 'Treatment Postponed')
                     OR (
                         a.date < CURDATE()
                     )
@@ -382,7 +383,7 @@ class Appointment
                     OR EXISTS (
                         SELECT 1 FROM appointment_deposits ad
                         WHERE ad.appointment_id = a.appointment_id
-                            AND ad.status IN ('Verified', 'Transferred')
+                            AND ad.status IN ('Verified', 'Transferred', 'Retained for Rebooking')
                     )
                 )
                 ORDER BY a.date DESC
@@ -418,7 +419,7 @@ class Appointment
                     ON payment.appointment_id = a.appointment_id
                 LEFT JOIN vw_appointment_latest_status_change status_change
                     ON status_change.appointment_id = a.appointment_id
-                WHERE a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected')
+                WHERE a.status NOT IN ('Completed', 'Cancelled', 'No-show', 'Rejected', 'Treatment Postponed')
                     AND a.date >= CURDATE()
                 ORDER BY 
                     CASE a.status
@@ -747,6 +748,7 @@ class Appointment
                     a.service_name,
                     a.date, a.start_time, a.end_time,
                     a.status,
+                    (SELECT original.postponement_reason FROM appointments original WHERE original.appointment_id = a.appointment_id) AS postponement_reason,
                     a.clinic_name,
                     payment.billing_id,
                     payment.actual_service_amount,
@@ -795,6 +797,7 @@ class Appointment
                         WHEN d.status = 'Rejected' THEN d.rejection_reason
                         WHEN a.status = 'Rejected' THEN a.rejection_reason
                         WHEN a.status = 'Cancelled' THEN a.cancellation_reason
+                        WHEN a.status = 'Treatment Postponed' THEN 'Contact the clinic before rebooking. Any verified deposit is retained.'
                         ELSE NULL
                     END AS patient_reason,
                     CASE
@@ -802,6 +805,7 @@ class Appointment
                         WHEN a.status = 'Confirmed' THEN a.confirmed_at
                         WHEN a.status = 'Rejected' THEN a.rejected_at
                         WHEN a.status = 'Cancelled' THEN a.cancelled_at
+                        WHEN a.status = 'Treatment Postponed' THEN a.postponed_at
                         WHEN a.status = 'Awaiting Deposit' THEN a.accepted_for_payment_at
                         ELSE a.created_at
                     END AS state_changed_at
@@ -822,6 +826,44 @@ class Appointment
     }
 
     // ===== PERSISTENCE HELPERS =====
+
+    // A pre-treatment assessment stopped this attended visit. No billing is created.
+    public function postponeTreatment(int $appointmentId, int $userId, string $reason): array
+    {
+        $reason = trim($reason);
+        if (strlen($reason) < 3 || strlen($reason) > 255) {
+            return ['success' => false, 'message' => 'Enter a reason between 3 and 255 characters.'];
+        }
+        try {
+            $this->conn->beginTransaction();
+            $stmt = $this->conn->prepare('SELECT status, date FROM appointments WHERE appointment_id = ? FOR UPDATE');
+            $stmt->execute([$appointmentId]);
+            $appointment = $stmt->fetch(PDO::FETCH_ASSOC);
+            $actor = $this->auditLog->getUserActor($userId);
+            if (!$actor || $actor['role'] !== 'Admin') {
+                throw new RuntimeException('Only the Admin / Dentist may postpone treatment.');
+            }
+            if (!$appointment || $appointment['status'] !== 'In Progress' || $appointment['date'] !== date('Y-m-d')) {
+                throw new RuntimeException('Only a patient in treatment in today’s queue can be postponed.');
+            }
+            $billing = $this->conn->prepare('SELECT billing_id FROM appointment_billings WHERE appointment_id = ?');
+            $billing->execute([$appointmentId]);
+            if ($billing->fetchColumn()) throw new RuntimeException('This visit already has billing and cannot be postponed.');
+            $this->conn->prepare("UPDATE appointment_deposits SET status = 'Retained for Rebooking' WHERE appointment_id = ? AND status = 'Verified'")->execute([$appointmentId]);
+            $this->conn->prepare("UPDATE appointments SET status = 'Treatment Postponed', postponed_at = NOW(), postponement_reason = ? WHERE appointment_id = ?")->execute([$reason, $appointmentId]);
+            $audit = $this->auditLog->record('appointment', $appointmentId, 'status_changed',
+                "Treatment postponed for appointment #{$appointmentId}: {$reason}",
+                ['status' => 'In Progress'], ['status' => 'Treatment Postponed', 'reason' => $reason, 'deposit_outcome' => 'Retained for Rebooking'], $actor);
+            $notification = $this->emailNotifications->enqueueAppointmentTemplate($appointmentId, 'treatment_postponed',
+                'Treatment Postponed', 'audit:' . $audit['audit_log_id'] . ':treatment_postponed');
+            $this->conn->commit();
+            return ['success' => true, 'message' => 'Treatment postponed. Any verified deposit is retained for rebooking.', 'notification' => $notification];
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            error_log('postponeTreatment: ' . $e->getMessage());
+            return ['success' => false, 'message' => $e instanceof PDOException ? 'Unable to postpone treatment. Please try again.' : $e->getMessage()];
+        }
+    }
 
     public function getLastInsertedId()
     {
