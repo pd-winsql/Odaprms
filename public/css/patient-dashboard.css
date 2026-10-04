@@ -2871,3 +2871,35 @@
 @media (prefers-reduced-motion: reduce) {
     .vd-patient-credit-option { transition: none; }
 }
+
+.vd-patient-cancellation { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 16px; grid-column: 1 / -1; }
+.vd-dash-body .vd-patient-cancellation .vd-patient-cancellation-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 10px 16px; border: 1px solid #b9a47a; border-radius: 8px;
+    background: #fffaf0; color: #70531d; font-size: 13px; font-weight: 600;
+    line-height: 1.4; letter-spacing: .02em; text-transform: none; box-shadow: none;
+    transition: background-color .15s ease, border-color .15s ease;
+}
+.vd-dash-body .vd-patient-cancellation .vd-patient-cancellation-button:hover:not(:disabled) { background: #f2e6cd; border-color: #80601e; color: #5c4317; transform: none; }
+.vd-dash-body .vd-patient-cancellation .vd-patient-cancellation-button:focus-visible { outline: 3px solid #80601e; outline-offset: 3px; }
+.vd-patient-cancellation-button i { font-size: 18px; }
+.vd-patient-cancellation p { flex: 1 1 220px; margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted, #70665b); }
+.vd-patient-cancellation [data-cancel-error] { flex-basis: 100%; color: #a33227; font-size: 13px; }
+.vd-dash-body .vd-patient-cancellation .btn:disabled { opacity: 1; background: #eee9e1; color: #70665b; border-color: #d7d0c4; transform: none; }
+.vd-next-appt-card > .vd-patient-cancellation {
+    margin-top: 8px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.3);
+}
+.vd-next-appt-card > .vd-patient-cancellation p { color: #fffaf0; }
+.vd-next-appt-card > .vd-patient-cancellation [data-cancel-error] {
+    padding: 10px 12px; border-radius: 6px; background: #fffaf0; color: #a33227;
+}
+.vd-dash-body .vd-next-appt-card .vd-patient-cancellation-button { border-color: #fffaf0; }
+.vd-dash-body .vd-next-appt-card .vd-patient-cancellation-button:focus-visible { outline-color: #fffaf0; }
+@media (max-width: 575px) {
+    .vd-patient-cancellation { align-items: stretch; gap: 8px; }
+    .vd-patient-cancellation .vd-patient-cancellation-button { width: 100%; }
+    .vd-patient-cancellation p { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .vd-dash-body .vd-patient-cancellation .vd-patient-cancellation-button { transition: none; }
+}

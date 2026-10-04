@@ -31,6 +31,16 @@ class AppointmentController {
         $this->profilePrintRequests = new ProfilePrintRequestModel($conn);
     }
 
+    public function cancelPatientAppointment(): void {
+        vdRequireRoleJson(['Patient']);
+        header('Content-Type: application/json');
+        if (!validate_csrf()) { echo json_encode(['success'=>false,'message'=>'Your session expired. Refresh and try again.']); exit; }
+        echo json_encode($this->appointmentModel->updateAppointmentStatus(
+            (int)($_POST['appointment_id']??0), 'Cancelled', (int)$_SESSION['user_id'], trim($_POST['reason']??''), true
+        ));
+        exit;
+    }
+
     //Patient: upcoming appointments
     public function upcomingAppointments() {
         if (!isset($_SESSION['user_id'])) {
@@ -408,6 +418,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'book') {
         $controller->bookAppointment();
+    } elseif ($action === 'cancelPatient') {
+        $controller->cancelPatientAppointment();
     } elseif ($action === 'updateStatus') {
         $controller->updateStatus();
     } elseif ($action === 'filterByStatus') {

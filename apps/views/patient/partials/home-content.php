@@ -27,6 +27,7 @@ $rescheduleModel  = new RescheduleModel($conn);
 $patient  = $patientModel->getPatientByUserId($_SESSION['user_id']);
 $upcoming = $appointmentModel->getPatientUpcomingAppointments($patient['patient_id'] ?? '');
 $next     = $upcoming[0] ?? null;
+$cancellationDays=CancellationPolicy::days($conn);
 $otherUpcoming = array_slice($upcoming, 1);
 $rescheduleRequests = $rescheduleModel->getPatientRequests((int) $_SESSION['user_id']);
 $latestRescheduleByAppointment = [];
@@ -131,6 +132,7 @@ $missingProfileFields = array_keys(array_filter(
             <i class="ti ti-calendar-time me-1"></i> Request Reschedule
         </button>
         <?php endif; ?>
+        <?php $cancelAppointment=$next; include __DIR__.'/../../shared/patient-cancellation-action.php'; ?>
     </div>
 
     <?php if (!empty($otherUpcoming)): ?>
@@ -174,6 +176,7 @@ $missingProfileFields = array_keys(array_filter(
                         data-current-schedule-id="<?= (int) $appointment['schedule_id'] ?>"
                         data-appointment-label="<?= htmlspecialchars(($appointment['clinic_name'] ?? 'Clinic') . ' · ' . date('M j, Y, g:i A', strtotime($appointment['date'] . ' ' . $appointment['start_time'])), ENT_QUOTES) ?>">Reschedule</button>
                     <?php endif; ?>
+                    <?php $cancelAppointment=$appointment; include __DIR__.'/../../shared/patient-cancellation-action.php'; ?>
                 </article>
             <?php endforeach; ?>
         </div>

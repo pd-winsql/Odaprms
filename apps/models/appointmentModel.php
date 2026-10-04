@@ -5,6 +5,7 @@ require_once __DIR__ . '/depositModel.php';
 require_once __DIR__ . '/emailNotificationModel.php';
 require_once __DIR__ . '/../helpers/paymentSettings.php';
 require_once __DIR__ . '/../helpers/bookingPolicy.php';
+require_once __DIR__ . '/../helpers/cancellationPolicy.php';
 
 class Appointment
 {
@@ -252,7 +253,7 @@ class Appointment
         try {
             // Keep cancelled bookings out of the patient's upcoming list.
             $stmt = $this->conn->prepare("
-                SELECT a.*
+                SELECT a.*, EXISTS(SELECT 1 FROM appointment_checkins ac WHERE ac.appointment_id=a.appointment_id) AS has_checkin
                 FROM vw_appointment_overview a
                 WHERE a.patient_id = :patient_id
                 AND a.date >= CURDATE()
@@ -443,7 +444,7 @@ class Appointment
     }
 
     // Admin/DA: update appointment status
-    public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '')
+    public function updateAppointmentStatus($appointment_id, $status, $performedByUserId, $reason = '', bool $patientCancellation = false)
     {
         $allowedTransitions = $this->getAllowedStatusTransitions();
 
@@ -462,6 +463,7 @@ class Appointment
             $currentStmt = $this->conn->prepare("
                 SELECT
                     a.status,
+                    a.patient_id,
                     a.date,
                     s.start_time,
                     EXISTS (
@@ -483,6 +485,19 @@ class Appointment
                 return ['success' => false, 'message' => 'Appointment not found.'];
             }
             $oldStatus = $currentAppointment['status'];
+            if ($patientCancellation) {
+                $owner=$this->conn->prepare("SELECT p.patient_id FROM patients p JOIN users u ON u.id=p.user_id WHERE p.patient_id=? AND u.id=? AND u.user_role='Patient'");
+                $owner->execute([$currentAppointment['patient_id'],$performedByUserId]);
+                if ($status !== 'Cancelled' || !$owner->fetchColumn()) {
+                    $this->conn->rollBack();
+                    return ['success'=>false,'message'=>'Appointment not found or access denied.'];
+                }
+                $eligibility=CancellationPolicy::eligibility($currentAppointment,CancellationPolicy::days($this->conn));
+                if (!$eligibility['allowed']) {
+                    $this->conn->rollBack();
+                    return ['success'=>false,'message'=>$eligibility['message']];
+                }
+            }
 
             // If no change is necessary, rollback the transaction and return
             // a success response indicating nothing changed.
@@ -493,7 +508,7 @@ class Appointment
 
             // Validate that the transition from oldStatus -> status is allowed
             // according to the allowedTransitions map.
-            if (!in_array($status, $allowedTransitions[$oldStatus] ?? [], true)) {
+            if (!$patientCancellation && !in_array($status, $allowedTransitions[$oldStatus] ?? [], true)) {
                 $this->conn->rollBack();
                 return [
                     'success' => false,
@@ -544,6 +559,9 @@ class Appointment
             if (!$actor) {
                 throw new RuntimeException('The authenticated user could not be found.');
             }
+            if ($patientCancellation) {
+                $this->conn->prepare("UPDATE appointment_reschedule_requests SET status='Withdrawn',resolved_at=NOW() WHERE appointment_id=? AND status='Pending'")->execute([$appointment_id]);
+            }
 
             $paymentContext = $this->applyPaymentStatusChange($appointment_id, $oldStatus, $status, $reason);
             $amount = $paymentContext['amount'];
@@ -568,11 +586,11 @@ class Appointment
             return [
                 'success' => true,
                 'changed' => true,
-                'message' => $status === 'Awaiting Deposit'
+                'message' => $patientCancellation ? 'Appointment cancelled. Your slot has been released.' : ($status === 'Awaiting Deposit'
                     ? 'Appointment accepted. The patient now has ' . vdFormatDurationMinutes($minutes) . ' to submit the ' . vdFormatPesoAmount($amount) . ' deposit.'
                     : ($status === 'In Progress'
                         ? 'Treatment started for the next patient.'
-                        : ($status === 'No-show' ? 'Patient marked as no-show.' : 'Status updated successfully.')),
+                        : ($status === 'No-show' ? 'Patient marked as no-show.' : 'Status updated successfully.'))),
                 'audit' => [
                     'performed_by_name' => $actor['name'],
                     'performed_by_role' => $actor['role'],
@@ -1068,7 +1086,7 @@ class Appointment
                     refund_reason = CASE WHEN status = 'Verified' THEN :reason ELSE refund_reason END,
                     status = CASE WHEN status = 'Verified' THEN 'For Refund' ELSE 'Expired' END
                 WHERE appointment_id = :id
-                    AND status IN ('Verified', 'Awaiting Submission', 'Rejected')
+                    AND status IN ('Verified', 'Awaiting Submission', 'Rejected', 'Under Review')
             ")->execute([':reason' => trim($reason), ':id' => $appointment_id]);
         }
 

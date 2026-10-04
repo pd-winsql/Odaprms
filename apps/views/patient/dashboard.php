@@ -160,6 +160,7 @@ $today    = date('l, F j Y');
 
     <script src="../../../public/js/identity-input.js?v=<?= filemtime(__DIR__ . '/../../../public/js/identity-input.js') ?>"></script>
     <script src="../../../public/js/action-modal.js?v=<?= filemtime(__DIR__ . '/../../../public/js/action-modal.js') ?>"></script>
+    <script src="../../../public/js/patient-cancellation.js?v=<?= filemtime(__DIR__ . '/../../../public/js/patient-cancellation.js') ?>"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/patient-appointment-notifications.js?v=<?= filemtime(__DIR__ . '/../../../public/js/patient-appointment-notifications.js') ?>"></script>
     <script>

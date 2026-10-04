@@ -26,6 +26,7 @@ class SiteSettingsModel {
         'payment' => ['deposit_amount', 'payment_deadline_minutes', 'gcash_account_name', 'gcash_account_number'],
         'eligibility' => ['minimum_patient_age_years'],
         'booking' => ['minimum_booking_lead_days', 'minimum_reschedule_lead_days'],
+        'cancellation' => ['minimum_cancellation_notice_days'],
     ];
 
     public static function validatePaymentSettings(array $data): array
@@ -87,6 +88,14 @@ class SiteSettingsModel {
             'success' => true,
             'data' => ['minimum_patient_age_years' => (string) $minimumAge],
         ];
+    }
+
+    public static function validateCancellationSettings(array $data): array {
+        $value=trim((string)($data['minimum_cancellation_notice_days'] ?? ''));
+        if (!ctype_digit($value) || (int)$value>30) {
+            return ['success'=>false,'message'=>'Minimum cancellation notice must be a whole number between 0 and 30 days.'];
+        }
+        return ['success'=>true,'data'=>['minimum_cancellation_notice_days'=>(string)(int)$value]];
     }
 
     public static function validateBookingSettings(array $data): array

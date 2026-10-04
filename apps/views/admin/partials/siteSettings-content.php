@@ -389,7 +389,7 @@ function sv($settings, $key)
     <section class="vd-settings-category vd-dash-card" data-settings-category="appointments">
         <button class="vd-settings-category-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#settingsAppointments" aria-expanded="false" aria-controls="settingsAppointments">
             <span class="vd-settings-category-icon"><i class="ti ti-calendar-cog" aria-hidden="true"></i></span>
-            <span class="vd-settings-category-copy"><strong>Appointment Rules</strong><small>Advance notice required for booking and rescheduling visits.</small></span>
+            <span class="vd-settings-category-copy"><strong>Appointment Rules</strong><small>Advance notice for booking, rescheduling, and patient cancellation.</small></span>
             <span class="vd-settings-category-count">Lead times</span>
             <i class="ti ti-chevron-down vd-settings-category-chevron" aria-hidden="true"></i>
         </button>
@@ -428,6 +428,20 @@ function sv($settings, $key)
                 </div>
             </div>
         </div>
+        </section>
+        <section class="vd-settings-subsection vd-settings-category-single">
+            <div class="vd-dash-card-header"><span class="vd-dash-card-title">Patient Cancellation</span></div>
+            <div class="vd-dash-card-body">
+                <p class="form-text mb-3">Applies only to confirmed appointments. Changes affect existing and future appointments immediately. Unconfirmed requests can still be withdrawn.</p>
+                <div class="row g-3 align-items-end">
+                    <div class="col-sm-6 col-lg-5">
+                        <label class="vd-label form-label" for="minimumCancellationNoticeDays">Minimum cancellation notice</label>
+                        <div class="input-group"><input type="number" class="form-control vd-input vd-field" id="minimumCancellationNoticeDays" data-field="minimum_cancellation_notice_days" min="0" max="30" step="1" required value="<?= (int)($settings['minimum_cancellation_notice_days']??2) ?>"><span class="input-group-text">days</span></div>
+                        <div class="form-text mt-1">Cancel more than this many days before the clinic window starts. Use 0 to allow cancellation until the window starts.</div>
+                    </div>
+                    <div class="col-sm-6 col-lg-7 d-flex justify-content-sm-end"><button type="button" class="btn vd-btn-gold btn-sm vd-save-group-btn" data-group="cancellation">Save Cancellation Policy</button></div>
+                </div>
+            </div>
         </section>
         </div>
     </section>
@@ -506,6 +520,7 @@ function sv($settings, $key)
             payment: 'GCash Deposit Settings',
             eligibility: 'Patient Eligibility',
             booking: 'Booking Policy',
+            cancellation: 'Patient Cancellation',
         };
 
         function bindDirtyButton(button, fields) {
