@@ -217,6 +217,15 @@ class DepositController {
 
     public function extend(): void { $this->requireCsrf(); $user=$this->requireStaff(); $this->json($this->deposits->extendDeadline((int)($_POST['appointment_id']??0),$user,trim($_POST['reason']??''))); }
     public function transfer(): void { $this->requireCsrf(); $user=$this->requireStaff(); $this->json($this->deposits->transferDeposit((int)($_POST['source_appointment_id']??0),(int)($_POST['target_appointment_id']??0),$user,trim($_POST['reason']??''))); }
+    public function applyCredit(): void {
+        vdRequireRoleJson(['Patient']);
+        $this->requireCsrf();
+        $this->json($this->deposits->transferDeposit(
+            (int)($_POST['source_appointment_id'] ?? 0),
+            (int)($_POST['target_appointment_id'] ?? 0),
+            (int)$_SESSION['user_id'], 'Patient applied an existing verified deposit.', true
+        ));
+    }
     public function refund(): void { $this->requireCsrf(); $user=$this->requireStaff(); $this->json($this->deposits->markRefunded((int)($_POST['appointment_id']??0),$user,trim($_POST['notes']??''))); }
 
     public function receipt(): void {
@@ -261,6 +270,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'extract') {
     $controller->extend();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'transfer') {
     $controller->transfer();
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'applyCredit') {
+    $controller->applyCredit();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'refund') {
     $controller->refund();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'receipt') {

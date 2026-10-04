@@ -545,7 +545,26 @@ class DepositModel {
         }catch(Throwable $e){if($this->conn->inTransaction())$this->conn->rollBack();error_log('extendDeadline error: '.$e->getMessage());return ['success'=>false,'message'=>'Unable to extend the deadline.'];}
     }
 
-    public function transferDeposit(int $sourceAppointmentId, int $targetAppointmentId, int $userId, string $reason): array {
+    public function getPatientTransferCredits(int $userId, int $targetAppointmentId): array {
+        $stmt = $this->conn->prepare("SELECT source.appointment_id, source.date, credit.amount, c.clinic_name
+            FROM patients p JOIN appointments target ON target.patient_id=p.patient_id
+            JOIN appointment_deposits due ON due.appointment_id=target.appointment_id
+            JOIN appointments source ON source.patient_id=p.patient_id AND source.appointment_id<>target.appointment_id
+            JOIN appointment_deposits credit ON credit.appointment_id=source.appointment_id
+            JOIN clinics c ON c.clinic_id=source.clinic_id
+            WHERE p.user_id=? AND target.appointment_id=? AND target.status='Awaiting Deposit'
+            AND due.status IN ('Awaiting Submission','Rejected')
+            AND COALESCE(due.resubmission_deadline_at,target.payment_deadline_at)>NOW()
+            AND credit.verified_at IS NOT NULL AND credit.amount>=due.amount
+            AND ((source.status='Cancelled' AND credit.status='For Refund')
+              OR (source.status='Treatment Postponed' AND credit.status='Retained for Rebooking'))
+            AND NOT EXISTS(SELECT 1 FROM appointment_billings b WHERE b.appointment_id=source.appointment_id)
+            ORDER BY source.date DESC,source.appointment_id DESC");
+        $stmt->execute([$userId,$targetAppointmentId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function transferDeposit(int $sourceAppointmentId, int $targetAppointmentId, int $userId, string $reason, bool $patientSelfService = false): array {
         $reason = trim($reason);
         if ($sourceAppointmentId === $targetAppointmentId) {
             return ['success' => false, 'message' => 'Choose a different original appointment.'];
@@ -559,7 +578,9 @@ class DepositModel {
             if ($ownsTransaction) $this->conn->beginTransaction();
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.patient_id, a.status AS appointment_status,
-                       d.deposit_id, d.amount, d.status AS deposit_status
+                       d.deposit_id, d.amount, d.status AS deposit_status, d.verified_at, d.verified_by_user_id,
+                       COALESCE(d.resubmission_deadline_at,a.payment_deadline_at) AS deadline,
+                       COALESCE(d.resubmission_deadline_at,a.payment_deadline_at)>NOW() AS deadline_open
                 FROM appointments a
                 JOIN appointment_deposits d ON d.appointment_id = a.appointment_id
                 WHERE a.appointment_id IN (?, ?)
@@ -580,6 +601,17 @@ class DepositModel {
             if ((int) $source['patient_id'] !== (int) $target['patient_id']) {
                 throw new RuntimeException('Deposits can only be transferred between appointments for the same patient.');
             }
+            $actor = $this->auditLog->getUserActor($userId);
+            if (!$actor || !in_array($actor['role'], $patientSelfService ? ['Patient'] : ['Admin','Dental Assistant'], true)) {
+                throw new RuntimeException('Access denied.');
+            }
+            if ($patientSelfService) {
+                $owner = $this->conn->prepare('SELECT patient_id FROM patients WHERE patient_id=? AND user_id=? FOR UPDATE');
+                $owner->execute([$source['patient_id'],$userId]);
+                if (!$owner->fetchColumn()) throw new RuntimeException('Deposit not found or access denied.');
+                if (!$source['verified_at']) throw new RuntimeException('Only an already verified deposit can be reused.');
+                if (!$target['deadline_open']) throw new RuntimeException('The payment window has expired. Refresh your appointments.');
+            }
             $eligibleSource = ($source['appointment_status'] === 'Cancelled' && $source['deposit_status'] === 'For Refund')
                 || ($source['appointment_status'] === 'Treatment Postponed' && $source['deposit_status'] === 'Retained for Rebooking');
             if (!$eligibleSource) {
@@ -589,8 +621,6 @@ class DepositModel {
                 throw new RuntimeException('The replacement appointment must be accepted and awaiting its deposit.');
             }
 
-            $actor = $this->auditLog->getUserActor($userId);
-            if (!$actor) throw new RuntimeException('Staff account not found.');
             $applied = $this->conn->prepare('SELECT billing_id FROM appointment_billings WHERE appointment_id = ?');
             $applied->execute([$sourceAppointmentId]);
             if ($applied->fetchColumn()) throw new RuntimeException('The original deposit has already been used in billing.');
@@ -615,7 +645,7 @@ class DepositModel {
                     rejection_reason = NULL, resubmission_deadline_at = NULL
                 WHERE deposit_id = :id
             ")->execute([
-                ':amount' => $source['amount'], ':user' => $userId,
+                ':amount' => $source['amount'], ':user' => $patientSelfService ? $source['verified_by_user_id'] : $userId,
                 ':source' => $sourceAppointmentId, ':user2' => $userId,
                 ':reason' => $reason, ':id' => $target['deposit_id'],
             ]);

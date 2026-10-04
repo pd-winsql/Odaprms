@@ -69,6 +69,56 @@ try {
     transferExpect($appointments->updateAppointmentStatus($appointmentIds[0], 'Cancelled', $staffId, $cancelReason)['success'], 'The original confirmed appointment was cancelled by clinic staff.');
     transferExpect(!$deposits->transferDeposit($appointmentIds[0], $appointmentIds[2], $staffId, 'Move payment to the other booking.')['success'], 'A transfer to another patient is rejected.');
 
+    transferExpect(count($deposits->getPatientTransferCredits($qaUserId, $appointmentIds[1])) === 1, 'Patient sees their eligible verified credit on the accepted replacement.');
+    transferExpect($deposits->getPatientTransferCredits($qaUserId, $appointmentIds[2]) === [], 'Patient cannot list credits for another patient replacement.');
+    transferExpect(!$deposits->transferDeposit($appointmentIds[0], $appointmentIds[1], $staffId, 'Self-service transfer.', true)['success'], 'Staff cannot masquerade as a self-service patient.');
+    transferExpect(!$deposits->transferDeposit($appointmentIds[0], $appointmentIds[1], $qaUserId, 'Staff transfer.')['success'], 'Patient cannot invoke the staff transfer path.');
+
+    // Reversible transaction probes: no actual payments or emails are delivered.
+    $probe = static function (callable $test) use ($conn): void {
+        $conn->beginTransaction();
+        try { $test(); } finally { $conn->rollBack(); }
+    };
+    $expectPatientFailure = static function (string $label) use ($deposits,$appointmentIds,$qaUserId): void {
+        try {
+            $deposits->transferDeposit($appointmentIds[0],$appointmentIds[1],$qaUserId,'Patient applied an existing verified deposit.',true);
+        } catch (RuntimeException $e) { transferExpect(true,$label); return; }
+        throw new RuntimeException($label . ' was incorrectly allowed.');
+    };
+    $probe(static function () use ($conn,$patientIds,$expectPatientFailure) {
+        $conn->exec('UPDATE patients SET user_id=NULL WHERE patient_id=' . $patientIds[0]);
+        $expectPatientFailure('Both appointments sharing a patient ID does not grant ownership.');
+    });
+    $probe(static function () use ($conn,$appointmentIds,$expectPatientFailure) {
+        $conn->exec("UPDATE appointments SET payment_deadline_at=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE appointment_id=" . $appointmentIds[1]);
+        $expectPatientFailure('Expired replacement payment window is rejected.');
+    });
+    $probe(static function () use ($conn,$appointmentIds,$expectPatientFailure) {
+        $conn->exec("UPDATE appointments SET status='Pending Review' WHERE appointment_id=" . $appointmentIds[1]);
+        $expectPatientFailure('Self-service cannot bypass staff appointment acceptance.');
+    });
+    $probe(static function () use ($conn,$appointmentIds,$expectPatientFailure) {
+        $conn->exec('UPDATE appointment_deposits SET amount=1 WHERE appointment_id=' . $appointmentIds[0]);
+        $expectPatientFailure('Insufficient credit is rejected without partial transfer.');
+    });
+    $probe(static function () use ($conn,$appointmentIds,$expectPatientFailure) {
+        $conn->exec('UPDATE appointment_deposits SET verified_at=NULL WHERE appointment_id=' . $appointmentIds[0]);
+        $expectPatientFailure('Credit without previous verification is rejected.');
+    });
+    foreach (['Refunded','Forfeited','Under Review'] as $ineligibleStatus) {
+        $probe(static function () use ($conn,$appointmentIds,$expectPatientFailure,$ineligibleStatus) {
+            $conn->prepare('UPDATE appointment_deposits SET status=? WHERE appointment_id=?')->execute([$ineligibleStatus,$appointmentIds[0]]);
+            $expectPatientFailure($ineligibleStatus . ' credit cannot be applied.');
+        });
+    }
+    $probe(static function () use ($conn,$deposits,$appointmentIds,$qaUserId,$staffId,$expectPatientFailure) {
+        $result=$deposits->transferDeposit($appointmentIds[0],$appointmentIds[1],$qaUserId,'Patient applied an existing verified deposit.',true);
+        transferExpect($result['success'] && $result['audit']['performed_by_role']==='Patient', 'Patient self-service confirms replacement and records Patient audit actor.');
+        transferExpect((int)$conn->query('SELECT verified_by_user_id FROM appointment_deposits WHERE appointment_id=' . $appointmentIds[1])->fetchColumn()===$staffId,'Original staff verifier is preserved on reused credit.');
+        $expectPatientFailure('Already transferred credit cannot be spent twice.');
+        transferExpect($deposits->getPatientTransferCredits($qaUserId,$appointmentIds[1])===[], 'Confirmed replacement no longer offers credit application.');
+    });
+
     $transferReason = 'Patient requested deposit transfer for rescheduling.';
     $result = $deposits->transferDeposit($appointmentIds[0], $appointmentIds[1], $staffId, $transferReason);
     transferExpect(($result['success'] ?? false) && str_starts_with($result['appointment_code'] ?? '', 'AVC-'), 'The refundable deposit transfers to the same patient replacement and generates a code.');

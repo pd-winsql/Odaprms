@@ -85,6 +85,39 @@ function depositStatusClass($status) {
                     </div>
                 <?php endif; ?>
 
+                <?php $credits = $canSubmit ? $depositModel->getPatientTransferCredits((int) $_SESSION['user_id'], (int) $deposit['appointment_id']) : []; ?>
+                <?php if ($credits): ?>
+                    <form class="vd-patient-credit-form" data-patient-credit-form aria-labelledby="creditTitle<?= (int) $deposit['deposit_id'] ?>">
+                        <input type="hidden" name="action" value="applyCredit">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                        <input type="hidden" name="target_appointment_id" value="<?= (int) $deposit['appointment_id'] ?>">
+                        <div class="vd-patient-credit-heading">
+                            <span class="vd-receipt-kicker">Previously verified payment</span>
+                            <h3 id="creditTitle<?= (int) $deposit['deposit_id'] ?>">You don’t need to pay again</h3>
+                            <p>Use an eligible deposit to confirm this appointment without uploading another receipt.</p>
+                        </div>
+                        <fieldset class="vd-patient-credit-options">
+                            <legend><?= count($credits) > 1 ? 'Choose a deposit' : 'Available deposit' ?></legend>
+                            <?php foreach ($credits as $index => $credit): ?>
+                                <label class="vd-patient-credit-option">
+                                    <input type="radio" name="source_appointment_id" value="<?= (int) $credit['appointment_id'] ?>" <?= $index === 0 ? 'checked' : '' ?> required
+                                        data-credit-amount="₱<?= number_format((float) $credit['amount'], 2) ?>"
+                                        data-credit-source="Appointment #<?= (int) $credit['appointment_id'] ?>"
+                                        data-credit-context="<?= htmlspecialchars($credit['clinic_name'], ENT_QUOTES) ?> · <?= date('M j, Y', strtotime($credit['date'])) ?>">
+                                    <span class="vd-patient-credit-value">₱<?= number_format((float) $credit['amount'], 2) ?><small>Verified deposit</small></span>
+                                    <span class="vd-patient-credit-source"><strong>Appointment #<?= (int) $credit['appointment_id'] ?></strong><span><?= htmlspecialchars($credit['clinic_name']) ?></span><small><?= date('M j, Y', strtotime($credit['date'])) ?></small></span>
+                                </label>
+                            <?php endforeach; ?>
+                        </fieldset>
+                        <div class="vd-patient-credit-footer">
+                            <p>The whole deposit moves to this appointment. It can only be used once.</p>
+                            <button type="submit" class="btn vd-btn-gold">Use existing deposit</button>
+                        </div>
+                        <div class="alert alert-danger mt-2 mb-0 d-none" data-credit-error role="alert"></div>
+                    </form>
+                    <div class="vd-patient-credit-alternative"><span>Or make a new GCash payment</span></div>
+                <?php endif; ?>
+
                 <?php if ($deposit['deposit_status'] === 'Rejected'): ?>
                     <div class="alert alert-danger small vd-deposit-state-note">
                         <strong>Receipt needs correction:</strong> <?= htmlspecialchars($deposit['rejection_reason'] ?: 'The submitted proof could not be verified.') ?>
@@ -186,7 +219,7 @@ function depositStatusClass($status) {
                                         <p class="vd-receipt-review-note">Review these details before submitting. You may correct anything that was read incorrectly.</p>
                                         <div class="vd-receipt-submit-group">
                                             <div class="alert alert-danger d-none depositError" role="alert" aria-live="assertive"></div>
-                                            <button type="submit" class="btn vd-btn-gold w-100">Submit for Verification</button>
+                                            <button type="submit" class="btn vd-btn-gold w-100" disabled>Submit for Verification</button>
                                         </div>
                                     </div>
                                 </div>
@@ -228,7 +261,7 @@ function depositStatusClass($status) {
                                     <td>
                                         <span class="<?= depositStatusClass($deposit['deposit_status']) ?>"><?= htmlspecialchars($deposit['deposit_status']) ?></span>
                                         <div class="vd-appt-meta mt-1">Appointment: <?= htmlspecialchars($deposit['appointment_status']) ?></div>
-                                        <?php if ($deposit['deposit_status'] === 'Retained for Rebooking'): ?><div class="vd-appt-meta mt-1">Deposit retained for rebooking. Contact the clinic to apply it to an accepted replacement appointment.</div><?php endif; ?>
+                                        <?php if (in_array($deposit['deposit_status'], ['Retained for Rebooking', 'For Refund'], true)): ?><div class="vd-appt-meta mt-1">Once your replacement appointment is accepted, use an eligible deposit above. Contact the clinic for assistance or a refund.</div><?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if ($deposit['verified_at']): ?>
@@ -309,6 +342,51 @@ function depositStatusClass($status) {
 <script>
 (function () {
     window.DepositOcr?.initAll(document);
+
+    document.querySelectorAll('[data-patient-credit-form]').forEach(form => {
+        let busy = false;
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (busy || !form.reportValidity()) return;
+            busy = true;
+            const button = form.querySelector('button[type="submit"]');
+            const selected = form.querySelector('[name="source_appointment_id"]:checked');
+            const choices = form.querySelectorAll('[name="source_appointment_id"]');
+            const errorBox = form.querySelector('[data-credit-error]');
+            const payload = new FormData(form);
+            errorBox.classList.add('d-none');
+            button.disabled = true;
+            choices.forEach(choice => { choice.disabled = true; });
+            try {
+                const confirmation = await window.showActionModal({
+                    title: 'Use existing deposit?', kicker: 'Deposit transfer',
+                    message: 'Your appointment will be confirmed. The original deposit will no longer be available for another transfer.',
+                    details: [
+                        {label: 'Deposit to apply', value: selected.dataset.creditAmount},
+                        {label: 'From', value: `${selected.dataset.creditSource} · ${selected.dataset.creditContext}`},
+                        {label: 'To', value: `Appointment #${payload.get('target_appointment_id')}`}
+                    ],
+                    confirmText: 'Apply deposit', tone: 'success', icon: 'ti-check'
+                });
+                if (!confirmation.confirmed) return;
+                button.textContent = 'Applying…';
+                const response = await fetch(window.vdAppUrl('apps/controllers/depositController.php'), {method: 'POST', body: payload});
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Unable to apply the deposit.');
+                window.showToast?.(result.message, true);
+                document.querySelector('[data-page="billing-content.php"]')?.click();
+            } catch (error) {
+                errorBox.textContent = error.message || 'Unable to apply the deposit. Please try again.';
+                errorBox.classList.remove('d-none');
+            } finally {
+                busy = false;
+                button.disabled = false;
+                choices.forEach(choice => { choice.disabled = false; });
+                button.textContent = 'Use existing deposit';
+                button.focus({preventScroll: true});
+            }
+        });
+    });
 
     const qrModal = document.getElementById('gcashQrPreviewModal');
     if (qrModal) {
@@ -440,7 +518,6 @@ function depositStatusClass($status) {
             validateAmount();
             updateSubmit();
             if (button.disabled) return;
-            const button = form.querySelector('button[type="submit"]');
             const errorBox = form.querySelector('.depositError');
             form.querySelectorAll('.is-invalid').forEach(field => {
                 field.classList.remove('is-invalid');

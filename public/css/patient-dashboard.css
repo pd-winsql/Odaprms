@@ -2815,3 +2815,59 @@
 }
 .vd-dash-body .vd-status-treatment-postponed,
 .vd-dash-body .vd-status-retained-for-rebooking { background: #fff3d3; color: #765310; }
+
+/* Patient deposit reuse: scoped to this interaction, not shared forms/modals. */
+.vd-patient-credit-form {
+    margin: 24px 0 0;
+    padding: clamp(18px, 3vw, 28px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: linear-gradient(120deg, #faf6ec, #fffdf9 72%);
+}
+.vd-patient-credit-heading h3 {
+    margin: 6px 0 8px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(27px, 3vw, 34px);
+    line-height: 1.15;
+}
+.vd-patient-credit-heading p,
+.vd-patient-credit-footer p { margin: 0; color: var(--muted, #70665b); font-size: 14px; line-height: 1.6; }
+.vd-patient-credit-options { margin: 20px 0 0; min-width: 0; }
+.vd-patient-credit-options legend { margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+.vd-patient-credit-option {
+    display: grid;
+    grid-template-columns: 20px minmax(120px, .4fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+    padding: 16px 18px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fffdf9;
+    cursor: pointer;
+    transition: border-color .16s ease, background-color .16s ease;
+}
+.vd-patient-credit-option:has(input:checked) { border-color: var(--gold); background: #f7f0df; }
+.vd-patient-credit-option:has(input:focus-visible) { outline: 3px solid var(--gold); outline-offset: 3px; }
+.vd-patient-credit-option input { width: 18px; height: 18px; accent-color: var(--gold); }
+.vd-patient-credit-value { font-size: 26px; font-weight: 600; line-height: 1.25; color: var(--gold); }
+.vd-patient-credit-value small,
+.vd-patient-credit-source span,
+.vd-patient-credit-source small { display: block; font-size: 13px; font-weight: 400; color: var(--muted, #70665b); line-height: 1.6; }
+.vd-patient-credit-source { overflow-wrap: anywhere; }
+.vd-patient-credit-source strong { font-size: 14px; font-weight: 600; }
+.vd-patient-credit-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 16px; }
+.vd-patient-credit-footer p { max-width: 440px; font-size: 13px; }
+.vd-patient-credit-footer .btn { flex-shrink: 0; min-height: 44px; }
+.vd-patient-credit-alternative { display: flex; align-items: center; gap: 16px; margin: 24px 0; color: var(--muted, #70665b); font-size: 13px; text-align: center; }
+.vd-patient-credit-alternative::before,
+.vd-patient-credit-alternative::after { content: ''; height: 1px; background: var(--border); flex: 1; }
+@media (max-width: 575px) {
+    .vd-patient-credit-option { grid-template-columns: 18px minmax(0, 1fr); gap: 8px 12px; padding: 14px; }
+    .vd-patient-credit-source { grid-column: 2; }
+    .vd-patient-credit-footer { flex-direction: column; align-items: stretch; gap: 12px; }
+    .vd-patient-credit-footer .btn { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .vd-patient-credit-option { transition: none; }
+}
