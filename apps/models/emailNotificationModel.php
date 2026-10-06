@@ -58,6 +58,7 @@ class EmailNotificationModel {
         );
         $paymentStmt = $this->conn->prepare("
             SELECT COALESCE(d.amount, ss.deposit_amount, 400) AS deposit_amount,
+                   d.status AS deposit_status,
                    COALESCE(ss.payment_deadline_minutes, 480) AS payment_deadline_minutes
             FROM site_settings ss
             LEFT JOIN appointment_deposits d ON d.appointment_id = :appointment_id
@@ -66,11 +67,15 @@ class EmailNotificationModel {
         ");
         $paymentStmt->execute([':appointment_id' => $appointmentId]);
         $payment = $paymentStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $depositGuidance = ($templateKey === 'appointment_cancelled' && ($payment['deposit_status'] ?? '') === 'For Refund')
+            ? 'Your verified deposit is marked for refund. Please contact the clinic to arrange a refund or ask whether it can be applied to a separate replacement booking.'
+            : '';
         $defaultVariables = [
             '{deposit_amount}' => vdFormatPesoAmount((float) ($payment['deposit_amount'] ?? 400)),
             '{payment_deadline}' => vdFormatDurationMinutes((int) ($payment['payment_deadline_minutes'] ?? 480)),
             '{schedule_summary}' => $scheduleSummary,
             '{arrival_instruction}' => 'Please arrive by ' . date('g:i A', strtotime($recipient['start_time'])) . ' or earlier. Patients are served first come, first served.',
+            '{deposit_guidance}' => $depositGuidance,
         ];
         $payload = json_encode([
             'to_name' => $name !== '' ? $name : 'Patient',

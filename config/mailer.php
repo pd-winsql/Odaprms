@@ -95,6 +95,13 @@ function buildEmailBrandHeader(array $branding, bool $hasEmbeddedLogo): string
 function buildEmailHtml($toName, $template, $value, ?array $branding = null, bool $hasEmbeddedLogo = false)
 {
     $branding ??= getEmailBranding();
+    $valueStyle = ($template['value_style'] ?? '') === 'prose'
+        ? 'font-size: 14px; font-weight: 400; letter-spacing: normal; line-height: 1.6; text-align: left; overflow-wrap: anywhere;'
+        : 'font-size: 30px; font-weight: 600; letter-spacing: 0.15em; text-align: center;';
+    $valueHtml = ($template['value_style'] ?? '') === 'prose'
+        ? nl2br(htmlspecialchars($value, ENT_QUOTES, 'UTF-8'))
+        : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    $boxAlignment = ($template['value_style'] ?? '') === 'prose' ? 'left' : 'center';
     return '
     <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #fffdf9; border: 1px solid #d9c9a8; border-radius: 6px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -107,9 +114,9 @@ function buildEmailHtml($toName, $template, $value, ?array $branding = null, boo
         ' . htmlspecialchars($template['instruction']) . '
       </p>
 
-      <div style="text-align: center; background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 6px; padding: 24px; margin-bottom: 24px;">
+      <div style="text-align: ' . $boxAlignment . '; background: #f5efe4; border: 1px solid #d9c9a8; border-radius: 6px; padding: 24px; margin-bottom: 24px;">
         <div style="font-size: 11px; letter-spacing: 0.2em; color: #b5924c; text-transform: uppercase; margin-bottom: 10px;">' . htmlspecialchars($template['label']) . '</div>
-        <div style="font-size: 30px; font-weight: 600; letter-spacing: 0.15em; color: #1a1612;">' . htmlspecialchars($value) . '</div>
+        <div style="' . $valueStyle . ' color: #1a1612;">' . $valueHtml . '</div>
       </div>
 
       <p style="font-size: 12px; color: #4a3f30; line-height: 1.6;">
@@ -123,6 +130,16 @@ function buildEmailHtml($toName, $template, $value, ?array $branding = null, boo
     </div>';
 }
 
+function buildEmailText($toName, $template, $value): string
+{
+    return "Dr. Aprille Ventura Clinica Dental\n\n"
+        . "Hello $toName,\n\n"
+        . $template['intro'] . "\n\n"
+        . $template['instruction'] . "\n\n"
+        . $template['label'] . ": $value\n\n"
+        . $template['footer'];
+}
+
 // ── Generic sender: looks up a template by key, sends it with $value as the highlighted code/status ──
 function sendTemplateEmail($toEmail, $toName, $templateKey, $value, array $templateVariables = [])
 {
@@ -133,6 +150,7 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value, array $templ
         return ['success' => false, 'message' => 'Unknown email template.'];
     }
 
+    $templateVariables += ['{deposit_guidance}' => ''];
     if ($templateVariables) {
         foreach (['subject', 'heading', 'intro', 'instruction', 'label', 'footer'] as $field) {
             if (isset($template[$field])) {
@@ -167,12 +185,7 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value, array $templ
         $hasEmbeddedLogo = addEmailBrandLogo($mail, $branding);
         $mail->Subject = $template['subject'] . ' — Dr. Aprille Ventura Clinica Dental';
         $mail->Body    = buildEmailHtml($toName, $template, $value, $branding, $hasEmbeddedLogo);
-        $mail->AltBody =
-            "Dr. Aprille Ventura Clinica Dental\n\n" .
-            "Hello $toName,\n\n" .
-            $template['intro'] . "\n\n" .
-            $template['label'] . ": $value\n\n" .
-            $template['footer'];
+        $mail->AltBody = buildEmailText($toName, $template, $value);
 
         error_log("===== PHPMailer Recipients =====");
         foreach ($mail->getToAddresses() as $recipient) {

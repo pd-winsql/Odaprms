@@ -8,6 +8,9 @@ require_once __DIR__ . '/../helpers/bookingPolicy.php';
 
 class Appointment
 {
+    private const SAME_DAY_BLOCKING_STATUSES = "'Pending Review', 'Awaiting Deposit', 'Payment Under Review',
+        'Confirmed', 'Checked In', 'In Progress', 'Completed', 'Pending', 'Awaiting Payment'";
+
     private $conn;
     private $auditLog;
     private $emailNotifications;
@@ -20,6 +23,15 @@ class Appointment
         $this->emailNotifications = new EmailNotificationModel($conn);
         $appointmentRules = require __DIR__ . '/../../config/appointment.php';
         $this->maxServicesPerVisit = max(1, (int) ($appointmentRules['max_services_per_visit'] ?? 5));
+    }
+
+    public function getBookedDatesForPatient(int $patientId, string $fromDate): array
+    {
+        $stmt = $this->conn->prepare('SELECT DISTINCT date FROM appointments
+            WHERE patient_id = :patient_id AND date >= :from_date
+            AND status IN (' . self::SAME_DAY_BLOCKING_STATUSES . ')');
+        $stmt->execute([':patient_id' => $patientId, ':from_date' => $fromDate]);
+        return array_fill_keys($stmt->fetchAll(PDO::FETCH_COLUMN), true);
     }
 
     // ===== BOOKING =====
@@ -106,11 +118,7 @@ class Appointment
                 FROM appointments
                 WHERE patient_id = :patient_id
                     AND date = :appointment_date
-                    AND status IN (
-                        'Pending Review', 'Awaiting Deposit', 'Payment Under Review',
-                        'Confirmed', 'Checked In', 'In Progress', 'Completed',
-                        'Pending', 'Awaiting Payment'
-                    )
+                    AND status IN (" . self::SAME_DAY_BLOCKING_STATUSES . ")
                 LIMIT 1
             ");
             $sameDayAppointment->execute([

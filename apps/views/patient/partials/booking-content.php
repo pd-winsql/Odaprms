@@ -10,6 +10,7 @@ require_once __DIR__ . '/../../../../config/conn.php';
 require_once __DIR__ . '/../../../models/patientModel.php';
 require_once __DIR__ . '/../../../models/clinicModel.php';
 require_once __DIR__ . '/../../../models/scheduleModel.php';
+require_once __DIR__ . '/../../../models/appointmentModel.php';
 require_once __DIR__ . '/../../../models/serviceModel.php';
 require_once __DIR__ . '/../../../helpers/patientEligibility.php';
 require_once __DIR__ . '/../../../helpers/bookingPolicy.php';
@@ -37,11 +38,18 @@ $scheduleModel = new Schedule($conn);
 $serviceRows = (new ServiceModel($conn))->getHomepageServices();
 
 $schedulesByClinic = [];
+$bookedDates = $patient
+    ? (new Appointment($conn))->getBookedDatesForPatient((int) $patient['patient_id'], $earliestBookableDate)
+    : [];
 foreach ($clinics as $clinic) {
     $schedulesByClinic[(int) $clinic['clinic_id']] = $scheduleModel->getAvailableSchedulesByClinic(
         $clinic['clinic_id'],
         $earliestBookableDate
     );
+    foreach ($schedulesByClinic[(int) $clinic['clinic_id']] as &$schedule) {
+        $schedule['has_booking_conflict'] = isset($bookedDates[$schedule['sched_date']]);
+    }
+    unset($schedule);
 }
 
 $serviceCategories = [];
@@ -161,6 +169,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         </header>
         <div class="vd-booking-arrival-policy"><i class="ti ti-user-clock" aria-hidden="true"></i><span><strong>Arrive by the opening time or earlier.</strong> Patients are served first come, first served during the clinic window.</span></div>
         <div class="alert alert-warning d-none mb-3" id="bookingScheduleStatus" role="status" aria-live="polite"></div>
+        <div class="alert alert-warning d-none mx-3 mt-3 mb-0" id="bookingDateConflictStatus" role="status" aria-live="polite"></div>
         <div class="vd-booking-schedule-grid" id="bookingScheduleGrid"></div>
         <div class="vd-empty-state d-none" id="bookingScheduleEmpty" role="status" aria-live="polite">No schedules are available for this clinic on or after <?= htmlspecialchars($earliestBookableLabel) ?>.</div>
     </section>
@@ -342,6 +351,7 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
     const grid = document.getElementById('bookingScheduleGrid');
     const empty = document.getElementById('bookingScheduleEmpty');
     const scheduleStatus = document.getElementById('bookingScheduleStatus');
+    const dateConflictStatus = document.getElementById('bookingDateConflictStatus');
     const clinicInput = document.getElementById('dashboardClinicInput');
     const scheduleInput = document.getElementById('dashboardScheduleInput');
     const clinicLabel = document.getElementById('bookingClinicLabel');
@@ -516,15 +526,21 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
         furthestStep = Math.min(furthestStep, 1);
         empty.classList.toggle('d-none', schedules.length > 0);
         grid.classList.toggle('d-none', schedules.length === 0);
+        const conflictingDates = [...new Set(schedules.filter(schedule => schedule.has_booking_conflict).map(schedule => schedule.sched_date))];
+        dateConflictStatus.classList.toggle('d-none', conflictingDates.length === 0);
+        dateConflictStatus.textContent = conflictingDates.length
+            ? 'You already have an appointment on ' + conflictingDates.map(date => parseLocalDate(date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })).join(', ') + '. Choose a different date.'
+            : '';
 
         schedules.forEach(schedule => {
             const remaining = Number(schedule.available_slots);
             const isFull = remaining <= 0;
+            const hasConflict = Boolean(schedule.has_booking_conflict);
             const date = parseLocalDate(schedule.sched_date);
             const card = document.createElement('button');
             card.type = 'button';
-            card.className = 'vd-booking-schedule-card' + (isFull ? ' full' : '');
-            card.disabled = isFull;
+            card.className = 'vd-booking-schedule-card' + (hasConflict ? ' has-conflict' : isFull ? ' full' : '');
+            card.disabled = isFull || hasConflict;
             card.setAttribute('aria-pressed', 'false');
             card.innerHTML = `
                 <span class="vd-booking-schedule-date">
@@ -535,12 +551,12 @@ $bookingSteps = ['Clinic', 'Schedule', 'Services & review'];
                 <span class="vd-booking-schedule-info">
                     <span class="vd-booking-schedule-window"><i class="ti ti-clock" aria-hidden="true"></i>${formatWindow(schedule)}</span>
                     <small class="vd-booking-arrive-by">Arrive by ${formatTime(schedule.start_time)} or earlier</small>
-                    <small class="vd-booking-slots">${isFull ? 'Fully booked' : remaining + ' slot' + (remaining === 1 ? '' : 's') + ' left'}</small>
+                    <small class="vd-booking-slots">${hasConflict ? 'Already booked on this date' : isFull ? 'Fully booked' : remaining + ' slot' + (remaining === 1 ? '' : 's') + ' left'}</small>
                 </span>
                 <span class="vd-booking-schedule-check" aria-hidden="true"><i class="ti ti-check"></i></span>`;
-            if (!isFull) card.addEventListener('click', () => chooseSchedule(card, clinicId, schedule));
+            if (!card.disabled) card.addEventListener('click', () => chooseSchedule(card, clinicId, schedule));
             grid.appendChild(card);
-            if (!isFull && String(schedule.schedule_id) === String(preferredScheduleId)) {
+            if (!card.disabled && String(schedule.schedule_id) === String(preferredScheduleId)) {
                 chooseSchedule(card, clinicId, schedule);
             }
         });

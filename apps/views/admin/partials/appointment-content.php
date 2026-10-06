@@ -375,7 +375,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                             data-name="<?= htmlspecialchars($appt['firstname'] . ' ' . $appt['lastname']) ?>"><i class="ti ti-x" aria-hidden="true"></i><span>Reject appointment</span></button>
                         <?php elseif ($appt['status'] === 'Awaiting Deposit'): ?>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-extend-deadline="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-clock-plus" aria-hidden="true"></i><span>Extend by 8 hours</span></button>
-                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-transfer-deposit="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-arrows-exchange" aria-hidden="true"></i><span>Transfer deposit</span></button>
+                        <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item" data-transfer-deposit="<?= (int)$appt['appointment_id'] ?>"><i class="ti ti-arrows-exchange" aria-hidden="true"></i><span>Apply existing deposit</span></button>
                         <button type="button" class="btn vd-btn-outline btn-sm vd-appt-menu-item vd-appt-menu-danger" data-status-action="Cancelled"
                             data-appointment-id="<?= (int)$appt['appointment_id'] ?>"
                             data-email="<?= htmlspecialchars($appt['email']) ?>"
@@ -886,7 +886,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
             addStatusAction('Reject appointment', 'Rejected', 'ti-x', 'danger');
         } else if (details.status === 'Awaiting Deposit') {
             addDepositAction('Extend by 8 hours', 'extendDeadline', button => runExtendDeadline(button), 'ti-clock-plus');
-            addDepositAction('Transfer deposit', 'transferDeposit', button => runTransferDeposit(button), 'ti-arrows-exchange');
+            addDepositAction('Apply existing deposit', 'transferDeposit', button => runTransferDeposit(button), 'ti-arrows-exchange');
             addStatusAction('Cancel appointment', 'Cancelled', 'ti-calendar-cancel', 'danger');
         } else if (details.status === 'Confirmed') {
             addStatusAction('Cancel appointment', 'Cancelled', 'ti-calendar-cancel', 'danger');
@@ -1308,7 +1308,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                 title: isCancellation ? 'Cancel Appointment' : 'Reject Appointment Request',
                 kicker: isCancellation ? 'Appointment cancellation' : 'Appointment review',
                 message: isCancellation
-                    ? 'Enter the reason shown to the patient. For an emergency reschedule, cancel this appointment before transferring its deposit to the new booking.'
+                    ? 'If the patient only needs a different date, use a reschedule request instead. Enter a clear cancellation reason; the patient will see it.'
                     : 'The patient will receive this reason by email. Please keep it clear and professional.',
                 confirmText: isCancellation ? 'Cancel Appointment' : 'Reject Appointment',
                 icon: isCancellation ? 'ti-calendar-cancel' : 'ti-calendar-x',
@@ -1318,7 +1318,7 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
                     name: 'reason',
                     label: isCancellation ? 'Reason for cancellation' : 'Reason for rejection',
                     placeholder: isCancellation
-                        ? 'Example: Patient emergency — requested reschedule.'
+                        ? 'Example: Patient requested cancellation due to a personal emergency.'
                         : 'Example: The selected schedule is no longer available.',
                     multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255
                 }]
@@ -1509,16 +1509,16 @@ function appointmentDetailsPayload(array $appointment, array $services): string 
 
     async function runTransferDeposit(button) {
         const response = await window.showActionModal({
-            title: 'Transfer Refundable Deposit',
+            title: 'Apply Deposit to Replacement Booking',
             kicker: 'Deposit adjustment',
-            message: 'Move the refundable deposit from the patient’s cancelled appointment to this replacement booking. Both appointments will retain an audit record of the transfer.',
-            confirmText: 'Transfer Deposit',
+            message: 'Use this only after cancelling the original appointment and accepting a separate replacement booking for the same patient. Applying its refundable deposit will confirm the replacement booking. Both appointments retain an audit record.',
+            confirmText: 'Apply Deposit',
             icon: 'ti-transfer',
             tone: 'warning',
             details: [{ label: 'New booking', value: `Appointment #${button.dataset.transferDeposit}` }],
             fields: [
                 { name: 'source', label: 'Cancelled appointment number', placeholder: 'Enter the appointment number with the refundable deposit.', type: 'number', required: true },
-                { name: 'reason', label: 'Transfer reason', value: 'Patient requested a new appointment.', multiline: true, rows: 2, required: true, minlength: 3, maxlength: 255 }
+                { name: 'reason', label: 'Reason for applying deposit', placeholder: 'Explain why the deposit is being moved to this booking.', multiline: true, rows: 2, required: true, minlength: 3, maxlength: 255 }
             ]
         });
         if (!response.confirmed) return;

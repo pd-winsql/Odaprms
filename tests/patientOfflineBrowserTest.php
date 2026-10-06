@@ -125,6 +125,7 @@ try {
     };
     $scheduleA = $schedule($db, $clinicA, 10);
     $scheduleB = $schedule($db, $clinicA, 11);
+    $schedule($db, $clinicA, 13);
     $rescheduleTarget = $schedule($db, $clinicB, 12);
     $depositSchedule = $schedule($db, $clinicA, 14);
 

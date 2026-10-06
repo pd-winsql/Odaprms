@@ -1321,6 +1321,16 @@
     opacity: .55;
 }
 
+.vd-booking-schedule-card.has-conflict {
+    border-color: #d8c8ad;
+    background: #f7f1e7;
+    cursor: not-allowed;
+}
+
+.vd-booking-schedule-card.has-conflict .vd-booking-slots {
+    color: #78571b;
+}
+
 .vd-booking-form-body {
     padding: 20px;
 }

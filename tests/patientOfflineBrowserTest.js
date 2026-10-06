@@ -119,7 +119,13 @@ async function main() {
 
         await nav('booking-content.php', '#bookingClinicTitle');
         await page.locator('#bookingNext').click();
-        await page.locator('.vd-booking-schedule-card:not(.full)').first().click();
+        await page.locator('#bookingDateConflictStatus:not(.d-none)').waitFor();
+        check(await page.locator('.vd-booking-schedule-card.has-conflict').count() >= 2
+            && await page.locator('.vd-booking-schedule-card.has-conflict').first().isDisabled()
+            && await page.locator('#bookingNext').isDisabled(),
+            'Already-booked dates are explained and cannot be selected at Step 2');
+        await page.locator('.vd-booking-schedule-card:not(:disabled)').first().click();
+        check(await page.locator('#bookingNext').isEnabled(), 'An open date allows continuing');
         await page.locator('#bookingNext').click();
         await page.locator('.vd-booking-service-option').first().click();
         const bookingSubmit = '#dashboardBookingSubmit';

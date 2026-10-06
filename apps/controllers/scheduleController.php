@@ -2,6 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once '../models/scheduleModel.php';
 require_once '../models/clinicModel.php';
+require_once '../models/patientModel.php';
+require_once '../models/appointmentModel.php';
 require_once '../models/auditLogModel.php';
 require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
@@ -69,6 +71,16 @@ class ScheduleController {
         $leadDays = BookingPolicy::minimumLeadDays($this->conn);
         $minimumDate = BookingPolicy::earliestBookableDate($leadDays);
         $data = $this->schedules->getAvailableSchedulesByClinic($clinic_id, $minimumDate);
+        if (($_SESSION['user_role'] ?? '') === 'Patient' && !empty($_SESSION['user_id'])) {
+            $patient = (new Patient($this->conn))->getPatientByUserId((int) $_SESSION['user_id']);
+            if ($patient) {
+                $bookedDates = (new Appointment($this->conn))->getBookedDatesForPatient((int) $patient['patient_id'], $minimumDate);
+                foreach ($data as &$schedule) {
+                    $schedule['has_booking_conflict'] = isset($bookedDates[$schedule['sched_date']]);
+                }
+                unset($schedule);
+            }
+        }
         echo json_encode($data);
     }
 

@@ -420,8 +420,13 @@ class PatientController {
             echo json_encode(['success' => false, 'message' => 'Select a valid consent option.']);
             exit;
         }
-        if (!$isDraft && $data['guardian_contact'] !== '' && !PatientProfilePolicy::isValidGuardianContact($data['guardian_contact'])) {
-            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain 7 to 15 digits.']);
+        $submittedGuardianContact = trim($_POST['guardian_contact'] ?? '');
+        if ($submittedGuardianContact !== '' && !preg_match('/^\d{1,11}$/', $submittedGuardianContact)) {
+            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain numbers only and cannot exceed 11 digits.']);
+            exit;
+        }
+        if (!$isDraft && $submittedGuardianContact !== '' && !preg_match('/^\d{11}$/', $submittedGuardianContact)) {
+            echo json_encode(['success' => false, 'message' => 'Guardian contact must contain exactly 11 digits.']);
             exit;
         }
         if (!$isDraft) {

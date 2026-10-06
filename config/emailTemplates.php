@@ -84,12 +84,14 @@ return [
             'Unfortunately, your appointment has been cancelled.',
 
         'instruction' =>
-            'Cancelled schedule: {schedule_summary} Please contact the clinic if you wish to schedule another appointment.',
+            'Cancelled schedule: {schedule_summary} You can choose another available appointment in your patient account or contact the clinic for help. {deposit_guidance}',
 
-        'label' => 'Appointment Status',
+        'label' => 'Reason for cancellation',
+
+        'value_style' => 'prose',
 
         'footer' =>
-            'Thank you for your understanding.'
+            'Please contact the clinic if you have questions about this cancellation.'
     ],
 
     'appointment_awaiting_deposit' => [

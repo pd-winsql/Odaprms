@@ -3375,6 +3375,17 @@ button.vd-stat-card {
     text-transform: none;
 }
 
+.vd-checkin-field-error {
+    margin-top: 5px;
+    color: #9a4135;
+    font-size: 11px;
+}
+
+.vd-checkin-field-error[hidden],
+.vd-readiness-list > div[hidden] {
+    display: none;
+}
+
 .vd-medical-missing-wrap {
     margin: 0 18px 18px;
     padding-top: 14px;
@@ -3664,6 +3675,7 @@ button.vd-stat-card {
     color: var(--gold);
     font-size: 16px;
 }
+
 .vd-schedule-defaults-card {
     overflow: hidden;
 }
