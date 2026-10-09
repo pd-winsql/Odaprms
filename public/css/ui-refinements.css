@@ -493,3 +493,135 @@
     }
 
 }
+
+/* Admin Today's Queue only: respond to content width, including the sidebar. */
+.vd-admin-queue { container: admin-queue / inline-size; }
+.vd-admin-queue-inline-indicator { display: none; }
+.vd-admin-queue .vd-admin-queue-table { min-width: 0; table-layout: fixed; }
+.vd-admin-queue .vd-admin-queue-table :is(th, td) {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding-inline: 12px;
+}
+.vd-admin-queue .vd-admin-queue-table th:nth-child(1) { width: 7%; }
+.vd-admin-queue .vd-admin-queue-table th:nth-child(2) { width: 23%; }
+.vd-admin-queue .vd-admin-queue-table th:nth-child(3) { width: 23%; }
+.vd-admin-queue .vd-admin-queue-table th:nth-child(4) { width: 20%; }
+.vd-admin-queue .vd-admin-queue-table th:nth-child(5) { width: 27%; }
+.vd-admin-queue .vd-admin-queue-table :is(th, td):last-child {
+    position: static;
+    box-shadow: none;
+}
+.vd-admin-queue .vd-admin-queue-table :is(.vd-appt-name, .vd-appt-meta) {
+    max-width: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    overflow: visible;
+    text-overflow: clip;
+}
+.vd-admin-queue .vd-queue-action-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.vd-admin-queue .vd-queue-action-group .btn {
+    min-height: 44px;
+    padding: 10px 12px;
+    gap: 6px;
+    font-size: 12px;
+    letter-spacing: .03em;
+    white-space: normal;
+}
+.vd-dash-body .vd-admin-queue .vd-admin-queue-details {
+    border: 1px solid var(--vd-border, #dfccaa);
+    background: transparent;
+    color: var(--vd-text, #40362a);
+}
+.vd-admin-queue .vd-admin-queue-details:hover { background: #f4eee3; }
+.vd-admin-queue .vd-admin-queue-postpone {
+    grid-column: 1 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #805617;
+}
+.vd-admin-queue .vd-admin-queue-postpone:hover { background: #fff3dc; color: #66420d; }
+.vd-admin-queue .vd-queue-action-group .btn:focus-visible {
+    outline: 2px solid var(--vd-gold-dark, #85631b);
+    outline-offset: 3px;
+}
+@container admin-queue (max-width: 1000px) {
+    .vd-admin-queue .vd-admin-queue-table,
+    .vd-admin-queue .vd-admin-queue-table tbody { display: block; width: 100%; }
+    /* Retain semantic headings for assistive technology. */
+    .vd-admin-queue .vd-admin-queue-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .vd-admin-queue .vd-admin-queue-table tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, .65fr);
+        grid-template-areas: 'patient state' 'visit actions';
+        gap: 10px 32px;
+        padding: 20px 16px;
+        border-bottom: 1px solid var(--vd-border, #dfccaa);
+    }
+    .vd-admin-queue .vd-admin-queue-table.vd-responsive-table tbody td {
+        /* Generic mobile tables force table-cell; override only this queue.
+           Pagination's .vd-page-hidden remains untouched. */
+        display: block !important;
+        width: auto !important;
+        padding: 6px 0;
+        border: 0;
+        background: transparent;
+        text-align: left;
+    }
+    .vd-admin-queue .vd-admin-queue-table.vd-responsive-table tbody tr:hover td { background: transparent; }
+    .vd-admin-queue .vd-admin-queue-table.vd-responsive-table tbody td:first-child { display: none !important; }
+    .vd-admin-queue .vd-admin-queue-table td:nth-child(2) { grid-area: patient; }
+    .vd-admin-queue .vd-admin-queue-table td:nth-child(3) { grid-area: visit; }
+    .vd-admin-queue .vd-admin-queue-table td:nth-child(4) { grid-area: state; }
+    .vd-admin-queue .vd-admin-queue-table td:nth-child(5) { grid-area: actions; }
+    .vd-admin-queue .vd-admin-queue-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .vd-admin-queue .vd-admin-queue-inline-indicator { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .vd-admin-queue .vd-admin-queue-table tbody tr.vd-queue-row-current { border-left: 3px solid #365c68; }
+    .vd-admin-queue .vd-admin-queue-table tbody tr.vd-queue-row-next { border-left: 3px solid var(--vd-gold-dark, #85631b); }
+    .vd-admin-queue .vd-admin-queue-table td:nth-child(3)::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 5px;
+        color: var(--vd-text-muted, #746a5e);
+        font-size: 11px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    .vd-admin-queue .vd-admin-queue-table .vd-queue-action-cell { padding-top: 6px; }
+    .vd-admin-queue .vd-queue-action-group { grid-template-columns: minmax(0, 1fr); max-width: 300px; }
+    .vd-admin-queue .vd-admin-queue-postpone { justify-self: stretch; }
+    .vd-admin-queue .vd-table-pagination { flex-wrap: wrap; }
+}
+@container admin-queue (max-width: 560px) {
+    .vd-admin-queue .vd-admin-queue-table tbody tr {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: 'patient' 'visit' 'state' 'actions';
+        gap: 6px;
+        padding-inline: 12px;
+    }
+    .vd-admin-queue .vd-queue-action-group { max-width: none; }
+}
+@container admin-queue (max-width: 400px) {
+    .vd-admin-queue .vd-queue-action-group { grid-template-columns: minmax(0, 1fr); }
+    .vd-admin-queue .vd-admin-queue-postpone { justify-self: stretch; }
+    .vd-admin-queue .vd-table-pagination-controls {
+        width: 100%;
+        justify-content: space-between;
+        gap: 6px;
+    }
+}

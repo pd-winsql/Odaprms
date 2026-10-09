@@ -155,7 +155,7 @@ function dashboardBillingPayload(array $entry): string
 
     <div class="vd-dash-card">
         <div class="vd-dash-card-header"><span class="vd-dash-card-title">Today’s Queue</span><span class="vd-topbar-date"><?= date('F j, Y') ?></span></div>
-        <div class="vd-dash-card-body">
+        <div class="vd-dash-card-body<?= $isAdminQueueView ? ' vd-admin-queue' : '' ?>">
             <?php if (!$isAdminQueueView): ?>
             <div class="d-flex flex-wrap gap-2 mb-4">
                 <div class="vd-queue-search-field flex-grow-1 w-100">
@@ -187,7 +187,7 @@ function dashboardBillingPayload(array $entry): string
                 <div class="vd-empty-state">No confirmed appointments scheduled for today.</div>
             <?php else: ?>
                 <div class="vd-appt-table-wrap">
-                    <table class="vd-appt-table vd-today-logbook-table w-100" id="todayLogbookTable">
+                    <table class="vd-appt-table vd-today-logbook-table w-100<?= $isAdminQueueView ? ' vd-admin-queue-table' : '' ?>" id="todayLogbookTable" aria-label="Today’s patient queue">
                         <thead>
                             <tr>
                                 <th>Queue</th>
@@ -208,6 +208,7 @@ function dashboardBillingPayload(array $entry): string
                             ?>
                                 <tr class="<?= $queueRowClass ?>" data-logbook-patient="<?= (int) $entry['patient_id'] ?>">
                                     <td>
+                                        <?php ob_start(); ?>
                                         <?php if ($entry['is_in_treatment']): ?><span class="vd-queue-badge vd-queue-now">Now</span>
                                         <?php elseif ($entry['is_next']): ?><span class="vd-queue-badge vd-queue-next">Next</span>
                                         <?php elseif ($entry['queue_position'] !== null): ?><span class="vd-queue-badge">#<?= (int) $entry['queue_position'] ?></span>
@@ -215,9 +216,13 @@ function dashboardBillingPayload(array $entry): string
                                         <?php elseif ($entry['checkin_status'] === 'Profile Required'): ?><span class="vd-queue-badge vd-queue-blocked">Not ready</span>
                                         <?php else: ?><span class="text-muted small">—</span><?php endif; ?>
                                         <?php if ($entry['serve_next_at'] && $entry['appointment_status'] === 'Checked In'): ?><div class="vd-queue-priority"><i class="ti ti-arrow-bar-to-up"></i> Staff priority</div><?php endif; ?>
+                                        <?php $queueIndicator = ob_get_clean(); echo $queueIndicator; ?>
                                     </td>
                                     <td>
-                                        <div class="vd-appt-name"><?= htmlspecialchars($entry['lastname'] . ', ' . $entry['firstname']) ?></div>
+                                        <div class="<?= $isAdminQueueView ? 'vd-admin-queue-identity' : '' ?>">
+                                            <div class="vd-appt-name"><?= htmlspecialchars($entry['lastname'] . ', ' . $entry['firstname']) ?></div>
+                                            <?php if ($isAdminQueueView): ?><div class="vd-admin-queue-inline-indicator"><?= $queueIndicator ?></div><?php endif; ?>
+                                        </div>
                                         <div class="vd-appt-meta"><?= htmlspecialchars($entry['email']) ?></div>
                                         <div class="vd-logbook-arrival"><i class="ti ti-clock" aria-hidden="true"></i><?= $entry['arrived_at'] ? 'Arrived ' . date('g:i A', strtotime($entry['arrived_at'])) : 'Not arrived' ?></div>
                                     </td>
@@ -228,18 +233,20 @@ function dashboardBillingPayload(array $entry): string
                                     <td>
                                         <div class="vd-queue-state">
                                             <span class="<?= htmlspecialchars($queueState['class']) ?>"><?= htmlspecialchars($queueState['label']) ?></span>
-                                            <span><?= htmlspecialchars($queueState['detail']) ?></span>
+                                            <?php if (!$isAdminQueueView || $entry['appointment_status'] !== 'In Progress'): ?><span><?= htmlspecialchars($queueState['detail']) ?></span><?php endif; ?>
                                         </div>
                                     </td>
                                     <td class="vd-queue-action-cell">
                                         <?php if ($isAdminQueueView): ?>
                                             <div class="vd-queue-action-group">
-                                                <button type="button" class="btn vd-btn-outline btn-sm" data-view-patient-details="<?= (int) $entry['patient_id'] ?>">
+                                                <?php if ($entry['appointment_status'] === 'In Progress'): ?>
+                                                    <a class="btn vd-btn-gold btn-sm vd-admin-queue-complete" href="dashboard.php?complete_visit=<?= (int) $entry['appointment_id'] ?>"><i class="ti ti-cash-check" aria-hidden="true"></i>Complete visit</a>
+                                                <?php endif; ?>
+                                                <button type="button" class="btn vd-btn-outline btn-sm vd-admin-queue-details" data-view-patient-details="<?= (int) $entry['patient_id'] ?>">
                                                     <i class="ti ti-user-search" aria-hidden="true"></i>View details
                                                 </button>
                                                 <?php if ($entry['appointment_status'] === 'In Progress'): ?>
-                                                    <a class="btn vd-btn-gold btn-sm" href="dashboard.php?complete_visit=<?= (int) $entry['appointment_id'] ?>"><i class="ti ti-cash-check" aria-hidden="true"></i>Complete visit</a>
-                                                    <button type="button" class="btn vd-btn-outline btn-sm" data-postpone-treatment="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname']), ENT_QUOTES) ?>"><i class="ti ti-calendar-time" aria-hidden="true"></i>Postpone treatment</button>
+                                                    <button type="button" class="btn btn-sm vd-admin-queue-postpone" data-postpone-treatment="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname']), ENT_QUOTES) ?>"><i class="ti ti-calendar-time" aria-hidden="true"></i>Postpone treatment</button>
                                                 <?php endif; ?>
                                             </div>
                                         <?php elseif (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>

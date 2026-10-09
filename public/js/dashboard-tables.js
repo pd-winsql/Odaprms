@@ -285,7 +285,7 @@
             const label = normaliseLabel(header.textContent).toLowerCase();
             header.dataset.label = label;
 
-            if (/^actions?$/.test(label)) {
+            if (/^actions?$/.test(label) || (table.classList.contains("vd-admin-queue-table") && label === "next step")) {
                 actionIndex = index;
                 header.classList.add("vd-table-actions-column");
             } else if (index === 0 || PRIORITY_LABELS.includes(label)) {
