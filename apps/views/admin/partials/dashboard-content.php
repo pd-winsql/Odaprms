@@ -246,7 +246,7 @@ function dashboardBillingPayload(array $entry): string
                                                     <i class="ti ti-user-search" aria-hidden="true"></i>View details
                                                 </button>
                                                 <?php if ($entry['appointment_status'] === 'In Progress'): ?>
-                                                    <button type="button" class="btn btn-sm vd-admin-queue-postpone" data-postpone-treatment="<?= (int) $entry['appointment_id'] ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname']), ENT_QUOTES) ?>"><i class="ti ti-calendar-time" aria-hidden="true"></i>Postpone treatment</button>
+                                                    <button type="button" class="btn btn-sm vd-admin-queue-postpone" data-postpone-treatment="<?= (int) $entry['appointment_id'] ?>" data-csrf="<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>" data-patient="<?= htmlspecialchars(trim($entry['firstname'] . ' ' . $entry['lastname']), ENT_QUOTES) ?>"><i class="ti ti-calendar-time" aria-hidden="true"></i>Postpone treatment</button>
                                                 <?php endif; ?>
                                             </div>
                                         <?php elseif (!$entry['checkin_id'] && $entry['appointment_status'] === 'Confirmed'): ?>
@@ -640,35 +640,6 @@ function dashboardBillingPayload(array $entry): string
                     document.querySelector('[data-page="dashboard-content.php"]')?.click();
                 } catch (error) {
                     window.showToast(error.message || 'Unable to update the queue.', false);
-                    LoadingUI.setButton(button, false);
-                }
-            });
-        });
-
-        document.querySelectorAll('[data-postpone-treatment]').forEach(button => {
-            button.addEventListener('click', async () => {
-                const confirmation = await window.showActionModal({
-                    title: 'Postpone treatment', kicker: 'Pre-treatment assessment',
-                    message: 'Close this visit because treatment cannot begin. No final billing will be created. Any verified deposit will be retained for an accepted replacement booking.',
-                    details: [{ label: 'Patient', value: button.dataset.patient }],
-                    fields: [{ name: 'reason', label: 'Reason for postponement', placeholder: 'For example: Elevated blood pressure at assessment.', multiline: true, rows: 3, required: true, minlength: 3, maxlength: 255 }],
-                    confirmText: 'Postpone treatment', icon: 'ti-calendar-time', tone: 'warning'
-                });
-                if (!confirmation.confirmed) return;
-                const body = new FormData();
-                body.append('appointment_id', button.dataset.postponeTreatment);
-                body.append('reason', confirmation.values.reason);
-                body.append('csrf_token', csrfToken);
-                LoadingUI.setButton(button, true, 'Postponing…');
-                try {
-                    const response = await fetch(window.vdAppUrl('apps/controllers/treatmentPostponementController.php'), { method: 'POST', body });
-                    const result = await response.json();
-                    if (!response.ok || !result.success) throw new Error(result.message || 'Unable to postpone treatment.');
-                    if (result.notification?.id) window.EmailNotificationDelivery?.deliver(result.notification.id);
-                    window.showToast(result.message, true);
-                    document.querySelector('[data-page="dashboard-content.php"]')?.click();
-                } catch (error) {
-                    window.showToast(error.message, false);
                     LoadingUI.setButton(button, false);
                 }
             });

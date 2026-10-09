@@ -99,7 +99,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
                 </div>
             </div>
             <div class="vd-history-status">
-                <?php if ($appt['status'] === 'Treatment Postponed'): ?><small class="d-block">No treatment performed. Contact the clinic before rebooking.</small><?php endif; ?>
+                <?php if ($appt['status'] === 'Treatment Postponed'): ?><small class="d-block">No treatment performed. Check upcoming appointments before rebooking.</small><?php endif; ?>
                 <span class="<?= statusClass($appt['status']) ?>">
                     <?= htmlspecialchars($appt['status']) ?>
                 </span>

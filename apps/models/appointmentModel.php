@@ -797,7 +797,10 @@ class Appointment
                         WHEN d.status = 'Rejected' THEN d.rejection_reason
                         WHEN a.status = 'Rejected' THEN a.rejection_reason
                         WHEN a.status = 'Cancelled' THEN a.cancellation_reason
-                        WHEN a.status = 'Treatment Postponed' THEN 'Contact the clinic before rebooking. Any verified deposit is retained.'
+                        WHEN a.status = 'Treatment Postponed' THEN CASE
+                            WHEN d.status = 'Transferred' OR EXISTS (SELECT 1 FROM audit_logs al WHERE al.entity_type='appointment' AND al.entity_id=a.appointment_id AND al.action='postponement_rescheduled')
+                                THEN 'A replacement visit was arranged. Check your upcoming appointment and deposit status.'
+                            ELSE 'Contact the clinic before rebooking. Any verified deposit is retained.' END
                         ELSE NULL
                     END AS patient_reason,
                     CASE
@@ -827,8 +830,30 @@ class Appointment
 
     // ===== PERSISTENCE HELPERS =====
 
-    // A pre-treatment assessment stopped this attended visit. No billing is created.
-    public function postponeTreatment(int $appointmentId, int $userId, string $reason): array
+    public function getPostponementSchedules(int $appointmentId): array
+    {
+        $earliest = BookingPolicy::earliestBookableDate(BookingPolicy::minimumRescheduleLeadDays($this->conn));
+        $stmt = $this->conn->prepare("SELECT s.schedule_id, c.clinic_name, s.sched_date,
+            s.start_time, s.end_time, s.max_appointments,
+            GREATEST(s.max_appointments -
+                (SELECT COUNT(*) FROM appointments b WHERE b.schedule_id = s.schedule_id
+                    AND b.status IN ('Pending Review','Awaiting Deposit','Payment Under Review','Confirmed','Checked In','In Progress','Completed')) -
+                (SELECT COUNT(*) FROM appointment_reschedule_requests r WHERE r.target_schedule_id = s.schedule_id
+                    AND r.status = 'Pending' AND r.expires_at > NOW()), 0) AS available_slots
+            FROM schedules s JOIN clinics c ON c.clinic_id = s.clinic_id
+            JOIN appointments a ON a.appointment_id = :id
+            WHERE a.status = 'In Progress' AND a.date = CURDATE()
+                AND s.sched_date >= :earliest AND TIMESTAMP(s.sched_date,s.start_time) > NOW()
+                AND s.schedule_id <> a.schedule_id
+                AND NOT EXISTS (SELECT 1 FROM appointments b WHERE b.patient_id = a.patient_id
+                    AND b.date = s.sched_date AND b.status IN (" . self::SAME_DAY_BLOCKING_STATUSES . "))
+            ORDER BY s.sched_date, s.start_time, c.clinic_name, s.schedule_id");
+        $stmt->execute([':id' => $appointmentId, ':earliest' => $earliest]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Postponement and optional replacement/deposit transfer are one atomic operation.
+    public function postponeTreatment(int $appointmentId, int $userId, string $reason, int $scheduleId = 0): array
     {
         $reason = trim($reason);
         if (strlen($reason) < 3 || strlen($reason) > 255) {
@@ -836,7 +861,12 @@ class Appointment
         }
         try {
             $this->conn->beginTransaction();
-            $stmt = $this->conn->prepare('SELECT status, date FROM appointments WHERE appointment_id = ? FOR UPDATE');
+            $patient = $this->conn->prepare('SELECT patient_id FROM appointments WHERE appointment_id = ?');
+            $patient->execute([$appointmentId]);
+            $patientId = (int) $patient->fetchColumn();
+            $lockPatient = $this->conn->prepare('SELECT patient_id FROM patients WHERE patient_id = ? FOR UPDATE');
+            $lockPatient->execute([$patientId]);
+            $stmt = $this->conn->prepare('SELECT status, date, patient_id, schedule_id FROM appointments WHERE appointment_id = ? FOR UPDATE');
             $stmt->execute([$appointmentId]);
             $appointment = $stmt->fetch(PDO::FETCH_ASSOC);
             $actor = $this->auditLog->getUserActor($userId);
@@ -849,19 +879,72 @@ class Appointment
             $billing = $this->conn->prepare('SELECT billing_id FROM appointment_billings WHERE appointment_id = ?');
             $billing->execute([$appointmentId]);
             if ($billing->fetchColumn()) throw new RuntimeException('This visit already has billing and cannot be postponed.');
+            $schedule = null;
+            if ($scheduleId > 0) {
+                $lock = $this->conn->prepare('SELECT s.*, c.clinic_name FROM schedules s JOIN clinics c ON c.clinic_id=s.clinic_id WHERE s.schedule_id=? FOR UPDATE');
+                $lock->execute([$scheduleId]);
+                $schedule = $lock->fetch(PDO::FETCH_ASSOC);
+                if (!$schedule || $scheduleId === (int) $appointment['schedule_id']
+                    || strtotime($schedule['sched_date'] . ' ' . $schedule['start_time']) <= time()
+                    || !BookingPolicy::assessDate($schedule['sched_date'], BookingPolicy::minimumRescheduleLeadDays($this->conn))['eligible']) {
+                    throw new RuntimeException('Choose an available future schedule within the rescheduling policy.');
+                }
+                // Locking reads see the latest committed slot count, even after waiting.
+                $used = $this->conn->prepare("SELECT appointment_id FROM appointments WHERE schedule_id=?
+                    AND status IN ('Pending Review','Awaiting Deposit','Payment Under Review','Confirmed','Checked In','In Progress','Completed') FOR UPDATE");
+                $used->execute([$scheduleId]);
+                $holds = $this->conn->prepare("SELECT request_id FROM appointment_reschedule_requests WHERE target_schedule_id=? AND status='Pending' AND expires_at>NOW() FOR UPDATE");
+                $holds->execute([$scheduleId]);
+                if (count($used->fetchAll()) + count($holds->fetchAll()) >= (int) $schedule['max_appointments']) {
+                    throw new RuntimeException('That schedule is full. Choose another date or Book later.', 409);
+                }
+                $conflict = $this->conn->prepare('SELECT appointment_id FROM appointments WHERE patient_id=? AND date=? AND status IN (' . self::SAME_DAY_BLOCKING_STATUSES . ') FOR UPDATE');
+                $conflict->execute([$patientId, $schedule['sched_date']]);
+                if ($conflict->fetchColumn()) throw new RuntimeException('This patient already has an appointment on that date. Choose another date or Book later.');
+            }
             $this->conn->prepare("UPDATE appointment_deposits SET status = 'Retained for Rebooking' WHERE appointment_id = ? AND status = 'Verified'")->execute([$appointmentId]);
             $this->conn->prepare("UPDATE appointments SET status = 'Treatment Postponed', postponed_at = NOW(), postponement_reason = ? WHERE appointment_id = ?")->execute([$reason, $appointmentId]);
             $audit = $this->auditLog->record('appointment', $appointmentId, 'status_changed',
                 "Treatment postponed for appointment #{$appointmentId}: {$reason}",
                 ['status' => 'In Progress'], ['status' => 'Treatment Postponed', 'reason' => $reason, 'deposit_outcome' => 'Retained for Rebooking'], $actor);
-            $notification = $this->emailNotifications->enqueueAppointmentTemplate($appointmentId, 'treatment_postponed',
-                'Treatment Postponed', 'audit:' . $audit['audit_log_id'] . ':treatment_postponed');
+            $replacementId = null;
+            $replacementNotification = null;
+            if ($schedule) {
+                $this->conn->prepare("INSERT INTO appointments (patient_id,clinic_id,date,schedule_id,status,deposit_required)
+                    VALUES (?,?,?,?,'Pending Review',1)")->execute([$patientId,$schedule['clinic_id'],$schedule['sched_date'],$scheduleId]);
+                $replacementId = (int) $this->conn->lastInsertId();
+                $services = $this->conn->prepare('INSERT INTO appointment_services (appointment_id,service_id,quantity,unit_price_snapshot,billing_unit_snapshot)
+                    SELECT ?,service_id,quantity,unit_price_snapshot,billing_unit_snapshot FROM appointment_services WHERE appointment_id=?');
+                $services->execute([$replacementId,$appointmentId]);
+                if (!$services->rowCount()) throw new RuntimeException('The original visit has no booked services. Choose Book later and review its services.');
+                $payment = $this->applyPaymentStatusChange($replacementId,'Pending Review','Awaiting Deposit',$reason);
+                $this->saveAppointmentStatus($replacementId,'Awaiting Deposit',$userId,$reason,$payment['minutes']);
+                $this->auditLog->record('appointment',$replacementId,'status_changed',
+                    "Replacement agreed verbally after postponement of appointment #{$appointmentId}.", ['status'=>'Pending Review'],
+                    ['status'=>'Awaiting Deposit','source_appointment_id'=>$appointmentId,'schedule_id'=>$scheduleId],$actor);
+                $deposit = $this->conn->prepare("SELECT deposit_id FROM appointment_deposits WHERE appointment_id=? AND status='Retained for Rebooking' FOR UPDATE");
+                $deposit->execute([$appointmentId]);
+                if ($deposit->fetchColumn()) {
+                    $transfer = (new DepositModel($this->conn))->transferDeposit($appointmentId,$replacementId,$userId,'Rebooking after postponed treatment');
+                    if (!$transfer['success']) throw new RuntimeException($transfer['message']);
+                    $replacementNotification = $transfer['notification'];
+                } else {
+                    $replacementNotification = $this->emailNotifications->enqueueAppointmentTemplate($replacementId,'appointment_awaiting_deposit','Awaiting Deposit','postponement:' . $appointmentId . ':replacement');
+                }
+                $this->auditLog->record('appointment',$appointmentId,'postponement_rescheduled',
+                    "Rescheduled to replacement appointment #{$replacementId}.",null,['replacement_appointment_id'=>$replacementId,'schedule_id'=>$scheduleId],$actor);
+            }
+            $template = $replacementId ? 'treatment_postponed_rescheduled' : 'treatment_postponed';
+            $notification = $this->emailNotifications->enqueueAppointmentTemplate($appointmentId, $template,
+                'Treatment Postponed', 'audit:' . $audit['audit_log_id'] . ':' . $template,
+                ['{replacement_schedule}' => $schedule ? $schedule['clinic_name'] . ' — ' . date('F j, Y',strtotime($schedule['sched_date'])) . ', ' . date('g:i A',strtotime($schedule['start_time'])) . '–' . date('g:i A',strtotime($schedule['end_time'])) : '']);
             $this->conn->commit();
-            return ['success' => true, 'message' => 'Treatment postponed. Any verified deposit is retained for rebooking.', 'notification' => $notification];
+            return ['success' => true, 'message' => $replacementId ? 'Treatment postponed and replacement appointment scheduled.' : 'Treatment postponed. Any verified deposit is retained for rebooking.',
+                'replacement_appointment_id'=>$replacementId, 'notification'=>$notification,'replacement_notification'=>$replacementNotification];
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log('postponeTreatment: ' . $e->getMessage());
-            return ['success' => false, 'message' => $e instanceof PDOException ? 'Unable to postpone treatment. Please try again.' : $e->getMessage()];
+            return ['success' => false, 'code' => $e->getCode() === 409 ? 'schedule_full' : 'postponement_failed', 'message' => $e instanceof PDOException ? 'Unable to postpone treatment. Please try again.' : $e->getMessage()];
         }
     }
 

@@ -169,10 +169,12 @@ $today = date('l, F j Y');
     </div>
 
     <?php include __DIR__ . '/../shared/staff-action-modal.php'; ?>
+    <?php include __DIR__ . '/../shared/treatment-postponement-modal.php'; ?>
 
     <script src="../../../public/js/identity-input.js?v=<?= filemtime(__DIR__ . '/../../../public/js/identity-input.js') ?>"></script>
     <script src="../../../public/js/bootstrap.bundle.min.js"></script>
     <script src="../../../public/js/action-modal.js?v=<?= filemtime(__DIR__ . '/../../../public/js/action-modal.js') ?>"></script>
+    <script src="../../../public/js/treatment-postponement.js?v=<?= filemtime(__DIR__ . '/../../../public/js/treatment-postponement.js') ?>"></script>
     <script src="../../../public/js/logout-confirmation.js"></script>
     <script src="../../../public/js/dashboard-tables.js?v=<?= filemtime(__DIR__ . '/../../../public/js/dashboard-tables.js') ?>"></script>
     <script src="../../../public/js/odontogram.js?v=<?= filemtime(__DIR__ . '/../../../public/js/odontogram.js') ?>"></script>

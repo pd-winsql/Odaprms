@@ -6,6 +6,7 @@ $functionEnd = strpos($source, 'function dashboardBillingPayload(', $functionSta
 function dashboardStatusClass($status) { return 'vd-status vd-status-' . strtolower(str_replace(' ', '-', $status)); }
 eval(substr($source, $functionStart, $functionEnd - $functionStart));
 $isAdminQueueView = ($argv[1] ?? '') !== 'assistant';
+$csrfToken = 'qa-token';
 $activeQueueEntries = [];
 for ($i = 1; $i <= 12; $i++) {
     $activeQueueEntries[] = [

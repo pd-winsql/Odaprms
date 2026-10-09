@@ -1,6 +1,14 @@
 <?php
 
 return [
+    'treatment_postponed_rescheduled' => [
+        'subject' => 'Your Treatment Has Been Rescheduled',
+        'heading' => 'Replacement Visit Scheduled',
+        'intro' => 'Your treatment was postponed following your pre-treatment assessment. The clinic arranged the replacement visit discussed with you.',
+        'instruction' => 'Replacement visit: {replacement_schedule}. Check your appointment details for its confirmation and deposit status.',
+        'label' => 'Original visit outcome',
+        'footer' => 'The original visit and receipt remain on record. If a verified deposit was transferred, it is applied to the replacement appointment.'
+    ],
     'treatment_postponed' => [
         'subject' => 'Your Treatment Was Postponed',
         'heading' => 'Treatment Postponed',

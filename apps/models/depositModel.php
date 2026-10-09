@@ -554,8 +554,9 @@ class DepositModel {
             return ['success' => false, 'message' => 'Enter a short transfer reason.'];
         }
 
+        $ownsTransaction = !$this->conn->inTransaction();
         try {
-            $this->conn->beginTransaction();
+            if ($ownsTransaction) $this->conn->beginTransaction();
             $stmt = $this->conn->prepare("
                 SELECT a.appointment_id, a.patient_id, a.status AS appointment_status,
                        d.deposit_id, d.amount, d.status AS deposit_status
@@ -574,22 +575,18 @@ class DepositModel {
             $target = $appointments[$targetAppointmentId] ?? null;
 
             if (!$source || !$target) {
-                $this->conn->rollBack();
-                return ['success' => false, 'message' => 'The original deposit or new appointment was not found.'];
+                throw new RuntimeException('The original deposit or new appointment was not found.');
             }
             if ((int) $source['patient_id'] !== (int) $target['patient_id']) {
-                $this->conn->rollBack();
-                return ['success' => false, 'message' => 'Deposits can only be transferred between appointments for the same patient.'];
+                throw new RuntimeException('Deposits can only be transferred between appointments for the same patient.');
             }
             $eligibleSource = ($source['appointment_status'] === 'Cancelled' && $source['deposit_status'] === 'For Refund')
                 || ($source['appointment_status'] === 'Treatment Postponed' && $source['deposit_status'] === 'Retained for Rebooking');
             if (!$eligibleSource) {
-                $this->conn->rollBack();
-                return ['success' => false, 'message' => 'The original appointment must have a refundable cancellation deposit or a deposit retained after treatment postponement.'];
+                throw new RuntimeException('The original appointment must have a refundable cancellation deposit or a deposit retained after treatment postponement.');
             }
             if ($target['appointment_status'] !== 'Awaiting Deposit' || !in_array($target['deposit_status'], ['Awaiting Submission', 'Rejected'], true)) {
-                $this->conn->rollBack();
-                return ['success' => false, 'message' => 'The replacement appointment must be accepted and awaiting its deposit.'];
+                throw new RuntimeException('The replacement appointment must be accepted and awaiting its deposit.');
             }
 
             $actor = $this->auditLog->getUserActor($userId);
@@ -598,8 +595,7 @@ class DepositModel {
             $applied->execute([$sourceAppointmentId]);
             if ($applied->fetchColumn()) throw new RuntimeException('The original deposit has already been used in billing.');
             if ((float) $source['amount'] < (float) $target['amount']) {
-                $this->conn->rollBack();
-                return ['success' => false, 'message' => 'The retained deposit does not cover the replacement deposit. Contact the Admin / Dentist to arrange the difference.'];
+                throw new RuntimeException('The retained deposit does not cover the replacement deposit. Contact the Admin / Dentist to arrange the difference.');
             }
             $code = $this->generateAppointmentCode();
 
@@ -652,7 +648,7 @@ class DepositModel {
                 'audit:' . $audit['audit_log_id'] . ':appointment_confirmed_code'
             );
 
-            $this->conn->commit();
+            if ($ownsTransaction) $this->conn->commit();
             return [
                 'success' => true,
                 'message' => 'Deposit transferred and the replacement appointment confirmed.',
@@ -668,9 +664,10 @@ class DepositModel {
                 ],
             ];
         } catch (Throwable $e) {
+            if (!$ownsTransaction) throw $e;
             if ($this->conn->inTransaction()) $this->conn->rollBack();
             error_log('transferDeposit error: ' . $e->getMessage());
-            return ['success' => false, 'message' => 'Unable to transfer the deposit.'];
+            return ['success' => false, 'message' => $e instanceof PDOException ? 'Unable to transfer the deposit.' : $e->getMessage()];
         }
     }
 

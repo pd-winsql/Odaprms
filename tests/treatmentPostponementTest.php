@@ -10,13 +10,15 @@ function postponeExpect(bool $ok, string $message): void {
 }
 $conn = (new Database())->connect();
 if (!$conn) throw new RuntimeException('Database unavailable.');
-$ids = []; $patientId = 0; $scheduleId = 0; $qaUser = 0;
+$ids = []; $patientId = 0; $scheduleId = 0; $qaUser = 0; $qaClinic = 0;
 try {
     $admin = (int) $conn->query("SELECT id FROM users WHERE user_role='Admin' LIMIT 1")->fetchColumn();
     $assistant = (int) $conn->query("SELECT id FROM users WHERE user_role='Dental Assistant' LIMIT 1")->fetchColumn();
     $clinic = (int) $conn->query('SELECT clinic_id FROM clinics LIMIT 1')->fetchColumn();
     $service = (int) $conn->query('SELECT service_id FROM services LIMIT 1')->fetchColumn();
     postponeExpect($admin > 0 && $assistant > 0 && $clinic > 0 && $service > 0, 'Required fixtures exist.');
+    $conn->exec("INSERT INTO clinics (clinic_name,clinic_address,clinic_contact,embed_url) VALUES ('Postponement QA Clinic','QA only','','')");
+    $qaClinic = $clinic = (int) $conn->lastInsertId();
     $conn->prepare('INSERT INTO schedules (clinic_id,sched_date,max_appointments) VALUES (?,CURDATE(),15)')->execute([$clinic]);
     $scheduleId = (int) $conn->lastInsertId();
     $email = 'postpone-' . bin2hex(random_bytes(5)) . '@example.invalid';
@@ -65,4 +67,5 @@ try {
     if ($patientId) $conn->prepare('DELETE FROM patients WHERE patient_id=?')->execute([$patientId]);
     if ($qaUser) $conn->prepare('DELETE FROM users WHERE id=?')->execute([$qaUser]);
     if ($scheduleId) $conn->prepare('DELETE FROM schedules WHERE schedule_id=?')->execute([$scheduleId]);
+    if ($qaClinic) $conn->prepare('DELETE FROM clinics WHERE clinic_id=?')->execute([$qaClinic]);
 }
