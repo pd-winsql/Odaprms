@@ -320,6 +320,7 @@ const csrfToken = activeBillingAppointment.csrfToken;
                 const result = await response.json();
                 if (!response.ok || !result.success) throw new Error(result.message || 'Unable to complete the transaction.');
                 settled = true;
+                if (result.receipt_notification_id) window.EmailNotificationDelivery?.deliver(result.receipt_notification_id);
                 window.location.assign('dashboard.php');
             } catch (error) {
                 LoadingUI.setButton(this, false);

@@ -397,6 +397,16 @@ $today = date('l, F j Y');
         </div>
     </div>
 <script src="../../../public/js/complete-visit.js?v=<?= filemtime(__DIR__ . '/../../../public/js/complete-visit.js') ?>"></script>
+<script>
+window.emailNotificationDeliveryConfig = {
+    endpoint: window.vdAppUrl('apps/controllers/emailNotificationController.php'),
+    csrfToken: <?= json_encode($_SESSION['csrf_token'] ?? '') ?>
+};
+<?php if (!empty($_SESSION['final_billing_receipt_notice'])): ?>
+window.showToast(<?= json_encode($_SESSION['final_billing_receipt_notice']) ?>, true, 6000);
+<?php unset($_SESSION['final_billing_receipt_notice']); endif; ?>
+</script>
+<script src="../../../public/js/email-notification-delivery.js?v=<?= filemtime(__DIR__.'/../../../public/js/email-notification-delivery.js') ?>"></script>
 </body>
 
 </html>

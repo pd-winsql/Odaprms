@@ -26,6 +26,11 @@ $patient  = $patientModel->getPatientByUserId($_SESSION['user_id']);
 $past     = $past ?? $appointmentModel->getPatientPastAppointments($patient['patient_id']);
 $servicesByAppointment = $appointmentModel->getServiceDetailsForAppointments(array_column($past, 'appointment_id'));
 $reviewsByAppointment = $reviewModel->getForAppointments(array_column($past, 'appointment_id'));
+$receiptQuery=$conn->prepare("SELECT appointment_id FROM appointment_email_notifications WHERE recipient_user_id=? AND notification_type='payment_receipt'");
+$receiptQuery->execute([(int)$_SESSION['user_id']]);
+$receiptAppointments=array_flip($receiptQuery->fetchAll(PDO::FETCH_COLUMN));
+foreach ($past as &$pastAppointment) $pastAppointment['receipt_available']=isset($receiptAppointments[$pastAppointment['appointment_id']]);
+unset($pastAppointment);
 
 function statusClass($s) {
     return 'vd-status vd-status-' . strtolower(preg_replace('/[^A-Za-z0-9]+/', '-', $s));
@@ -49,6 +54,7 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
         ], $services),
         'billing' => !empty($appointment['billing_id']) ? [
             'id' => (int) $appointment['billing_id'],
+            'receiptAvailable' => !empty($appointment['receipt_available']),
             'actualCharge' => (float) ($appointment['actual_service_amount'] ?? 0),
             'depositApplied' => (float) ($appointment['deposit_applied'] ?? 0),
             'amountDue' => (float) ($appointment['remaining_balance'] ?? 0),
@@ -170,6 +176,10 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
                         <span class="vd-status" id="patientHistoryPaymentStatus"></span>
                     </div>
                     <div class="vd-final-billing-summary" id="patientHistoryPaymentSummary"></div>
+                    <div class="vd-history-receipt-actions" id="patientHistoryReceiptActions" hidden>
+                        <a class="btn vd-btn-outline" id="patientHistoryViewReceipt" target="_blank" rel="noopener"><i class="ti ti-receipt" aria-hidden="true"></i> View receipt</a>
+                        <a class="btn vd-btn-gold" id="patientHistoryDownloadReceipt"><i class="ti ti-download" aria-hidden="true"></i> Download PNG</a>
+                    </div>
                     <div class="vd-appointment-payment-note d-none" id="patientHistoryPaymentNotes"></div>
                 </section>
                 <section class="vd-appointment-review-section d-none" id="patientHistoryReviewSection" aria-labelledby="patientHistoryReviewHeading">
@@ -346,6 +356,13 @@ function patientHistoryPayload(array $appointment, array $services, ?array $revi
         paymentSection.classList.toggle('d-none', !appointment.billing);
         if (appointment.billing) {
             const billing = appointment.billing;
+            const receiptActions=document.getElementById('patientHistoryReceiptActions');
+            receiptActions.hidden=!billing.receiptAvailable;
+            if (billing.receiptAvailable) {
+                const receiptUrl=window.vdAppUrl('apps/controllers/paymentReceiptController.php')+'?billing_id='+encodeURIComponent(billing.id);
+                document.getElementById('patientHistoryViewReceipt').href=receiptUrl+'&preview=1';
+                document.getElementById('patientHistoryDownloadReceipt').href=receiptUrl+'&download=1';
+            }
             const status = document.getElementById('patientHistoryPaymentStatus');
             status.className = `vd-status vd-status-${String(billing.status).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
             status.textContent = billing.status || 'Recorded';

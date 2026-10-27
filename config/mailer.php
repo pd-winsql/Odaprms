@@ -141,7 +141,15 @@ function buildEmailText($toName, $template, $value): string
 }
 
 // ── Generic sender: looks up a template by key, sends it with $value as the highlighted code/status ──
-function sendTemplateEmail($toEmail, $toName, $templateKey, $value, array $templateVariables = [])
+function vdAttachPaymentReceipt(PHPMailer $mail, array $attachment): void
+{
+    if (!preg_match('/^PAY-[0-9]+\.png$/D', $attachment['filename']) || substr($attachment['bytes'],0,8)!=="\x89PNG\r\n\x1a\n") {
+        throw new InvalidArgumentException('Invalid payment receipt attachment.');
+    }
+    $mail->addStringAttachment($attachment['bytes'], $attachment['filename'], 'base64', 'image/png');
+}
+
+function sendTemplateEmail($toEmail, $toName, $templateKey, $value, array $templateVariables = [], ?array $receiptAttachment = null)
 {
     $template = getEmailTemplate($templateKey);
 
@@ -186,6 +194,9 @@ function sendTemplateEmail($toEmail, $toName, $templateKey, $value, array $templ
         $mail->Subject = $template['subject'] . ' — Dr. Aprille Ventura Clinica Dental';
         $mail->Body    = buildEmailHtml($toName, $template, $value, $branding, $hasEmbeddedLogo);
         $mail->AltBody = buildEmailText($toName, $template, $value);
+        if ($receiptAttachment !== null) {
+            vdAttachPaymentReceipt($mail, $receiptAttachment);
+        }
 
         error_log("===== PHPMailer Recipients =====");
         foreach ($mail->getToAddresses() as $recipient) {

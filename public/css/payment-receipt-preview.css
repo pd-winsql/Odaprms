@@ -1,0 +1,13 @@
+.vd-receipt-preview { margin: 0; background: #eee9df; color: #30281e; font-family: Georgia, serif; }
+.vd-receipt-preview header { padding: 18px 24px; background: #fffdf9; border-bottom: 1px solid #d9c9a8; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.vd-receipt-preview h1 { margin: 0; font-size: 24px; font-weight: 400; }
+.vd-receipt-preview h1 small { display: block; margin-top: 4px; font-size: 13px; color: #70531d; }
+.vd-receipt-preview nav { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.vd-receipt-preview button, .vd-receipt-preview a { box-sizing: border-box; min-height: 44px; padding: 12px 16px; border: 1px solid #b9a47a; border-radius: 6px; background: #fffaf0; color: #70531d; font: inherit; text-decoration: none; cursor: pointer; }
+.vd-receipt-preview a { background: #80601e; color: white; }
+.vd-receipt-preview :focus-visible { outline: 3px solid #80601e; outline-offset: 3px; }
+.vd-receipt-preview button:disabled { opacity: .5; cursor: default; }
+.vd-receipt-preview output { min-width: 48px; text-align: center; }
+.vd-receipt-preview main { overflow: auto; padding: 24px; }
+.vd-receipt-preview img { display: block; width: min(100%, 800px); height: auto; margin: 0 auto; }
+@media (max-width: 575px) { .vd-receipt-preview header { padding: 16px; } .vd-receipt-preview main { padding: 12px; } }

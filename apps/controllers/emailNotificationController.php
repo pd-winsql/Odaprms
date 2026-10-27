@@ -7,6 +7,7 @@ require_once '../helpers/csrf.php';
 require_once '../helpers/authorization.php';
 require_once '../helpers/paymentSettings.php';
 require_once '../../config/mailer.php';
+require_once '../helpers/paymentReceiptImage.php';
 
 header('Content-Type: application/json');
 
@@ -20,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_POST['action'] ?? '') !== 'deliv
     notificationJson(['success' => false, 'message' => 'Invalid request.']);
 }
 
-vdRequireDentalAssistantJson();
+vdRequireRoleJson(['Admin','Dental Assistant']);
+$receiptOnly = vdIsAdmin();
 
 if (!validate_csrf()) {
     http_response_code(419);
@@ -55,6 +57,7 @@ $failed = 0;
 
 try {
     $whereId = $notificationId > 0 ? ' AND notification_id = :notification_id' : '';
+    $whereType = $receiptOnly ? " AND notification_type = 'payment_receipt'" : '';
     $queue = $conn->prepare("
         SELECT notification_id, appointment_id, recipient_email, payload, attempts
         FROM appointment_email_notifications
@@ -62,6 +65,7 @@ try {
           AND attempts < 3
           AND scheduled_at <= NOW()
           {$whereId}
+          {$whereType}
         ORDER BY scheduled_at ASC, notification_id ASC
         LIMIT 5
     ");
@@ -109,12 +113,19 @@ try {
                     '{payment_deadline}' => vdFormatDurationMinutes((int) ($payment['payment_deadline_minutes'] ?? 480)),
                 ];
             }
+            $receiptAttachment = null;
+            if (($payload['template_key'] ?? '') === 'payment_receipt') {
+                if (empty($payload['receipt'])) throw new RuntimeException('Receipt snapshot is missing.');
+                $receiptAttachment = ['bytes'=>vdPaymentReceiptPng($payload['receipt']),
+                    'filename'=>$payload['receipt']['number'].'.png'];
+            }
             $result = sendTemplateEmail(
                 (string) $notification['recipient_email'],
                 (string) ($payload['to_name'] ?? 'Patient'),
                 (string) ($payload['template_key'] ?? ''),
                 (string) ($payload['value'] ?? ''),
-                $templateVariables
+                $templateVariables,
+                $receiptAttachment
             );
         } catch (Throwable $e) {
             $result = ['success' => false, 'message' => $e->getMessage()];

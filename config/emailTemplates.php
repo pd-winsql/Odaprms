@@ -199,6 +199,15 @@ return [
         'footer' => 'You may submit another reschedule request if an eligible schedule is available.'
     ],
 
+    'payment_receipt' => [
+        'subject' => 'Your Payment Receipt',
+        'heading' => 'Payment settled',
+        'intro' => 'Your final payment has been recorded and your visit is complete.',
+        'instruction' => 'Your itemized payment receipt is attached as a PNG image. You can also view and download it in History, under your completed appointment’s payment details.',
+        'label' => 'Receipt number',
+        'footer' => 'Thank you for trusting us with your smile. This is a system-generated payment acknowledgment.'
+    ],
+
     'staff_account_created' => [
 
         'subject' => 'Your Dental Assistant Account Has Been Created',

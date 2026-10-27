@@ -36,7 +36,7 @@ foreach ($serviceIds as $serviceId) {
     ];
 }
 $model = new BillingModel((new Database())->connect());
-echo json_encode($model->settleAndCompleteVisit(
+$result = $model->settleAndCompleteVisit(
     (int) ($_POST['appointment_id'] ?? 0),
     (float) ($_POST['service_amount'] ?? -1),
     (float) ($_POST['cash_received'] ?? -1),
@@ -45,4 +45,8 @@ echo json_encode($model->settleAndCompleteVisit(
     $serviceIds,
     trim($_POST['service_change_reason'] ?? ''),
     $serviceLineItems
-));
+);
+if (($result['success'] ?? false) && !empty($result['receipt_notification_id'])) {
+    $_SESSION['final_billing_receipt_notice'] = 'Payment settled. The patient’s receipt email is queued for delivery.';
+}
+echo json_encode($result);

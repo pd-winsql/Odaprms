@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/auditLogModel.php';
+require_once __DIR__ . '/paymentReceiptModel.php';
 
 class BillingModel {
     private $conn;
@@ -769,7 +770,7 @@ class BillingModel {
             }
             $change = max(0, $cashTendered - $amountDue);
             $actor = $this->auditLog->getUserActor($userId);
-            if (!$actor) throw new RuntimeException('Staff account not found.');
+            if (!$actor || $actor['role'] !== 'Admin') throw new RuntimeException('Only an Admin can settle final billing.');
 
             if ($servicesChanged) {
                 $oldServices = array_map(static fn(array $service): array => [
@@ -808,7 +809,8 @@ class BillingModel {
                 ':user_id' => $userId,
                 ':notes' => trim($notes) ?: null,
             ]);
-            $this->syncBillingItems((int) $this->conn->lastInsertId(), $appointmentId, $serviceAmount);
+            $billingId = (int) $this->conn->lastInsertId();
+            $this->syncBillingItems($billingId, $appointmentId, $serviceAmount);
 
             $this->conn->prepare("UPDATE appointments SET status='Completed', completed_at=NOW() WHERE appointment_id=:id")
                 ->execute([':id' => $appointmentId]);
@@ -831,6 +833,9 @@ class BillingModel {
                 "Completed appointment #{$appointmentId} after full settlement.",
                 ['status' => 'In Progress'], ['status' => 'Completed', 'payment_status' => 'Paid'], $actor);
 
+            // Durable receipt snapshot and outbox entry commit with the payment.
+            // PNG rendering and SMTP happen afterwards; neither can undo settlement.
+            $receiptNotification = (new PaymentReceiptModel($this->conn))->queue($billingId, $actor['name']);
             $this->conn->commit();
             return [
                 'success' => true,
@@ -840,6 +845,7 @@ class BillingModel {
                 'amount_due' => $amountDue,
                 'cash_tendered' => $cashTendered,
                 'change' => $change,
+                'receipt_notification_id' => $receiptNotification['id'] ?? null,
             ];
         } catch (InvalidArgumentException $e) {
             if ($this->conn->inTransaction()) $this->conn->rollBack();

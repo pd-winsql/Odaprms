@@ -20,7 +20,8 @@ class EmailNotificationModel {
         string $templateKey,
         string $value,
         string $deduplicationKey,
-        array $templateVariables = []
+        array $templateVariables = [],
+        array $receipt = []
     ): ?array {
         $recipientStmt = $this->conn->prepare("
             SELECT p.user_id, u.email, p.firstname, p.lastname,
@@ -83,6 +84,7 @@ class EmailNotificationModel {
             'template_key' => $templateKey,
             'value' => $value,
             'template_variables' => array_merge($defaultVariables, $templateVariables),
+            'receipt' => $receipt,
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         // The audit-based key makes retries safe: the same business event can

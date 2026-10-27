@@ -2873,6 +2873,9 @@
 }
 
 .vd-patient-cancellation { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 16px; grid-column: 1 / -1; }
+.vd-history-receipt-actions:not([hidden]) { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.vd-history-receipt-actions .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+@media (max-width: 575px) { .vd-history-receipt-actions .btn { flex: 1 1 100%; justify-content: center; } }
 .vd-dash-body .vd-patient-cancellation .vd-patient-cancellation-button {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 44px; padding: 10px 16px; border: 1px solid #b9a47a; border-radius: 8px;
